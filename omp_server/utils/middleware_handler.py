@@ -15,7 +15,7 @@ from django.urls import resolve
 # from django.http import HttpRequest
 from django.utils.deprecation import MiddlewareMixin
 from rest_framework_jwt.utils import jwt_decode_handler
-from jwt.exceptions import DecodeError
+from jwt import DecodeError
 
 from db_models.models import OperateLog
 

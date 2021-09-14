@@ -20,11 +20,9 @@ from rest_framework_jwt.views import obtain_jwt_token
 
 from users.urls import router as users_router
 # from hosts.urls import router as hosts_router
-from hosts.views import HostsTestView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('login/', obtain_jwt_token),
     path("users/", include(users_router.urls)),
-    path("hosts/", HostsTestView.as_view())
 ]

@@ -18,3 +18,4 @@ repos:
     - id: check-ast
     - id: check-json
     - id: check-yaml
+exclude: migrations
