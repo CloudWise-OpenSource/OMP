@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*- 
+# -*- coding: utf-8 -*-
 # Project: celery
 # Author: jon.liu@yunzhihui.com
 # Create time: 2021-09-12 11:30

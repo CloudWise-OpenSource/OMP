@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*- 
+# -*- coding: utf-8 -*-
 # Project: middleware_handler
 # Author: jon.liu@yunzhihui.com
 # Create time: 2021-09-11 16:48
@@ -12,7 +12,7 @@
 
 import ipware
 from django.urls import resolve
-from django.http import HttpRequest
+# from django.http import HttpRequest
 from django.utils.deprecation import MiddlewareMixin
 from rest_framework_jwt.utils import jwt_decode_handler
 from jwt.exceptions import DecodeError
@@ -23,7 +23,7 @@ from db_models.models import OperateLog
 class OperationLogMiddleware(MiddlewareMixin):
     """用于处理操作日志的中间件"""
 
-    def process_response(self,request, response):
+    def process_response(self, request, response):
         """
         拦截请求的中间件
         :param request: 请求对象
@@ -65,6 +65,7 @@ class OperationLogMiddleware(MiddlewareMixin):
             OperateLog(
                 username=_username, request_ip=_ip, request_method=_method,
                 request_url=_url, description=_desc,
-                response_code=response.data.get("code", 0), request_result=response.data.get("message", "")
+                response_code=response.data.get("code", 0),
+                request_result=response.data.get("message", "")
             ).save()
         return response

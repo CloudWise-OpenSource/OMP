@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*- 
+# -*- coding: utf-8 -*-
 # Project: urls
 # Author: jon.liu@yunzhihui.com
 # Create time: 2021-09-10 17:21
@@ -14,9 +14,7 @@ from rest_framework.routers import DefaultRouter
 
 from users.views import UsersView
 from users.views import OperateLogView
-from users.views import UpdatePasswordView
 
 router = DefaultRouter()
 router.register("users", UsersView)
 router.register("operate-log", OperateLogView)
-# router.register("update-password", UpdatePasswordView.as_view())

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*- 
+# -*- coding: utf-8 -*-
 # Project: users_serializers
 # Author: jon.liu@yunzhihui.com
 # Create time: 2021-09-10 17:16
@@ -22,13 +22,17 @@ from db_models.models import OperateLog
 class UserSerializer(ModelSerializer):
     """用户序列化类"""
     re_password = serializers.CharField(
-        max_length=32, required=True, write_only=True, error_messages={"required": "必须包含re_password字段"})
+        max_length=32, required=True,
+        write_only=True, error_messages={"required": "必须包含re_password字段"})
     email = serializers.EmailField(
-        required=True, error_messages={"required": "必须包含email字段", "invalid": "邮箱格式不正确"})
+        required=True,
+        error_messages={"required": "必须包含email字段", "invalid": "邮箱格式不正确"})
     password = serializers.CharField(
-        max_length=32, required=True, error_messages={"required": "必须包含password字段"})
+        max_length=32, required=True,
+        error_messages={"required": "必须包含password字段"})
     username = serializers.CharField(
-        max_length=32, required=True, error_messages={"required": "必须包含名字"})
+        max_length=32, required=True,
+        error_messages={"required": "必须包含名字"})
 
     class Meta:
         """元数据"""
@@ -42,7 +46,8 @@ class UserSerializer(ModelSerializer):
         :return:
         """
         request = self.context["request"]
-        if request.method != "PUT" and UserProfile.objects.filter(username=username).count() != 0:
+        if request.method != "PUT" and \
+                UserProfile.objects.filter(username=username).count() != 0:
             raise ValidationError("用户名已存在")
         return username
 
