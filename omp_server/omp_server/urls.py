@@ -16,21 +16,21 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from django.urls import include
-from rest_framework_jwt.views import obtain_jwt_token
 
 # coreAPI documentation
 from rest_framework.documentation import include_docs_urls
 from rest_framework.permissions import AllowAny
 
 from users.urls import router as users_router
+from users.views import JwtAPIView
 # from hosts.urls import router as hosts_router
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('login/', obtain_jwt_token),
+    path("admin/", admin.site.urls),
+    path("login/", JwtAPIView.as_view()),
     path("users/", include(users_router.urls)),
-    path('docs/', include_docs_urls(
-        title='API 接口文档',
+    path("docs/", include_docs_urls(
+        title="API 接口文档",
         permission_classes=(AllowAny,),
     )),
 ]
