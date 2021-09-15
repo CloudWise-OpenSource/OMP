@@ -21,7 +21,6 @@ from utils.parse_config import TOKEN_EXPIRATION
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
@@ -33,7 +32,6 @@ DEBUG = True
 
 # 允许所有
 ALLOWED_HOSTS = ["*"]
-
 
 # Application definition
 
@@ -82,7 +80,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'omp_server.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
@@ -119,7 +116,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/
 
@@ -128,7 +124,6 @@ USE_I18N = True
 USE_L10N = True
 TIME_ZONE = 'Asia/Shanghai'
 USE_TZ = False
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
@@ -144,22 +139,23 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": (
         "utils.response_handler.APIRenderer",
     ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
+    "DEFAULT_PERMISSION_CLASSES": (
+        "rest_framework.permissions.IsAuthenticated",
     ),
-    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema',
+    "DEFAULT_SCHEMA_CLASS": "rest_framework.schemas.coreapi.AutoSchema",
 }
 
 JWT_AUTH = {
-    'JWT_EXPIRATION_DELTA': datetime.timedelta(days=int(TOKEN_EXPIRATION)),
-    'JWT_ALLOW_REFRESH': True,
+    "JWT_EXPIRATION_DELTA": datetime.timedelta(days=int(TOKEN_EXPIRATION)),
+    "JWT_ALLOW_REFRESH": True,
+    "JWT_AUTH_COOKIE": "jwtToken",
 }
 
-AUTH_USER_MODEL = 'db_models.UserProfile'
+AUTH_USER_MODEL = "db_models.UserProfile"
 
 # celery 相关配置
-CELERY_RESULT_BACKEND = 'django-db'
+CELERY_RESULT_BACKEND = "django-db"
 CELERY_ENABLE_UTC = False
 CELERY_TIMEZONE = TIME_ZONE
 DJANGO_CELERY_BEAT_TZ_AWARE = False
-CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
