@@ -15,10 +15,27 @@ from users.users_serializers import UserSerializer
 from users.users_serializers import OperateLogSerializer
 
 
-class UsersView(
-    ListModelMixin, RetrieveModelMixin, CreateModelMixin,
-        DestroyModelMixin, UpdateModelMixin, GenericViewSet):
-    """用户视图"""
+class UsersView(ListModelMixin, RetrieveModelMixin, CreateModelMixin,
+                DestroyModelMixin, UpdateModelMixin, GenericViewSet):
+    """
+        list:
+        查询用户列表
+
+        retrieve:
+        查询一个用户
+
+        create:
+        创建一个新用户
+
+        delete:
+        删除一个现有用户
+
+        update:
+        更新一个现有用户
+
+        partial_update:
+        更新一个现有用户的一个或多个字段
+    """
     queryset = UserProfile.objects.all()
     serializer_class = UserSerializer
     get_description = "获取用户"
@@ -28,7 +45,13 @@ class UsersView(
 
 
 class OperateLogView(ListModelMixin, RetrieveModelMixin, GenericViewSet):
-    """用户操作记录视图"""
+    """
+        list:
+        查询操作记录列表
+
+        retrieve:
+        查询一条操作记录
+    """
     queryset = OperateLog.objects.all()
     serializer_class = OperateLogSerializer
     get_description = "获取用户操作记录"

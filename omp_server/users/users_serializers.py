@@ -20,22 +20,26 @@ from db_models.models import OperateLog
 
 
 class UserSerializer(ModelSerializer):
-    """用户序列化类"""
+    """ 用户序列化类 """
     re_password = serializers.CharField(
         max_length=32, required=True,
-        write_only=True, error_messages={"required": "必须包含re_password字段"})
+        write_only=True, error_messages={"required": "必须包含re_password字段"},
+        help_text='二次确认密码')
     email = serializers.EmailField(
         required=True,
-        error_messages={"required": "必须包含email字段", "invalid": "邮箱格式不正确"})
+        error_messages={"required": "必须包含email字段", "invalid": "邮箱格式不正确"},
+        help_text='电子邮件')
     password = serializers.CharField(
         max_length=32, required=True,
-        error_messages={"required": "必须包含password字段"})
+        error_messages={"required": "必须包含password字段"},
+        help_text='密码')
     username = serializers.CharField(
         max_length=32, required=True,
-        error_messages={"required": "必须包含名字"})
+        error_messages={"required": "必须包含名字"},
+        help_text='用户名')
 
     class Meta:
-        """元数据"""
+        """ 元数据 """
         model = UserProfile
         fields = ["id", "username", "password", "email", "re_password"]
 
@@ -66,8 +70,9 @@ class UserSerializer(ModelSerializer):
 
 
 class OperateLogSerializer(ModelSerializer):
-    """用户操作记录序列化"""
+    """ 用户操作记录序列化 """
+
     class Meta:
-        """元数据"""
+        """ 元数据 """
         model = OperateLog
         fields = "__all__"
