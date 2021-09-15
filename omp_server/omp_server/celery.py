@@ -13,6 +13,9 @@ celery相关
 import os
 
 from celery import Celery
+from utils.parse_config import OMP_REDIS_HOST
+from utils.parse_config import OMP_REDIS_PORT
+from utils.parse_config import OMP_REDIS_PASSWORD
 
 # Set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'omp_server.settings')
@@ -24,7 +27,8 @@ app = Celery('omp_server')
 # - namespace='CELERY' means all celery-related configuration keys
 #   should have a `CELERY_` prefix.
 app.config_from_object('django.conf:settings', namespace='CELERY')
-app.conf.broker_url = 'redis://localhost:6379/0'
+app.conf.broker_url = \
+    f'redis://:{OMP_REDIS_PASSWORD}@{OMP_REDIS_HOST}:{OMP_REDIS_PORT}/0'
 
 # Load task modules from all registered Django apps.
 app.autodiscover_tasks()
