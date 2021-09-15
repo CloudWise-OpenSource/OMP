@@ -1,0 +1,93 @@
+.homepageWrapper {
+    //padding: 15px;
+    //padding-top:0px;
+    .pageBlock {
+      //border: 1px solid  #DCDEE5;
+      //background-color: aqua;
+      .blockTitle {
+        font-weight: 500;
+        //color: #333;
+        //border:1px solid  #DCDEE5;
+        padding: 10px 0 0px 10px;
+      }
+    }
+  }
+  
+  .blockContent {
+    //border: 1px solid  #DCDEE5;
+    background-color: #fff;
+    border-radius: 5px;
+    padding: 10px;
+    //margin-bottom: 15px;
+  }
+  
+  .blockOverviewItem {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    flex-flow: row nowrap;
+    padding-bottom: 10px;
+    padding-top: 5px;
+    border-radius: 5px;
+  
+    & > div:nth-child(1) {
+      margin-right: 15px;
+      align-self: center;
+      & > div:nth-child(1) {
+        width: 80px !important;
+        height: 80px !important;
+        font-size: 16px !important;
+      }
+    }
+  
+    .progressInfo {
+      color: #333;
+      & > div:nth-child(1) {
+        font-size: 13px;
+        font-weight: 500;
+        margin-bottom: 15px;
+      }
+      & > div:nth-child(2) {
+        margin-bottom: 10px;
+      }
+    }
+  }
+  
+  .checkboxGroup {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+    // div {
+    //   display: flex;
+    // }
+  }
+  
+  .blockItemWrapper {
+    display: flex;
+    flex-flow: row wrap;
+  }
+  
+  .stateButton {
+    width: 180px;
+    margin-right: 10px;
+    margin-bottom: 10px;
+  
+    & > div {
+      max-width: 145px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+  }
+  
+  .popContent {
+    & > span {
+      margin-right: 10px;
+    }
+  
+    .ip {
+      display: inline-flex;
+      // todo 这个地方最大宽度不确定，此处为ip地址最大长度，但会导致ip地址较短时页面空一大块
+      min-width: 120px;
+    }
+  }

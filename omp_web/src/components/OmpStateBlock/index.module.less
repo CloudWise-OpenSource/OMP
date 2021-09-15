@@ -1,0 +1,137 @@
+.homepageWrapper {
+  padding: 15px;
+
+  .pageBlock {
+    .blockTitle {
+      font-weight: 500;
+      //color: #333;
+      margin-bottom: 10px;
+    }
+  }
+}
+
+.blockContent {
+  //border: 1px solid  #DCDEE5;
+  background-color: #fff;
+  border-radius: 5px;
+  padding: 10px;
+  margin-bottom: 15px;
+}
+
+.blockOverviewItem {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  flex-flow: row nowrap;
+  padding: 10px;
+  margin-right: 20px;
+  border-radius: 5px;
+
+  & > div:nth-child(1) {
+    margin-right: 15px;
+    align-self: center;
+    & > div:nth-child(1) {
+      width: 80px !important;
+      height: 80px !important;
+      font-size: 16px !important;
+    }
+  }
+
+  .progressInfo {
+    color: #333;
+    & > div:nth-child(1) {
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 15px;
+    }
+    & > div:nth-child(2) {
+      margin-bottom: 10px;
+    }
+  }
+}
+
+.checkboxGroup {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 10px;
+  .blockTitle {
+    font-weight: 500;
+  }
+  div {
+    display: flex;
+  }
+}
+
+.blockItemWrapper {
+  display: flex;
+  flex-flow: row wrap;
+  padding-top:5px;
+  //justify-content: space-between;
+}
+
+// .blockItemWrapper>div:last-child {
+//   flex:1
+// }
+
+.stateButton:hover {
+  top: -2px;
+  box-shadow: 0px 2px 5px rgba(0,0,0,.3);
+  color:black !important;
+  // color: white;
+  // /* 设置字体阴影 */
+  // text-shadow: 1px 1px 2px #35cac2;
+  // /* 改变按钮边界 */
+  // border: 1px solid #35cac2;
+  /* 设置按钮阴影 */
+  //box-shadow: 5px 5px 50px rgba(255, 255, 255, 0.4) inset;
+}
+
+.stateButton {
+  position: relative;
+  top: 0px;
+
+  transition: all .2s ease-in-out;
+  width: 178px;
+  margin-right: 10px;
+  margin-bottom: 10px;
+
+  & > div {
+    max-width: 145px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+}
+
+.popContent {
+  & > span {
+    margin-right: 10px;
+  }
+
+  .ip {
+    display: inline-flex;
+    // todo 这个地方最大宽度不确定，此处为ip地址最大长度，但会导致ip地址较短时页面空一大块
+    min-width: 120px;
+  }
+}
+
+.dropBtn{
+  height: 24px;
+  font-size: 12px;
+  // position: relative;
+  // top: -2px;
+}
+
+.emptyTable {
+  background-color: #fff;
+  border-radius: 5px;
+  padding: 10px;
+  margin-bottom: 15px;
+  height: 20px;
+  font-size: 12px;
+  color:rgba(0, 0, 0, 0.25);
+  line-height: 0px;
+  text-align: center;
+  //overflow-y: scroll
+}

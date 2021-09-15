@@ -1,0 +1,415 @@
+.OmpTableWrapper {
+  //background-color: red;
+  // .OmpTableRow {
+  //   background-color: aqua !important;
+  // }
+  //margin-bottom: 100px;
+}
+:global {
+  .ant-table-content {
+   // border-top: 1px solid rgb(220, 222, 229)!important;
+  }
+  //  之后即使是全局样式也配置在相应的组件里
+  .ant-table-wrapper {
+    //border: 1px solid #dcdee5;
+  }
+  .ant-table-body {
+    overflow-y: auto !important;
+  }
+  .ant-table-header {
+    border-bottom: 1px dashed #c4c6cc;
+  }
+  .ant-table-thead {
+    color: #313238;
+    font-weight: 400;
+    font-size: 12px;
+    tr > th {
+      background-color: #fafbfd;
+      background-color: #eaedf4;
+      background-color: rgba(73,134,247,0.1);
+      background-color: #fafbfd;
+      border-bottom: 1px solid rgb(220, 222, 229)!important;
+    }
+    // .ant-table-cell :after {
+    //   background-color: red;
+    // }
+  }
+  .ant-table-tbody {
+    font-size: 12px;
+  }
+  .ant-table-pagination.ant-pagination {
+    //border-top: 1px dashed #c4c6cc;
+    margin: 0px;
+  }
+  .ant-table-pagination-right {
+    padding: 12px;
+    font-size: 12px;
+    background-color: #fff;
+  }
+  .ant-pagination-options-size-changer {
+    font-size: 12px;
+  }
+  // .ant-table.ant-table-middle .ant-table-title,
+  // .ant-table.ant-table-middle .ant-table-footer,
+  // .ant-table.ant-table-middle .ant-table-thead > tr > th,
+  // .ant-table.ant-table-middle .ant-table-tbody > tr > td,
+  // .ant-table.ant-table-middle tfoot > tr > th,
+  // .ant-table.ant-table-middle tfoot > tr > td {
+  //   padding: 1rem;
+  // }
+  .ant-select-item-option-content{
+    //font-size: 12px !important;
+  }
+  .ant-table-column-sorters {
+    display:inline-flex;
+    // align-items: center;
+    .ant-table-column-title{
+      position: relative;
+      top:1px;
+      left: -3px;
+    }
+    .ant-table-column-sorter {
+      position: relative;
+      left: 3px;
+    }
+    // .ant-table-column-sorter-full {}
+  }
+}
+
+.warningSearch {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+  margin-bottom: 10px;
+
+  & > div:nth-child(1) {
+    margin-right: auto;
+  }
+
+  .rangePicker {
+    margin-right: 15px;
+  }
+}
+
+.contentLeftMenuWrapper {
+  display: flex;
+
+  .leftMenu {
+    background-color: #fafafa;
+    padding: 15px;
+    margin-top: 10px;
+    margin-right: 10px;
+    height: 82vh;
+    overflow-y: auto;
+  }
+
+  .leftMenuListContent {
+    display: flex;
+    flex-direction: column;
+    font-size: 16px;
+    // label :nth-child(1){
+    //   padding-top:5px
+    // }
+    label {
+      font-size: 16px!important;
+      padding-top: 10px;
+    }
+    :global {
+      .ant-checkbox-group-item {
+        //margin-bottom: 7px;
+        font-size: 14px!important;
+      }
+      .ant-checkbox-checked {
+        position: relative;
+        top: 1px;
+      }
+    }
+  }
+}
+
+.trendContentWrapper {
+  width: calc(100% - 0px);
+  padding: 10px;
+
+  .title {
+    margin-bottom: 5px;
+    margin-left: 15px;
+    color: #333;
+    font-size: 16px;
+    font-weight: 500;
+    padding: 10px 0;
+  }
+
+  .trendItemContent {
+    background-color: #fff;
+    border-radius: 10px;
+
+    .header {
+      display: flex;
+      align-items: center;
+      padding: 8px 8px 8px 15px;
+      color: #333;
+      border-bottom: 1px solid #bfbfbf;
+
+      & > div:nth-child(2) {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        height: 35px;
+        margin-left: 5px;
+      }
+    }
+
+    .rangPicker {
+      display: flex;
+      justify-content: flex-end;
+      width: 100%;
+      padding: 10px 60px 10px;
+    }
+  }
+}
+
+.pageInfo {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 10px;
+
+  & > div:nth-child(1) {
+    margin-right: 10px;
+  }
+}
+
+.panelItem {
+  background: #fafafa;
+  border-radius: 4px;
+  border: 0;
+  overflow: hidden;
+  border-bottom: 0 !important;
+
+  & > div:nth-child(1) {
+    padding: 8px 15px;
+  }
+
+  // 覆盖展开后的content背景色
+  & > div:nth-child(2) {
+    background-color: #fff !important;
+
+  }
+}
+
+// .reportContentWrapper {
+
+// }
+
+.reportContent {
+  padding: 15px;
+
+  .reportTitle {
+    display: flex;
+    justify-content: center;
+    color: #1890ff;
+    margin-bottom: 20px;
+    height: 40px;
+    align-items: center;
+    position: relative;
+
+    & > div:nth-child(1) {
+      font-size: 22px;
+      font-weight: 500;
+      color: #333;
+    }
+
+    & > div:nth-child(2) {
+      position: absolute;
+      right: 0;
+      display: flex;
+      cursor: pointer;
+
+      & > div:nth-child(1) {
+        margin-right: 10px;
+      }
+    }
+  }
+}
+
+.overviewItemWrapper {
+  display: flex;
+  justify-content: space-between;
+  flex-flow: wrap;
+  margin: 10px 0;
+
+  & > div:nth-child(even) {
+    margin-right: 0;
+  }
+}
+
+
+.overviewItem {
+  display: flex;
+  width: 49.5%;
+  color: #333;
+  margin-bottom: 10px;
+
+  & > div {
+    border: 1px solid #E8E8E8;
+    padding: 10px;
+  }
+
+  & > div:nth-child(1) {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-right: none;
+    width: 200px;
+  }
+
+  & > div:nth-child(2) {
+    width: 100%;
+  }
+}
+
+.planChartWrapper {
+  margin-top: 10px;
+  width: 100%;
+  border:1px solid #E8E8E8;
+  border-radius: 2px;
+  // /padding:10px;
+  .planChartTitle {
+    background-color: #fafbfd;
+    font-weight: 500;
+    height: 30px;
+    line-height: 30px;
+    border-bottom: solid 1px #E8E8E8;
+    .planChartTitleCircular {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      background-color: #54bba6;
+      border-radius: 50%;
+      margin-right: 10px;
+      margin-left: 20px;
+    }
+  }
+  .planChartBlockWrapper {
+      display: flex;
+      flex-flow: row wrap;
+      max-height: 240px; 
+      overflow-y: auto;
+      padding-top:15px;
+      padding:20px;
+      .stateButton {
+        position: relative;
+        top: 0px;
+        //background-color: #eefaf4;
+        border:1px solid #333;
+        transition: all .2s ease-in-out;
+        width: 178px;
+        margin-right: 32px;
+        margin-bottom: 10px;
+        height: 32px;
+        & > div {
+          margin: auto;
+          width: 100%;
+          height: 100%;
+          line-height: 30px;
+          text-align: center;
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+        }
+      }
+  }
+}
+
+.topologyWrapper {
+  display: flex;
+  align-items: center;
+  margin-right: 80px;
+  margin-bottom: 80px;
+
+
+  .topologyChildren {
+    display: flex;
+    flex-direction: column;
+
+    & > div:nth-child(1) {
+      position: relative;
+
+      .verticalLine {
+        position: absolute;
+        background-color: #333;
+        left: 0;
+        top: 22px;
+        height: calc(100% - 55px);
+        width: 2px;
+        border-radius: 1px;
+      }
+    }
+
+  }
+
+
+  .topologyItem {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    border: 2px solid #333;
+    border-radius: 5px;
+  }
+
+  .rootItemBox {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+
+    .topologyTitle {
+
+    }
+  }
+
+  .connectLine {
+    display: inline-block;
+    width: 30px;
+    background-color: #333;
+    height: 2px;
+    border-radius: 1px;
+  }
+}
+// .expandedRowWrapper {
+//   width: 100% ;
+// }
+.basicCardWrapper {
+  display: flex;
+  flex-flow: row wrap;
+
+  .basicCardItem {
+    width: 40%;
+    padding: 5px;
+    margin-right: 10px;
+    margin-bottom: 10px;
+  }
+}
+
+
+.buttonContainer {
+  width: 100%;
+  .greenType {
+    background-color: #5ba165;
+    color: #fff;
+    border-color: #5ba165;
+  }
+  .redType {
+    background-color: #ff4d4f;
+    color: #fff;
+    border-color: #ff4d4f;
+  }
+  & > button {
+    margin-right: 15px;
+  }
+}
+
+._bigfontSize{
+  font-size: 14px;
+}

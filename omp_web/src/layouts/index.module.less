@@ -1,0 +1,199 @@
+.OmpLayoutContainer {
+  color: #63656e;
+  height: 100%;
+  //height: 58px;
+  //background-color: red;
+  .siteLayoutBackground {
+    border-right: solid 1px #dcdee5;
+    //padding-left:20px;
+    //padding-top:0px ;
+  }
+  .OmpHeader {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 58px;
+    color: white;
+    font-size: 14px;
+    white-space: nowrap;
+    background-color: #1a2131;
+    .headerSelect {
+      width: 160px;
+    }
+    .headerDropDown {
+      font-size: 14px;
+      margin-left: 20px;
+      cursor: pointer;
+      padding: 7px 10px;
+      padding-right: 90px;
+      border: 1px solid #979aa4;
+      .headerDropDownIcon {
+        position: relative;
+        left: 70px;
+      }
+    }
+    .envMenuWrapper {
+      margin-left: auto;
+    }
+    .headerLogo {
+      width: 60px;
+      display: flex;
+      height: 100%;
+      align-items: center;
+      justify-content: center;
+      & > img:nth-child(1) {
+        width: 30px;
+        height: 30px;
+      }
+    }
+
+    div:nth-child(2) {
+      margin-right: 75px;
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .headerLink {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 25px;
+      color: #8d919c;
+      font-weight: 500;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .headerLinkNohover {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 15px;
+      color: #8d919c;
+      font-weight: 500;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .headerLink:hover {
+      background: #273146;
+    }
+
+    .userAvatar {
+      width: 100px;
+      //margin-right: 70px;
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      //width: 100%;
+      //justify-content: flex-end;
+      position: relative;
+      top:1px
+    }
+    .userAvatarIcon {
+      position: relative;
+      top: 1px;
+      left: 3px;
+    }
+  }
+  .MenuTop {
+    height: 52px;
+    background-color: white;
+    border-bottom: 1px solid #dcdee5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  //   .siteLayoutBackground {
+  //     background-color: red;
+  //   }
+}
+
+:global {
+  .ant-layout {
+    background-color: #fafbfd;
+    background-color: #f1f3f5;
+    padding: 0px !important;
+  }
+  .ant-layout-header {
+    padding-left: 10px;
+  }
+  .ant-select:not(.ant-select-customize-input) .ant-select-selector {
+    border-color: #c4c6cc;
+  }
+  .ant-input {
+    border-color: #c4c6cc !important;
+    box-shadow: 0 0 0px 1000px white inset;
+  }
+  .ant-btn {
+    color: #63656e !important;
+  }
+  .ant-btn-primary {
+    color: white !important;
+  }
+  .ant-btn-primary[disabled] {
+    border-color: #dcdee5 !important;
+    background-color: #dcdee5 !important;
+    //#c4c6cc
+  }
+  .ant-menu.ant-menu-dark,
+  .ant-menu-dark .ant-menu-sub,
+  .ant-menu.ant-menu-dark .ant-menu-sub {
+    background-color: white;
+    color: #63656e !important;
+  }
+
+  .ant-menu-dark .ant-menu-item:hover,
+  .ant-menu-dark .ant-menu-item-active,
+  .ant-menu-dark .ant-menu-submenu-active,
+  .ant-menu-dark .ant-menu-submenu-open,
+  .ant-menu-dark .ant-menu-submenu-selected,
+  .ant-menu-dark .ant-menu-submenu-title:hover {
+    color: #63656e !important;
+  }
+
+  .ant-menu-dark .ant-menu-item,
+  .ant-menu-dark .ant-menu-item-group-title,
+  .ant-menu-dark .ant-menu-item > a,
+  .ant-menu-dark .ant-menu-item > span > a {
+    color: #63656e !important;
+  }
+  .ant-menu-dark.ant-menu-dark:not(.ant-menu-horizontal)
+    .ant-menu-item-selected {
+    color: white !important;
+    //border-right: 2px solid #5487ef;
+  }
+  //左侧菜单的展开图标
+  .ant-menu.ant-menu-dark
+    .ant-menu-submenu-title
+    .ant-menu-submenu-arrow::after,
+  .ant-menu-dark
+    .ant-menu-sub
+    .ant-menu-submenu-title
+    .ant-menu-submenu-arrow::after,
+  .ant-menu.ant-menu-dark
+    .ant-menu-sub
+    .ant-menu-submenu-title
+    .ant-menu-submenu-arrow::after,
+  .ant-menu.ant-menu-dark
+    .ant-menu-submenu-title
+    .ant-menu-submenu-arrow::before,
+  .ant-menu-dark
+    .ant-menu-sub
+    .ant-menu-submenu-title
+    .ant-menu-submenu-arrow::before,
+  .ant-menu.ant-menu-dark
+    .ant-menu-sub
+    .ant-menu-submenu-title
+    .ant-menu-submenu-arrow::before {
+    background-color: #63656e;
+  }
+  // //鼠标悬停时menu
+  // .ant-menu-inline >.ant-menu-item-active {
+  //   background-color: #f6f6f9 !important;
+  // }
+  // //被选中的item就不要改变颜色了
+  // .ant-menu-item-selecte:hover {
+  //   background-color: #5487ef !important;
+  // }
+}
