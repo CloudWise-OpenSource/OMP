@@ -27,4 +27,5 @@ OMP（Operation Management Platform）是云智慧公司自主设计、研发的
 
 ## 核心组件
 
-## 运行环境
+## 平台部署
+
