@@ -1,0 +1,58 @@
+# 全局用户, 自动解析当前操作用户
+global_runuser: common
+# 初始化时由用户输入本机的ip地址
+local_ip: 10.0.1.160
+# redis相关配置
+redis:
+  host: 127.0.0.1
+  port: 6379
+  password: common123
+# mysql相关配置
+mysql:
+  host: 127.0.0.1
+  port: 3306
+  username: common
+  password: Common@123
+# salt相关配置
+salt_master:
+  publish_port: 19004
+  ret_port: 19005
+  timeout: 30
+# uwsgi的配置
+uwsgi:
+  socket: 127.0.0.1:19003
+  processes: 4
+  threads: 2
+# tengine相关的配置
+tengine:
+  access_port: 19001
+  runserver_port: 19002
+# 登录token过期时间，天
+token_expiration: 1
+# 监控使用相关端口配置
+monitor_port:
+  # server各个端口
+  prometheus: 19011
+  loki: 19012
+  alertmanager: 19013
+  grafana: 19014
+  # agent端各个端口配置
+  blackboxExporter: 19015
+  promtail: 19016
+  nodeExporter: 19017
+  processExporter: 19018
+  mysqlExporter: 19019
+  redisExporter: 19020
+  kafkaExporter: 19021
+  zookeeperExporter: 19022
+  clickhouseExporter: 19023
+  postgreSqlExporter: 19024
+  beanstalkdExporter: 19025
+  tengineExporter: 19026
+  elasticsearchExporter: 19027
+  httpdExporter: 19028
+  igniteExporter: 19029
+  # arangodb与nacos没有单独的exporter，使用的是arangodb和nacos的原生自带接口
+  arangodbExporter: 18119
+  nacosExporter: 18117
+  monitorAgent: 19031

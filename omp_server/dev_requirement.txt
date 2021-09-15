@@ -56,3 +56,5 @@ urllib3==1.26.6
 vine==5.0.0
 virtualenv==20.7.2
 wcwidth==0.2.5
+salt==3002.2
+pymysql=1.0.2

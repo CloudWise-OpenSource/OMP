@@ -12,6 +12,11 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 
 import datetime
 from pathlib import Path
+from utils.parse_config import OMP_MYSQL_HOST
+from utils.parse_config import OMP_MYSQL_PORT
+from utils.parse_config import OMP_MYSQL_USERNAME
+from utils.parse_config import OMP_MYSQL_PASSWORD
+from utils.parse_config import TOKEN_EXPIRATION
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -83,11 +88,14 @@ WSGI_APPLICATION = 'omp_server.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'omp',
+        'USER': OMP_MYSQL_USERNAME,
+        'PASSWORD': OMP_MYSQL_PASSWORD,
+        'HOST': OMP_MYSQL_HOST,
+        'POST': int(OMP_MYSQL_PORT),
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
@@ -143,7 +151,7 @@ REST_FRAMEWORK = {
 }
 
 JWT_AUTH = {
-    'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1),
+    'JWT_EXPIRATION_DELTA': datetime.timedelta(days=int(TOKEN_EXPIRATION)),
     'JWT_ALLOW_REFRESH': True,
 }
 
