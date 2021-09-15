@@ -9,11 +9,13 @@
 """
 用户序列化使用方法
 """
+from abc import ABCMeta
 
 from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ModelSerializer
+from rest_framework_jwt.serializers import JSONWebTokenSerializer
 
 from db_models.models import UserProfile
 from db_models.models import OperateLog
@@ -24,19 +26,19 @@ class UserSerializer(ModelSerializer):
     re_password = serializers.CharField(
         max_length=32, required=True,
         write_only=True, error_messages={"required": "必须包含re_password字段"},
-        help_text='二次确认密码')
+        help_text="二次确认密码")
     email = serializers.EmailField(
         required=True,
         error_messages={"required": "必须包含email字段", "invalid": "邮箱格式不正确"},
-        help_text='电子邮件')
+        help_text="电子邮件")
     password = serializers.CharField(
         max_length=32, required=True,
         error_messages={"required": "必须包含password字段"},
-        help_text='密码')
+        help_text="密码")
     username = serializers.CharField(
         max_length=32, required=True,
         error_messages={"required": "必须包含名字"},
-        help_text='用户名')
+        help_text="用户名")
 
     class Meta:
         """ 元数据 """
@@ -76,3 +78,23 @@ class OperateLogSerializer(ModelSerializer):
         """ 元数据 """
         model = OperateLog
         fields = "__all__"
+
+
+class JwtSerializer(JSONWebTokenSerializer):
+    """ Jwt序列化类 """
+
+    remember = serializers.BooleanField(
+        required=False, default=False,
+        help_text="Boolean类型，缺省值为False")
+
+    def validate(self, attrs):
+        validate_dict = super(JwtSerializer, self).validate(attrs)
+        validate_dict["remember"] = attrs.get("remember")
+        return validate_dict
+
+    def create(self, validated_data):
+        raise RuntimeError("`create()` is not available")
+
+    def update(self, instance, validated_data):
+        raise RuntimeError("`update()` is not available")
+
