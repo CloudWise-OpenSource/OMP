@@ -25,10 +25,14 @@ from users.views import JwtAPIView
 
 # from hosts.urls import router as hosts_router
 
+urlpatterns_inside = [
+    path("login/", JwtAPIView.as_view()),
+    path("users/", include(users_router.urls)),
+]
+
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("login/", JwtAPIView.as_view(), name="login"),
-    path("users/", include(users_router.urls)),
+    path("api/", include(urlpatterns_inside)),
     path("docs/", include_docs_urls(
         title="API 接口文档",
         permission_classes=(AllowAny,),

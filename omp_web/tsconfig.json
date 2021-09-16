@@ -1,0 +1,43 @@
+{
+  "compilerOptions": {
+    "allowUnreachableCode": true,
+    "allowUnusedLabels": false,
+    "alwaysStrict": false,
+    "baseUrl": ".",
+    "experimentalDecorators": true,
+    "jsx": "react-jsx",
+    "sourceMap": true,
+    "module": "esnext",
+    "noImplicitAny": false,
+    "removeComments": true,
+    "types": [
+      "node"
+    ],
+    "target": "ESNext",
+    "outDir": "./dist",
+    "declaration": true,
+    "declarationDir": "./lib",
+    "allowJs": true,
+    "lib": [
+      "es5",
+      "es2015",
+      "es2016",
+      "es2017",
+      "es2018",
+      "dom"
+    ],
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true
+  },
+  "include": [
+    "src"
+  ]
+}
