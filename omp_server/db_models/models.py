@@ -55,16 +55,24 @@ class Hosts(models.Model):
     """主机表"""
     objects = None
     ip = models.GenericIPAddressField(help_text="主机ip地址")
-    hostname = models.CharField(max_length=64, blank=True, null=True, help_text="主机名")
+    hostname = models.CharField(
+        max_length=64, blank=True, null=True, help_text="主机名")
     port = models.IntegerField(blank=True, null=True, help_text="主机SSH端口")
-    username = models.CharField(max_length=256, blank=True, null=True, help_text="SSH登录用户名")
-    password = models.CharField(max_length=256, blank=True, null=True, help_text="SSH登录密码")
+    username = models.CharField(
+        max_length=256, blank=True, null=True, help_text="SSH登录用户名")
+    password = models.CharField(
+        max_length=256, blank=True, null=True, help_text="SSH登录密码")
     status = models.IntegerField(choices=HOST_STATUS, help_text="主机状态")
-    service_num = models.IntegerField(blank=True, null=True, help_text="主机上的服务个数")
-    alert_num = models.IntegerField(blank=True, null=True, help_text="该主机的告警次数")
-    data_folder = models.CharField(max_length=128, default="/data", help_text="数据目录")
-    idc = models.CharField(max_length=128, blank=True, null=True, help_text="IDC机房")
-    operate_system = models.CharField(max_length=128, blank=True, null=True, help_text="主机操作系统")
+    service_num = models.IntegerField(
+        blank=True, null=True, help_text="主机上的服务个数")
+    alert_num = models.IntegerField(
+        blank=True, null=True, help_text="该主机的告警次数")
+    data_folder = models.CharField(
+        max_length=128, default="/data", help_text="数据目录")
+    idc = models.CharField(max_length=128, blank=True,
+                           null=True, help_text="IDC机房")
+    operate_system = models.CharField(
+        max_length=128, blank=True, null=True, help_text="主机操作系统")
     memory = models.IntegerField(blank=True, null=True, help_text="主机内存")
     cpu = models.IntegerField(blank=True, null=True, help_text="主机cpu")
     disk = models.JSONField(blank=True, null=True, help_text="主机磁盘信息")

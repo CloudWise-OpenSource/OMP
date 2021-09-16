@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*- 
+# -*- coding: utf-8 -*-
 # Project: response_handler
 # Author: jon.liu@yunzhihui.com
 # Create time: 2021-09-10 21:36
@@ -38,4 +38,7 @@ class APIRenderer(JSONRenderer):
                 dic = {"code": 0, "message": "success", "data": data}
         else:
             dic = {"code": 0, "message": "success", "data": data}
-        return super().render(data=dic, accepted_media_type=accepted_media_type, renderer_context=renderer_context)
+        return super().render(
+            data=dic,
+            accepted_media_type=accepted_media_type,
+            renderer_context=renderer_context)
