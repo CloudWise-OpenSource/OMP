@@ -71,6 +71,7 @@ class NewAxios {
 }
 
 //为了保持和之前项目请求方式一样
+//export const fetchPost = new NewAxios()
 export const fetchPost = (url, params) =>
   new NewAxios().request({
     url: url,
