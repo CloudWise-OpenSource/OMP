@@ -10,6 +10,7 @@ APP_NAME="salt"
 PYTHON3="${PROJECT_FOLDER}/component/env/bin/python3"
 SALT_CONFIG_DIR="${PROJECT_FOLDER}/config/salt"
 SALT_PID_FILE="${PROJECT_FOLDER}/logs/salt-master.pid"
+SALT_LOG_FILE="${PROJECT_FOLDER}/logs/salt-master.log"
 
 start() {
   real_status
