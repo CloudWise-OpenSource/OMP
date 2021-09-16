@@ -1,12 +1,3 @@
-/*
- * @Author: your name
- * @Date: 2021-06-13 15:26:16
- * @LastEditTime: 2021-06-24 17:18:02
- * @LastEditors: Please set LastEditors
- * @Description: In User Settings Edit
- * @FilePath: /omp_fontend/src/stores/reducer.js
- */
-
 import { combineReducers } from "redux";
 
 import { reducer as customBreadcrumbReducer} from "@/components/CustomBreadcrumb/store";

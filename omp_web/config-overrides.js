@@ -5,7 +5,11 @@ const {
   addLessLoader,
   addPostcssPlugins,
   fixBabelImports,
+  addWebpackPlugin
 } = require("customize-cra");
+const ProgressBarPlugin = require('progress-bar-webpack-plugin');
+const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
+
 const path = require("path");
 // 跨域配置
 const devServerConfig = () => (config) => {
@@ -32,11 +36,29 @@ module.exports = {
       javascriptEnabled: true,
       modifyVars: { "@primary-color": "#4986f7" },
     }),
-    addPostcssPlugins([require("postcss-px2rem-exclude")({
-        remUnit: 16,
-        propList: ['*'],
-        exclude: ''
-    })]),
+    // addPostcssPlugins([require("postcss-px2rem-exclude")({
+    //     remUnit: 16,
+    //     propList: ['*'],
+    //     exclude: ''
+    // })]),
+    addWebpackPlugin(new ProgressBarPlugin()),
+    process.env.NODE_ENV === 'production' && addWebpackPlugin(new UglifyJsPlugin({
+  		// 开启打包缓存
+  		cache: true,
+  		// 开启多线程打包
+  		parallel: true,
+  		uglifyOptions: {
+  			// 删除警告
+  			warnings: false,
+  			// 压缩
+  			compress: {
+  				// 移除console
+  				drop_console: true,
+  				// 移除debugger
+  				drop_debugger: true
+  			}
+  		}
+  	})),
     addWebpackAlias({
       "@": path.resolve(__dirname, "./src"),
       assets: path.resolve(__dirname, "./src/assets"),
@@ -45,6 +67,7 @@ module.exports = {
       common: path.resolve(__dirname, "./src/common"),
     }),
     config => {
+      if(process.env.NODE_ENV==="production") config.devtool=false;
       if (process.env.NODE_ENV === 'production') {
         const paths = require('react-scripts/config/paths');
         paths.appBuild = path.join(path.dirname(paths.appBuild), 'dist');
