@@ -253,7 +253,7 @@ def update_uwsgi():
     更新uwsgi的配置文件
     :return:
     """
-    uwsgi_file_path = os.path.join(PROJECT_FOLDER, "config/domh_uwsgi.ini")
+    uwsgi_file_path = os.path.join(PROJECT_FOLDER, "config/uwsgi.ini")
     settings = get_config_dic()
     uwsgi_socket = settings.get("uwsgi", {}).get("socket")
     if not uwsgi_socket:
@@ -359,7 +359,6 @@ def main(local_ip, run_user):
 
 
 if __name__ == '__main__':
-    # local_ip = sys.argv[1]
-    # run_user = sys.argv[2]
-    # main(local_ip, run_user)
-    pass
+    local_ip = sys.argv[1]
+    run_user = sys.argv[2]
+    main(local_ip, run_user)

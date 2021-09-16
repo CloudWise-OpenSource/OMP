@@ -1,1 +1,102 @@
 #!/bin/bash
+
+# 启动停止控制脚本
+
+CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+THIS_SCRIPT="${CURRENT_DIR}/$(basename $0)"
+PROJECT_FOLDER="$(dirname ${CURRENT_DIR})"
+
+function tengine() {
+  bash $PROJECT_FOLDER/scripts/source/tengine $1
+}
+
+function uwsgi() {
+  bash $PROJECT_FOLDER/scripts/source/uwsgi $1
+}
+
+function worker() {
+  bash $PROJECT_FOLDER/scripts/source/worker $1
+}
+
+function cron() {
+  bash $PROJECT_FOLDER/scripts/source/cron $1
+}
+
+function salt() {
+  bash $PROJECT_FOLDER/scripts/source/salt $1
+}
+
+function prometheus() {
+  bash $PROJECT_FOLDER/component/prometheus/scripts/prometheus $1
+}
+
+function alertmanager() {
+  bash $PROJECT_FOLDER/component/alertmanager/scripts/alertmanager $1
+}
+
+function grafana() {
+  bash $PROJECT_FOLDER/component/grafana/scripts/grafana $1
+}
+
+function loki() {
+  bash $PROJECT_FOLDER/component/loki/scripts/loki $1
+}
+
+function all() {
+  tengine $1
+  uwsgi $1
+  worker $1
+  cron $1
+  salt $1
+  alertmanager $1
+  grafana $1
+  loki $1
+  prometheus $1
+}
+
+if [[ $# -eq 0 ]]; then
+  echo "bash omp [all|tengine|uwsgi|worker|cron|salt|prometheus|alertmanager|grafana|loki] [status|start|stop|restart]"
+else
+  case $1 in
+  all)
+    shift
+    all "$@"
+    ;;
+  tengine)
+    shift
+    tengine "$@"
+    ;;
+  uwsgi)
+    shift
+    uwsgi "$@"
+    ;;
+  worker)
+    shift
+    worker "$@"
+    ;;
+  cron)
+    shift
+    cron "$@"
+    ;;
+  salt)
+    shift
+    salt "$@"
+    ;;
+  prometheus)
+    shift
+    prometheus "$@"
+    ;;
+  alertmanager)
+    shift
+    alertmanager "$@"
+    ;;
+  grafana)
+    shift
+    grafana "$@"
+    ;;
+  loki)
+    shift
+    loki "$@"
+    ;;
+  esac
+fi
