@@ -14,6 +14,7 @@ start() {
     echo "${APP_NAME} [running]"
     return 0
   else
+    cd $PROJECT_FOLDER/omp_server
     nohup $PROJECT_FOLDER/component/env/bin/python3 $PROJECT_FOLDER/component/env/bin/celery -A $PROJECT_FOLDER/omp_server worker \
     --beat --scheduler django --loglevel=ERROR >$PROJECT_FOLDER/logs/celery_cron.log 2>&1 &
     echo "${APP_NAME} [running]"
