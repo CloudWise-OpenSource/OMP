@@ -1,5 +1,6 @@
 import datetime
-from django.urls import reverse
+
+from rest_framework.reverse import reverse
 
 from tests.base import BaseTest
 
@@ -73,7 +74,6 @@ class LoginTest(BaseTest):
         resp = self.get(self.users_list_url).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
-        self.assertTrue(resp.get("data", None) is not None)
 
         # 退出登录 -> 无法访问，提示 "未认证"
         self.logout()
@@ -106,18 +106,3 @@ class LoginTest(BaseTest):
         expiration_day = expiration_time.day - datetime.datetime.now().day
         self.assertEqual(expiration_day, 7)
         self.logout()
-
-    def login(self, remember=False):
-        """ 登录，签发 token 令牌 """
-        login_data = {
-            "username": self.username,
-            "password": self.password,
-        }
-        if remember:
-            login_data["remember"] = True
-        resp = self.post(self.login_url, login_data)
-        return resp
-
-    def logout(self):
-        """ 退出登录，清除 cookies 中的 token 令牌 """
-        self.client.cookies.pop("jwtToken")
