@@ -166,9 +166,6 @@ tengine_vhost_content = """
 server {
     listen ACCESS_PORT;
     server_name LOCAL_IP;
-    location /static/ {
-        root %s;
-    }
     location /download-backup/ {
         alias %s/data/backup/;
     }
@@ -191,7 +188,6 @@ server {
     }
 }
 """ % (
-    os.path.join(PROJECT_FOLDER, "omp_server"),
     PROJECT_FOLDER,
     PROJECT_FOLDER,
     os.path.join(PROJECT_FOLDER, "component/tengine/conf/uwsgi_params"),
