@@ -10,6 +10,7 @@ import { OmpProgress } from "@/components";
 //import { context } from "@/Root";
 import WarningList from "./warningList";
 import { useSelector, useDispatch } from "react-redux";
+import { OmpContentWrapper } from "@/components";
 
 function calcPercentage(abnormal = 0, total = 1) {
   const percent = (((total - abnormal) / total) * 100).toFixed(0);
@@ -115,6 +116,7 @@ const Homepage = () => {
   }, [a]);
 
   return (
+    <OmpContentWrapper wrapperStyle={{ width: "100%", height: "calc(100% - 40px)" }}>
     <div className={styles.homepageWrapper}>
       {/* <OmpProgress /> */}
       <Spin spinning={isLoading}>
@@ -626,6 +628,7 @@ const Homepage = () => {
         </div>
       </Spin>
     </div>
+    </OmpContentWrapper>
   );
 };
 

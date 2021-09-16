@@ -1,44 +1,72 @@
 .loginWrapper {
-  background-color: #fafbfd;
   width: 100%;
   height: 100%;
-  background-image: url("loginbg.jpg");
-  background-size:100% 100%;
-  overflow-y:auto;
+  display: flex;
+  justify-content: center;
+  padding-top: 10%;
   .loginContent {
-    width: 320px;
-    border-radius: 10px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    margin-left: auto;
-    margin-right: calc(14% + 30px);
-    margin-top: 16%;
     .loginTitle {
       display: flex;
-      padding-left: 10px;
-      font-size: 34px;
-      font-weight: 500;
-      color: #595959;
       align-items: center;
-
-      margin-bottom: 30px;
-
-      & > img:nth-child(1) {
-        width: 50px;
-        height: 50px;
+      justify-content: center;
+      margin-bottom: 50px;
+      .loginLogo {
+        width: 56px;
+        height: 56px;
       }
+      .loginOMP {
+        font-size: 25px;
+        padding-left: 10px;
+        font-weight: 600;
+        color: #3a3542;
+        .loginOpenText {
+          font-size: 16px;
+          color: #b4acac;
+          padding-left: 10px;
+        }
+      }
+    }
+    .loginInputTitle {
+      color: #99a4a9;
+      font-size: 18px;
+      // animation-duration: 1s;
+      // animation-fill-mode: both;
+      // animation-name: fadeRoute;
+    }
+    .loginMessageShow {
+      opacity: 1;
+      transition: all .2s ease-in;
+    }
 
-      & > div:nth-child(2) {
-        margin-left: 20px;
+    .loginMessageHide{
+      opacity: 0;
+      transition: all .2s ease-in;
+      //animation: hide-item 2s ease-in forwards;
+    }
+
+    // @keyframes hide-item {
+    //   0% {opacity: 1;color:red}
+    //   50% {opacity: .5;color:blue}
+    //   100% {opacity: 0;color:green}
+    // }
+
+    .loginMessage{
+      background-color: #99a4a9;
+    }
+    .loginInputWrapper {
+      transition: all .2s ease-in;
+      // div {
+      //   padding-bottom: 20px;
+      // }
+      .loginAuto {
+        text-align: right;
+        margin-top: 24px;
       }
     }
   }
-}
-
-:global {
-  .ant-input-affix-wrapper .ant-input:not(:first-child) {
-    padding-left: 50px;
-    font-size: 18px;
+  .loginFooter {
+    color: rgba(0,0,0,.6);
+    text-align: center;
+    margin-top: 60px;
   }
 }
