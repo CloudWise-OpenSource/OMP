@@ -26,8 +26,8 @@ from users.views import JwtAPIView
 # from hosts.urls import router as hosts_router
 
 urlpatterns_inside = [
-    path("login/", JwtAPIView.as_view()),
-    path("users/", include(users_router.urls)),
+    path("login/", JwtAPIView.as_view(), name="login"),
+    path("users/", include(users_router.urls), name="users"),
 ]
 
 urlpatterns = [
