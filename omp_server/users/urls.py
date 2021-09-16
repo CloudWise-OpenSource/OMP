@@ -16,5 +16,5 @@ from users.views import UsersView
 from users.views import OperateLogView
 
 router = DefaultRouter()
-router.register("users", UsersView)
-router.register("operate-log", OperateLogView)
+router.register("users", UsersView, basename="users")
+router.register("operate-log", OperateLogView, basename="operate-log")
