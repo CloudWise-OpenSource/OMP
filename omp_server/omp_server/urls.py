@@ -14,8 +14,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
-from django.urls import include
+from django.urls import path, include
 
 # coreAPI documentation
 from rest_framework.documentation import include_docs_urls
@@ -23,14 +22,15 @@ from rest_framework.permissions import AllowAny
 
 from users.urls import router as users_router
 from users.views import JwtAPIView
+
 # from hosts.urls import router as hosts_router
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("login/", JwtAPIView.as_view()),
+    path("login/", JwtAPIView.as_view(), name="login"),
     path("users/", include(users_router.urls)),
     path("docs/", include_docs_urls(
         title="API 接口文档",
         permission_classes=(AllowAny,),
-    )),
+    ), name="docs"),
 ]
