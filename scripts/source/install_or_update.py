@@ -118,7 +118,7 @@ def update(pack_path, ip_address):
     cmd("mkdir -p {0}".format(UPDATE_HOME))
     # 获取安装包md5值
     _out, _, _ = cmd("md5sum {0}".format(pack_path))
-    package_md5 = _out.strip()
+    package_md5 = _out.strip().split()[0].strip()
     update_file_folder = os.path.join(UPDATE_HOME, "{0}".format(package_md5))
     cmd("test -d {0} && rm -rf {0}".format(update_file_folder))
     cmd("mkdir -p {0}".format(update_file_folder))
