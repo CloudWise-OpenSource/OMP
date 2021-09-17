@@ -41,7 +41,24 @@ const OmpLayout = (props) => {
   const [currentOpenedKeys, setCurrentOpenedKeys] = useState([]);
   const [selectedKeys, setSelectedKeys] = useState([]);
 
+  function delCookie(name){
+    var exp = new Date();
+    exp.setTime(exp.getTime() - 1);
+    var cval = getCookie(name);
+    //console.log(cval)
+    if (cval != null) document.cookie = name + "=" + cval + ';domin="localhost"'+";expires=" + exp.toGMTString();
+  }
+  function getCookie(name){
+    //console.log(document.cookie)
+    let arr = document.cookie.match(new RegExp("(^| )" + name + "=([^;]*)(;|$)"));
+    if (arr != null) return unescape(arr[2]); 
+    return null;
+  }
+
   const logout = () => {
+    delCookie("jwtToken")
+    history.replace("/login");
+    return 
     fetchDelete(apiRequest.auth.logout).then((data) => {
       data = data.data;
       if ([0, 3].includes(data.code)) {
@@ -136,6 +153,7 @@ const OmpLayout = (props) => {
   useEffect(() => {
     window.__history__ = history;
     if (!localStorage.getItem("username")) {
+      return 
       history.replace("/login");
     }
   }, []);
