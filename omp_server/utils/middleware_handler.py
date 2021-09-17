@@ -11,10 +11,14 @@
 """
 
 import ipware
+
 from django.urls import resolve
 # from django.http import HttpRequest
 from django.utils.deprecation import MiddlewareMixin
+
+from rest_framework.reverse import reverse
 from rest_framework_jwt.utils import jwt_decode_handler
+
 from jwt import DecodeError
 
 from db_models.models import OperateLog
@@ -41,14 +45,13 @@ class OperationLogMiddleware(MiddlewareMixin):
         else:
             _desc = "无法确定用户行为"
         _ip, _ = ipware.get_client_ip(request)
-        headers = request.headers
         try:
-            token = headers.get("Authorization", "toke")[4:]
+            token = request.COOKIES.get("jwtToken", "toke")
             _token_user = jwt_decode_handler(token)
             _username = _token_user.get("username")
         except DecodeError:
             _username = "匿名用户"
-        if _url.startswith("/login"):
+        if _url == reverse("login"):
             _desc = "用户登录"
             if "token" in response.data:
                 response_code = 0
