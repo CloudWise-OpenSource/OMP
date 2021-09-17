@@ -92,6 +92,10 @@ DATABASES = {
         'PASSWORD': OMP_MYSQL_PASSWORD,
         'HOST': OMP_MYSQL_HOST,
         'POST': int(OMP_MYSQL_PORT),
+        'TEST': {
+            'CHARSET': 'utf8',
+            'COLLATION': 'utf8_general_ci'
+        }
     }
 }
 
