@@ -27,7 +27,12 @@ def cmd(command):
         shell=True,
     )
     stdout, stderr = p.communicate()
-    _out, _err, _code = stdout.decode(), stderr.decode(), p.returncode
+    _out, _err, _code = stdout.decode(
+        "utf8"), stderr.decode("utf8"), p.returncode
+    print(_out, _err)
+    print(u"执行命令为: {0}\n返回状态码为: {1}\n标准输出为: {2}\n错误输出为: {3}".format(
+        command.strip(), _code, _out.strip(), _err.strip()
+    ))
     return _out, _err, _code
 
 
