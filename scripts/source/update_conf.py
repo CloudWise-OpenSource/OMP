@@ -173,7 +173,6 @@ server {
         alias %s/tmp/;
     }
     location /api/ {
-        rewrite /api/(.+) /$1 break;
         uwsgi_pass SOCKET;
         include %s;
     }
@@ -192,7 +191,7 @@ server {
     PROJECT_FOLDER,
     os.path.join(PROJECT_FOLDER, "component/tengine/conf/uwsgi_params"),
     os.path.join(PROJECT_FOLDER, "component/tengine/conf/uwsgi_params"),
-    os.path.join(PROJECT_FOLDER, "omp_web"),
+    os.path.join(PROJECT_FOLDER, "omp_web/dist"),
 )
 
 
