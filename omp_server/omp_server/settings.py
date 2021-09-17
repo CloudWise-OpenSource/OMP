@@ -147,6 +147,7 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "rest_framework.schemas.coreapi.AutoSchema",
 }
 
+# JWT相关设置
 JWT_AUTH = {
     "JWT_EXPIRATION_DELTA": datetime.timedelta(days=int(TOKEN_EXPIRATION)),
     "JWT_ALLOW_REFRESH": True,
