@@ -141,14 +141,14 @@ def main(pack_path, ip_address):
         update(pack_path, ip_address)
     else:
         install(pack_path, ip_address)
-    print("全流程执行完成！")
+    print("All Process Finish")
 
 
 if __name__ == '__main__':
     sys_args = sys.argv[1:]
     if len(sys_args) != 2:
-        print("参数不准确，请执行: python install_or_update.py package_path local_ip")
+        print("Please use: python install_or_update.py package_path local_ip")
     package_path, local_ip = sys_args
     if not os.path.exists(package_path):
-        print("{0} 不存在，请确认执行参数是否正确".format(package_path))
+        print("{0} Package Not Exist!".format(package_path))
     main(pack_path=package_path, ip_address=local_ip)

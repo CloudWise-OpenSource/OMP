@@ -47,7 +47,6 @@ def update_local_ip_run_user(local_ip, run_user):
     code["local_ip"] = local_ip
     with open(config_path, "w", encoding="utf8") as fp:
         my_yaml.dump(code, fp)
-    print(f"{config_path}更新配置成功！:\n{code}")
 
 
 master_config_content = f"""
@@ -210,7 +209,7 @@ def check_port_access(port):
             return True
         return False
     except Exception as e:
-        print(f"检查端口{port}联通性报错: {str(e)}")
+        print(f"{port} Check Error {str(e)}")
         return False
 
 
@@ -329,7 +328,7 @@ def check_port_is_used():
             print(f"{key} is already in used, please check!")
             exit_flag = True
     if exit_flag is True:
-        print("配置端口存在被占用情况，请确认端口配置是否正确!")
+        print("Port Is Already Used!")
         sys.exit(1)
 
 
@@ -340,22 +339,13 @@ def main(local_ip, run_user):
     :param run_user: 运行用户
     :return:
     """
-    print("开始初始化项目流程...")
-    print("开始更新omp配置文件...")
+    print("Start Update Conf!")
     update_local_ip_run_user(local_ip, run_user)
-    print("开始检查端口占用情况...")
     check_port_is_used()
-    print("已配置端口未被占用!")
-    print("开始更新salt-master的配置文件")
     update_salt_master()
-    print("完成salt-master配置文件的更新操作")
-    print("开始更新uwsgi配置文件")
     update_uwsgi()
-    print("完成uwsgi配置文件的更新操作")
-    print("开始更新tengine配置")
     update_nginx()
-    print("完成tengine的配置文件更新操作!")
-    print("完成项目初始化流程！")
+    print("Finish Update Conf!")
 
 
 if __name__ == '__main__':
