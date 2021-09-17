@@ -110,7 +110,6 @@ class JwtAPIView(JSONWebTokenAPIView):
                     api_settings.JWT_AUTH_COOKIE,
                     token,
                     expires=expiration,
-                    httponly=True
                 )
             return response
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_200_OK)
