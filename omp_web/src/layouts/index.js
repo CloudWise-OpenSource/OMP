@@ -186,6 +186,21 @@ const OmpLayout = (props) => {
     })
   );
 
+  useEffect(()=>{
+    fetchGet(apiRequest.auth.users)
+      .then((res) => {
+        if(res && res.data.code == 1 && res.data.message == "未认证"){
+          message.warning("登录失效,请重新登录")
+          history.replace("/login");
+        }
+        console.log(res)
+      })
+      .catch((e) => {
+        console.log(e);
+      })
+      .finally(() => setLoading(false));
+  },[])
+
   return (
     // <context.Provider value={{ state, dispatch }}>
       <Layout className={styles.OmpLayoutContainer}>

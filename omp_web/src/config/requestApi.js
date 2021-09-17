@@ -6,6 +6,8 @@ export const apiRequest = {
   auth: {
     // 用户认证
     login: "/api/login/", // 登入
+    // 首次请求用于验证登出
+    users: "/api/users/users/",
     logout: "/api/v1/auth/logout", // 登出
     password: "/api/v1/auth/password", // 修改密码
   },
