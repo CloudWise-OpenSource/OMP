@@ -126,6 +126,8 @@ def update(pack_path, ip_address):
     update_omp_platform(pack_path, update_file_folder)
     # 更新配置文件
     update_config(update_file_folder)
+    # 执行数据库迁移
+    cmd("{0} {1} migrate".format(OMP_PYTHON_PATH, OMP_MANAGE_PATH))
     # 重启相关服务
     cmd("bash {0} all restart".format(OMP_SHELL_PATH))
 
