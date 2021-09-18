@@ -1,8 +1,8 @@
 import { HashRouter as Router, Route, Switch, Redirect } from "react-router-dom";
-import OmpLayout from "@/layouts";
-import Login from "@/pages/Login";
-import routerConfig from "@/config/router.config";
-import HomePage from "@/pages/HomePage";
+//import OmpLayout from "./layouts";
+import Login from "./pages/Login";
+import routerConfig from "./config/router.config";
+import HomePage from "./pages/HomePage";
 
 const OmpRouter = () => {
   let routerChildArr = routerConfig.map(item=>item.children).flat()
@@ -13,7 +13,6 @@ const OmpRouter = () => {
         <Route
           path="/"
           component={() => (
-            <OmpLayout>
               <Switch>
                 <Route 
                   path="/homepage"
@@ -33,7 +32,6 @@ const OmpRouter = () => {
                 })}
                 <Redirect exact path="/" to="/homepage"/>
               </Switch>
-            </OmpLayout>
           )}
         />
         ]
