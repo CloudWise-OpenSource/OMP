@@ -6,8 +6,6 @@
 # Version: 1.0
 # Introduction:
 
-from django.contrib.auth.hashers import make_password
-from db_models.models import UserProfile
 import os
 import sys
 
@@ -22,6 +20,9 @@ sys.path.append(os.path.join(PROJECT_DIR, "omp_server"))
 # 加载Django环境
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "omp_server.settings")
 django.setup()
+
+from django.contrib.auth.hashers import make_password
+from db_models.models import UserProfile
 
 
 def create_default_user():
