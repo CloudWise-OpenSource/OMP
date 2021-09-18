@@ -10,7 +10,7 @@ import {
 import { OmpContentWrapper } from "@/components";
 import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-// import { handleResponse } from "@/utils/utils";
+import { handleResponse } from "@/utils/utils";
 import { withRouter } from "react-router";
 
 const Login = withRouter(({ history }) => {
@@ -181,7 +181,7 @@ const Login = withRouter(({ history }) => {
                     height: 40,
                     marginTop: 10,
                   }}
-                  placeholder="密码"
+                  placeholder="请输入密码"
                 />
               </Form.Item>
               <div className={styles.loginAuto}>

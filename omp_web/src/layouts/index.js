@@ -187,7 +187,6 @@ const OmpLayout = (props) => {
   );
 
   useEffect(()=>{
-    console.log(location)
     fetchGet(apiRequest.auth.users)
       .then((res) => {
         if(res && res.data.code == 1 && res.data.message == "未认证"){
