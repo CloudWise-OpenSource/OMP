@@ -23,11 +23,12 @@ from rest_framework.permissions import AllowAny
 from users.urls import router as users_router
 from users.views import JwtAPIView
 
-# from hosts.urls import router as hosts_router
+from hosts.urls import router as hosts_router
 
 urlpatterns_inside = [
     path("login/", JwtAPIView.as_view(), name="login"),
     path("users/", include(users_router.urls), name="users"),
+    path("hosts/", include(hosts_router.urls), name="hosts"),
 ]
 
 urlpatterns = [

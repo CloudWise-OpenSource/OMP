@@ -7,15 +7,18 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
-from rest_framework.mixins import ListModelMixin, CreateModelMixin, \
-    RetrieveModelMixin, DestroyModelMixin, UpdateModelMixin
+from rest_framework.mixins import (
+    ListModelMixin, CreateModelMixin, RetrieveModelMixin,
+    DestroyModelMixin, UpdateModelMixin
+)
 from rest_framework_jwt.views import JSONWebTokenAPIView
 from rest_framework_jwt.settings import api_settings
 
-from db_models.models import UserProfile
-from db_models.models import OperateLog
-from users.users_serializers import UserSerializer, OperateLogSerializer, \
-    JwtSerializer
+from db_models.models import (UserProfile, OperateLog)
+from users.users_serializers import (
+    UserSerializer, JwtSerializer,
+    OperateLogSerializer,
+)
 
 
 class UsersView(ListModelMixin, RetrieveModelMixin, CreateModelMixin,
