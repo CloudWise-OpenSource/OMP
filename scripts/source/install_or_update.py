@@ -16,6 +16,7 @@ UPDATE_HOME = "/data/omp_update"
 OMP_PYTHON_PATH = os.path.join(OMP_HOME, "component/env/bin/python3")
 OMP_MANAGE_PATH = os.path.join(OMP_HOME, "omp_server/manage.py")
 OMP_SHELL_PATH = os.path.join(OMP_HOME, "scripts/omp")
+OMP_UPDATE_DATA_PATH = os.path.join(OMP_HOME, "scripts/source/update_data.py")
 
 
 def cmd(command):
@@ -28,6 +29,9 @@ def cmd(command):
     )
     stdout, stderr = p.communicate()
     _out, _err, _code = stdout, stderr, p.returncode
+    print("Execute Command: {0}\nRETCODE: {1}\nSTDOUT: {2}\nSTDERR: {3}\n".format(
+        command, _code, _out, _err
+    ))
     return _out, _err, _code
 
 
@@ -143,6 +147,8 @@ def main(pack_path, ip_address):
         update(pack_path, ip_address)
     else:
         install(pack_path, ip_address)
+    # 更新默认数据
+    cmd("{0} {1}".format(OMP_PYTHON_PATH, OMP_UPDATE_DATA_PATH))
     print("All Process Finish")
 
 
