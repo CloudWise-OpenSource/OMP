@@ -67,6 +67,10 @@ def update_omp_platform(pack_path, update_file_folder):
     omp_server_bak = os.path.join(update_file_folder, 'omp_server')
     cmd("test -d {0} || cp -rf {1} {2}".format(omp_server_bak,
                                                omp_server_old, update_file_folder))
+    omp_scripts_old = os.path.join(OMP_HOME, 'scripts')
+    omp_scripts_bak = os.path.join(update_file_folder, 'scripts')
+    cmd("test -d {0} || cp -rf {1} {2}".format(omp_scripts_bak,
+                                               omp_scripts_old, update_file_folder))
     omp_web_old = os.path.join(OMP_HOME, 'omp_web')
     omp_web_bak = os.path.join(update_file_folder, 'omp_web')
     cmd("test -d {0} || cp -rf {1} {2}".format(omp_web_bak,
@@ -77,6 +81,9 @@ def update_omp_platform(pack_path, update_file_folder):
                                               _new_server, omp_server_old))
     _new_web = os.path.join(update_file_folder, "omp/omp_web")
     cmd("rm -rf {0} && cp -rf {1} {2}".format(omp_web_old, _new_web, omp_web_old))
+    _new_scripts = os.path.join(update_file_folder, "omp/scripts")
+    cmd("rm -rf {0} && cp -rf {1} {2}".format(omp_scripts_old,
+                                              _new_scripts, omp_scripts_old))
 
 
 def update_config(update_file_folder):
