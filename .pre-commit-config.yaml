@@ -8,13 +8,13 @@ repos:
     rev: v1.4.4
     hooks:
     - id: autopep8
-      args: [-i, --global-config=.flake8, -v]
+      args: [-i, --global-config=.flake8, -v, --ignore=E402]
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v2.4.0
     hooks:
     - id: flake8
       args:
-      - --ignore=E501
+      - --ignore=E501,E402
     - id: check-docstring-first
     - id: trailing-whitespace
     - id: check-ast
