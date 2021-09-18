@@ -5,74 +5,139 @@ omp使用的models集合
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
+from db_models.mixins import (
+    DeleteMixin,
+    TimeStampMixin,
+)
+
 
 class UserProfile(AbstractUser):
-    """
-    自定义用户表
-    """
+    """ 自定义用户表 """
 
     class Meta:
-        """元数据信息"""
-        verbose_name = u"用户信息"
+        """ 元数据 """
         db_table = "omp_user_profile"
+        verbose_name = verbose_name_plural = "用户"
 
     def __str__(self):
-        """显示用户"""
+        """ 显示用户 """
         return f"用户: {self.username}"
 
 
 class OperateLog(models.Model):
-    """用户操作记录表"""
+    """ 用户操作记录表 """
+
     objects = None
-    username = models.CharField(max_length=128, help_text="操作用户")
+    username = models.CharField(
+        "操作用户", max_length=128, help_text="操作用户")
+    request_method = models.CharField(
+        "请求方法", max_length=32, help_text="请求方法")
     request_ip = models.GenericIPAddressField(
-        blank=True, null=True, help_text="请求来自ip")
-    request_method = models.CharField(max_length=32, help_text="请求方法")
-    request_url = models.CharField(max_length=256, help_text="用户访问的URL")
-    description = models.CharField(max_length=256, help_text="用户行为描述")
-    response_code = models.IntegerField(default=0, help_text="请求成功或失败标志")
+        "请求源IP", blank=True, null=True, help_text="请求源IP")
+    request_url = models.CharField(
+        "用户目标URL", max_length=256, help_text="用户目标URL")
+    description = models.CharField(
+        "用户行为描述", max_length=256, help_text="用户行为描述")
+    response_code = models.IntegerField(
+        "响应状态码", default=0, help_text="响应状态码")
     request_result = models.CharField(
-        max_length=1024, default="success", help_text="请求结果")
-    create_time = models.DateTimeField(auto_now_add=True, help_text="用户操作发生时间")
+        "请求结果", max_length=1024, default="success", help_text="请求结果")
+    create_time = models.DateTimeField(
+        "操作发生时间", auto_now_add=True, help_text="操作发生时间")
 
     class Meta:
-        """元数据"""
-        verbose_name = u"用户操作记录"
-        db_table = "omp_operate_log"
+        """ 元数据 """
+        db_table = "omp_user_operate_log"
+        verbose_name = verbose_name_plural = "用户操作记录"
 
 
-HOST_STATUS = (
-    (0, "正常"),
-    (1, "纳管主机中"),
-    (2, "主机Agent异常"),
-    (3, "监控Agent异常"),
-    (4, "纳管主机失败"),
-    (5, "维护"),
-)
+class Env(models.Model):
+    """ 环境表 """
+
+    name = models.CharField(
+        "环境名称", max_length=256, help_text="环境名称")
+    created = models.DateTimeField(
+        '创建时间', null=True, auto_now_add=True, help_text='创建时间')
+
+    class Meta:
+        db_table = "omp_env"
+        verbose_name = verbose_name_plural = "环境"
 
 
-class Hosts(models.Model):
-    """主机表"""
+class Host(TimeStampMixin, DeleteMixin):
+    """ 主机表 """
+
+    AGENT_RUNNING = 0
+    AGENT_RESTART = 1
+    AGENT_SHUTDOWN = 2
+    AGENT_DEPLOYING = 3
+    AGENT_STATUS_CHOICES = (
+        (AGENT_RUNNING, "正常"),
+        (AGENT_RESTART, "重启中"),
+        (AGENT_SHUTDOWN, "异常"),
+        (AGENT_DEPLOYING, "部署中"),
+    )
+
     objects = None
-    ip = models.GenericIPAddressField(help_text="主机ip地址")
-    hostname = models.CharField(
-        max_length=64, blank=True, null=True, help_text="主机名")
-    port = models.IntegerField(blank=True, null=True, help_text="主机SSH端口")
+    instance_name = models.CharField(
+        "实例名", max_length=64, help_text="实例名")
+    ip = models.GenericIPAddressField(
+        "IP地址", help_text="IP地址")
+    port = models.IntegerField(
+        "SSH端口", default=22, help_text="SSH端口")
     username = models.CharField(
-        max_length=256, blank=True, null=True, help_text="SSH登录用户名")
+        "SSH登录用户名", max_length=256, help_text="SSH登录用户名")
     password = models.CharField(
-        max_length=256, blank=True, null=True, help_text="SSH登录密码")
-    status = models.IntegerField(choices=HOST_STATUS, help_text="主机状态")
-    service_num = models.IntegerField(
-        blank=True, null=True, help_text="主机上的服务个数")
-    alert_num = models.IntegerField(
-        blank=True, null=True, help_text="该主机的告警次数")
+        "SSH登录密码", max_length=256, help_text="SSH登录密码")
     data_folder = models.CharField(
-        max_length=128, default="/data", help_text="数据目录")
-    idc = models.CharField(max_length=128, blank=True,
-                           null=True, help_text="IDC机房")
+        "数据分区", max_length=256, default="/data", help_text="数据分区")
+    service_num = models.IntegerField(
+        "服务个数", default=0, help_text="服务个数")
+    alert_num = models.IntegerField(
+        "告警次数", default=0, help_text="告警次数")
     operate_system = models.CharField(
-        max_length=128, blank=True, null=True, help_text="主机操作系统")
-    memory = models.IntegerField(blank=True, null=True, help_text="主机内存")
-    cpu = models.IntegerField(blank=True, null=True, help_text="主机cpu")
-    disk = models.JSONField(blank=True, null=True, help_text="主机磁盘信息")
+        "操作系统", max_length=128, help_text="操作系统")
+    memory = models.IntegerField(
+        "内存", blank=True, null=True, help_text="内存")
+    cpu = models.IntegerField(
+        "CPU", blank=True, null=True, help_text="CPU")
+    disk = models.JSONField(
+        "磁盘", blank=True, null=True, help_text="磁盘")
+    host_agent = models.CharField(
+        "主机Agent状态", max_length=16, help_text="主机Agent状态",
+        choices=AGENT_STATUS_CHOICES, default=AGENT_DEPLOYING)
+    monitor_agent = models.CharField(
+        "服务Agent状态", max_length=16, help_text="服务Agent状态",
+        choices=AGENT_STATUS_CHOICES, default=AGENT_DEPLOYING)
+    is_maintenance = models.BooleanField(
+        "维护模式", default=False, help_text="维护模式")
+    env = models.ForeignKey(
+        Env, null=True, on_delete=models.SET_NULL,
+        verbose_name="环境", help_text="环境")
+
+    class Meta:
+        """ 元数据 """
+        db_table = "omp_host"
+        verbose_name = verbose_name_plural = "主机"
+        ordering = ("-created",)
+
+
+class HostOperateLog(models.Model):
+    """ 主机操作记录表 """
+
+    objects = None
+    username = models.CharField(
+        "操作用户", max_length=128, help_text="操作用户")
+    description = models.CharField(
+        "用户行为描述", max_length=1024, help_text="用户行为描述")
+    result = models.CharField(
+        "操作结果", max_length=1024, default="success", help_text="操作结果")
+    created = models.DateTimeField(
+        '发生时间', null=True, auto_now_add=True, help_text='发生时间')
+    host = models.ForeignKey(
+        Host, null=True, on_delete=models.SET_NULL, verbose_name="主机")
+
+    class Meta:
+        """ 元数据 """
+        db_table = "omp_host_operate_log"
+        verbose_name = verbose_name_plural = "主机操作记录"

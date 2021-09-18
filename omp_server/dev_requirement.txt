@@ -60,3 +60,5 @@ wcwidth==0.2.5
 salt==3002.2
 ruamel.yaml==0.17.16
 ruamel.yaml.clib==0.2.6
+paramiko==2.7.2
+scp==0.14.1

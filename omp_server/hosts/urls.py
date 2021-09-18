@@ -6,9 +6,9 @@
 # Version: 1.0
 # Introduction:
 
-# from rest_framework.routers import DefaultRouter
-#
-# from hosts.views import HostsTestView
-#
-# router = DefaultRouter()
-# router.register("hosts", HostsTestView)
+from rest_framework.routers import DefaultRouter
+
+from hosts.views import HostView
+
+router = DefaultRouter()
+router.register("hosts", HostView, basename="hosts")

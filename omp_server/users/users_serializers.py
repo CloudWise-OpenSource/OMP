@@ -11,13 +11,13 @@
 """
 
 from django.contrib.auth.hashers import make_password
+
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ModelSerializer
 from rest_framework_jwt.serializers import JSONWebTokenSerializer
 
-from db_models.models import UserProfile
-from db_models.models import OperateLog
+from db_models.models import (UserProfile, OperateLog)
 
 
 class UserSerializer(ModelSerializer):
@@ -96,4 +96,3 @@ class JwtSerializer(JSONWebTokenSerializer):
 
     def update(self, instance, validated_data):
         raise RuntimeError("`update()` is not available")
-
