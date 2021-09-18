@@ -38,6 +38,7 @@
     "noEmit": true
   },
   "include": [
-    "src"
+    "src",
+    "config"
   ]
 }
