@@ -185,6 +185,10 @@ function main() {
   stop)
     agent_stop
     ;;
+  restart)
+    agent_stop
+    agent_start
+    ;;
   alive)
     agent_alive
     ;;
