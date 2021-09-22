@@ -42,7 +42,7 @@ class HostListView(GenericViewSet, ListModelMixin, CreateModelMixin):
             self.paginate_queryset(queryset), many=True)
         # TODO 实时获取主机动态
         for i in serializer.data:
-            i["test"] = 1111111
+            i["nei"] = 1111111
         return self.get_paginated_response(serializer.data)
 
 

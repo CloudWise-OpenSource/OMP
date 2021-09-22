@@ -1,40 +1,17 @@
 """
 主机序列化器
 """
-import re
-import emoji
 
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ModelSerializer
-from rest_framework.validators import UniqueValidator
 
 from db_models.models import Host
+from utils.validator import (
+    ReValidator, NoEmojiValidator, NoChineseValidator
+)
 from utils.plugin.ssh import SSH
 from utils.plugin.crypto import AESCryptor
-
-
-class ReValidator:
-    """ 正则表达式验证器 """
-
-    def __init__(self, regex, message):
-        self.regex = regex
-        self.message = message
-
-    def __call__(self, value):
-        if re.match(self.regex, value) is None:
-            raise ValidationError(self.message)
-
-
-class EmojiValidator:
-    """ 表情验证器 """
-
-    def __init__(self, message):
-        self.message = message
-
-    def __call__(self, value):
-        # TODO 逻辑待完善
-        pass
 
 
 class HostSerializer(ModelSerializer):
@@ -45,37 +22,50 @@ class HostSerializer(ModelSerializer):
         required=True, max_length=16,
         error_messages={"required": "必须包含[instance_name]字段"},
         validators=[
-            ReValidator(
-                regex=r"^[-a-z0-9][-_a-zA-Z0-9]+$",
-                message="[instance_name]字段不符合规范"),
-            # UniqueValidator(
-            #     queryset=Host.objects.all(),
-            #     message="[instance_name]已经存在"),
+            NoEmojiValidator(),
+            NoChineseValidator(),
+            ReValidator(regex=r"^[-a-z0-9].*$"),
         ])
     ip = serializers.IPAddressField(
         help_text="IP地址",
         required=True,
         error_messages={"required": "必须包含[ip]字段"},
-        validators=[UniqueValidator(
-            queryset=Host.objects.all(),
-            message="[ip]已经存在")])
+        validators=[NoEmojiValidator(), ]
+    )
     port = serializers.IntegerField(
         help_text="SSH端口，范围1~65535",
-        required=True, max_value=65535,
+        required=True,
+        min_value=1, max_value=65535,
         error_messages={"required": "必须包含[port]字段"})
     username = serializers.CharField(
         help_text="SSH登录用户名",
         required=True, max_length=16,
-        error_messages={"required": "必须包含[username]字段"})
+        error_messages={"required": "必须包含[username]字段"},
+        validators=[
+            NoEmojiValidator(),
+            ReValidator(regex=r"^[_a-zA-Z0-9][-_a-zA-Z0-9]+$"),
+        ]
+    )
     password = serializers.CharField(
         help_text="SSH登录密码",
         required=True, max_length=16,
         write_only=True,
-        error_messages={"required": "必须包含[password]字段"})
+        error_messages={"required": "必须包含[password]字段"},
+        validators=[
+            NoEmojiValidator(),
+            NoChineseValidator(),
+        ]
+    )
     data_folder = serializers.CharField(
         help_text="数据分区，需要以 / 开头",
         required=True, max_length=255,
-        error_messages={"required": "必须包含[data_folder]字段"})
+        error_messages={"required": "必须包含[data_folder]字段"},
+        validators=[
+            NoEmojiValidator(),
+            NoChineseValidator(),
+            ReValidator(regex=r"^/[/-_a-zA-Z0-9]+$"),
+        ]
+    )
     operate_system = serializers.CharField(
         help_text="操作系统",
         required=True, max_length=128,
@@ -91,6 +81,18 @@ class HostSerializer(ModelSerializer):
             "monitor_agent", "host_agent_error", "monitor_agent_error"
         )
 
+    def validate_instance_name(self, instance_name):
+        """ 校验实例名是否重复 """
+        if Host.objects.filter(instance_name=instance_name).exists():
+            raise ValidationError("实例名已经存在")
+        return instance_name
+
+    def validate_ip(self, ip):
+        """ 校验IP是否重复 """
+        if Host.objects.filter(ip=ip).exists():
+            raise ValidationError("IP已经存在")
+        return ip
+
     def validate_data_folder(self, data_folder):
         """ 校验数据分区，是否以 '/' 开头 """
         if not data_folder.startswith("/"):
@@ -100,16 +102,17 @@ class HostSerializer(ModelSerializer):
     def validate(self, attrs):
         """
         主机信息验证：
-            1. ssh 连接性
+            1. ssh 连通性
             2. 不允许修改 ip
         """
+
         ssh = SSH(
             hostname=attrs.get("ip"),
             port=attrs.get("port"),
             username=attrs.get("username"),
             password=attrs.get("password")
         )
-        is_connect, message = ssh.check()
+        is_connect, _ = ssh.check()
         if not is_connect:
             raise ValidationError({"ip": "主机SSH连通性校验失败"})
 
@@ -123,9 +126,12 @@ class HostSerializer(ModelSerializer):
 
     def create(self, validated_data):
         """ 创建主机 """
+
         # 密码加密处理
         aes_crypto = AESCryptor()
         validated_data["password"] = aes_crypto.encode(validated_data.get("password"))
         instance = super(HostSerializer, self).create(validated_data)
+
         # TODO 异步下发 Agent
+
         return instance
