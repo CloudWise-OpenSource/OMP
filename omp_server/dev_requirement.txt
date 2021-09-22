@@ -63,3 +63,4 @@ ruamel.yaml.clib==0.2.6
 paramiko==2.7.2
 scp==0.14.1
 emoji==1.5.0
+pycrypto==2.6.1
