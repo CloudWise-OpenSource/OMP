@@ -26,6 +26,8 @@ with open(config_file_path, "r") as fp:
 
 GLOBAL_RUNUSER = CONFIG_DIC.get("global_runuser")
 LOCAL_IP = CONFIG_DIC.get("local_ip")
+SSH_TIMEOUT = CONFIG_DIC.get("ssh_timeout", 60)
+SALT_RET_PORT = CONFIG_DIC.get("salt_master", {}).get("ret_port", 19005)
 TOKEN_EXPIRATION = CONFIG_DIC.get("token_expiration", 1)
 OMP_REDIS_HOST = os.getenv(
     "OMP_REDIS_HOST",

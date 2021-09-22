@@ -20,6 +20,7 @@ from utils.parse_config import TOKEN_EXPIRATION
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+PROJECT_DIR = os.path.dirname(BASE_DIR)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
@@ -166,3 +167,65 @@ CELERY_ENABLE_UTC = False
 CELERY_TIMEZONE = TIME_ZONE
 DJANGO_CELERY_BEAT_TZ_AWARE = False
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+CELERY_IMPORTS = ("hosts.tasks", )
+
+LOGGER_CLASS = 'concurrent_log_handler.ConcurrentRotatingFileHandler'
+LOG_BACKUP_SIZE = 1024 * 1024 * 100
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': True,
+    'formatters': {
+        'standard': {
+            'format': '[%(asctime)s][%(levelname)s] %(pathname)s %(lineno)d -> %(message)s'}
+    },
+    'filters': {
+    },
+    'handlers': {
+        'mail_admins': {
+            'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler',
+            'include_html': True,
+        },
+        'default': {
+            'level': 'DEBUG',
+            'class': LOGGER_CLASS,
+            'filename': os.path.join(PROJECT_DIR, "logs/debug.log"),  # 日志输出文件
+            'maxBytes': LOG_BACKUP_SIZE,  # 文件大小
+            'backupCount': 5,  # 备份份数
+            'formatter': 'standard',  # 使用哪种formatters日志格式
+        },
+        'error': {
+            'level': 'ERROR',
+            'class': LOGGER_CLASS,
+            'filename': os.path.join(PROJECT_DIR, "logs/error.log"),
+            'maxBytes': LOG_BACKUP_SIZE,
+            'backupCount': 5,
+            'formatter': 'standard',
+        },
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'standard'
+        },
+        'request_handler': {
+            'level': 'DEBUG',
+            'class': LOGGER_CLASS,
+            'filename': os.path.join(PROJECT_DIR, "logs/request.log"),
+            'maxBytes': LOG_BACKUP_SIZE,
+            'backupCount': 5,
+            'formatter': 'standard',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['request_handler'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'server': {
+            'handlers': ['default', 'error'],
+            'level': "ERROR",
+            'propagate': True
+        }
+    }
+}
