@@ -17,7 +17,7 @@ const OmpTable = ({ checkedState, ...residualParam }) => {
   const viewHeight = useSelector((state) => state.layouts.viewSize.height);
 
   useLayoutEffect(() => {
-    console.log(viewHeight);
+    //console.log(viewHeight);
     // 为了能够让omptable能够根据视口高度进行自适应
     // 订出如下标准 视口高度大于955 设置 表格cell的padding为1rem
     // 视口高度大于 760 设置cell的padding为0.72rem
@@ -30,7 +30,7 @@ const OmpTable = ({ checkedState, ...residualParam }) => {
       cellPadding = ".6";
     }
     try {
-      window.style = "body{background-color:blue;}";
+      //window.style = "body{background-color:blue;}";
       var stylee = document.createElement("style");
       stylee.type = "text/css";
       var sHtml = `
@@ -48,6 +48,7 @@ const OmpTable = ({ checkedState, ...residualParam }) => {
   return (
       <Table
         {...residualParam}
+        //size="small"
         rowSelection={
           checkedState && {
             onSelect: (record, selected, selectedRows) => {

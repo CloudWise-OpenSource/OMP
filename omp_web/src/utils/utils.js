@@ -3,6 +3,7 @@ import { Badge, message, Tooltip } from "antd";
 import moment from "moment";
 import * as R from "ramda";
 import styles from "./index.module.less";
+import { getRefreshTimeChangeAction } from "@/components/CustomBreadcrumb/store/actionsCreators"
 
 /**
  * 正常/绿色  bg"rgb(238, 250, 244)"  bo:"rgb(84, 187, 166)"
@@ -1577,4 +1578,8 @@ export function TableRowButton({ buttonsArr }) {
       })}
     </div>
   );
+}
+
+export const refreshTime = ()=>{
+ return getRefreshTimeChangeAction(moment().format("YYYY-MM-DD HH:mm:ss"))
 }
