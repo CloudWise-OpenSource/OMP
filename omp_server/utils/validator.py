@@ -25,9 +25,8 @@ class NoEmojiValidator:
     def __init__(self, message="字段不可含有表情"):
         self.message = message
 
-    def __call__(self, value, serializer_field):
+    def __call__(self, value):
         if emoji.emoji_count(value) > 0:
-            serializer_field.validators = []
             raise ValidationError(self.message)
 
 

@@ -7,6 +7,8 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ModelSerializer
 
 from db_models.models import Host
+from hosts.tasks import deploy_agent
+
 from utils.validator import (
     ReValidator, NoEmojiValidator, NoChineseValidator
 )
@@ -100,21 +102,18 @@ class HostSerializer(ModelSerializer):
         return data_folder
 
     def validate(self, attrs):
-        """
-        主机信息验证：
-            1. ssh 连通性
-            2. 不允许修改 ip
-        """
+        """ 主机信息验证 """
 
-        ssh = SSH(
-            hostname=attrs.get("ip"),
-            port=attrs.get("port"),
-            username=attrs.get("username"),
-            password=attrs.get("password")
-        )
-        is_connect, _ = ssh.check()
-        if not is_connect:
-            raise ValidationError({"ip": "主机SSH连通性校验失败"})
+        # 校验主机 SSH 连通性
+        # ssh = SSH(
+        #     hostname=attrs.get("ip"),
+        #     port=attrs.get("port"),
+        #     username=attrs.get("username"),
+        #     password=attrs.get("password")
+        # )
+        # is_connect, _ = ssh.check()
+        # if not is_connect:
+        #     raise ValidationError({"ip": "主机SSH连通性校验失败"})
 
         # 当请求方式为 PUT/PATCH，且存在对于 IP 值的修改，则抛出验证错误
         request_method = self.context["request"].method
@@ -132,6 +131,6 @@ class HostSerializer(ModelSerializer):
         validated_data["password"] = aes_crypto.encode(validated_data.get("password"))
         instance = super(HostSerializer, self).create(validated_data)
 
-        # TODO 异步下发 Agent
-
+        # 异步下发 Agent
+        # deploy_agent.delay(instance.id)
         return instance
