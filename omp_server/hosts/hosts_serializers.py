@@ -3,7 +3,6 @@
 """
 import re
 import emoji
-from django.contrib.auth.hashers import make_password
 
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -12,6 +11,7 @@ from rest_framework.validators import UniqueValidator
 
 from db_models.models import Host
 from utils.plugin.ssh import SSH
+from utils.plugin.crypto import AESCryptor
 
 
 class ReValidator:
@@ -124,7 +124,8 @@ class HostSerializer(ModelSerializer):
     def create(self, validated_data):
         """ 创建主机 """
         # 密码加密处理
-        validated_data["password"] = make_password(validated_data.get("password"))
+        aes_crypto = AESCryptor()
+        validated_data["password"] = aes_crypto.encode(validated_data.get("password"))
         instance = super(HostSerializer, self).create(validated_data)
         # TODO 异步下发 Agent
         return instance
