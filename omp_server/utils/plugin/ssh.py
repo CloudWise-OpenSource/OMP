@@ -125,7 +125,7 @@ class SSH(object):
                                 remote_path=remote_file_full_path)
         except Exception as error:
             import traceback
-            print(traceback.format_exc())
+            logger.error(traceback.format_exc())
             self.close()
             return False, str(error)
         return True, "push success: {}".format(remote_file_full_path)

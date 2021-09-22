@@ -21,6 +21,8 @@ from utils.plugin.ssh import SSH
 from utils.plugin.crypto import AESCryptor
 from utils.plugin.agent_util import Agent
 
+# 屏蔽celery任务日志中的paramiko日志
+logging.getLogger("paramiko").setLevel(logging.WARNING)
 logger = logging.getLogger("server")
 
 
@@ -49,6 +51,7 @@ def real_deploy_agent(host_obj):
     # 更新主机Agent状态，0 正常；4 部署失败
     if flag:
         host_obj.host_agent = 0
+        host_obj.host_agent_error = None
     else:
         host_obj.host_agent = 4
         host_obj.host_agent_error = \
