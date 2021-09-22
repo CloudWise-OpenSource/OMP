@@ -18,7 +18,7 @@ start() {
     return 0
   else
     cd $PROJECT_FOLDER/omp_server
-    nohup $PROJECT_FOLDER/component/env/bin/python3 $PROJECT_FOLDER/component/env/bin/celery -A omp_server worker \
+    nohup $PROJECT_FOLDER/component/env/bin/python3 $PROJECT_FOLDER/component/env/bin/celery -A omp_server \
     --beat --scheduler django --loglevel=ERROR >$PROJECT_FOLDER/logs/celery_cron.log 2>&1 &
     echo "${APP_NAME} [running]"
   fi

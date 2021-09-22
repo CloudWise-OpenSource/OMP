@@ -2,6 +2,8 @@
 global_runuser: common
 # 初始化时由用户输入本机的ip地址
 local_ip: 10.0.1.160
+# SSH超时时间，单位秒
+ssh_timeout: 60
 # redis相关配置
 redis:
   host: 127.0.0.1

@@ -1,11 +1,31 @@
+"""
+ssh相关操作
+"""
+import os
+import logging
+
 import paramiko
 from scp import SCPClient
 
+from utils.parse_config import SSH_TIMEOUT
 
-class SSH:
+logger = logging.getLogger("server")
+
+
+class SSH(object):
     """ SSH 工具类 """
 
-    def __init__(self, hostname, port, username, password, timeout=10):
+    def __init__(self, hostname, port, username, password, timeout=SSH_TIMEOUT):
+        """
+        初始化ssh
+        :param hostname: 主机名或ip地址
+        :param port: 端口
+        :param username: 用户名
+        :param password: 密码
+        :param timeout: 超时时间
+        """
+        logger.info(
+            f"SSH init with params: {hostname}; {port}; {username}; {timeout}")
         self.hostname = hostname
         self.port = port
         self.username = username
@@ -24,7 +44,8 @@ class SSH:
         if not self.connect:
             try:
                 ssh_client = paramiko.SSHClient()
-                ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                ssh_client.set_missing_host_key_policy(
+                    paramiko.AutoAddPolicy())
                 ssh_client.connect(
                     hostname=self.hostname,
                     port=self.port,
@@ -55,6 +76,59 @@ class SSH:
             return True, "check passed"
         else:
             return False, f"stdout: {who}"
+
+    def cmd(self, command, timeout=SSH_TIMEOUT):
+        """
+        执行shell命令
+        :param command:
+        :param timeout:
+        :return:
+        """
+        self._get_connection()
+        if self.is_error:
+            return False, str(self.error_message)
+        _, stdout, stderr = self.ssh_client.exec_command(
+            command, get_pty=True, timeout=timeout)
+        stdout.channel.recv_exit_status()
+        res_stdout = stdout.readlines()
+        res_stderr = stderr.readlines()
+        if len(res_stderr) != 0:
+            return False, res_stderr[0].strip() + " " + str(stdout)
+        return True, "\n".join(res_stdout)
+
+    def make_remote_path_exist(self, remote_path):
+        """
+        mkdir -p remote_path
+        :param remote_path: 远程文件夹路径
+        :type remote_path str
+        :return:
+        """
+        self._get_connection()
+        command = "test -d {0} || mkdir -p {0}".format(remote_path)
+        self.cmd(command)
+
+    def file_push(self, file, remote_path="/tmp"):
+        """
+        push file to remote directory use scp
+
+        :param str file: file path
+        :param str remote_path: remote directory path
+        """
+        file_name = os.path.basename(file)
+        remote_file_full_path = os.path.join(remote_path, file_name)
+        self._get_connection()
+        if self.is_error:
+            return False, str(self.error_message)
+        try:
+            self.make_remote_path_exist(remote_path)
+            self.scp_client.put(file, recursive=True,
+                                remote_path=remote_file_full_path)
+        except Exception as error:
+            import traceback
+            print(traceback.format_exc())
+            self.close()
+            return False, str(error)
+        return True, "push success: {}".format(remote_file_full_path)
 
     def close(self):
         """ 关闭连接对象 """
