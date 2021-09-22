@@ -19,6 +19,9 @@ from django.urls import path, include
 # coreAPI documentation
 from rest_framework.documentation import include_docs_urls
 from rest_framework.permissions import AllowAny
+from rest_framework.authentication import (
+    SessionAuthentication, BasicAuthentication
+)
 
 from users.urls import router as users_router
 from users.views import JwtAPIView
@@ -36,6 +39,8 @@ urlpatterns = [
     path("api/", include(urlpatterns_inside)),
     path("docs/", include_docs_urls(
         title="API 接口文档",
+        authentication_classes=(
+            SessionAuthentication, BasicAuthentication),
         permission_classes=(AllowAny,),
     ), name="docs"),
 ]

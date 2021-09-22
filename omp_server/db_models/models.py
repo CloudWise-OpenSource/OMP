@@ -69,13 +69,15 @@ class Host(TimeStampMixin, DeleteMixin):
 
     AGENT_RUNNING = 0
     AGENT_RESTART = 1
-    AGENT_SHUTDOWN = 2
-    AGENT_DEPLOYING = 3
+    AGENT_START_ERROR = 2
+    AGENT_DEPLOY_ING = 3
+    AGENT_DEPLOY_ERROR = 4
     AGENT_STATUS_CHOICES = (
         (AGENT_RUNNING, "正常"),
         (AGENT_RESTART, "重启中"),
-        (AGENT_SHUTDOWN, "异常"),
-        (AGENT_DEPLOYING, "部署中"),
+        (AGENT_START_ERROR, "启动失败"),
+        (AGENT_DEPLOY_ING, "部署中"),
+        (AGENT_DEPLOY_ERROR, "部署失败")
     )
 
     objects = None
@@ -97,6 +99,9 @@ class Host(TimeStampMixin, DeleteMixin):
         "告警次数", default=0, help_text="告警次数")
     operate_system = models.CharField(
         "操作系统", max_length=128, help_text="操作系统")
+    host_name = models.CharField(
+        "主机名", max_length=64,
+        blank=True, null=True, help_text="主机名")
     memory = models.IntegerField(
         "内存", blank=True, null=True, help_text="内存")
     cpu = models.IntegerField(
@@ -105,10 +110,16 @@ class Host(TimeStampMixin, DeleteMixin):
         "磁盘", blank=True, null=True, help_text="磁盘")
     host_agent = models.CharField(
         "主机Agent状态", max_length=16, help_text="主机Agent状态",
-        choices=AGENT_STATUS_CHOICES, default=AGENT_DEPLOYING)
+        choices=AGENT_STATUS_CHOICES, default=AGENT_DEPLOY_ING)
     monitor_agent = models.CharField(
-        "服务Agent状态", max_length=16, help_text="服务Agent状态",
-        choices=AGENT_STATUS_CHOICES, default=AGENT_DEPLOYING)
+        "监控Agent状态", max_length=16, help_text="监控Agent状态",
+        choices=AGENT_STATUS_CHOICES, default=AGENT_DEPLOY_ING)
+    host_agent_error = models.CharField(
+        "主机Agent异常信息", max_length=256,
+        blank=True, null=True, help_text="主机Agent异常信息")
+    monitor_agent_error = models.CharField(
+        "监控Agent异常信息", max_length=256,
+        blank=True, null=True, help_text="监控Agent异常信息")
     is_maintenance = models.BooleanField(
         "维护模式", default=False, help_text="维护模式")
     env = models.ForeignKey(
