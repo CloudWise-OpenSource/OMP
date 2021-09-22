@@ -23,7 +23,7 @@ from utils.plugin.agent_util import Agent
 
 # 屏蔽celery任务日志中的paramiko日志
 logging.getLogger("paramiko").setLevel(logging.WARNING)
-logger = logging.getLogger("server")
+logger = logging.getLogger("celery")
 
 
 def real_deploy_agent(host_obj):
