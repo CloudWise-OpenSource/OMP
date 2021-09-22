@@ -18,6 +18,7 @@ from celery import shared_task
 
 from db_models.models import Host
 from utils.plugin.ssh import SSH
+from utils.plugin.crypto import AESCryptor
 from utils.plugin.agent_util import Agent
 
 logger = logging.getLogger("server")
@@ -39,7 +40,7 @@ def real_deploy_agent(host_obj):
         host=host_obj.ip,
         port=host_obj.port,
         username=host_obj.username,
-        password=host_obj.password,
+        password=AESCryptor().decode(host_obj.password),
         install_dir=host_obj.data_folder
     )
     flag, message = _obj.agent_deploy()
@@ -90,7 +91,7 @@ def real_host_agent_restart(host_obj):
         hostname=host_obj.ip,
         port=host_obj.port,
         username=host_obj.username,
-        password=host_obj.password,
+        password=AESCryptor().decode(host_obj.password),
     )
     _script_path = os.path.join(
         host_obj.data_folder, "omp_salt_agent/bin/omp_salt_agent")
