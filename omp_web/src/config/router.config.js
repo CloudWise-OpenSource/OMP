@@ -5,13 +5,13 @@ import MachineManagement from "@/pages/MachineManagement"
 import { DesktopOutlined, ClusterOutlined, ProfileOutlined, SettingOutlined } from "@ant-design/icons";
 export default [
   {
-    menuTitle: "主机管理",
+    menuTitle: "资源管理",
     menuIcon: <DesktopOutlined />,
-    menuKey: "/machine-management",
+    menuKey: "/resource-management",
     children: [
       {
-        title: "主机列表",
-        path: "/machine-management/list",
+        title: "主机管理",
+        path: "/resource-management/machine-management",
         component: MachineManagement,
       },
     ],

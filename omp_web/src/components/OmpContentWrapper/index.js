@@ -1,22 +1,13 @@
 import styles from "./index.module.less";
-import { Layout } from "antd";
+// import { Layout } from "antd";
+// import { useLocation } from "react-router-dom";
 
 function OmpContentWrapper({ children, wrapperStyle }) {
+  //const location = useLocation();
+  //console.log(location.pathname == "/homepage");
   return (
     <div style={wrapperStyle} className={styles.contentWrapper}>
       {children}
-      <Layout.Footer
-        style={{
-          color: "#acb5ba",
-          backgroundColor: "rgba(0,0,0,0)",
-          textAlign: "center",
-          height: 40,
-          padding: 0,
-          paddingTop: 15,
-        }}
-      >
-        Copyright © 2020-2021 Cloudwise.All Rights Reserved{" "}
-      </Layout.Footer>
     </div>
   );
 }

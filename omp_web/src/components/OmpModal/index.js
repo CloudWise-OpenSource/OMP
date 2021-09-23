@@ -31,7 +31,9 @@ const OmpModal = ({
   const [modalForm] = Form.useForm();
   // 扩展formItem功能,为了能够在formitem的validator校验时获得当前form的实例进行操作
   // 在这里重写formitem的validator函数，在新函数中注入form实例
-  let processedChildren = children.map((item) => {
+  // console.log(children)
+  let dealChild = Array.isArray(children)?children:[children]
+  let processedChildren = dealChild?.map((item) => {
     if (item.props?.useforminstanceinvalidator === "true") {
       // 当前就是需要扩展validator的formItem
       // 拿到当前项的rules数组并把数组项为{validator:fn}的拿到，重写fn
