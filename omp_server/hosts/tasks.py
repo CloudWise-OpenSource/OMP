@@ -15,6 +15,7 @@ import logging
 import traceback
 
 from celery import shared_task
+from celery.utils.log import get_task_logger
 
 from db_models.models import Host
 from utils.plugin.ssh import SSH
@@ -23,7 +24,7 @@ from utils.plugin.agent_util import Agent
 
 # 屏蔽celery任务日志中的paramiko日志
 logging.getLogger("paramiko").setLevel(logging.WARNING)
-logger = logging.getLogger("celery")
+logger = get_task_logger("celery_log")
 
 
 def real_deploy_agent(host_obj):
@@ -68,6 +69,8 @@ def deploy_agent(host_id):
     """
     try:
         host_obj = Host.objects.get(id=host_id)
+        host_obj.host_agent = 3
+        host_obj.save()
         real_deploy_agent(host_obj=host_obj)
     except Exception as e:
         logger.error(
@@ -99,6 +102,9 @@ def real_host_agent_restart(host_obj):
     _script_path = os.path.join(
         host_obj.data_folder, "omp_salt_agent/bin/omp_salt_agent")
     flag, message = _obj.cmd(f"bash {_script_path} restart")
+    logger.info(
+        f"Restart host agent for {host_obj.ip}: "
+        f"get flag: {flag}; get res: {message}")
     if flag:
         host_obj.host_agent = 0
     else:

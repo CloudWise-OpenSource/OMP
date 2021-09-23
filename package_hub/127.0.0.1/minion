@@ -1,0 +1,7 @@
+conf_file: /data/omp_salt_agent/conf/minion
+id: 127.0.0.1
+master: 10.0.1.160
+master_port: 19005
+rejected_retry: true
+root_dir: /data/omp_salt_agent/data/
+user: root

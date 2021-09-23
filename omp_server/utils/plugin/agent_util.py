@@ -11,16 +11,16 @@
 """
 
 import os
-import logging
 
 import yaml
+from celery.utils.log import get_task_logger
 
 from utils.plugin.ssh import SSH
 from omp_server.settings import PROJECT_DIR
 from utils.parse_config import LOCAL_IP
 from utils.parse_config import SALT_RET_PORT
 
-logger = logging.getLogger("server")
+logger = get_task_logger("celery_log")
 
 
 class Agent(object):
