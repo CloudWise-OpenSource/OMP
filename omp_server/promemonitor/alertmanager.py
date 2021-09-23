@@ -13,12 +13,15 @@ class Alertmanager:
     定义alertmanager的参数及动作
     """
 
-    def __init__(self, ip, port):
-        self.ip = ip
-        self.port = port
+    def __init__(self):
+        self.ip, self.port = self.get_alertmanager_config()
         self.headers = {'Content-Type': 'application/json'}
         self.add_url = f'http://{self.ip}:{self.port}/api/v1/silences'
         self.delete_url = f'http://{self.ip}:{self.port}/api/v1/silence'
+
+    @staticmethod
+    def get_alertmanager_config():
+        return '10.0.3.66', '19013'  # TODO 等待jerry把配置入库返回真实值
 
     @staticmethod
     def format_time(_time):
@@ -90,7 +93,7 @@ class Alertmanager:
 
 
 if __name__ == '__main__':
-    a = Alertmanager('10.0.3.66', '19013')
+    a = Alertmanager()
     # add_result = a.add_setting(value='10.0.3.80', name='instance', start_time=None, ends_time=None)
     # print(add_result)
     del_result = a.delete_setting('d6ecd79d-482d-4da7-a4aa-96888925cfb6')
