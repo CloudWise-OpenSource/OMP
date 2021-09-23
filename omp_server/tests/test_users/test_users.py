@@ -1,10 +1,10 @@
 from rest_framework.reverse import reverse
 
-from tests.base import BaseTest
+from tests.base import AutoLoginTest
 from db_models.models import UserProfile
 
 
-class UsersTest(BaseTest):
+class UsersTest(AutoLoginTest):
     """ 用户功能测试类 """
 
     def setUp(self):
@@ -15,14 +15,12 @@ class UsersTest(BaseTest):
     def test_create_user(self):
         """ 测试创建用户 """
 
-        self.login()
-
         # 已存在用户名 -> 无法创建
         resp = self.post(self.create_user_url, {
-            "username": self.username,
-            "password": self.password,
-            "re_password": self.password,
-            "email": self.email,
+            "username": self.default_user.username,
+            "password": self.default_user.password,
+            "re_password": self.default_user.password,
+            "email": self.default_user.email,
         }).json()
         self.assertDictEqual(resp, {
             'code': 1,
@@ -67,12 +65,8 @@ class UsersTest(BaseTest):
         self.assertEqual(resp.get("message"), "success")
         self.assertTrue(resp.get("data", None) is not None)
 
-        self.logout()
-
     def test_list_user(self):
         """ 测试查询用户列表 """
-
-        self.login()
 
         # 查询用户列表 -> 查询成功
         resp = self.get(self.create_user_url).json()
@@ -80,12 +74,8 @@ class UsersTest(BaseTest):
         self.assertEqual(resp.get("message"), "success")
         self.assertTrue(resp.get("data", None) is not None)
 
-        self.logout()
-
     def test_retrieve_user(self):
         """ 测试查询一个用户 """
-
-        self.login()
 
         # 创建用户
         username = "retrieve_user"
@@ -115,12 +105,8 @@ class UsersTest(BaseTest):
         self.assertEqual(user_info.get("email"), email)
         self.assertNotEqual(user_info.get("password"), password)
 
-        self.logout()
-
     def test_update_user(self):
         """ 测试更新一个已有用户 """
-
-        self.login()
 
         # 创建用户
         username = "update_user"
@@ -183,8 +169,6 @@ class UsersTest(BaseTest):
             email=email,
         )
 
-        self.login()
-
         # 更新不存在用户 -> 更新失败
         resp = self.patch(reverse("users-detail", [99]), {
             "password": "partial_update_user_pass",
@@ -208,8 +192,6 @@ class UsersTest(BaseTest):
         self.assertEqual(resp.get("message"), "success")
         self.assertTrue(resp.get("data", None) is not None)
 
-        self.logout()
-
     def test_delete_user(self):
         """ 测试删除一个现有用户 """
 
@@ -223,8 +205,6 @@ class UsersTest(BaseTest):
             email=email,
         )
 
-        self.login()
-
         # 删除不存在用户 -> 删除失败
         resp = self.delete(reverse("users-detail", [99])).json()
         self.assertDictEqual(resp, {
@@ -232,5 +212,3 @@ class UsersTest(BaseTest):
             'message': 'Not found.',
             'data': None
         })
-
-        self.logout()
