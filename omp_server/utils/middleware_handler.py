@@ -10,6 +10,7 @@
 公共中间件
 """
 
+import json
 import ipware
 
 from django.urls import resolve
@@ -65,10 +66,12 @@ class OperationLogMiddleware(MiddlewareMixin):
                 response_code=response_code, request_result=request_result
             ).save()
         else:
+            # 读取已封装响应数据
+            res_data = json.loads(response.rendered_content)
             OperateLog(
                 username=_username, request_ip=_ip, request_method=_method,
                 request_url=_url, description=_desc,
-                response_code=response.data.get("code", 0),
-                request_result=response.data.get("message", "")
+                response_code=res_data.get("code", 0),
+                request_result=res_data.get("message", "")
             ).save()
         return response
