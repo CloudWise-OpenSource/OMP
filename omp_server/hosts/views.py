@@ -7,6 +7,7 @@ from rest_framework.mixins import (
     DestroyModelMixin, UpdateModelMixin
 )
 from rest_framework.filters import OrderingFilter
+from rest_framework.response import Response
 
 from django_filters.rest_framework.backends import DjangoFilterBackend
 
@@ -32,7 +33,7 @@ class HostListView(GenericViewSet, ListModelMixin, CreateModelMixin):
     filter_class = HostFilter
     ordering_fields = ("ip", "host_agent", "monitor_agent", "service_num", "alert_num")
     # 动态排序字段
-    dynamic_fields = ("cpu_num", "memory_num", "root_use_num", "data_use_num")
+    dynamic_fields = ("cpu_usage", "mem_usage", "root_disk_usage", "data_disk_usage")
     # 操作描述信息
     get_description = "查询主机"
     post_description = "创建主机"
@@ -46,11 +47,6 @@ class HostListView(GenericViewSet, ListModelMixin, CreateModelMixin):
         serializer_data = serializer.data
 
         # TODO 实时获取主机动态
-        for i, d in enumerate(serializer_data):
-            d["cpu_num"] = i + 1
-            d["memory_num"] = i + 1
-            d["root_use_num"] = i + 1
-            d["data_use_num"] = i + 1
 
         # 获取请求中 ordering 字段
         query_field = request.query_params.get("ordering", "")
@@ -81,3 +77,14 @@ class HostDetailView(GenericViewSet, UpdateModelMixin):
     serializer_class = HostSerializer
     # 操作描述信息
     put_description = patch_description = "更新主机"
+
+
+class IpListView(GenericViewSet, ListModelMixin):
+    """
+        list:
+        查询所有 IP 列表
+    """
+    queryset = Host.objects.filter(is_deleted=False).values_list("ip", flat=True)
+
+    def list(self, request, *args, **kwargs):
+        return Response(list(self.get_queryset()))

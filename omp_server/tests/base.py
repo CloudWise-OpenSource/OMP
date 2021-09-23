@@ -12,19 +12,17 @@ class BaseTest(TestCase):
 
     def setUp(self):
         self.login_url = reverse("login")
-        self.username = "admin"
-        self.password = "adminPassword"
-        self.email = "admin@cloudwise.com"
-        self.user = UserProfile.objects.create_user(
-            username=self.username,
-            password=self.password,
-            email=self.email,
+        self.default_user = UserProfile.objects.create_user(
+            username="admin",
+            password="adminPassword",
+            email="admin@cloudwise.com",
         )
+        self.default_user.password = "adminPassword"
 
     def get(self, url, data=None):
         return self.client.get(
             url,
-            data=json.dumps(data) if data else None,
+            data=data if data else None,
         )
 
     def post(self, url, data):
@@ -58,8 +56,8 @@ class BaseTest(TestCase):
     def login(self, remember=False):
         """ 登录，签发 token 令牌 """
         login_data = {
-            "username": self.username,
-            "password": self.password,
+            "username": self.default_user.username,
+            "password": self.default_user.password,
         }
         if remember:
             login_data["remember"] = True
@@ -69,3 +67,15 @@ class BaseTest(TestCase):
     def logout(self):
         """ 退出登录，清除 cookies 中的 token 令牌 """
         self.client.cookies.pop("jwtToken")
+
+
+class AutoLoginTest(BaseTest):
+    """ 自动登录测试基类 """
+
+    def setUp(self):
+        super(AutoLoginTest, self).setUp()
+        self.login()
+
+    def tearDown(self):
+        super(AutoLoginTest, self).tearDown()
+        self.logout()

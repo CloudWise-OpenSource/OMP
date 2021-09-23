@@ -19,7 +19,7 @@ class LoginTest(BaseTest):
         # 用户名错误 -> 登录失败
         resp = self.post(self.login_url, {
             "username": "wrong_user",
-            "password": self.password,
+            "password": self.default_user.password,
         }).json()
         self.assertDictEqual(resp, {
             "code": 1,
@@ -29,7 +29,7 @@ class LoginTest(BaseTest):
 
         # 密码错误 -> 登录失败
         resp = self.post(self.login_url, {
-            "username": self.username,
+            "username": self.default_user.username,
             "password": "wrong_password",
         }).json()
         self.assertDictEqual(resp, {
@@ -51,8 +51,8 @@ class LoginTest(BaseTest):
 
         # 用户名、密码正确 -> 登录成功，生成 token 令牌
         resp = self.post(self.login_url, {
-            "username": self.username,
-            "password": self.password,
+            "username": self.default_user.username,
+            "password": self.default_user.password,
         }).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")

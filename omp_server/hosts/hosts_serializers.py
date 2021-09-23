@@ -31,9 +31,7 @@ class HostSerializer(ModelSerializer):
     ip = serializers.IPAddressField(
         help_text="IP地址",
         required=True,
-        error_messages={"required": "必须包含[ip]字段"},
-        validators=[NoEmojiValidator(), ]
-    )
+        error_messages={"required": "必须包含[ip]字段"})
     port = serializers.IntegerField(
         help_text="SSH端口，范围1~65535",
         required=True,
@@ -44,10 +42,8 @@ class HostSerializer(ModelSerializer):
         required=True, max_length=16,
         error_messages={"required": "必须包含[username]字段"},
         validators=[
-            NoEmojiValidator(),
             ReValidator(regex=r"^[_a-zA-Z0-9][-_a-zA-Z0-9]+$"),
-        ]
-    )
+        ])
     password = serializers.CharField(
         help_text="SSH登录密码",
         required=True, max_length=16,
@@ -56,18 +52,14 @@ class HostSerializer(ModelSerializer):
         validators=[
             NoEmojiValidator(),
             NoChineseValidator(),
-        ]
-    )
+        ])
     data_folder = serializers.CharField(
         help_text="数据分区，需要以 / 开头",
         required=True, max_length=255,
         error_messages={"required": "必须包含[data_folder]字段"},
         validators=[
-            NoEmojiValidator(),
-            NoChineseValidator(),
             ReValidator(regex=r"^/[/-_a-zA-Z0-9]+$"),
-        ]
-    )
+        ])
     operate_system = serializers.CharField(
         help_text="操作系统",
         required=True, max_length=128,
@@ -95,15 +87,8 @@ class HostSerializer(ModelSerializer):
             raise ValidationError("IP已经存在")
         return ip
 
-    def validate_data_folder(self, data_folder):
-        """ 校验数据分区，是否以 '/' 开头 """
-        if not data_folder.startswith("/"):
-            raise ValidationError("数据分区需以 '/' 开头")
-        return data_folder
-
     def validate(self, attrs):
         """ 主机信息验证 """
-
         # 校验主机 SSH 连通性
         ssh = SSH(
             hostname=attrs.get("ip"),
@@ -114,7 +99,6 @@ class HostSerializer(ModelSerializer):
         is_connect, _ = ssh.check()
         if not is_connect:
             raise ValidationError({"ip": "主机SSH连通性校验失败"})
-
         # 当请求方式为 PUT/PATCH，且存在对于 IP 值的修改，则抛出验证错误
         request_method = self.context["request"].method
         if request_method in ("PUT", "PATCH") and \
@@ -125,12 +109,10 @@ class HostSerializer(ModelSerializer):
 
     def create(self, validated_data):
         """ 创建主机 """
-
         # 密码加密处理
         aes_crypto = AESCryptor()
         validated_data["password"] = aes_crypto.encode(validated_data.get("password"))
         instance = super(HostSerializer, self).create(validated_data)
-
         # 异步下发 Agent
         deploy_agent.delay(instance.id)
         return instance
