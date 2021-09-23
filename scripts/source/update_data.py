@@ -23,7 +23,8 @@ django.setup()
 
 from django.contrib.auth.hashers import make_password
 from db_models.models import UserProfile
-
+from db_models.models import MonitorUrl
+from utils.parse_config import MONITOR_PORT
 
 def create_default_user():
     """
@@ -40,6 +41,19 @@ def create_default_user():
         email="admin@yunzhihui.com"
     ).save()
 
+def create_default_monitor_url():
+    """
+    配置监控地址初始入库
+    :return:
+    """
+    if MonitorUrl.objects.all().count() != 0:
+        return
+    MonitorList=[]
+    local_ip="127.0.0.1:"
+    MonitorList.append(MonitorUrl(name="prometheus",monitor_url=local_ip+str(MONITOR_PORT.get("prometheus","19011"))))
+    MonitorList.append(MonitorUrl(name="alertmanager", monitor_url=local_ip+str(MONITOR_PORT.get("alertmanager","19013"))))
+    MonitorList.append(MonitorUrl(name="grafana", monitor_url=local_ip+str(MONITOR_PORT.get("grafana","19014"))))
+    MonitorUrl.objects.bulk_create(MonitorList)
 
 def main():
     """
@@ -48,7 +62,8 @@ def main():
     """
     # 创建默认用户
     create_default_user()
-
+    # 创建监控配置项
+    create_default_monitor_url()
 
 if __name__ == '__main__':
     main()
