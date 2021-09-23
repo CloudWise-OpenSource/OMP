@@ -6,10 +6,6 @@ import requests
 logger = logging.getLogger('server')
 
 
-def get_prometheus_config():
-    return {'ip': '10.0.3.66', 'port': '19011'}  # TODO 等待jerry把配置入库返回真实值
-
-
 class Prometheus:
     """
     定义prometheus的一些参数以及动作
@@ -19,6 +15,10 @@ class Prometheus:
         self.ip = ip
         self.port = port
         self.basic_api_url = f'http://{self.ip}:{self.port}/api/v1/query?query='
+
+    @classmethod
+    def get_prometheus_config(cls):
+        return {'ip': '10.0.3.66', 'port': '19011'}  # TODO 等待jerry把配置入库返回真实值
 
     def get_host_cpu_usage(self, host_list):
         """
