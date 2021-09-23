@@ -17,7 +17,7 @@ class Prometheus:
 
     @staticmethod
     def get_prometheus_config():
-        return {'ip': '10.0.3.66', 'port': '19011'}  # TODO 等待jerry把配置入库返回真实值
+        return '10.0.3.66', '19011'  # TODO 等待jerry把配置入库返回真实值
 
     def get_host_cpu_usage(self, host_list):
         """
@@ -205,6 +205,6 @@ if __name__ == '__main__':
             'data_disk_usage': 0
         }
     ]
-    p = Prometheus('10.0.2.113', '19011')
+    p = Prometheus()
     host_list_test = p.get_host_info(host_list_test)
     print(host_list_test)
