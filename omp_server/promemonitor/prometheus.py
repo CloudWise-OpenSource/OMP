@@ -6,12 +6,16 @@ import requests
 logger = logging.getLogger('server')
 
 
+def get_prometheus_config():
+    return {'ip': '10.0.3.66', 'port': '19011'}  # TODO 等待jerry把配置入库返回真实值
+
+
 class Prometheus:
     """
     定义prometheus的一些参数以及动作
     """
 
-    def __init__(self, ip, port):
+    def __init__(self, ip='127.0.0.1', port='19001'):
         self.ip = ip
         self.port = port
         self.basic_api_url = f'http://{self.ip}:{self.port}/api/v1/query?query='
@@ -24,8 +28,6 @@ class Prometheus:
         query_url = f'{self.basic_api_url}(1 - avg(rate(node_cpu_seconds_total' \
                     f'{{mode="idle"}}[2m])) by (instance))*100'
         # print(query_url)
-        new_host_list = list()
-
         try:
             get_cpu_response = requests.request(method="GET", url=query_url, headers=headers)
             if get_cpu_response.status_code == 200:
@@ -34,14 +36,16 @@ class Prometheus:
                     logger.error(get_cpu_response.text)
                     logger.error(f'获取主机CPU使用率失败！')
                     return None
-                for host in host_list:
+                for index, host in enumerate(host_list.copy()):
                     for item in cpu_usage_dict.get('data').get('result'):
                         if item.get('metric').get('instance') == host.get('ip'):
-                            host['cpu_usage'] = math.ceil(float(item.get('value')[1]))
-                            host['cpu_status'] = 'warning'  # TODO  待阈值判断
+                            host_list[index]['cpu_usage'] = math.ceil(float(item.get('value')[1]))
+                            host_list[index]['cpu_status'] = 'warning'  # TODO  待阈值判断
                             break
-                    new_host_list.append(host)
-                return new_host_list
+                        host_list[index]['cpu_usage'] = None
+                        host_list[index]['cpu_status'] = None  # TODO  待阈值判断
+
+                return host_list
             else:
                 logger.error(get_cpu_response.text)
                 logger.error(f'获取主机CPU使用率失败！')
@@ -59,7 +63,6 @@ class Prometheus:
         query_url = f'{self.basic_api_url}(1 - (node_memory_MemAvailable_bytes / ' \
                     f'(node_memory_MemTotal_bytes)))* 100'
         # print(query_url)
-        new_host_list = list()
 
         try:
             get_mem_response = requests.request(method="GET", url=query_url, headers=headers)
@@ -69,14 +72,15 @@ class Prometheus:
                     logger.error(get_mem_response.text)
                     logger.error(f'获取主机内存使用率失败！')
                     return None
-                for host in host_list:
+                for index, host in enumerate(host_list.copy()):
                     for item in mem_usage_dict.get('data').get('result'):
                         if item.get('metric').get('instance') == host.get('ip'):
-                            host['mem_usage'] = math.ceil(float(item.get('value')[1]))
-                            host['mem_status'] = 'warning'  # TODO
+                            host_list[index]['mem_usage'] = math.ceil(float(item.get('value')[1]))
+                            host_list[index]['mem_status'] = 'warning'  # TODO
                             break
-                    new_host_list.append(host)
-                return new_host_list
+                        host_list[index]['mem_usage'] = None
+                        host_list[index]['mem_status'] = None  # TODO  待阈值判断
+                return host_list
             else:
                 logger.error(get_mem_response.text)
                 logger.error(f'获取主机内存使用率失败！')
@@ -96,7 +100,6 @@ class Prometheus:
                     f'(node_filesystem_avail_bytes{{mountpoint="/"}}-node_filesystem_free_bytes{{mountpoint="/"}} - ' \
                     f'(-node_filesystem_size_bytes{{mountpoint="/"}}))*100'
         # print(query_url)
-        new_host_list = list()
 
         try:
             get_root_disk_response = requests.request(method="GET", url=query_url, headers=headers)
@@ -106,14 +109,15 @@ class Prometheus:
                     logger.error(get_root_disk_response.text)
                     logger.error(f'获取主机磁盘根分区使用率失败！')
                     return None
-                for host in host_list:
+                for index, host in enumerate(host_list.copy()):
                     for item in root_disk_usage_dict.get('data').get('result'):
                         if item.get('metric').get('instance') == host.get('ip'):
-                            host['root_disk_usage'] = math.ceil(float(item.get('value')[1]))
-                            host['root_disk_status'] = 'warning'  # TODO
+                            host_list[index]['root_disk_usage'] = math.ceil(float(item.get('value')[1]))
+                            host_list[index]['root_disk_status'] = 'warning'  # TODO
                             break
-                    new_host_list.append(host)
-                return new_host_list
+                        host_list[index]['root_disk_usage'] = None
+                        host_list[index]['root_disk_status'] = None  # TODO
+                return host_list
             else:
                 logger.error(get_root_disk_response.text)
                 logger.error(f'获取主机磁盘根分区使用率失败！')
@@ -129,8 +133,7 @@ class Prometheus:
         """
         headers = {'Content-Type': 'application/json'}
         # print(query_url)
-        new_host_list = list()
-        for host in host_list:
+        for index, host in enumerate(host_list.copy()):
             host_ip = host.get('ip')
             host_data_disk = host.get('data_folder')
             query_url = f'{self.basic_api_url}' \
@@ -149,10 +152,11 @@ class Prometheus:
                         return None
                     for item in data_disk_usage_dict.get('data').get('result'):
                         if item.get('metric').get('instance') == host.get('ip'):
-                            host['data_disk_usage'] = math.ceil(float(item.get('value')[1]))
-                            host['root_disk_status'] = 'warning'  # TODO
+                            host_list[index]['data_disk_usage'] = math.ceil(float(item.get('value')[1]))
+                            host_list[index]['root_disk_status'] = 'warning'  # TODO
                             break
-                    new_host_list.append(host)
+                        host_list[index]['data_disk_usage'] = None
+                        host_list[index]['root_disk_status'] = None  # TODO
                 else:
                     logger.error(get_data_disk_response.text)
                     logger.error(f'获取主机磁盘数据分区使用率失败！')
@@ -161,7 +165,7 @@ class Prometheus:
                 logger.error(e)
                 logger.error(f'获取主机磁盘数据分区使用率失败！')
                 return None
-        return new_host_list
+        return host_list
 
     def get_host_info(self, host_list):
         """
