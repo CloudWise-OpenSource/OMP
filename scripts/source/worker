@@ -19,7 +19,7 @@ start() {
   else
     cd $PROJECT_FOLDER/omp_server
     nohup $PROJECT_FOLDER/component/env/bin/python3 $PROJECT_FOLDER/component/env/bin/celery \
-    -A omp_server worker --loglevel=ERROR >$PROJECT_FOLDER/logs/celery_worker.log  2>&1 &
+    -A omp_server worker --loglevel=INFO -f $PROJECT_FOLDER/logs/celery.log >$PROJECT_FOLDER/logs/celery_worker.log  2>&1 &
     echo "${APP_NAME} [running]"
   fi
 }

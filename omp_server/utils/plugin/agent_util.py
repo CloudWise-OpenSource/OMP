@@ -11,16 +11,16 @@
 """
 
 import os
-import logging
 
 import yaml
+from celery.utils.log import get_task_logger
 
 from utils.plugin.ssh import SSH
 from omp_server.settings import PROJECT_DIR
 from utils.parse_config import LOCAL_IP
 from utils.parse_config import SALT_RET_PORT
 
-logger = logging.getLogger("server")
+logger = get_task_logger("celery_log")
 
 
 class Agent(object):
@@ -35,6 +35,8 @@ class Agent(object):
         :param password: 主机密码
         :param install_dir: 安装路径
         """
+        logger.info(
+            f"Agent Manager: {host}; {port}; {username}; {install_dir}")
         self.host = host
         self.port = port
         self.username = username
@@ -60,6 +62,7 @@ class Agent(object):
         :return:
         """
         try:
+            logger.info(f"Generate Conf For {self.host}!")
             agent_conf_dic = {
                 "master": self.master_ip,
                 "master_port": self.master_port,
@@ -80,12 +83,14 @@ class Agent(object):
         安装agent
         :return:
         """
+        logger.info(f"deploy host for agent {self.host}!")
         # step1: 判断是否可连接
         ssh_state, _ = self.ssh.check()
         if not ssh_state:
             return False, "ssh connect failed"
 
         # 删除原有omp_salt_agent
+        logger.info(f"delete origin omp_salt_agent for {self.host}")
         omp_salt = os.path.join(self.install_dir, "omp_salt_agent")
         _delete_cron_cmd = f"sed -i '/omp_salt_agent/d' /var/spool/cron/{self.username}; "
         # OMP-v1.3.0 防止误删除，不删除这个文件夹
@@ -95,6 +100,7 @@ class Agent(object):
         self.ssh.cmd(final_cmd, timeout=60)
 
         # step2: push agent.tar.gz to remote host and install
+        logger.info(f"push omp_salt_agent.tar.gz to {self.host}!")
         tar_push_state, tar_push_msg = self.ssh.file_push(
             self.agent_file_path, self.install_dir)
         if not tar_push_state:
@@ -103,6 +109,7 @@ class Agent(object):
             return False, tar_push_msg
 
         # step3: install agent
+        logger.info(f"execute install command for {self.host}!")
         command = "cd {0} && tar xf {1}.tar.gz && chown -R {2}:{2} {1} && rm -f {1}.tar.gz".format(
             self.install_dir, self.agent_name, self.run_user)
         cmd_exec_state, cmd_exec_msg = self.ssh.cmd(command)
@@ -112,6 +119,7 @@ class Agent(object):
             return False, cmd_exec_msg
 
         # step4: make package_hub/host_ip/
+        logger.info(f"push config to {self.host}!")
         config_tmp_dir = os.path.join(self.package_hub, self.host)
         if not os.path.isdir(config_tmp_dir):
             os.makedirs(config_tmp_dir)
@@ -133,6 +141,7 @@ class Agent(object):
             return False, config_push_msg
 
         # step6: make and push scripts
+        logger.info(f"push script to {self.host}!")
         with open(os.path.join(PROJECT_DIR, "scripts/source/omp_salt_agent"), "r") as fp:
             _script_content = fp.read()
         with open(os.path.join(config_tmp_dir, "omp_salt_agent"), "w") as fp:
@@ -153,6 +162,7 @@ class Agent(object):
 
         # step7: start and init agent
         # OMP-v1.3.0 增加agent文件夹整体赋权问题
+        logger.info(f"init omp_salt_agent for {self.host}!")
         command = f"cd {self.install_dir} && " \
                   f"chown -R {self.run_user}.{self.run_user} {self.agent_name} && " \
                   f"bash {self.agent_name}/bin/{self.agent_name} init"
@@ -163,6 +173,7 @@ class Agent(object):
             logger.error(
                 f"Error while start agent for {self.host}: {cmd_exec_msg}")
             return False, cmd_exec_msg
+        logger.info(f"success deploy agent for {self.host}!")
         return True, "agent deploy success."
 
     def agent_manage(self, action, install_app_dir):
