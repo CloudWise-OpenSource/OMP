@@ -77,18 +77,19 @@ class SSH(object):
         else:
             return False, f"stdout: {who}"
 
-    def cmd(self, command, timeout=SSH_TIMEOUT):
+    def cmd(self, command, timeout=SSH_TIMEOUT, get_pty=True):
         """
         执行shell命令
         :param command:
         :param timeout:
+        :param get_pty:
         :return:
         """
         self._get_connection()
         if self.is_error:
             return False, str(self.error_message)
         _, stdout, stderr = self.ssh_client.exec_command(
-            command, get_pty=True, timeout=timeout)
+            command, get_pty=get_pty, timeout=timeout)
         stdout.channel.recv_exit_status()
         res_stdout = stdout.readlines()
         res_stderr = stderr.readlines()
