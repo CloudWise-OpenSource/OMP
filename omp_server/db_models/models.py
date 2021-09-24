@@ -152,3 +152,17 @@ class HostOperateLog(models.Model):
         """ 元数据 """
         db_table = "omp_host_operate_log"
         verbose_name = verbose_name_plural = "主机操作记录"
+
+class MonitorUrl(models.Model):
+    """ 用户操作记录表 """
+
+    objects = None
+    name = models.CharField(
+        "监控类别", max_length=32, unique=True, help_text="监控类别")
+    monitor_url = models.CharField(
+        "请求地址", max_length=128, help_text="请求地址")
+
+    class Meta:
+        """ 元数据 """
+        db_table = "omp_promemonitor_url"
+        verbose_name = verbose_name_plural = "监控地址记录"
