@@ -68,6 +68,10 @@ file_recv_max_size: 524288
 reactor:
   - 'salt/auth':
     - salt://reactor/auth.sls
+  - 'salt/minion/*/start':
+    - salt://reactor/start.sls
+runner_dirs:
+  - {os.path.join(PROJECT_FOLDER, 'package_hub/runners')}
 """
 
 uwsgi_content = f"""
