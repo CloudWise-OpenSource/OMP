@@ -47,8 +47,8 @@ def get_agent_detail(target):
         if obj_list:
             obj_list.update(
                 memory=res.get("memory", {}).get("memory_total", 0),
-                cpu=res.get("cpu", ""),
-                disk=res.get("disk", {}).get("disk_total", 0),
+                cpu=res.get("cpu", 0),
+                disk=res.get("disk", {}),
                 host_agent=0,
             )
             logger.info(f"更新{target}状态成功!")
