@@ -6,10 +6,22 @@
 # Version: 1.0
 # Introduction:
 
+import math
 import socket
 
 import psutil
 import salt.utils.network
+
+
+def byte_to_gb(b):
+    """
+    byte 转 gb
+    :param b:
+    :return:
+    """
+    if not isinstance(b, int):
+        return 0
+    return math.ceil(b / 1024 / 1024 / 1024)
 
 
 def get_cpu_info():
@@ -31,10 +43,10 @@ def get_memory_detail():
     memory_free = int(memory.free)
     memory_available = int(memory.available)
     return {
-        "memory_total": memory_total,
-        "memory_used": memory_used,
-        "memory_free": memory_free,
-        "memory_available": memory_available
+        "memory_total": byte_to_gb(memory_total),
+        "memory_used": byte_to_gb(memory_used),
+        "memory_free": byte_to_gb(memory_free),
+        "memory_available": byte_to_gb(memory_available)
     }
 
 
@@ -47,7 +59,7 @@ def get_disk_detail():
     ret_dic = {}
     for item in all_partitions:
         disk_usage = psutil.disk_usage(item.mountpoint)
-        _disk_total = int(disk_usage.total)
+        _disk_total = byte_to_gb(int(disk_usage.total))
         ret_dic[item.mountpoint] = _disk_total
     return ret_dic
 
