@@ -180,7 +180,7 @@ class Agent(object):
         """
         manage salt agent, start stop status
 
-        :param str action: [start|stop|status]
+        :param str action: [start|stop|status|restart]
         :param str install_app_dir:  e.g. /data/app
 
         :return:
@@ -195,8 +195,11 @@ class Agent(object):
         elif action == "status":
             command = "cd {}/{} && bash ./bin/omp_salt_agent status".format(
                 install_app_dir, self.agent_name)
+        elif action == "restart":
+            command = "cd {}/{} && bash ./bin/omp_salt_agent restart".format(
+                install_app_dir, self.agent_name)
         else:
-            return False, "start|stop|status"
+            return False, "start|stop|status|restart"
         cmd_exec_state, cmd_exec_msg = self.ssh.cmd(command)
         if cmd_exec_state:
             return True, cmd_exec_msg[0].strip()
