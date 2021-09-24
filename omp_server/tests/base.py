@@ -82,10 +82,10 @@ class BaseTest(TestCase):
     @staticmethod
     def create_default_env():
         """ 创建默认环境 """
-        queryset = Env.objects.filter(name="default")
+        queryset = Env.objects.filter(id=1)
         if queryset.exists():
             return
-        return Env.objects.create(name="default")
+        return Env.objects.create(id=1, name="default")
 
 
 class AutoLoginTest(BaseTest):

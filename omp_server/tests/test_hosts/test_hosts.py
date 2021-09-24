@@ -340,7 +340,7 @@ class CreateHostTest(AutoLoginTest):
 
 
 class ListHostTest(AutoLoginTest):
-    """ 创建主机测试类 """
+    """ 主机列表测试类 """
 
     def setUp(self):
         super(ListHostTest, self).setUp()
