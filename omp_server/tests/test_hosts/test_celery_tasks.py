@@ -54,7 +54,7 @@ class HostCeleryTaskTest(BaseTest):
     @mock.patch.object(Agent, "agent_deploy", return_value=(False, "error_message"))
     def test_deploy_agent_failed_with_wrong_id(self, agent_deploy):
         """
-        测试部署Agent失败
+        测试部署Agent失败，主机id错误
         :return:
         """
         self.assertEqual(deploy_agent(1000), None)
@@ -62,7 +62,7 @@ class HostCeleryTaskTest(BaseTest):
     @mock.patch.object(Agent, "agent_deploy", return_value=(True, "success"))
     def test_real_deploy_agent_success(self, agent_deploy):
         """
-        测试部署Agent失败
+        测试部署Agent成功
         :return:
         """
         self.assertEqual(real_deploy_agent(self.host), None)
@@ -78,7 +78,7 @@ class HostCeleryTaskTest(BaseTest):
     @mock.patch.object(SSH, "cmd", return_value=(True, "success"))
     def test_restart_agent_success(self, agent_deploy):
         """
-        测试部署Agent成功
+        测试重启主机Agent成功
         :return:
         """
         self.assertEqual(host_agent_restart(self.host.id), None)
@@ -86,7 +86,7 @@ class HostCeleryTaskTest(BaseTest):
     @mock.patch.object(SSH, "cmd", return_value=(False, "error_message"))
     def test_restart_agent_failed(self, agent_deploy):
         """
-        测试部署Agent失败
+        测试重启主机Agent失败
         :return:
         """
         self.assertEqual(host_agent_restart(self.host.id), None)
@@ -94,7 +94,7 @@ class HostCeleryTaskTest(BaseTest):
     @mock.patch.object(SSH, "cmd", return_value=(False, "error_message"))
     def test_restart_agent_failed_with_wrong_id(self, agent_deploy):
         """
-        测试部署Agent失败
+        测试重启主机Agent失败，主机id错误
         :return:
         """
         self.assertEqual(host_agent_restart(1000), None)
@@ -102,7 +102,7 @@ class HostCeleryTaskTest(BaseTest):
     @mock.patch.object(SSH, "cmd", return_value=(True, "success"))
     def test_real_restart_agent_success(self, agent_deploy):
         """
-        测试部署Agent失败
+        测试重启主机Agent成功
         :return:
         """
         self.assertEqual(real_host_agent_restart(self.host), None)
@@ -110,7 +110,7 @@ class HostCeleryTaskTest(BaseTest):
     @mock.patch.object(SSH, "cmd", return_value=(False, "error_message"))
     def test_real_restart_agent_failed(self, agent_deploy):
         """
-        测试部署Agent失败
+        测试重启主机Agent失败
         :return:
         """
         self.assertEqual(real_host_agent_restart(self.host), None)

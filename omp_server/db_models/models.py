@@ -153,6 +153,7 @@ class HostOperateLog(models.Model):
         db_table = "omp_host_operate_log"
         verbose_name = verbose_name_plural = "主机操作记录"
 
+
 class MonitorUrl(models.Model):
     """ 用户操作记录表 """
 
@@ -166,3 +167,45 @@ class MonitorUrl(models.Model):
         """ 元数据 """
         db_table = "omp_promemonitor_url"
         verbose_name = verbose_name_plural = "监控地址记录"
+
+
+class Alert(models.Model):
+    """告警数据表"""
+    is_read = models.IntegerField(
+        "已读", default=0, help_text="此消息是否已读，0-未读；1-已读")
+    alert_type = models.CharField(
+        "告警类型", max_length=32, default="", help_text="告警类型，主机host，服务service")
+    alert_host_ip = models.CharField(
+        "告警主机ip", max_length=64, default="", help_text="告警来源主机ip")
+    alert_host_instance_name = models.CharField(
+        "告警主机实例名称", max_length=256, default="", help_text="告警主机实例名称")
+    alert_service_name = models.CharField(
+        "告警服务名称", max_length=128, default="", help_text="服务类告警中的服务名称")
+    alert_service_instance_name = models.CharField(
+        "告警服务实例名称", max_length=128, default="", help_text="告警服务实例名称")
+    alert_service_type = models.CharField(
+        "告警服务类型", max_length=128, default="", help_text="服务所属类型")
+    alert_level = models.CharField(
+        "告警级别", max_length=1024, default="", help_text="告警级别")
+    alert_describe = models.CharField(
+        "告警描述", max_length=1024, default="", help_text="告警描述")
+    alert_receiver = models.CharField(
+        "告警接收人", max_length=256, default="", help_text="告警接收人")
+    alert_resolve = models.CharField(
+        "告警解决方案", max_length=1024, default="", help_text="告警解决方案")
+    alert_time = models.DateTimeField(
+        "告警发生时间", help_text="告警发生时间")
+    create_time = models.DateTimeField(
+        "告警信息入库时间", auto_now_add=True, help_text="告警信息入库时间")
+    monitor_path = models.CharField(
+        "跳转监控路径", max_length=2048, blank=True, null=True, help_text="跳转grafana路由")
+    monitor_log = models.CharField(
+        "跳转监控日志路径", max_length=2048, blank=True, null=True, help_text="跳转grafana日志页面路由")
+    fingerprint = models.CharField(
+        "告警的唯一标识", max_length=1024, blank=True, null=True, help_text="告警的唯一标识")
+    env_id = models.IntegerField(help_text="环境id", default=1)
+
+    class Meta:
+        """元数据"""
+        db_table = 'omp_alert'
+        verbose_name = verbose_name_plural = "告警记录"
