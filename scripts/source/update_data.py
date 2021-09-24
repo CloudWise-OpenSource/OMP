@@ -25,6 +25,8 @@ from django.contrib.auth.hashers import make_password
 from db_models.models import UserProfile
 from db_models.models import MonitorUrl
 from utils.parse_config import MONITOR_PORT
+from db_models.models import Env
+
 
 def create_default_user():
     """
@@ -55,6 +57,17 @@ def create_default_monitor_url():
     MonitorList.append(MonitorUrl(name="grafana", monitor_url=local_ip+str(MONITOR_PORT.get("grafana","19014"))))
     MonitorUrl.objects.bulk_create(MonitorList)
 
+def create_default_env():
+    """
+    创建默认环境
+    :return:
+    """
+    env_name = "default"
+    if Env.objects.filter(env_name=env_name).count() != 0:
+        return
+    Env(env_name=env_name).save()
+
+
 def main():
     """
     基础数据创建流程
@@ -64,6 +77,9 @@ def main():
     create_default_user()
     # 创建监控配置项
     create_default_monitor_url()
+    # 创建默认环境
+    create_default_env()
+
 
 if __name__ == '__main__':
     main()

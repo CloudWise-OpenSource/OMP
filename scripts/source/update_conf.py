@@ -65,6 +65,9 @@ file_roots:
     - {os.path.join(PROJECT_FOLDER, 'package_hub')}
 file_recv: True
 file_recv_max_size: 524288
+reactor:
+  - 'salt/auth':
+    - salt://reactor/auth.sls
 """
 
 uwsgi_content = f"""
