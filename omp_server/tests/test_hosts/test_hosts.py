@@ -1,3 +1,4 @@
+import random
 from unittest import mock
 
 from rest_framework.reverse import reverse
@@ -18,7 +19,7 @@ class CreateHostTest(AutoLoginTest):
         # 正确主机数据
         self.correct_host_data = {
             "instance_name": "mysql_instance_1",
-            "ip": "120.100.80.60",
+            "ip": "10.20.30.40",
             "port": 36000,
             "username": "root",
             "password": "root_password",
@@ -30,7 +31,7 @@ class CreateHostTest(AutoLoginTest):
         """ 创建主机，返回主机对象 """
         return Host.objects.create(
             instance_name="default_name",
-            ip="130.110.90.70",
+            ip="10.30.50.70",
             port=36000,
             username="root",
             password="root_password",
@@ -593,7 +594,8 @@ class ListIPTest(AutoLoginTest):
     @staticmethod
     def delete_hosts():
         """ 创建测试主机 """
-        Host.objects.filter(instance_name__contains="test_ip_ls_").delete()
+        Host.objects.filter(
+            instance_name__contains="test_ip_ls_").delete()
 
     def test_ip_list(self):
         """ 测试 IP 列表 """
@@ -607,3 +609,41 @@ class ListIPTest(AutoLoginTest):
             set(resp.get("data")),
             set(Host.objects.all().values_list("ip", flat=True)))
         self.delete_hosts()
+
+
+class HostMaintainTest(AutoLoginTest):
+    """ 主机维护模式测试类 """
+
+    def setUp(self):
+        super(HostMaintainTest, self).setUp()
+        self.host_maintain_url = reverse("maintain-list")
+
+    def create_hosts(self):
+        """ 创建测试主机 """
+        host_obj_ls = []
+        for i in range(20):
+            host_obj = Host.objects.create(
+                instance_name=f"maintain_{i + 1}",
+                ip=f"10.20.30.{i + 1}",
+                port=36000,
+                username="root",
+                password="root_password",
+                data_folder="/data",
+                operate_system="centos",
+                env=self.default_env,
+            )
+            host_obj_ls.append(host_obj)
+        return host_obj_ls
+
+    @staticmethod
+    def delete_hosts():
+        """ 创建测试主机 """
+        Host.objects.filter(
+            instance_name__contains="maintain_").delete()
+
+    def test_error_field(self):
+        """ 测试错误字段校验 """
+
+        host_obj_ls = self.create_hosts()
+        host_obj_id_ls = list(map(lambda x: x.id, host_obj_ls))
+        # TODO 待补充

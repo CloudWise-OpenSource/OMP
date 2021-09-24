@@ -14,7 +14,10 @@ from django_filters.rest_framework.backends import DjangoFilterBackend
 from db_models.models import Host
 from utils.pagination import PageNumberPager
 from hosts.hosts_filters import HostFilter
-from hosts.hosts_serializers import HostSerializer
+from hosts.hosts_serializers import (
+    HostSerializer, HostMaintenanceSerializer
+)
+from promemonitor.prometheus import Prometheus
 
 
 class HostListView(GenericViewSet, ListModelMixin, CreateModelMixin):
@@ -39,21 +42,15 @@ class HostListView(GenericViewSet, ListModelMixin, CreateModelMixin):
     post_description = "创建主机"
 
     def list(self, request, *args, **kwargs):
-
         # 获取序列化数据列表
         queryset = self.filter_queryset(self.get_queryset())
         serializer = self.get_serializer(
             self.paginate_queryset(queryset), many=True)
         serializer_data = serializer.data
 
-        # TODO 实时获取主机动态
-        # from promemonitor.prometheus import Prometheus
-        # p = Prometheus("10.0.2.113", "19011")
-        # serializer_data = p.get_host_info(serializer_data)
-
-        # print(a)
-        # for i in serializer_data:
-        #     i["test"] = 11111
+        # 实时获取主机动态
+        prometheus_obj = Prometheus()
+        serializer_data = prometheus_obj.get_host_info(serializer_data)
 
         # 获取请求中 ordering 字段
         query_field = request.query_params.get("ordering", "")
@@ -91,7 +88,21 @@ class IpListView(GenericViewSet, ListModelMixin):
         list:
         查询所有 IP 列表
     """
-    queryset = Host.objects.filter(is_deleted=False).values_list("ip", flat=True)
+    queryset = Host.objects.filter(
+        is_deleted=False).values_list("ip", flat=True)
+    # 操作信息描述
+    get_description = "查询主机"
 
     def list(self, request, *args, **kwargs):
         return Response(list(self.get_queryset()))
+
+
+class HostMaintenanceView(GenericViewSet, CreateModelMixin):
+    """
+        create:
+        主机进入 / 退出维护模式
+    """
+    queryset = Host.objects.filter(is_deleted=False)
+    # 操作信息描述
+    post_description = "修改主机维护模式"
+    serializer_class = HostMaintenanceSerializer

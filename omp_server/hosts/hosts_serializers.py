@@ -4,7 +4,9 @@
 
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import (
+    ModelSerializer, Serializer
+)
 
 from db_models.models import (Host, Env)
 from hosts.tasks import deploy_agent
@@ -17,7 +19,7 @@ from utils.plugin.crypto import AESCryptor
 
 
 class HostSerializer(ModelSerializer):
-    """ 用户序列化类 """
+    """ 主机序列化类 """
 
     instance_name = serializers.CharField(
         help_text="实例名",
@@ -126,3 +128,46 @@ class HostSerializer(ModelSerializer):
         # 异步下发 Agent
         deploy_agent.delay(instance.id)
         return instance
+
+
+class HostMaintenanceSerializer(Serializer):
+    """ 主机维护模式序列化类 """
+
+    is_maintenance = serializers.BooleanField(
+        help_text="开启/关闭维护模式",
+        required=True,
+        error_messages={"required": "必须包含[is_maintenance]字段"})
+    host_ids = serializers.ListSerializer(
+        child=serializers.ChoiceField(
+            choices=list(Host.objects.filter(
+                is_deleted=False).values_list("id", flat=True)),
+            error_messages={"invalid_choice": "id [{input}] 不存在"}, ),
+        help_text="主机 ID 列表",
+        required=True,
+        error_messages={"required": "必须包含[host_ids]字段"},
+        allow_empty=False)
+
+    def validate(self, attrs):
+        """ 校验列表中主机 '维护模式' 字段值是否正确 """
+        queryset = Host.objects.filter(
+            id__in=attrs.get("host_ids"),
+            is_maintenance=attrs.get("is_maintenance"))
+        if queryset.exists():
+            status = "开启" if attrs.get("is_maintenance") else "关闭"
+            raise ValidationError({
+                "host_ids": f"存在已经 '{status}' 维护模式的主机"
+            })
+        return attrs
+
+    def create(self, validated_data):
+        """ 进入 / 退出维护 """
+        # TODO 调用进入维护模式函数
+        # 如果操作成功，则更新数据库配置
+        if True:
+            Host.objects.filter(
+                id__in=validated_data.get("host_ids")
+            ).update(is_maintenance=validated_data.get("is_maintenance"))
+        return validated_data
+
+    def update(self, instance, validated_data):
+        pass
