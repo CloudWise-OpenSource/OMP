@@ -131,7 +131,7 @@ class UsersTest(AutoLoginTest):
             'data': None
         })
 
-        # 更新已有用户 -> 密码不一致
+        # 更新已有用户，密码不一致 -> 更新失败
         resp = self.put(reverse("users-detail", [user.id]), {
             "username": username,
             "password": "update_user_pass",

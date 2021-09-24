@@ -4,7 +4,7 @@ from django.test import TestCase
 
 from rest_framework.reverse import reverse
 
-from db_models.models import UserProfile
+from db_models.models import UserProfile, Env
 
 
 class BaseTest(TestCase):
@@ -12,12 +12,9 @@ class BaseTest(TestCase):
 
     def setUp(self):
         self.login_url = reverse("login")
-        self.default_user = UserProfile.objects.create_user(
-            username="admin",
-            password="adminPassword",
-            email="admin@cloudwise.com",
-        )
-        self.default_user.password = "adminPassword"
+        # 创建默认用户
+        self.default_user = self.create_default_user()
+        self.default_env = self.create_default_env()
 
     def get(self, url, data=None):
         return self.client.get(
@@ -67,6 +64,28 @@ class BaseTest(TestCase):
     def logout(self):
         """ 退出登录，清除 cookies 中的 token 令牌 """
         self.client.cookies.pop("jwtToken")
+
+    @staticmethod
+    def create_default_user():
+        """ 创建默认用户 """
+        queryset = UserProfile.objects.filter(username="admin")
+        if queryset.exists():
+            return
+        user_obj = UserProfile.objects.create_user(
+            username="admin",
+            password="adminPassword",
+            email="admin@cloudwise.com",
+        )
+        user_obj.password = "adminPassword"
+        return user_obj
+
+    @staticmethod
+    def create_default_env():
+        """ 创建默认环境 """
+        queryset = Env.objects.filter(name="default")
+        if queryset.exists():
+            return
+        return Env.objects.create(name="default")
 
 
 class AutoLoginTest(BaseTest):
