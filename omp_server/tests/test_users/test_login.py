@@ -13,6 +13,16 @@ class LoginTest(BaseTest):
         self.login_url = reverse("login")
         self.users_list_url = reverse("users-list")
 
+    @staticmethod
+    def get_interval_time(gmt_time):
+        """ 获取间隔时间 """
+        expiration_time = datetime.datetime.strptime(
+            gmt_time, "%a, %d %b %Y %H:%M:%S GMT"
+        ) + datetime.timedelta(hours=8)
+        expiration_time = expiration_time - datetime.datetime.now()
+        # 加一分钟，避免时间损耗影响计算精度
+        return expiration_time + datetime.timedelta(minutes=1)
+
     def test_login(self):
         """ 测试用户登录 """
 
@@ -90,19 +100,11 @@ class LoginTest(BaseTest):
         # 登录 (默认) -> jwt 过期时间 1 天
         self.login()
         gmt_time = self.client.cookies.get("jwtToken").get("expires")
-        expiration_time = datetime.datetime.strptime(
-            gmt_time, "%a, %d %b %Y %H:%M:%S GMT"
-        ) + datetime.timedelta(hours=8)
-        expiration_day = expiration_time.day - datetime.datetime.now().day
-        self.assertEqual(expiration_day, 1)
+        self.assertEqual(self.get_interval_time(gmt_time).days, 1)
         self.logout()
 
         # 登录 (记住密码) -> jwt 过期时间 7 天
         self.login(remember=True)
         gmt_time = self.client.cookies.get("jwtToken").get("expires")
-        expiration_time = datetime.datetime.strptime(
-            gmt_time, "%a, %d %b %Y %H:%M:%S GMT"
-        ) + datetime.timedelta(hours=8)
-        expiration_day = expiration_time.day - datetime.datetime.now().day
-        self.assertEqual(expiration_day, 7)
+        self.assertEqual(self.get_interval_time(gmt_time).days, 7)
         self.logout()

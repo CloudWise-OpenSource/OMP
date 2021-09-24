@@ -26,8 +26,7 @@ class CreateHostTest(AutoLoginTest):
             "operate_system": "centos",
         }
 
-    @staticmethod
-    def create_host():
+    def create_host(self):
         """ 创建主机，返回主机对象 """
         return Host.objects.create(
             instance_name="default_name",
@@ -37,6 +36,7 @@ class CreateHostTest(AutoLoginTest):
             password="root_password",
             data_folder="/data",
             operate_system="centos",
+            env=self.default_env,
         )
 
     def test_error_field_instance_name(self):
@@ -278,10 +278,6 @@ class CreateHostTest(AutoLoginTest):
     def test_wrong_ssh(self, ssh_mock):
         """ 测试创建主机，SSH 校验未通过"""
 
-        print(f"== run test_wrong_ssh method ==\n"
-              f"we mock the SSH.check "
-              f"return_value as {ssh_mock.return_value}")
-
         # 正确字段，ssh 校验未通过 -> 创建失败
         resp = self.post(self.create_host_url, self.correct_host_data).json()
         self.assertDictEqual(resp, {
@@ -294,12 +290,6 @@ class CreateHostTest(AutoLoginTest):
     @mock.patch.object(deploy_agent, "delay", return_value=None)
     def test_correct_field(self, deploy_agent_mock, ssh_mock):
         """ 测试正确字段 """
-
-        print(f"== run test_correct_field method ==\n"
-              f"we mock the SSH.check "
-              f"return_value as {ssh_mock.return_value}\n"
-              f"we mock the deploy_agent.delay "
-              f"return_value as {deploy_agent_mock.return_value}")
 
         # 正确字段 -> 创建成功
         resp = self.post(self.create_host_url, self.correct_host_data).json()
@@ -357,26 +347,30 @@ class ListHostTest(AutoLoginTest):
         self.create_host_url = reverse("hosts-list")
         self.list_host_url = reverse("hosts-list")
 
-    @staticmethod
-    def create_hosts():
-        """ 创建多台主机 """
+    def create_hosts(self):
+        """ 创建测试主机 """
         host_obj_ls = []
         for i in range(50):
             host_obj = Host.objects.create(
-                instance_name=f"host_name_{i + 1}",
+                instance_name=f"test_create_{i + 1}",
                 ip=f"130.110.90.{i + 1}",
                 port=36000,
                 username="root",
                 password="root_password",
                 data_folder="/data",
                 operate_system="centos",
+                env=self.default_env,
             )
             host_obj_ls.append(host_obj)
         return host_obj_ls
 
+    @staticmethod
+    def delete_hosts():
+        """ 创建测试主机 """
+        Host.objects.filter(instance_name__contains="test_create_").delete()
+
     def test_hosts_list(self):
         """ 测试主机列表 """
-
         host_obj_ls = self.create_hosts()
 
         # 查询主机列表 -> 展示所有主机
@@ -414,11 +408,202 @@ class ListHostTest(AutoLoginTest):
 
         # TODO 监控动态字段排序
 
+        # 删除主机
+        self.delete_hosts()
+
 
 class UpdateHostTest(AutoLoginTest):
     """ 更新主机测试类 """
 
+    def create_hosts(self):
+        """ 创建多台主机 """
+        host_obj_ls = []
+        for i in range(10):
+            host_obj = Host.objects.create(
+                instance_name=f"update_host_{i + 1}",
+                ip=f"130.110.90.{i + 1}",
+                port=36000,
+                username="root",
+                password="root_password",
+                data_folder="/data",
+                operate_system="centos",
+                env=self.default_env,
+            )
+            host_obj_ls.append(host_obj)
+        return host_obj_ls
+
+    @staticmethod
+    def delete_hosts():
+        Host.objects.filter(instance_name__contains="update_host_").delete()
+
+    @mock.patch.object(SSH, "check", return_value=(True, ""))
+    def test_update_host(self, ssh_mock):
+        """ 测试更新一个主机 """
+
+        # 更新不存在主机 -> 更新失败
+        resp = self.put(reverse("hosts-detail", [99]), {
+            "instance_name": "mysql_instance_1",
+            "ip": "120.100.80.60",
+            "port": 36000,
+            "username": "root",
+            "password": "root_password",
+            "data_folder": "/data",
+            "operate_system": "centos",
+        }).json()
+        self.assertDictEqual(resp, {
+            "code": 1,
+            "message": "Not found.",
+            "data": None
+        })
+
+        host_obj_ls = self.create_hosts()
+        # 更新已存在主机，修改主机 IP -> 更新失败
+        host_obj = host_obj_ls[0]
+        resp = self.put(reverse("hosts-detail", [host_obj.id]), {
+            "instance_name": host_obj.instance_name,
+            "ip": "120.100.80.60",
+            "port": host_obj.port,
+            "username": host_obj.username,
+            "password": host_obj.password,
+            "data_folder": host_obj.data_folder,
+            "operate_system": host_obj.operate_system,
+        }).json()
+        self.assertDictEqual(resp, {
+            "code": 1,
+            "message": "ip: 该字段不可修改;",
+            "data": None
+        })
+
+        # 更新已存在主机，修改实例名为已存在 -> 更新失败
+        resp = self.put(reverse("hosts-detail", [host_obj.id]), {
+            "instance_name": host_obj_ls[1].instance_name,
+            "ip": host_obj.ip,
+            "port": host_obj.port,
+            "username": host_obj.username,
+            "password": host_obj.password,
+            "data_folder": host_obj.data_folder,
+            "operate_system": host_obj.operate_system,
+        }).json()
+        self.assertDictEqual(resp, {
+            "code": 1,
+            "message": "instance_name: 实例名已经存在;",
+            "data": None
+        })
+
+        # 正确修改数据 -> 修改成功
+        resp = self.put(reverse("hosts-detail", [host_obj.id]), {
+            "instance_name": "new_host_name",
+            "ip": host_obj.ip,
+            "port": host_obj.port,
+            "username": "new_username",
+            "password": "new_password",
+            "data_folder": host_obj.data_folder,
+            "operate_system": host_obj.operate_system,
+        }).json()
+        self.assertEqual(resp.get("code"), 0)
+        self.assertEqual(resp.get("message"), "success")
+        new_host_info = resp.get("data")
+        # 数据已更新
+        self.assertEqual(new_host_info.get("instance_name"), "new_host_name")
+        # 更新时间变化
+        self.assertNotEqual(
+            host_obj.modified,
+            Host.objects.filter(id=host_obj.id).first().modified)
+        self.delete_hosts()
+
+    @mock.patch.object(SSH, "check", return_value=(True, ""))
+    def test_partial_update_host(self, ssh_mock):
+        """ 更新一个现有主机的一个或多个字段 """
+
+        # 更新不存在主机 -> 更新失败
+        resp = self.patch(reverse("hosts-detail", [99]), {
+            "instance_name": "new_host_name",
+        }).json()
+        self.assertDictEqual(resp, {
+            "code": 1,
+            "message": "Not found.",
+            "data": None
+        })
+
+        host_obj_ls = self.create_hosts()
+        # 更新已存在主机，修改主机 IP -> 更新失败
+        host_obj = host_obj_ls[0]
+        resp = self.patch(reverse("hosts-detail", [host_obj.id]), {
+            "ip": "120.100.80.60",
+        }).json()
+        self.assertDictEqual(resp, {
+            "code": 1,
+            "message": "ip: 该字段不可修改;",
+            "data": None
+        })
+
+        # 更新已存在主机，修改实例名为已存在 -> 更新失败
+        resp = self.patch(reverse("hosts-detail", [host_obj.id]), {
+            "instance_name": host_obj_ls[1].instance_name,
+        }).json()
+        self.assertDictEqual(resp, {
+            "code": 1,
+            "message": "instance_name: 实例名已经存在;",
+            "data": None
+        })
+
+        # 正确修改数据 -> 修改成功
+        resp = self.patch(reverse("hosts-detail", [host_obj.id]), {
+            "instance_name": "new_host_name",
+            "username": "new_username",
+            "password": "new_password",
+        }).json()
+        self.assertEqual(resp.get("code"), 0)
+        self.assertEqual(resp.get("message"), "success")
+        new_host_obj = resp.get("data")
+        self.assertTrue(new_host_obj is not None)
+        # 数据已更新
+        self.assertEqual(new_host_obj.get("instance_name"), "new_host_name")
+        # 更新时间变化
+        self.assertNotEqual(
+            host_obj.modified,
+            Host.objects.filter(id=host_obj.id).first().modified)
+        self.delete_hosts()
+
 
 class ListIPTest(AutoLoginTest):
     """ IP 列表测试类 """
-    pass
+
+    def setUp(self):
+        super(ListIPTest, self).setUp()
+        self.ip_list_url = reverse("ips-list")
+
+    def create_hosts(self):
+        """ 创建测试主机 """
+        host_obj_ls = []
+        for i in range(100):
+            host_obj = Host.objects.create(
+                instance_name=f"test_ip_ls_{i + 1}",
+                ip=f"130.110.90.{i + 1}",
+                port=36000,
+                username="root",
+                password="root_password",
+                data_folder="/data",
+                operate_system="centos",
+                env=self.default_env,
+            )
+            host_obj_ls.append(host_obj)
+        return host_obj_ls
+
+    @staticmethod
+    def delete_hosts():
+        """ 创建测试主机 """
+        Host.objects.filter(instance_name__contains="test_ip_ls_").delete()
+
+    def test_ip_list(self):
+        """ 测试 IP 列表 """
+
+        self.create_hosts()
+        # 查询主机列表 -> 返回所有主机列表数据
+        resp = self.get(self.ip_list_url).json()
+        self.assertEqual(resp.get("code"), 0)
+        self.assertEqual(resp.get("message"), "success")
+        self.assertEqual(
+            set(resp.get("data")),
+            set(Host.objects.all().values_list("ip", flat=True)))
+        self.delete_hosts()

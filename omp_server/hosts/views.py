@@ -47,6 +47,13 @@ class HostListView(GenericViewSet, ListModelMixin, CreateModelMixin):
         serializer_data = serializer.data
 
         # TODO 实时获取主机动态
+        # from promemonitor.prometheus import Prometheus
+        # p = Prometheus("10.0.2.113", "19011")
+        # serializer_data = p.get_host_info(serializer_data)
+
+        # print(a)
+        # for i in serializer_data:
+        #     i["test"] = 11111
 
         # 获取请求中 ordering 字段
         query_field = request.query_params.get("ordering", "")

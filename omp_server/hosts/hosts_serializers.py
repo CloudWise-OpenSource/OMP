@@ -6,7 +6,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ModelSerializer
 
-from db_models.models import Host
+from db_models.models import (Host, Env)
 from hosts.tasks import deploy_agent
 
 from utils.validator import (
@@ -64,25 +64,37 @@ class HostSerializer(ModelSerializer):
         help_text="操作系统",
         required=True, max_length=128,
         error_messages={"required": "必须包含[operate_system]字段"})
+    env = serializers.PrimaryKeyRelatedField(
+        help_text="环境",
+        required=False,
+        queryset=Env.objects.all(),
+        error_messages={"does_not_exist": "未找到对应环境"})
 
     class Meta:
         """ 元数据 """
         model = Host
-        exclude = ("is_deleted", "env")
+        exclude = ("is_deleted",)
         read_only_fields = (
             "service_num", "alert_num", "host_name", "operate_system",
             "memory", "cpu", "disk", "is_maintenance", "host_agent",
-            "monitor_agent", "host_agent_error", "monitor_agent_error"
+            "monitor_agent", "host_agent_error", "monitor_agent_error",
         )
 
     def validate_instance_name(self, instance_name):
         """ 校验实例名是否重复 """
-        if Host.objects.filter(instance_name=instance_name).exists():
+        queryset = Host.objects.all()
+        if self.instance is not None:
+            queryset = queryset.exclude(id=self.instance.id)
+        if queryset.filter(instance_name=instance_name).exists():
             raise ValidationError("实例名已经存在")
         return instance_name
 
     def validate_ip(self, ip):
         """ 校验IP是否重复 """
+        if self.instance is not None:
+            if ip != self.instance.ip:
+                raise ValidationError("该字段不可修改")
+            return ip
         if Host.objects.filter(ip=ip).exists():
             raise ValidationError("IP已经存在")
         return ip
@@ -99,12 +111,10 @@ class HostSerializer(ModelSerializer):
         is_connect, _ = ssh.check()
         if not is_connect:
             raise ValidationError({"ip": "主机SSH连通性校验失败"})
-        # 当请求方式为 PUT/PATCH，且存在对于 IP 值的修改，则抛出验证错误
-        request_method = self.context["request"].method
-        if request_method in ("PUT", "PATCH") and \
-                attrs.get("ip") and \
-                attrs.get("ip") != self.instance.ip:
-            raise ValidationError({"ip": "该字段不可修改"})
+
+        # 如果未传递 env，则指定默认环境
+        if not attrs.get("") and not self.instance:
+            attrs["env"] = Env.objects.get(id=1)
         return attrs
 
     def create(self, validated_data):
