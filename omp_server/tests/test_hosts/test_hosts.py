@@ -5,6 +5,7 @@ from rest_framework.reverse import reverse
 
 from tests.base import AutoLoginTest
 from hosts.tasks import deploy_agent
+from hosts.tasks import host_agent_restart
 from db_models.models import Host
 from utils.plugin.ssh import SSH
 from utils.plugin.crypto import AESCryptor
@@ -55,7 +56,8 @@ class CreateHostTest(AutoLoginTest):
 
         # instance_name 超过长度 -> 创建失败
         data = self.correct_host_data.copy()
-        data.update({"instance_name": "north_host_instance_name_mysql_node_one"})
+        data.update(
+            {"instance_name": "north_host_instance_name_mysql_node_one"})
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
@@ -772,7 +774,6 @@ class HostMaintainTest(AutoLoginTest):
 
         host_obj_ls = self.create_hosts()
         host_obj_id_ls = list(map(lambda x: x.id, host_obj_ls))
-
         # host_ids 中含不存在的 ID -> 修改失败
         not_exists_id = 666
         random_host_ls = random.sample(host_obj_id_ls, 5)
@@ -841,3 +842,56 @@ class HostMaintainTest(AutoLoginTest):
         ).values_list("is_maintenance", flat=True)
         self.assertTrue(not any(is_maintenance_ls))
         self.delete_hosts()
+
+
+class HostAgentRestartTest(AutoLoginTest):
+    """ 主机维护模式测试类 """
+
+    def setUp(self):
+        super(HostAgentRestartTest, self).setUp()
+        self.host_restartHostAgent_url = reverse("restartHostAgent-list")
+
+    def create_hosts(self):
+        """ 创建测试主机 """
+        host_obj_ls = []
+        for i in range(2):
+            host_obj = Host.objects.create(
+                instance_name=f"restart_{i + 1}",
+                ip=f"127.0.0.{i + 1}",
+                port=36000,
+                username="root",
+                password="root_password",
+                data_folder="/data",
+                operate_system="centos",
+                env=self.default_env,
+            )
+            host_obj_ls.append(host_obj)
+        return host_obj_ls
+
+    @mock.patch.object(host_agent_restart, "delay", return_value=None)
+    def test_success(self, host_agent_restart_mock):
+        """ 请求成功测试 """
+        host_obj_ls = self.create_hosts()
+        host_obj_id_ls = list(map(lambda x: x.id, host_obj_ls))
+        resp = self.post(
+            self.host_restartHostAgent_url,
+            data={"host_ids": host_obj_id_ls}
+        ).json()
+        self.assertDictEqual(resp, {
+            "code": 0,
+            "message": "success",
+            "data": {
+                "host_ids": host_obj_id_ls
+            }
+        })
+
+    @mock.patch.object(host_agent_restart, "delay", return_value=None)
+    def test_failed(self, host_agent_restart_mock):
+        """ 请求成功测试 """
+        self.create_hosts()
+        resp = self.post(
+            self.host_restartHostAgent_url,
+            data={"host_ids": [random.randint(10000, 20000)]}
+        ).json()
+        self.assertEqual(resp.get("code"), 1)
+
