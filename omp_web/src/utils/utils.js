@@ -3,7 +3,8 @@ import { Badge, message, Tooltip } from "antd";
 import moment from "moment";
 import * as R from "ramda";
 import styles from "./index.module.less";
-import { getRefreshTimeChangeAction } from "@/components/CustomBreadcrumb/store/actionsCreators"
+import { getRefreshTimeChangeAction } from "@/components/CustomBreadcrumb/store/actionsCreators";
+import { CloseCircleFilled } from "@ant-design/icons";
 
 /**
  * 正常/绿色  bg"rgb(238, 250, 244)"  bo:"rgb(84, 187, 166)"
@@ -16,16 +17,20 @@ import { getRefreshTimeChangeAction } from "@/components/CustomBreadcrumb/store/
  * @param data
  * @returns {{total, pageSizeOptions: [string, string, string, string], showTotal: (function(): string), showSizeChanger: boolean}}
  */
- /*eslint-disable*/
+/*eslint-disable*/
 export const paginationConfig = (data) => ({
   showSizeChanger: true,
   pageSizeOptions: ["10", "20", "50", "100"],
-  showTotal: () => <span style={{color:"rgb(152, 157, 171)"}}>共计 <span style={{color:"rgb(63, 64, 70)"}}>{data.length}</span> 条</span>,
+  showTotal: () => (
+    <span style={{ color: "rgb(152, 157, 171)" }}>
+      共计 <span style={{ color: "rgb(63, 64, 70)" }}>{data.length}</span> 条
+    </span>
+  ),
   total: data.length,
   // onShowSizeChange: (current, pageSize) => this.changePageSize(pageSize, current),
   // onChange: (current) => this.changePage(current),
 });
- /*eslint-disable*/
+/*eslint-disable*/
 export const isTableTextInvalid = (text) =>
   String(text) === "null" || text === "" || text === undefined;
 
@@ -40,7 +45,9 @@ export function formatTableRenderData(text, record, index) {
   if (isTableTextInvalid(text)) {
     return "-";
   } else if (text === 0 || text === "active" || text === true) {
-    return <div>{renderCircular("rgb(84, 187, 166)", "rgb(238, 250, 244)")}正常</div>;
+    return (
+      <div>{renderCircular("rgb(84, 187, 166)", "rgb(238, 250, 244)")}正常</div>
+    );
   } else if (text === 1 || text === "unactive" || text === false) {
     return <div>{renderCircular("#da4e48", "#fbe7e6")}异常</div>;
   } else if (text === "CREATE") {
@@ -128,7 +135,13 @@ const renderCircular = (borderColor, backgroundColor) => {
   );
 };
 
-export function ColorfulNotice({ backgroundColor,borderColor, text, top, width = 55 }) {
+export function ColorfulNotice({
+  backgroundColor,
+  borderColor,
+  text,
+  top,
+  width = 55,
+}) {
   //if(top)console.log("top",top);
   return (
     <div
@@ -143,19 +156,18 @@ export function ColorfulNotice({ backgroundColor,borderColor, text, top, width =
         color: "rgba(0, 0, 0, 0.6)",
         fontSize: "12px",
         borderRadius: "4px",
-        border:"1px solid #fff",
+        border: "1px solid #fff",
         backgroundColor,
         borderColor,
-        position:"relative",
-        top
-       }}
+        position: "relative",
+        top,
+      }}
       // className={styles.warningNotice}
     >
       {text}
     </div>
   );
 }
-
 
 /**
  * table组件中ip排序
@@ -358,9 +370,21 @@ export const columnsConfig = {
     render: function renderFunc(text, record, index) {
       switch (record.alert_level) {
         case "critical":
-          return <ColorfulNotice borderColor={"#da4e48"} backgroundColor="#fbe7e6" text={"严重"} />;
+          return (
+            <ColorfulNotice
+              borderColor={"#da4e48"}
+              backgroundColor="#fbe7e6"
+              text={"严重"}
+            />
+          );
         case "warning":
-          return <ColorfulNotice borderColor={"#f5c773"} backgroundColor="rgba(247, 231, 24,.2)" text={"警告"} />;
+          return (
+            <ColorfulNotice
+              borderColor={"#f5c773"}
+              backgroundColor="rgba(247, 231, 24,.2)"
+              text={"警告"}
+            />
+          );
         default:
           return "-";
       }
@@ -489,13 +513,41 @@ export const columnsConfig = {
       if (isTableTextInvalid(text)) return <div>-</div>;
       const _num = Number(Number(text).toFixed(2));
       if (record.cpu_rate_check === "normal") {
-        return <ColorfulNotice backgroundColor="rgb(238, 250, 244)" borderColor="rgb(84, 187, 166)" text={`${_num}%`} top={1} />;
+        return (
+          <ColorfulNotice
+            backgroundColor="rgb(238, 250, 244)"
+            borderColor="rgb(84, 187, 166)"
+            text={`${_num}%`}
+            top={1}
+          />
+        );
       } else if (record.cpu_rate_check === "critical") {
-        return <ColorfulNotice backgroundColor={"#fbe7e6"} borderColor="#da4e48" text={`${_num}%`} top={1} />;
+        return (
+          <ColorfulNotice
+            backgroundColor={"#fbe7e6"}
+            borderColor="#da4e48"
+            text={`${_num}%`}
+            top={1}
+          />
+        );
       } else if (record.cpu_rate_check === "warning") {
-        return <ColorfulNotice backgroundColor="rgba(247, 231, 24,.2)" borderColor="#f5c773" text={`${_num}%`} top={1} />;
+        return (
+          <ColorfulNotice
+            backgroundColor="rgba(247, 231, 24,.2)"
+            borderColor="#f5c773"
+            text={`${_num}%`}
+            top={1}
+          />
+        );
       } else {
-        return <ColorfulNotice backgroundColor="rgb(238, 250, 244)" borderColor="rgb(84, 187, 166)" text={`${_num}%`} top={1} />;
+        return (
+          <ColorfulNotice
+            backgroundColor="rgb(238, 250, 244)"
+            borderColor="rgb(84, 187, 166)"
+            text={`${_num}%`}
+            top={1}
+          />
+        );
       }
     },
     sortDirections: ["descend", "ascend"],
@@ -512,13 +564,41 @@ export const columnsConfig = {
       if (isTableTextInvalid(text)) return <div>-</div>;
       const _num = Number(Number(text).toFixed(2));
       if (record.disk_rate_check === "normal") {
-        return <ColorfulNotice backgroundColor="rgb(238, 250, 244)" borderColor="rgb(84, 187, 166)" top={1} text={`${_num}%`} />;
+        return (
+          <ColorfulNotice
+            backgroundColor="rgb(238, 250, 244)"
+            borderColor="rgb(84, 187, 166)"
+            top={1}
+            text={`${_num}%`}
+          />
+        );
       } else if (record.disk_rate_check === "critical") {
-        return <ColorfulNotice backgroundColor={"#fbe7e6"} borderColor="#da4e48" text={`${_num}%`} top={1}/>;
+        return (
+          <ColorfulNotice
+            backgroundColor={"#fbe7e6"}
+            borderColor="#da4e48"
+            text={`${_num}%`}
+            top={1}
+          />
+        );
       } else if (record.disk_rate_check === "warning") {
-        return <ColorfulNotice backgroundColor="rgba(247, 231, 24,.2)" borderColor="#f5c773" text={`${_num}%`} top={1}/>;
+        return (
+          <ColorfulNotice
+            backgroundColor="rgba(247, 231, 24,.2)"
+            borderColor="#f5c773"
+            text={`${_num}%`}
+            top={1}
+          />
+        );
       } else {
-        return <ColorfulNotice backgroundColor={"rgb(238, 250, 244)"} borderColor="rgb(84, 187, 166)" text={`${_num}%`} top={1}/>;
+        return (
+          <ColorfulNotice
+            backgroundColor={"rgb(238, 250, 244)"}
+            borderColor="rgb(84, 187, 166)"
+            text={`${_num}%`}
+            top={1}
+          />
+        );
       }
     },
     sortDirections: ["descend", "ascend"],
@@ -536,13 +616,41 @@ export const columnsConfig = {
       if (isTableTextInvalid(text)) return <div>-</div>;
       const _num = Number(Number(text).toFixed(2));
       if (record.disk_data_check === "normal") {
-        return <ColorfulNotice backgroundColor={"rgb(238, 250, 244)"} borderColor="rgb(84, 187, 166)" text={`${_num}%`} top={1} />;
+        return (
+          <ColorfulNotice
+            backgroundColor={"rgb(238, 250, 244)"}
+            borderColor="rgb(84, 187, 166)"
+            text={`${_num}%`}
+            top={1}
+          />
+        );
       } else if (record.disk_data_check === "critical") {
-        return <ColorfulNotice backgroundColor={"#fbe7e6"} borderColor="#da4e48" text={`${_num}%`} top={1} />;
+        return (
+          <ColorfulNotice
+            backgroundColor={"#fbe7e6"}
+            borderColor="#da4e48"
+            text={`${_num}%`}
+            top={1}
+          />
+        );
       } else if (record.disk_data_check === "warning") {
-        return <ColorfulNotice backgroundColor="rgba(247, 231, 24,.2)" borderColor="#f5c773" text={`${_num}%`} top={1} />;
+        return (
+          <ColorfulNotice
+            backgroundColor="rgba(247, 231, 24,.2)"
+            borderColor="#f5c773"
+            text={`${_num}%`}
+            top={1}
+          />
+        );
       } else {
-        return <ColorfulNotice backgroundColor={"rgb(238, 250, 244)"} borderColor="rgb(84, 187, 166)" text={`${_num}%`} top={1} />;
+        return (
+          <ColorfulNotice
+            backgroundColor={"rgb(238, 250, 244)"}
+            borderColor="rgb(84, 187, 166)"
+            text={`${_num}%`}
+            top={1}
+          />
+        );
       }
     },
     sortDirections: ["descend", "ascend"],
@@ -560,13 +668,41 @@ export const columnsConfig = {
       if (isTableTextInvalid(text)) return <div>-</div>;
       const _num = Number(Number(text).toFixed(2));
       if (record.memory_rate_check === "normal") {
-        return <ColorfulNotice backgroundColor={"rgb(238, 250, 244)"} borderColor="rgb(84, 187, 166)" text={`${_num}%`} top={1} />;
+        return (
+          <ColorfulNotice
+            backgroundColor={"rgb(238, 250, 244)"}
+            borderColor="rgb(84, 187, 166)"
+            text={`${_num}%`}
+            top={1}
+          />
+        );
       } else if (record.memory_rate_check === "critical") {
-        return <ColorfulNotice backgroundColor={"#fbe7e6"} borderColor="#da4e48" text={`${_num}%`} top={1} />;
+        return (
+          <ColorfulNotice
+            backgroundColor={"#fbe7e6"}
+            borderColor="#da4e48"
+            text={`${_num}%`}
+            top={1}
+          />
+        );
       } else if (record.memory_rate_check === "warning") {
-        return <ColorfulNotice backgroundColor="rgba(247, 231, 24,.2)" borderColor="#f5c773" text={`${_num}%`} top={1} />;
+        return (
+          <ColorfulNotice
+            backgroundColor="rgba(247, 231, 24,.2)"
+            borderColor="#f5c773"
+            text={`${_num}%`}
+            top={1}
+          />
+        );
       } else {
-        return <ColorfulNotice backgroundColor={"rgb(238, 250, 244)"} borderColor="rgb(84, 187, 166)" text={`${_num}%`} top={1} />;
+        return (
+          <ColorfulNotice
+            backgroundColor={"rgb(238, 250, 244)"}
+            borderColor="rgb(84, 187, 166)"
+            text={`${_num}%`}
+            top={1}
+          />
+        );
       }
     },
     sortDirections: ["descend", "ascend"],
@@ -596,7 +732,11 @@ export const columnsConfig = {
       if (isTableTextInvalid(text)) {
         return "-";
       } else if (text === 0) {
-        return <div>{renderCircular("rgb(84, 187, 166)", "rgb(238, 250, 244)")}启用</div>;
+        return (
+          <div>
+            {renderCircular("rgb(84, 187, 166)", "rgb(238, 250, 244)")}启用
+          </div>
+        );
       } else if (text === 1) {
         return <div>{renderCircular("#da4e48", "#fbe7e6")}禁用</div>;
       } else {
@@ -615,7 +755,11 @@ export const columnsConfig = {
       if (isTableTextInvalid(text)) {
         return "-";
       } else if (text === 0) {
-        return <div>{renderCircular("rgb(84, 187, 166)", "rgb(238, 250, 244)")}正常</div>;
+        return (
+          <div>
+            {renderCircular("rgb(84, 187, 166)", "rgb(238, 250, 244)")}正常
+          </div>
+        );
       } else if (text === 1) {
         return "安装中";
       } else if (text === 2) {
@@ -869,27 +1013,49 @@ export const columnsConfig = {
       if (isTableTextInvalid(text)) {
         return "-";
       } else if (text === 0) {
-        return <div>{renderCircular("#f5c773","rgba(247, 231, 24,.2)")}未安装</div>;
+        return (
+          <div>{renderCircular("#f5c773", "rgba(247, 231, 24,.2)")}未安装</div>
+        );
         //return <div style={{ color: "#389e0d" }}>运行</div>;
       } else if (text === 1) {
-        return <div>{renderCircular("#f5c773","rgba(247, 231, 24,.2)")}安装中</div>;
+        return (
+          <div>{renderCircular("#f5c773", "rgba(247, 231, 24,.2)")}安装中</div>
+        );
       } else if (text === 2) {
-        return <div>{renderCircular("rgb(84, 187, 166)", "rgb(238, 250, 244)")}正常</div>;
+        return (
+          <div>
+            {renderCircular("rgb(84, 187, 166)", "rgb(238, 250, 244)")}正常
+          </div>
+        );
       } else if (text === 3) {
         return <div>{renderCircular("#da4e48", "#fbe7e6")}异常</div>;
       } else if (text === 4) {
         return <div>{renderCircular("#da4e48", "#fbe7e6")}停止</div>;
       } else if (text == 5) {
-        return <div>{renderCircular("#f5c773","rgba(247, 231, 24,.2)")}启动中</div>;
+        return (
+          <div>{renderCircular("#f5c773", "rgba(247, 231, 24,.2)")}启动中</div>
+        );
       } else if (text == 6) {
-        return <div>{renderCircular("#f5c773","rgba(247, 231, 24,.2)")}停止中</div>;
+        return (
+          <div>{renderCircular("#f5c773", "rgba(247, 231, 24,.2)")}停止中</div>
+        );
       } else if (text == 7) {
-        return <div>{renderCircular("#f5c773","rgba(247, 231, 24,.2)")}重启中</div>;
+        return (
+          <div>{renderCircular("#f5c773", "rgba(247, 231, 24,.2)")}重启中</div>
+        );
       } else if (text == -1) {
-        if(record.is_web_service){
-          return <div>{renderCircular("rgb(84, 187, 166)", "rgb(238, 250, 244)")}正常</div>;
-        }else{
-          return <div>{renderCircular("#f5c773","rgba(247, 231, 24,.2)")}未监控</div>;
+        if (record.is_web_service) {
+          return (
+            <div>
+              {renderCircular("rgb(84, 187, 166)", "rgb(238, 250, 244)")}正常
+            </div>
+          );
+        } else {
+          return (
+            <div>
+              {renderCircular("#f5c773", "rgba(247, 231, 24,.2)")}未监控
+            </div>
+          );
         }
       } else {
         return text;
@@ -907,9 +1073,15 @@ export const columnsConfig = {
       if (isTableTextInvalid(text)) {
         return "-";
       } else if (text === 1) {
-        return <div>{renderCircular("rgb(84, 187, 166)", "rgb(238, 250, 244)")}正常</div>;
+        return (
+          <div>
+            {renderCircular("rgb(84, 187, 166)", "rgb(238, 250, 244)")}正常
+          </div>
+        );
       } else if (text === 2) {
-        return <div>{renderCircular("#f5c773","rgba(247, 231, 24,.2)")}异常</div>;
+        return (
+          <div>{renderCircular("#f5c773", "rgba(247, 231, 24,.2)")}异常</div>
+        );
       } else if (text === 0) {
         return <div>{renderCircular("#da4e48", "#fbe7e6")}停止</div>;
       } else {
@@ -1019,9 +1191,21 @@ export const columnsConfig = {
     render: function renderFunc(text, record, index) {
       switch (record.risk_level) {
         case "critical":
-          return <ColorfulNotice backgroundColor={"#fbe7e6"} borderColor="#da4e48" text={"严重"} />;
+          return (
+            <ColorfulNotice
+              backgroundColor={"#fbe7e6"}
+              borderColor="#da4e48"
+              text={"严重"}
+            />
+          );
         case "warning":
-          return <ColorfulNotice backgroundColor="rgba(247, 231, 24,.2)" borderColor="#f5c773" text={`警告`} />;
+          return (
+            <ColorfulNotice
+              backgroundColor="rgba(247, 231, 24,.2)"
+              borderColor="#f5c773"
+              text={`警告`}
+            />
+          );
         default:
           return "-";
       }
@@ -1197,7 +1381,11 @@ export const columnsConfig = {
       if (text == "0%") {
         return <span>{renderCircular("#da4e48", "#fbe7e6")}失败</span>;
       } else if (text == "100%") {
-        return <span>{renderCircular("rgb(84, 187, 166)", "rgb(238, 250, 244)")}成功</span>;
+        return (
+          <span>
+            {renderCircular("rgb(84, 187, 166)", "rgb(238, 250, 244)")}成功
+          </span>
+        );
       } else {
         return text;
       }
@@ -1223,16 +1411,16 @@ export const columnsConfig = {
     dataIndex: "duration",
     render: (text) => {
       if (text && text !== "-") {
-        let timer = moment.duration(text, 'seconds');
+        let timer = moment.duration(text, "seconds");
 
         let hours = timer.hours();
-        let hoursResult = hours?`${hours}小时`:"";
+        let hoursResult = hours ? `${hours}小时` : "";
 
         let minutes = timer.minutes();
-        let minutesResult = minutes%60?`${minutes%60}分钟`:"";
+        let minutesResult = minutes % 60 ? `${minutes % 60}分钟` : "";
 
         let seconds = timer.seconds();
-        let secondsResult = seconds%60?`${seconds%60}秒`:"";
+        let secondsResult = seconds % 60 ? `${seconds % 60}秒` : "";
 
         return `${hoursResult} ${minutesResult} ${secondsResult}`;
 
@@ -1241,7 +1429,7 @@ export const columnsConfig = {
         // }else{
         //   return `${text}秒`;
         // }
-      }else{
+      } else {
         return "-";
       }
     },
@@ -1249,20 +1437,20 @@ export const columnsConfig = {
     width: 100,
   },
   execution_mdoal: {
-    title:"执行方式",
+    title: "执行方式",
     align: "center",
-    dataIndex:"execute_type",
+    dataIndex: "execute_type",
     key: "execute_type",
-    render:(text)=>{
-      if(text == "man"){
+    render: (text) => {
+      if (text == "man") {
         return "手动执行";
-      }else if(text == "auto") {
+      } else if (text == "auto") {
         return "定时执行";
-      }else{
+      } else {
         return "-";
       }
     },
-    width:80
+    width: 80,
   },
   machine_idx: {
     title: "序列",
@@ -1300,8 +1488,8 @@ export const columnsConfig = {
     sorter: (a, b) => a.service_port - b.service_port,
     sortDirections: ["descend", "ascend"],
     align: "center",
-    render: (text)=>{
-      return text?text:"-";
+    render: (text) => {
+      return text ? text : "-";
     },
   },
   _port_new: {
@@ -1313,10 +1501,10 @@ export const columnsConfig = {
     sorter: (a, b) => a.port - b.port,
     sortDirections: ["descend", "ascend"],
     align: "center",
-    render: (text)=>{
-      return text?text:"-";
+    render: (text) => {
+      return text ? text : "-";
     },
-  }
+  },
 };
 // 巡检报告-主机列表-连通性报告配置
 export const host_port_connectivity_columns = [
@@ -1324,21 +1512,21 @@ export const host_port_connectivity_columns = [
     title: "服务",
     dataIndex: "name",
     //ellipsis: true,
-    className:styles._bigfontSize
+    className: styles._bigfontSize,
   },
   {
     title: "IP地址",
     dataIndex: "ip",
     //ellipsis: true,
     align: "center",
-    className:styles._bigfontSize
+    className: styles._bigfontSize,
   },
   {
     title: "端口",
     dataIndex: "port",
     //ellipsis: true,
     align: "center",
-    className:styles._bigfontSize
+    className: styles._bigfontSize,
   },
   /*eslint-disable*/
   {
@@ -1346,10 +1534,14 @@ export const host_port_connectivity_columns = [
     dataIndex: "status",
     //ellipsis: true,
     align: "center",
-    className:styles._bigfontSize,
-    render:(text)=>{
-      return <div style={{color:text=="False"?"rgb(207, 19, 34)":null}}>{text}</div>;
-    }
+    className: styles._bigfontSize,
+    render: (text) => {
+      return (
+        <div style={{ color: text == "False" ? "rgb(207, 19, 34)" : null }}>
+          {text}
+        </div>
+      );
+    },
   },
   /*eslint-disable*/
 ];
@@ -1360,7 +1552,7 @@ export const host_memory_top_columns = [
     dataIndex: "TOP",
     //ellipsis: true,
     width: 50,
-    className:styles._bigfontSize
+    className: styles._bigfontSize,
   },
   {
     title: "PID",
@@ -1368,7 +1560,7 @@ export const host_memory_top_columns = [
     //ellipsis: true,
     align: "center",
     width: 100,
-    className:styles._bigfontSize
+    className: styles._bigfontSize,
   },
   {
     title: "使用率",
@@ -1376,13 +1568,13 @@ export const host_memory_top_columns = [
     //ellipsis: true,
     align: "center",
     width: 100,
-    className:styles._bigfontSize
+    className: styles._bigfontSize,
   },
   {
     title: "进程",
     dataIndex: "P_CMD",
     //ellipsis: true,
-    className:styles._bigfontSize,
+    className: styles._bigfontSize,
   },
 ];
 
@@ -1392,21 +1584,21 @@ export const kafka_partition_columns = [
     title: "Topic",
     dataIndex: "topic",
     //ellipsis: true,
-    className:styles._bigfontSize
+    className: styles._bigfontSize,
   },
   {
     title: "分区数",
     dataIndex: "partition",
     //ellipsis: true,
     align: "center",
-    className:styles._bigfontSize
+    className: styles._bigfontSize,
   },
   {
     title: "副本数",
     dataIndex: "replication",
     //ellipsis: true,
     align: "center",
-    className:styles._bigfontSize
+    className: styles._bigfontSize,
   },
 ];
 
@@ -1416,27 +1608,27 @@ export const kafka_offsets_columns = [
     title: "Group",
     dataIndex: "group",
     //ellipsis: true,
-    className:styles._bigfontSize
+    className: styles._bigfontSize,
   },
   {
     title: "Topic",
     dataIndex: "topic",
     //ellipsis: true,
-    className:styles._bigfontSize
+    className: styles._bigfontSize,
   },
   {
     title: "Log Offset",
     dataIndex: "log_offset",
     //ellipsis: true,
     align: "center",
-    className:styles._bigfontSize
+    className: styles._bigfontSize,
   },
   {
     title: "Lag Offset",
     dataIndex: "lag_offset",
     //ellipsis: true,
     align: "center",
-    className:styles._bigfontSize
+    className: styles._bigfontSize,
   },
 ];
 
@@ -1446,14 +1638,14 @@ export const kafka_topic_size_columns = [
     title: "Topic",
     dataIndex: "topic",
     //ellipsis: true,
-    className:styles._bigfontSize
+    className: styles._bigfontSize,
   },
   {
     title: "Size",
     dataIndex: "size",
     //ellipsis: true,
     align: "center",
-    className:styles._bigfontSize
+    className: styles._bigfontSize,
   },
 ];
 
@@ -1469,13 +1661,13 @@ export const tableButtonHandler = (record, type = "monitor") => {
       return message.warn("请确认数据采集地址是否正确");
     }
     //console.log(record.monitor_log,"===",record.service_name,record);
-    if(record.service_name){
+    if (record.service_name) {
       //window.open(`${record.monitor_log}${record.service_name}&var-env=${updata()().text}`);
       window.open(`${record.monitor_log}${record.service_name}`);
-    }else if(record.alert_service_name){
+    } else if (record.alert_service_name) {
       //window.open(`${record.monitor_log}${record.alert_service_name}&var-env=${updata()().text}`);
       window.open(`${record.monitor_log}${record.alert_service_name}`);
-  }
+    }
   } else {
     const url = record.monitor;
     if (isTableTextInvalid(url)) {
@@ -1494,47 +1686,18 @@ export const tableButtonHandler = (record, type = "monitor") => {
       window.open(
         `${url}&var-app=${
           record.service_name ? record.service_name : record.alert_service_name
-        }&var-ip=${record.ip?record.ip:(record.alert_host_ip?record.alert_host_ip:undefined)}`
+        }&var-ip=${
+          record.ip
+            ? record.ip
+            : record.alert_host_ip
+            ? record.alert_host_ip
+            : undefined
+        }`
       );
     } else {
       //window.open(`${url}&var-env=${updata()().text}`);
       window.open(`${url}`);
     }
-  }
-};
-
-export const handleResponse = (res, succCallback, failedCallback) => {
-  if (res.code === 0) {
-    if (res.message && res.message !== "redirect to login url") {
-      if(res.message.includes("请确定Prometheus")){
-        message.warn(res.message);
-      }else{
-        message.success(res.message);
-      }
-    }
-
-    if (typeof succCallback === "function") {
-      succCallback();
-    }
-  }
-
-  if (res.code === 1) {
-    if (res.message && res.message !== "redirect to login url") {
-      message.warn(res.message);
-    }
-
-    if (typeof failedCallback === "function") {
-      failedCallback();
-    }
-  }
-  if (res.code === 3) {
-    if (res.message && res.message !== "redirect to login url") {
-      message.warn(res.message);
-    } else {
-      message.warn("登录已过期，请重新登录");
-    }
-    localStorage.clear();
-    window.__history__.replace("/login");
   }
 };
 
@@ -1561,7 +1724,7 @@ export const _idxInit = (data) => {
   let result = [...data];
   result.map((item, i) => {
     result[i]._idx = i + 1;
-    result[i].key = result[i].id?result[i].id:result[i]._idx
+    result[i].key = result[i].id ? result[i].id : result[i]._idx;
   });
   return result;
 };
@@ -1580,6 +1743,149 @@ export function TableRowButton({ buttonsArr }) {
   );
 }
 
-export const refreshTime = ()=>{
- return getRefreshTimeChangeAction(moment().format("YYYY-MM-DD HH:mm:ss"))
+export const refreshTime = () => {
+  return getRefreshTimeChangeAction(moment().format("YYYY-MM-DD HH:mm:ss"));
+};
+
+export function delCookie(name) {
+  var exp = new Date();
+  exp.setTime(exp.getTime() - 1);
+  var cval = getCookie(name);
+  //console.log(cval)
+  if (cval != null)
+    document.cookie =
+      name +
+      "=" +
+      cval +
+      ';domin="localhost"' +
+      ";expires=" +
+      exp.toGMTString();
 }
+
+export function getCookie(name) {
+  //console.log(document.cookie)
+  let arr = document.cookie.match(new RegExp("(^| )" + name + "=([^;]*)(;|$)"));
+  if (arr != null) return unescape(arr[2]);
+  return null;
+}
+
+export const logout = () => {
+  delCookie("jwtToken");
+  localStorage.clear();
+  window.__history__.replace("/login");
+  return;
+};
+
+//文本非空处理
+export const nonEmptyProcessing = (text) => {
+  if (text === "" || text === null || text === undefined) {
+    return "-";
+  } else {
+    return `${text}`;
+  }
+};
+
+export const handleResponse = (res, succCallback, failedCallback) => {
+  if (res.data.code === 0) {
+    if (typeof succCallback === "function") {
+      succCallback(res.data);
+    }
+  }
+
+  if (res.data.code === 1) {
+    if (res.data.message) {
+      if(res.data.message == "未认证") {
+        logout();
+        return
+      }
+      message.warn(res.data.message);
+    }
+
+    if (typeof failedCallback === "function") {
+      failedCallback();
+    }
+  }
+};
+
+export const colorConfig = {
+  normal: "#87d068",
+  warning: "#ffbf00",
+  critical: "#f04134",
+};
+
+export const renderDisc = (level = "normal", size = 5, top = 0, left = 0) => {
+  return (
+    <div
+      style={{
+        color: colorConfig[level],
+        width: size,
+        height: size,
+        borderStyle: "solid",
+        //borderWidth: 2,
+        borderColor: colorConfig[level],
+        backgroundColor: colorConfig[level],
+        display: "inline-block",
+        marginRight: 8,
+        borderRadius: "50%",
+        position: "relative",
+        top: top,
+        left: left,
+      }}
+    ></div>
+  );
+};
+
+export const MessageTip = ({ setMsgShow, msgShow, msg }) => {
+  return (
+    <div
+      style={{
+        position: "relative",
+        top: -10,
+        left:10,
+        backgroundColor: "#fbe3e2",
+        padding: "10px",
+        height: "40px",
+        color: "#86292e",
+        display: "flex",
+        justifyContent: "space-between",
+        cursor: "pointer",
+        width:240,
+        margin:"0 auto",
+        paddingLeft:15
+      }}
+      className={msgShow ? styles.loginMessageShow : styles.loginMessageHide}
+      onClick={() => setMsgShow(false)}
+    >
+      {msg}
+      <CloseCircleFilled
+        style={{ color: "#fff", fontSize: 20, marginLeft: "10px" }}
+      />
+    </div>
+  );
+};
+
+
+
+//校验中文
+export const isChineseChar = (str) => {
+  var reg = /[\u4E00-\u9FA5\uF900-\uFA2D]/
+  return reg.test(str)
+};
+
+//校验数字
+export const isNumberChar = (str) => { 
+  const reg = /^\d+$/
+  return reg.test(str)  
+}
+
+// 校验小写
+export const isLowercaseChar = (str) => { 
+  const reg = /^[a-z]+$/
+  return reg.test(str)  
+}
+
+// 校验ip
+export const isValidIpChar = (ip) => {
+  var reg = /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/
+  return reg.test(ip);
+} 

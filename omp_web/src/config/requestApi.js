@@ -1,13 +1,21 @@
 export const apiRequest = {
   environment: {
     //环境数据查询
-    queryEnvList: "/api/v1/env"
+    //queryEnvList: "/api/v1/env"
   },
   auth: {
     // 用户认证
     login: "/api/login/", // 登入
     // 首次请求用于验证登出
     users: "/api/users/users/",
+
+
+
+
+
+
+
+
     logout: "/api/v1/auth/logout", // 登出
     password: "/api/v1/auth/password", // 修改密码
   },
@@ -20,11 +28,10 @@ export const apiRequest = {
   },
   machineManagement: {
     // 主机管理
-    hosts: "/api/v1/hosts", // 主机列表
-    deploy: "api/v1/scheduler/deployAgent", // agent下发
-    sshCheck: "api/v1/ssh/check", // agent下发
-    operation:"/api/v1/scheduler/host", //主机操作 新增
-    deleteOperation:"/api/v1/ruban/host"//主机删除
+    hosts: "/api/hosts/hosts/",
+    ipList:"/api/hosts/ips/",
+    // 主机名和ip地址校验接口
+    checkHost:"/api/hosts/fields/"
   },
   productsManagement: {
     // 产品管理-服务管理
