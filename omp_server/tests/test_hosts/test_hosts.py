@@ -378,7 +378,6 @@ class ListHostTest(AutoLoginTest):
 
         # 查询主机列表 -> 展示所有主机
         resp = self.get(self.list_host_url).json()
-        print(resp)
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
         self.assertTrue(resp.get("data") is not None)

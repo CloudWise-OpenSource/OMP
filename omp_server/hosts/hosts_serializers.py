@@ -117,14 +117,13 @@ class HostSerializer(ModelSerializer):
         # 如果未传递 env，则指定默认环境
         if not attrs.get("") and not self.instance:
             attrs["env"] = Env.objects.get(id=1)
+
+        # 主机密码加密处理
+        attrs["password"] = AESCryptor().encode(attrs.get("password"))
         return attrs
 
     def create(self, validated_data):
         """ 创建主机 """
-        # 密码加密处理
-        aes_crypto = AESCryptor()
-        validated_data["password"] = aes_crypto.encode(
-            validated_data.get("password"))
         instance = super(HostSerializer, self).create(validated_data)
         # 异步下发 Agent
         deploy_agent.delay(instance.id)
