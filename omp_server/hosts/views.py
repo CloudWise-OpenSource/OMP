@@ -15,7 +15,8 @@ from db_models.models import Host
 from utils.pagination import PageNumberPager
 from hosts.hosts_filters import HostFilter
 from hosts.hosts_serializers import (
-    HostSerializer, HostMaintenanceSerializer
+    HostSerializer, HostMaintenanceSerializer,
+    HostFieldCheckSerializer
 )
 from promemonitor.prometheus import Prometheus
 
@@ -81,6 +82,19 @@ class HostDetailView(GenericViewSet, UpdateModelMixin):
     serializer_class = HostSerializer
     # 操作描述信息
     put_description = patch_description = "更新主机"
+
+
+class HostFieldCheckView(GenericViewSet, CreateModelMixin):
+    """
+        create:
+        验证主机 instance_name/ip 字段重复性
+    """
+    queryset = Host.objects.filter(is_deleted=False)
+    serializer_class = HostFieldCheckSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        return Response(serializer.is_valid())
 
 
 class IpListView(GenericViewSet, ListModelMixin):
