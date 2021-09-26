@@ -35,6 +35,7 @@ export const DetailHost = ({ isShowIframe, setIsShowIsframe })=>{
           padding: 10,
           //paddingLeft:10,
           backgroundColor: "#e7e9f0", //"#f4f6f8"
+          height:"100%"
         }}
         destroyOnClose={true}
       >
@@ -255,7 +256,7 @@ const getColumnsConfig = (setIsShowIsframe, setRow, setUpdateMoadlVisible)=>{
         let str = nonEmptyProcessing(text);
         return str == "-" ? "-" : `${str}%`;
       },
-      width:100
+      width:120
     },
     {
       title: "数据分区使用率",
