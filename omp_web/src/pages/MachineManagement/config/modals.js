@@ -88,7 +88,7 @@ export const AddMachineModal = ({
                   /[^a-zA-Z0-9\u4e00-\u9fa5\u3002\uff0c\uff1a\uff08\uff09\uff1f\u201c\u201d\u3001\uff01,/.!:()?@#$%^&*_""—-]/g;
                 if (!reg.test(value)) {
                   if (isChineseChar(value)) {
-                    return Promise.reject(`实例名称开头只支持小写字母、数字或"-"`);
+                    return Promise.reject(`实例名称不支持中文`);
                   } else {
                     let startChar = value.slice(0, 1);
                     if (
@@ -122,7 +122,7 @@ export const AddMachineModal = ({
                     }
                   }
                 } else {
-                  return Promise.reject("请输入正确的实例名称");
+                  return Promise.reject("实例名称不支持表情");
                 }
               },
             },
@@ -170,12 +170,12 @@ export const AddMachineModal = ({
                   return Promise.resolve("success");
                 } else if (!reg.test(value) && value.startsWith("/")) {
                   if (isChineseChar(value)) {
-                    return Promise.reject("请输入正确格式的数据分区");
+                    return Promise.reject("数据分区不支持汉字");
                   } else {
                     return Promise.resolve("success");
                   }
                 } else {
-                  return Promise.reject("请输入正确格式的数据分区");
+                  return Promise.reject(`数据分区支持字母、数字、"/"、"-"和"_"`);
                 }
               },
             },
@@ -204,7 +204,10 @@ export const AddMachineModal = ({
                 rules={[
                   {
                     validator: (rule, value, callback) => {
-                      if (isValidIpChar(value) || !value) {
+                      if(!value){
+                        return Promise.resolve("success");
+                      }
+                      if (isValidIpChar(value)) {
                         return new Promise((resolve, rej)=>{
                           fetchPost(apiRequest.machineManagement.checkHost, {
                             body: {
@@ -259,7 +262,7 @@ export const AddMachineModal = ({
                 if (value) {
                   if (!reg.test(value)) {
                     if (isChineseChar(value)) {
-                      return Promise.reject(`用户名只支持数字、字母、"-"或"_"`);
+                      return Promise.reject(`用户名不支持汉字`);
                     } else {
                       if (value.startsWith("-")) {
                         return Promise.reject(
@@ -307,7 +310,7 @@ export const AddMachineModal = ({
                       }
                     }
                   } else {
-                    return Promise.reject(`请输入正确格式的密码`);
+                    return Promise.reject(`密码不支持输入表情`);
                   }
                 } else {
                   return Promise.resolve("success");
@@ -391,7 +394,7 @@ export const UpDateMachineModal = ({
                   /[^a-zA-Z0-9\u4e00-\u9fa5\u3002\uff0c\uff1a\uff08\uff09\uff1f\u201c\u201d\u3001\uff01,/.!:()?@#$%^&*_""—-]/g;
                 if (!reg.test(value)) {
                   if (isChineseChar(value)) {
-                    return Promise.reject(`实例名称开头只支持小写字母、数字或"-"`);
+                    return Promise.reject("实例名称不支持中文");
                   } else {
                     let startChar = value.slice(0, 1);
                     if (
@@ -426,7 +429,7 @@ export const UpDateMachineModal = ({
                     }
                   }
                 } else {
-                  return Promise.reject("请输入正确的实例名称");
+                  return Promise.reject("实例名称不支持输入表情");
                 }
               },
             },
@@ -474,12 +477,12 @@ export const UpDateMachineModal = ({
                   return Promise.resolve("success");
                 } else if (!reg.test(value) && value.startsWith("/")) {
                   if (isChineseChar(value)) {
-                    return Promise.reject("请输入正确格式的数据分区");
+                    return Promise.reject("数据分区不支持汉字");
                   } else {
                     return Promise.resolve("success");
                   }
                 } else {
-                  return Promise.reject("请输入正确格式的数据分区");
+                  return Promise.reject(`数据分区支持字母、数字、"/"、"-"和"_"`);
                 }
               },
             },
@@ -545,7 +548,7 @@ export const UpDateMachineModal = ({
                 if (value) {
                   if (!reg.test(value)) {
                     if (isChineseChar(value)) {
-                      return Promise.reject(`用户名只支持数字、字母、"-"或"_"`);
+                      return Promise.reject(`用户名不支持汉字`);
                     } else {
                       if (value.startsWith("-")) {
                         return Promise.reject(
@@ -593,7 +596,7 @@ export const UpDateMachineModal = ({
                       }
                     }
                   } else {
-                    return Promise.reject(`请输入正确格式的密码`);
+                    return Promise.reject(`密码不支持输入表情`);
                   }
                 } else {
                   return Promise.resolve("success");
