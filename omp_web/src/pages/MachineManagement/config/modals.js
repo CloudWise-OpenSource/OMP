@@ -88,7 +88,7 @@ export const AddMachineModal = ({
                   /[^a-zA-Z0-9\u4e00-\u9fa5\u3002\uff0c\uff1a\uff08\uff09\uff1f\u201c\u201d\u3001\uff01,/.!:()?@#$%^&*_""—-]/g;
                 if (!reg.test(value)) {
                   if (isChineseChar(value)) {
-                    return Promise.reject("实例名称不支持中文");
+                    return Promise.reject(`实例名称开头只支持小写字母、数字或"-"`);
                   } else {
                     let startChar = value.slice(0, 1);
                     if (
@@ -96,7 +96,25 @@ export const AddMachineModal = ({
                       isLowercaseChar(startChar) ||
                       startChar == "-"
                     ) {
-                      return Promise.resolve("success");
+                      return new Promise((resolve, rej)=>{
+                        fetchPost(apiRequest.machineManagement.checkHost, {
+                          body: {
+                            instance_name:value
+                          },
+                        })
+                          .then((res) => {
+                            if(res && res.data){
+                              if(res.data.data){
+                                resolve("success")
+                              }else{
+                                rej(
+                                  `实例名称重复`
+                                );
+                              }
+                            }
+                          })
+                          .catch((e) => console.log(e))
+                      });
                     } else {
                       return Promise.reject(
                         `实例名称开头只支持小写字母、数字或"-"`
@@ -106,30 +124,6 @@ export const AddMachineModal = ({
                 } else {
                   return Promise.reject("请输入正确的实例名称");
                 }
-              },
-            },
-            {
-              validator: (rule, value, callback) => {
-                //console.log("开始校验")
-                return new Promise((resolve, rej)=>{
-                  fetchPost(apiRequest.machineManagement.checkHost, {
-                    body: {
-                      instance_name:value
-                    },
-                  })
-                    .then((res) => {
-                      if(res && res.data){
-                        if(res.data.data){
-                          resolve("success")
-                        }else{
-                          rej(
-                            `实例名称重复`
-                          );
-                        }
-                      }
-                    })
-                    .catch((e) => console.log(e))
-                })
               },
             },
           ]}
@@ -211,34 +205,28 @@ export const AddMachineModal = ({
                   {
                     validator: (rule, value, callback) => {
                       if (isValidIpChar(value) || !value) {
-                        return Promise.resolve("success");
+                        return new Promise((resolve, rej)=>{
+                          fetchPost(apiRequest.machineManagement.checkHost, {
+                            body: {
+                              ip:value
+                            },
+                          })
+                            .then((res) => {
+                              if(res && res.data){
+                                if(res.data.data){
+                                  resolve("success")
+                                }else{
+                                  rej(
+                                    `ip地址重复`
+                                  );
+                                }
+                              }
+                            })
+                            .catch((e) => console.log(e))
+                        })
                       } else {
                         return Promise.reject("请输入正确格式的IP地址");
                       }
-                    },
-                  },
-                  {
-                    validator: (rule, value, callback) => {
-                      console.log("开始校验")
-                      return new Promise((resolve, rej)=>{
-                        fetchPost(apiRequest.machineManagement.checkHost, {
-                          body: {
-                            ip:value
-                          },
-                        })
-                          .then((res) => {
-                            if(res && res.data){
-                              if(res.data.data){
-                                resolve("success")
-                              }else{
-                                rej(
-                                  `ip地址重复`
-                                );
-                              }
-                            }
-                          })
-                          .catch((e) => console.log(e))
-                      })
                     },
                   },
                 ]}
@@ -403,7 +391,7 @@ export const UpDateMachineModal = ({
                   /[^a-zA-Z0-9\u4e00-\u9fa5\u3002\uff0c\uff1a\uff08\uff09\uff1f\u201c\u201d\u3001\uff01,/.!:()?@#$%^&*_""—-]/g;
                 if (!reg.test(value)) {
                   if (isChineseChar(value)) {
-                    return Promise.reject("实例名称不支持中文");
+                    return Promise.reject(`实例名称开头只支持小写字母、数字或"-"`);
                   } else {
                     let startChar = value.slice(0, 1);
                     if (
@@ -411,7 +399,26 @@ export const UpDateMachineModal = ({
                       isLowercaseChar(startChar) ||
                       startChar == "-"
                     ) {
-                      return Promise.resolve("success");
+                      return new Promise((resolve, rej)=>{
+                        fetchPost(apiRequest.machineManagement.checkHost, {
+                          body: {
+                            instance_name:value,
+                            id:row.id
+                          },
+                        })
+                          .then((res) => {
+                            if(res && res.data){
+                              if(res.data.data){
+                                resolve("success")
+                              }else{
+                                rej(
+                                  `实例名称重复`
+                                );
+                              }
+                            }
+                          })
+                          .catch((e) => console.log(e))
+                      })
                     } else {
                       return Promise.reject(
                         `实例名称开头只支持小写字母、数字或"-"`
@@ -421,31 +428,6 @@ export const UpDateMachineModal = ({
                 } else {
                   return Promise.reject("请输入正确的实例名称");
                 }
-              },
-            },
-            {
-              validator: (rule, value, callback) => {
-                console.log("开始校验")
-                return new Promise((resolve, rej)=>{
-                  fetchPost(apiRequest.machineManagement.checkHost, {
-                    body: {
-                      instance_name:value,
-                      id:row.id
-                    },
-                  })
-                    .then((res) => {
-                      if(res && res.data){
-                        if(res.data.data){
-                          resolve("success")
-                        }else{
-                          rej(
-                            `实例名称重复`
-                          );
-                        }
-                      }
-                    })
-                    .catch((e) => console.log(e))
-                })
               },
             },
           ]}
