@@ -12,6 +12,7 @@ from django_filters.rest_framework.backends import DjangoFilterBackend
 
 from db_models.models import Host
 from utils.pagination import PageNumberPager
+from utils.plugin.crypto import AESCryptor
 from hosts.hosts_filters import HostFilter
 from hosts.hosts_serializers import (
     HostSerializer, HostMaintenanceSerializer,
@@ -49,18 +50,21 @@ class HostListView(GenericViewSet, ListModelMixin, CreateModelMixin):
         serializer = self.get_serializer(
             self.paginate_queryset(queryset), many=True)
         serializer_data = serializer.data
+        # 主机密码解密
+        for host_info in serializer_data:
+            aes_crypto = AESCryptor()
+            host_info["password"] = aes_crypto.decode(
+                host_info.get("password"))
 
         # 实时获取主机动态
         prometheus_obj = Prometheus()
         serializer_data = prometheus_obj.get_host_info(serializer_data)
-
         # 获取请求中 ordering 字段
         query_field = request.query_params.get("ordering", "")
         reverse_flag = False
         if query_field.startswith("-"):
             reverse_flag = True
             query_field = query_field[1:]
-
         # 若排序字段在类视图 dynamic_fields 中，则对根据动态数据进行排序
         if query_field in self.dynamic_fields:
             serializer_data = sorted(

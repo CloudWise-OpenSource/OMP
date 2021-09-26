@@ -50,7 +50,6 @@ class HostSerializer(ModelSerializer):
     password = serializers.CharField(
         help_text="SSH登录密码",
         required=True, max_length=16,
-        write_only=True,
         error_messages={"required": "必须包含[password]字段"},
         validators=[
             NoEmojiValidator(),
