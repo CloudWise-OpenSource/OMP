@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.1/ref/settings/
 """
 import os
+import random
 import datetime
 from pathlib import Path
 from utils.parse_config import OMP_MYSQL_HOST
@@ -95,7 +96,8 @@ DATABASES = {
         'POST': int(OMP_MYSQL_PORT),
         'TEST': {
             'CHARSET': 'utf8',
-            'COLLATION': 'utf8_general_ci'
+            'COLLATION': 'utf8_general_ci',
+            "NAME": f"test_omp_{random.randint(100, 200)}"
         }
     }
 }
