@@ -22,13 +22,9 @@ def res_is_none(exc, context):
     :param context:
     :return:
     """
-    view = context["view"]
-    print("res is none")
-    print("[%s]: %s" % (view, exc))
     response = Response()
     response.data = dict()
     response.data["code"] = 1
-    print(type(exc))
     if isinstance(exc, DatabaseError):
         response.data["message"] = "数据库错误"
     elif isinstance(exc, NameError):
