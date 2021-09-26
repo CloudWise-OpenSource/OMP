@@ -209,3 +209,20 @@ class Alert(models.Model):
         """元数据"""
         db_table = 'omp_alert'
         verbose_name = verbose_name_plural = "告警记录"
+
+
+class Maintain(models.Model):
+    """
+    维护记录表
+    """
+    matcher_name = models.CharField(
+        "匹配标签", max_length=1024, null=False, help_text="匹配标签")
+    matcher_value = models.CharField(
+        "匹配值", max_length=1024, null=False, help_text="匹配值")
+    maintain_id = models.CharField(
+        "维护唯一标识", max_length=1024, null=False, help_text="维护唯一标识")
+
+    class Meta:
+        """元数据"""
+        db_table = 'omp_maintain'
+        verbose_name = verbose_name_plural = "维护记录"
