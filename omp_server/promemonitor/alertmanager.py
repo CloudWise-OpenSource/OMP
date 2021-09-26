@@ -111,13 +111,13 @@ class Alertmanager:
         maintain_list = list()
         maintain_id_list = list()
         for item in host_list:
-            maintain_id = self.add_setting(value=item.ip, name='instance')
+            maintain_id = self.add_setting(
+                value=item.get('ip'), name='instance')
             if not maintain_id:
-                logger.error(f'设置主机{item.ip}维护失败!')
+                logger.error(f'设置主机{item.get("ip")}维护失败!')
                 return False
             maintain = Maintain(matcher_name='instance',
-                                matcher_value=item.ip, maintain_id=maintain_id)
-            maintain.save()
+                                matcher_value=item.get('ip'), maintain_id=maintain_id)
             maintain_list.append(maintain)
             maintain_id_list.append(maintain_id)
         Maintain.objects.bulk_create(maintain_list)
