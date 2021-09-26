@@ -19,7 +19,7 @@ class CreateHostTest(AutoLoginTest):
         # 正确主机数据
         self.correct_host_data = {
             "instance_name": "mysql_instance_1",
-            "ip": "10.20.30.40",
+            "ip": "127.0.0.10",
             "port": 36000,
             "username": "root",
             "password": "root_password",
@@ -31,7 +31,7 @@ class CreateHostTest(AutoLoginTest):
         """ 创建主机，返回主机对象 """
         return Host.objects.create(
             instance_name="default_name",
-            ip="10.30.50.70",
+            ip="127.0.0.20",
             port=36000,
             username="root",
             password="root_password",
@@ -567,6 +567,132 @@ class UpdateHostTest(AutoLoginTest):
         self.delete_hosts()
 
 
+class HostFieldCheckTest(AutoLoginTest):
+    """ 主机字段校验测试类 """
+
+    def setUp(self):
+        super(HostFieldCheckTest, self).setUp()
+        self.field_check_url = reverse("fields-list")
+
+    def create_hosts(self):
+        """ 创建多台主机 """
+        host_obj_ls = []
+        for i in range(2):
+            host_obj = Host.objects.create(
+                instance_name=f"check_field_{i + 1}",
+                ip=f"130.110.90.{i + 1}",
+                port=36000,
+                username="root",
+                password="root_password",
+                data_folder="/data",
+                operate_system="centos",
+                env=self.default_env,
+            )
+            host_obj_ls.append(host_obj)
+        return host_obj_ls
+
+    @staticmethod
+    def delete_hosts():
+        Host.objects.filter(instance_name__contains="check_field_").delete()
+
+    def test_create_host_check(self):
+        """ 测试创建主机场景 """
+        host_obj_ls = self.create_hosts()
+        host_obj = host_obj_ls[0]
+
+        # instance_name 重复 -> 验证结果 False
+        resp = self.post(self.field_check_url, {
+            "instance_name": host_obj.instance_name
+        }).json()
+        self.assertDictEqual(resp, {
+            "code": 0,
+            "message": "success",
+            "data": False
+        })
+
+        # instance_name 不重复 -> 验证结果 True
+        resp = self.post(self.field_check_url, {
+            "instance_name": "my_host_name"
+        }).json()
+        self.assertDictEqual(resp, {
+            "code": 0,
+            "message": "success",
+            "data": True
+        })
+
+        # ip 重复 -> 验证结果 False
+        resp = self.post(self.field_check_url, {
+            "ip": host_obj.ip
+        }).json()
+        self.assertDictEqual(resp, {
+            "code": 0,
+            "message": "success",
+            "data": False
+        })
+
+        # ip 不重复 -> 验证结果 True
+        resp = self.post(self.field_check_url, {
+            "ip": "127.0.0.20"
+        }).json()
+        self.assertDictEqual(resp, {
+            "code": 0,
+            "message": "success",
+            "data": True
+        })
+        self.delete_hosts()
+
+    def test_error_host_check(self):
+        """ 测试更新主机场景 """
+        host_obj_ls = self.create_hosts()
+        host_obj_one = host_obj_ls[0]
+        host_obj_two = host_obj_ls[1]
+
+        # instance_name 重复 (为主机自身 instance_name) -> 验证结果 True
+        resp = self.post(self.field_check_url, {
+            "id": host_obj_one.id,
+            "instance_name": host_obj_one.instance_name
+        }).json()
+        self.assertDictEqual(resp, {
+            "code": 0,
+            "message": "success",
+            "data": True
+        })
+
+        # instance_name 重复 (为其他主机 instance_name) -> 验证结果 False
+        resp = self.post(self.field_check_url, {
+            "id": host_obj_one.id,
+            "instance_name": host_obj_two.instance_name
+        }).json()
+        self.assertDictEqual(resp, {
+            "code": 0,
+            "message": "success",
+            "data": False
+        })
+
+        # ip 重复 (为主机自身 ip) -> 验证结果 True
+        resp = self.post(self.field_check_url, {
+            "id": host_obj_one.id,
+            "ip": host_obj_one.ip
+        }).json()
+        self.assertDictEqual(resp, {
+            "code": 0,
+            "message": "success",
+            "data": True
+        })
+
+        # ip 重复 (为其他主机 ip) -> 验证结果 False
+        resp = self.post(self.field_check_url, {
+            "id": host_obj_one.id,
+            "ip": host_obj_two.ip
+        }).json()
+        self.assertDictEqual(resp, {
+            "code": 0,
+            "message": "success",
+            "data": False
+        })
+        self.delete_hosts()
+
+
 class ListIPTest(AutoLoginTest):
     """ IP 列表测试类 """
 
@@ -646,4 +772,72 @@ class HostMaintainTest(AutoLoginTest):
 
         host_obj_ls = self.create_hosts()
         host_obj_id_ls = list(map(lambda x: x.id, host_obj_ls))
-        # TODO 待补充
+
+        # host_ids 中含不存在的 ID -> 修改失败
+        not_exists_id = 666
+        random_host_ls = random.sample(host_obj_id_ls, 5)
+        random_host_ls.append(not_exists_id)
+        resp = self.post(self.host_maintain_url, {
+            "is_maintenance": True,
+            "host_ids": random_host_ls
+        }).json()
+        self.assertDictEqual(resp, {
+            "code": 1,
+            "message": f"host_ids: 有不存在的ID [{not_exists_id}];",
+            "data": None
+        })
+
+        # host_ids 中存在已经处于 type 类型的主机 -> 创建失败
+        random_host_ls = random.sample(host_obj_id_ls, 5)
+        resp = self.post(self.host_maintain_url, {
+            "is_maintenance": False,
+            "host_ids": random_host_ls
+        }).json()
+        self.assertDictEqual(resp, {
+            "code": 1,
+            "message": f"host_ids: 存在已 '关闭' 维护模式的主机;",
+            "data": None
+        })
+        self.delete_hosts()
+
+    def test_correct_field(self):
+        """ 正确字段校验 """
+        # TODO 模拟调用进入维护模式函数
+        host_obj_ls = self.create_hosts()
+        host_obj_id_ls = list(map(lambda x: x.id, host_obj_ls))
+
+        # 正确字段，开启维护模式 -> 操作成功
+        random_host_ls = random.sample(host_obj_id_ls, 5)
+        data = {
+            "is_maintenance": True,
+            "host_ids": random_host_ls
+        }
+        resp = self.post(self.host_maintain_url, data).json()
+        self.assertDictEqual(resp, {
+            "code": 0,
+            "message": "success",
+            "data": data
+        })
+        # host_ids中主机，is_maintenance 状态均为 True
+        is_maintenance_ls = Host.objects.filter(
+            id__in=random_host_ls
+        ).values_list("is_maintenance", flat=True)
+        self.assertTrue(all(is_maintenance_ls))
+
+        # 关闭维护模式
+        data = {
+            "is_maintenance": False,
+            "host_ids": random_host_ls
+        }
+        resp = self.post(self.host_maintain_url, data).json()
+        self.assertDictEqual(resp, {
+            "code": 0,
+            "message": "success",
+            "data": data
+        })
+        # host_ids中主机，is_maintenance 状态均为 False
+        is_maintenance_ls = Host.objects.filter(
+            id__in=random_host_ls
+        ).values_list("is_maintenance", flat=True)
+        self.assertTrue(not any(is_maintenance_ls))
+        self.delete_hosts()

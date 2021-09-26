@@ -130,6 +130,47 @@ class HostSerializer(ModelSerializer):
         return instance
 
 
+class HostFieldCheckSerializer(ModelSerializer):
+    """ 主机字段重复性校验序列化器 """
+
+    id = serializers.IntegerField(
+        help_text="主机ID，更新时需要此字段",
+        required=False
+    )
+
+    instance_name = serializers.CharField(
+        help_text="实例名",
+        max_length=16, required=False,
+        validators=[
+            NoEmojiValidator(),
+            NoChineseValidator(),
+            ReValidator(regex=r"^[-a-z0-9].*$"),
+        ])
+
+    ip = serializers.IPAddressField(
+        help_text="IP地址", required=False)
+
+    class Meta:
+        """ 元数据 """
+        model = Host
+        fields = ("id", "instance_name", "ip",)
+
+    def validate(self, attrs):
+        """ 校验 instance_name / ip 是否重复 """
+        host_id = attrs.get("id")
+        instance_name = attrs.get("instance_name")
+        ip = attrs.get("ip")
+        queryset = Host.objects.all()
+        if host_id is not None:
+            queryset = queryset.exclude(id=host_id)
+        if instance_name and \
+                queryset.filter(instance_name=instance_name).exists():
+            raise ValidationError({"instance_name": "实例名已经存在"})
+        if ip and queryset.filter(ip=ip).exists():
+            raise ValidationError({"ip": "IP已经存在"})
+        return attrs
+
+
 class HostMaintenanceSerializer(Serializer):
     """ 主机维护模式序列化类 """
 
@@ -138,14 +179,24 @@ class HostMaintenanceSerializer(Serializer):
         required=True,
         error_messages={"required": "必须包含[is_maintenance]字段"})
     host_ids = serializers.ListSerializer(
-        child=serializers.ChoiceField(
-            choices=list(Host.objects.filter(
-                is_deleted=False).values_list("id", flat=True)),
-            error_messages={"invalid_choice": "id [{input}] 不存在"}, ),
+        child=serializers.IntegerField(),
         help_text="主机 ID 列表",
         required=True,
         error_messages={"required": "必须包含[host_ids]字段"},
         allow_empty=False)
+
+    def validate_host_ids(self, host_ids):
+        """ 校验主机 ID 列表中主机是否都存在 """
+        exists_ids = set(Host.objects.filter(
+            id__in=host_ids
+        ).values_list("id", flat=True))
+        diff = set(host_ids) - set(exists_ids)
+        if diff:
+            raise ValidationError(
+                f"有不存在的ID ["
+                f"{','.join(map(lambda x: str(x), diff))}"
+                f"]")
+        return host_ids
 
     def validate(self, attrs):
         """ 校验列表中主机 '维护模式' 字段值是否正确 """
@@ -155,7 +206,7 @@ class HostMaintenanceSerializer(Serializer):
         if queryset.exists():
             status = "开启" if attrs.get("is_maintenance") else "关闭"
             raise ValidationError({
-                "host_ids": f"存在已经 '{status}' 维护模式的主机"
+                "host_ids": f"存在已 '{status}' 维护模式的主机"
             })
         return attrs
 
