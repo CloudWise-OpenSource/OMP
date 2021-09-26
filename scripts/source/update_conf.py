@@ -348,7 +348,7 @@ def main(local_ip, run_user):
     """
     print("Start Update Conf!")
     update_local_ip_run_user(local_ip, run_user)
-    check_port_is_used()
+    # check_port_is_used()
     update_salt_master()
     update_uwsgi()
     update_nginx()

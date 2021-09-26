@@ -17,6 +17,8 @@ OMP_PYTHON_PATH = os.path.join(OMP_HOME, "component/env/bin/python3")
 OMP_MANAGE_PATH = os.path.join(OMP_HOME, "omp_server/manage.py")
 OMP_SHELL_PATH = os.path.join(OMP_HOME, "scripts/omp")
 OMP_UPDATE_DATA_PATH = os.path.join(OMP_HOME, "scripts/source/update_data.py")
+OMP_UPDATE_CONFIG_FILE = os.path.join(
+    OMP_HOME, "scripts/source/update_conf.py")
 
 
 def cmd(command):
@@ -126,6 +128,15 @@ def update_config(update_file_folder):
     new_config_dic.update(old_config_dic)
     with open(os.path.join(config_old, "omp.yaml"), "w", encoding="utf8") as fp:
         my_yaml.dump(new_config_dic, fp)
+
+    _local_ip = new_config_dic.get("local_ip")
+    _run_user = new_config_dic.get("global_user")
+
+    # 更新配置文件
+    cmd("{0} {1} {2} {3}".format(
+        OMP_PYTHON_PATH, OMP_UPDATE_CONFIG_FILE,
+        _local_ip, _run_user)
+        )
 
 
 def update(pack_path, ip_address):
