@@ -67,14 +67,21 @@ def update_omp_platform(pack_path, update_file_folder):
     omp_server_bak = os.path.join(update_file_folder, 'omp_server')
     cmd("test -d {0} || cp -rf {1} {2}".format(omp_server_bak,
                                                omp_server_old, update_file_folder))
+    # 备份scripts脚本目录
     omp_scripts_old = os.path.join(OMP_HOME, 'scripts')
     omp_scripts_bak = os.path.join(update_file_folder, 'scripts')
     cmd("test -d {0} || cp -rf {1} {2}".format(omp_scripts_bak,
                                                omp_scripts_old, update_file_folder))
+    # 备份前端文件目录
     omp_web_old = os.path.join(OMP_HOME, 'omp_web')
     omp_web_bak = os.path.join(update_file_folder, 'omp_web')
     cmd("test -d {0} || cp -rf {1} {2}".format(omp_web_bak,
                                                omp_web_old, update_file_folder))
+    # 备份package_hub
+    package_hub_old = os.path.join(OMP_HOME, 'package_hub')
+    package_hub_bak = os.path.join(update_file_folder, 'package_hub')
+    cmd("test -d {0} || cp -rf {1} {2}".format(package_hub_bak,
+                                               package_hub_old, update_file_folder))
     # 更新服务端文件
     _new_server = os.path.join(update_file_folder, "omp/omp_server")
     cmd("rm -rf {0} && cp -rf {1} {2}".format(omp_server_old,
@@ -84,6 +91,9 @@ def update_omp_platform(pack_path, update_file_folder):
     _new_scripts = os.path.join(update_file_folder, "omp/scripts")
     cmd("rm -rf {0} && cp -rf {1} {2}".format(omp_scripts_old,
                                               _new_scripts, omp_scripts_old))
+    _new_package_hub = os.path.join(update_file_folder, "omp/package_hub")
+    cmd("rm -rf {0} && cp -rf {1} {2}".format(package_hub_old,
+                                              _new_package_hub, package_hub_old))
 
 
 def update_config(update_file_folder):
@@ -133,6 +143,8 @@ def update(pack_path, ip_address):
     update_file_folder = os.path.join(UPDATE_HOME, "{0}".format(package_md5))
     cmd("test -d {0} && rm -rf {0}".format(update_file_folder))
     cmd("mkdir -p {0}".format(update_file_folder))
+    # # 停止相关服务
+    # cmd("bash {0} all stop".format(OMP_SHELL_PATH))
     # 更新平台端文件
     update_omp_platform(pack_path, update_file_folder)
     # 更新配置文件
