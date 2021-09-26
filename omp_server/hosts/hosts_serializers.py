@@ -251,4 +251,8 @@ class HostAgentRestartSerializer(Serializer):
         """ 主机Agent重启 """
         for item in validated_data.get("host_ids", []):
             host_agent_restart.delay(item)
+        # 下发任务后批量更新重启主机状态
+        Host.objects.filter(
+            id__in=validated_data.get("host_ids", [])
+        ).update(host_agent=1)
         return validated_data
