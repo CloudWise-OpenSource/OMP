@@ -1,6 +1,8 @@
 import json
 import logging
 from datetime import datetime, timedelta
+from db_models.models import MonitorUrl
+from utils.parse_config import MONITOR_PORT
 
 import pytz
 import requests
@@ -21,7 +23,16 @@ class Alertmanager:
 
     @staticmethod
     def get_alertmanager_config():
-        return '10.0.3.66', '19013'  # TODO 等待jerry把配置入库返回真实值
+        alertmanager_url_config = MonitorUrl.objects.filter(
+            name='alertmanager').first()
+        if not alertmanager_url_config:
+            return '127.0.0.1', MONITOR_PORT.get('alertmanager', 19013)  # 默认值
+
+        ip = alertmanager_url_config.monitor_url.split(':')[0]
+        port = alertmanager_url_config.monitor_url.split(':')[1]
+        if ip and port:
+            return ip, port
+        return '127.0.0.1', MONITOR_PORT.get('alertmanager', 19013)  # 默认值
 
     @staticmethod
     def format_time(_time):
@@ -84,17 +95,10 @@ class Alertmanager:
         :return: 成功 True， 失败 False
         """
         try:
-            resp = requests.delete(f"{self.delete_url}/{silence_id}", timeout=5).json()
+            resp = requests.delete(
+                f"{self.delete_url}/{silence_id}", timeout=5).json()
         except Exception as e:
             logger.error(str(e))
             return False
         logger.info(resp)
         return resp.get("status") == "success"
-
-
-if __name__ == '__main__':
-    a = Alertmanager()
-    # add_result = a.add_setting(value='10.0.3.80', name='instance', start_time=None, ends_time=None)
-    # print(add_result)
-    del_result = a.delete_setting('d6ecd79d-482d-4da7-a4aa-96888925cfb6')
-    print(del_result)
