@@ -34,6 +34,6 @@ app.conf.broker_url = \
 app.autodiscover_tasks()
 
 
-@app.task(bind=True)
-def debug_task(self):
-    print(f'Request: {self.request!r}')
+# @app.task(bind=True)
+# def debug_task(self):
+#     print(f'Request: {self.request!r}')
