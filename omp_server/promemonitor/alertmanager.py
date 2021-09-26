@@ -133,3 +133,16 @@ class Alertmanager:
         Maintain.objects.create(matcher_name='env_name',
                                 matcher_value=env_name, maintain_id=maintain_id)
         return [maintain_id]
+
+    def revoke_maintain_by_host_list(self, host_list):
+        for item in host_list:
+            maintain = Maintain.objects.filter(
+                matcher_name='instance', matcher_value=item.get('ip')).first()
+            maintain_id = maintain.maintain_id
+            self.delete_setting(maintain_id)
+
+    def revoke_maintain_by_env_name(self, env_name):
+        maintain = Maintain.objects.filter(
+            matcher_name='env_name', matcher_value=env_name).first()
+        maintain_id = maintain.maintain_id
+        self.delete_setting(maintain_id)
