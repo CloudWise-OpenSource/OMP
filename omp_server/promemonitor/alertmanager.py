@@ -3,6 +3,7 @@ import logging
 from datetime import datetime, timedelta
 from db_models.models import MonitorUrl
 from utils.parse_config import MONITOR_PORT
+from db_models.models import Maintain
 
 import pytz
 import requests
@@ -102,3 +103,33 @@ class Alertmanager:
             return False
         logger.info(resp)
         return resp.get("status") == "success"
+
+    def set_maintain_by_host_list(self, host_list):
+        """
+        将单个/多个主机设置为维护状态
+        """
+        maintain_list = list()
+        maintain_id_list = list()
+        for item in host_list:
+            maintain_id = self.add_setting(value=item.ip, name='instance')
+            if not maintain_id:
+                logger.error(f'设置主机{item.ip}维护失败!')
+                return False
+            maintain = Maintain(matcher_name='instance',
+                                matcher_value=item.ip, maintain_id=maintain_id)
+            maintain.save()
+            maintain_list.append(maintain)
+            maintain_id_list.append(maintain_id)
+        Maintain.objects.bulk_create(maintain_list)
+        return maintain_id_list
+
+    def set_maintain_by_env_name(self, env_name):
+        """
+        将指定env的主机设置为维护状态
+        """
+        maintain_id = self.add_setting(value=env_name, name='env_name')
+        if not maintain_id:
+            return False
+        Maintain.objects.create(matcher_name='env_name',
+                                matcher_value=env_name, maintain_id=maintain_id)
+        return [maintain_id]
