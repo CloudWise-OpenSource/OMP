@@ -20,7 +20,8 @@ from utils.plugin.salt_client import SaltClient
 class SaltClientUtilTest(BaseTest):
     """ 主机Agent的测试类 """
 
-    def setUp(self):
+    @mock.patch.object(salt.client.LocalClient, "__init__", return_value=None)
+    def setUp(self, local_client):
         super(SaltClientUtilTest, self).setUp()
         self.cmd_run = "cmd.run"
         self.obj = SaltClient()
