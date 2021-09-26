@@ -3,8 +3,7 @@
 """
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import (
-    ListModelMixin, CreateModelMixin, RetrieveModelMixin,
-    DestroyModelMixin, UpdateModelMixin
+    ListModelMixin, CreateModelMixin, UpdateModelMixin
 )
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
@@ -16,7 +15,7 @@ from utils.pagination import PageNumberPager
 from hosts.hosts_filters import HostFilter
 from hosts.hosts_serializers import (
     HostSerializer, HostMaintenanceSerializer,
-    HostFieldCheckSerializer
+    HostFieldCheckSerializer, HostAgentRestartSerializer
 )
 from promemonitor.prometheus import Prometheus
 
@@ -35,9 +34,11 @@ class HostListView(GenericViewSet, ListModelMixin, CreateModelMixin):
     # 过滤，排序字段
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     filter_class = HostFilter
-    ordering_fields = ("ip", "host_agent", "monitor_agent", "service_num", "alert_num")
+    ordering_fields = ("ip", "host_agent", "monitor_agent",
+                       "service_num", "alert_num")
     # 动态排序字段
-    dynamic_fields = ("cpu_usage", "mem_usage", "root_disk_usage", "data_disk_usage")
+    dynamic_fields = ("cpu_usage", "mem_usage",
+                      "root_disk_usage", "data_disk_usage")
     # 操作描述信息
     get_description = "查询主机"
     post_description = "创建主机"
@@ -120,3 +121,14 @@ class HostMaintenanceView(GenericViewSet, CreateModelMixin):
     # 操作信息描述
     post_description = "修改主机维护模式"
     serializer_class = HostMaintenanceSerializer
+
+
+class HostAgentRestartView(GenericViewSet, CreateModelMixin):
+    """
+        create:
+        主机重启Agent接口
+    """
+    queryset = Host.objects.filter(is_deleted=False)
+    # 操作信息描述
+    post_description = "重启主机Agent"
+    serializer_class = HostAgentRestartSerializer

@@ -40,8 +40,8 @@ class OperateLog(models.Model):
         "用户行为描述", max_length=256, help_text="用户行为描述")
     response_code = models.IntegerField(
         "响应状态码", default=0, help_text="响应状态码")
-    request_result = models.CharField(
-        "请求结果", max_length=1024, default="success", help_text="请求结果")
+    request_result = models.TextField(
+        "请求结果", default="success", help_text="请求结果")
     create_time = models.DateTimeField(
         "操作发生时间", auto_now_add=True, help_text="操作发生时间")
 
@@ -203,7 +203,9 @@ class Alert(models.Model):
         "跳转监控日志路径", max_length=2048, blank=True, null=True, help_text="跳转grafana日志页面路由")
     fingerprint = models.CharField(
         "告警的唯一标识", max_length=1024, blank=True, null=True, help_text="告警的唯一标识")
-    env_id = models.IntegerField(help_text="环境id", default=1)
+    env = models.ForeignKey(
+        Env, null=True, on_delete=models.SET_NULL,
+        verbose_name="环境", help_text="环境")
 
     class Meta:
         """元数据"""

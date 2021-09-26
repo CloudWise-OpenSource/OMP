@@ -10,6 +10,7 @@ from rest_framework.serializers import (
 
 from db_models.models import (Host, Env)
 from hosts.tasks import deploy_agent
+from hosts.tasks import host_agent_restart
 
 from utils.validator import (
     ReValidator, NoEmojiValidator, NoChineseValidator
@@ -123,7 +124,8 @@ class HostSerializer(ModelSerializer):
         """ 创建主机 """
         # 密码加密处理
         aes_crypto = AESCryptor()
-        validated_data["password"] = aes_crypto.encode(validated_data.get("password"))
+        validated_data["password"] = aes_crypto.encode(
+            validated_data.get("password"))
         instance = super(HostSerializer, self).create(validated_data)
         # 异步下发 Agent
         deploy_agent.delay(instance.id)
@@ -222,3 +224,32 @@ class HostMaintenanceSerializer(Serializer):
 
     def update(self, instance, validated_data):
         pass
+
+
+class HostAgentRestartSerializer(Serializer):
+    """ 主机Agent重启序列化类 """
+
+    host_ids = serializers.ListField(
+        help_text="主机 ID 列表",
+        required=True,
+        error_messages={"required": "必须包含[host_ids]字段"},
+        allow_empty=False)
+
+    def validate_host_ids(self, host_ids):
+        """ 校验主机 ID 列表中主机是否都存在 """
+        exists_ids = set(Host.objects.filter(
+            id__in=host_ids
+        ).values_list("id", flat=True))
+        diff = set(host_ids) - set(exists_ids)
+        if diff:
+            raise ValidationError(
+                f"有不存在的ID ["
+                f"{','.join(map(lambda x: str(x), diff))}"
+                f"]")
+        return host_ids
+
+    def create(self, validated_data):
+        """ 主机Agent重启 """
+        for item in validated_data.get("host_ids", []):
+            host_agent_restart.delay(item)
+        return validated_data
