@@ -303,7 +303,6 @@ class CreateHostTest(AutoLoginTest):
         for k, v in self.correct_host_data.items():
             # 密码字段不展示
             if k == "password":
-                self.assertTrue(k not in host_info)
                 continue
             # 各字段值相等
             self.assertEqual(host_info.get(k), v)
@@ -352,6 +351,7 @@ class ListHostTest(AutoLoginTest):
 
     def create_hosts(self):
         """ 创建测试主机 """
+        aes_crypto = AESCryptor()
         host_obj_ls = []
         for i in range(50):
             host_obj = Host.objects.create(
@@ -359,7 +359,7 @@ class ListHostTest(AutoLoginTest):
                 ip=f"130.110.90.{i + 1}",
                 port=36000,
                 username="root",
-                password="root_password",
+                password=aes_crypto.encode("root_password"),
                 data_folder="/data",
                 operate_system="centos",
                 env=self.default_env,
@@ -378,6 +378,7 @@ class ListHostTest(AutoLoginTest):
 
         # 查询主机列表 -> 展示所有主机
         resp = self.get(self.list_host_url).json()
+        print(resp)
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
         self.assertTrue(resp.get("data") is not None)
@@ -796,7 +797,7 @@ class HostMaintainTest(AutoLoginTest):
         }).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": f"host_ids: 存在已 '关闭' 维护模式的主机;",
+            "message": "host_ids: 存在已 '关闭' 维护模式的主机;",
             "data": None
         })
         self.delete_hosts()
@@ -894,4 +895,3 @@ class HostAgentRestartTest(AutoLoginTest):
             data={"host_ids": [random.randint(10000, 20000)]}
         ).json()
         self.assertEqual(resp.get("code"), 1)
-
