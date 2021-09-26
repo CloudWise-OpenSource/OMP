@@ -215,6 +215,8 @@ class Maintain(models.Model):
     """
     维护记录表
     """
+    objects = None
+
     matcher_name = models.CharField(
         "匹配标签", max_length=1024, null=False, help_text="匹配标签")
     matcher_value = models.CharField(
