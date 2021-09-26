@@ -6,7 +6,11 @@
   //margin-bottom: 100px;
 }
 :global {
-  .ant-table-content {
+  table tr th.ant-table-selection-column, table tr td.ant-table-selection-column {
+    padding-left: 15px;
+  }
+
+  .ant-table-content { 
    // border-top: 1px solid rgb(220, 222, 229)!important;
   }
   //  之后即使是全局样式也配置在相应的组件里

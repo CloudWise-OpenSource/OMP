@@ -1,10 +1,5 @@
 import { Layout, Menu, Dropdown, message, Form, Input, Button } from "antd";
 import {
-  DesktopOutlined,
-  PieChartOutlined,
-  FileOutlined,
-  TeamOutlined,
-  UserOutlined,
   MenuUnfoldOutlined,
   MenuFoldOutlined,
   DashboardOutlined,
@@ -19,6 +14,11 @@ import { useHistory, useLocation } from "react-router-dom";
 import { CustomBreadcrumb, OmpModal } from "@/components";
 import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
+import {
+  handleResponse,
+  _idxInit,
+  logout
+} from "@/utils/utils";
 
 const { Header, Content, Footer, Sider } = Layout;
 const { SubMenu } = Menu;
@@ -91,7 +91,6 @@ const OmpLayout = (props) => {
       },
     })
       .then((res) => {
-        res = res.data;
         handleResponse(res);
         if (res.code == 0) {
           setShowModal(false);
@@ -102,35 +101,6 @@ const OmpLayout = (props) => {
       .finally(() => {
         setLoading(false);
       });
-  };
-
-  function delCookie(name) {
-    var exp = new Date();
-    exp.setTime(exp.getTime() - 1);
-    var cval = getCookie(name);
-    //console.log(cval)
-    if (cval != null)
-      document.cookie =
-        name +
-        "=" +
-        cval +
-        ';domin="localhost"' +
-        ";expires=" +
-        exp.toGMTString();
-  }
-  function getCookie(name) {
-    //console.log(document.cookie)
-    let arr = document.cookie.match(
-      new RegExp("(^| )" + name + "=([^;]*)(;|$)")
-    );
-    if (arr != null) return unescape(arr[2]);
-    return null;
-  }
-
-  const logout = () => {
-    delCookie("jwtToken");
-    history.replace("/login");
-    return;
   };
 
   // 相应路由跳转，submenu打开
@@ -154,11 +124,12 @@ const OmpLayout = (props) => {
   }, [location]);
 
   useEffect(() => {
+    window.__history__ = history;
     fetchGet(apiRequest.auth.users)
       .then((res) => {
         if (res && res.data.code == 1 && res.data.message == "未认证") {
           //message.warning("登录失效,请重新登录")
-          history.replace("/login");
+          //history.replace("/login");
         }
         console.log(res.data)
         res.data && setUserInfo(res.data.data[0])
@@ -180,6 +151,7 @@ const OmpLayout = (props) => {
             height: 46,
             color: "white",
             justifyContent: "center",
+            marginBottom:10
           }}
         >
           <div className={styles.headerLogo}>
@@ -214,6 +186,7 @@ const OmpLayout = (props) => {
           onOpenChange={onOpenChange}
           openKeys={currentOpenedKeys}
           selectedKeys={selectedKeys}
+          //theme="red"
         >
           <Menu.Item key="/homepage" icon={<DashboardOutlined />}>
             仪表盘
@@ -268,7 +241,7 @@ const OmpLayout = (props) => {
               >
                 {userInfo?.username}{" "}
                 <CaretDownOutlined
-                  style={{ position: "relative", top: 2, left: 3 }}
+                  style={{ position: "relative", top: 1, left: 3 }}
                 />
               </div>
             </Dropdown>
@@ -277,7 +250,7 @@ const OmpLayout = (props) => {
               placement="bottomCenter"
               overlay={
                 <Menu className="menu">
-                  <Menu.Item>版本信息：V1.5.0</Menu.Item>
+                  <Menu.Item>版本信息：V0.0.1</Menu.Item>
                 </Menu>
               }
             >
@@ -298,7 +271,7 @@ const OmpLayout = (props) => {
           <CustomBreadcrumb />
           <div
             //className="site-layout-background"
-            style={{ padding: 0, paddingBottom: 30 }}
+            style={{ padding: 0, paddingBottom: 30, height:"calc(100% - 30px)",backgroundColor:"#fff" }}
           >
             {props.children}
           </div>
