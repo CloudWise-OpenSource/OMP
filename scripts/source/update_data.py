@@ -43,6 +43,7 @@ def create_default_user():
         email="admin@yunzhihui.com"
     ).save()
 
+
 def create_default_monitor_url():
     """
     配置监控地址初始入库
@@ -50,12 +51,16 @@ def create_default_monitor_url():
     """
     if MonitorUrl.objects.all().count() != 0:
         return
-    MonitorList=[]
-    local_ip="127.0.0.1:"
-    MonitorList.append(MonitorUrl(name="prometheus",monitor_url=local_ip+str(MONITOR_PORT.get("prometheus","19011"))))
-    MonitorList.append(MonitorUrl(name="alertmanager", monitor_url=local_ip+str(MONITOR_PORT.get("alertmanager","19013"))))
-    MonitorList.append(MonitorUrl(name="grafana", monitor_url=local_ip+str(MONITOR_PORT.get("grafana","19014"))))
+    MonitorList = []
+    local_ip = "127.0.0.1:"
+    MonitorList.append(
+        MonitorUrl(name="prometheus", monitor_url=local_ip + str(MONITOR_PORT.get("prometheus", "19011"))))
+    MonitorList.append(
+        MonitorUrl(name="alertmanager", monitor_url=local_ip + str(MONITOR_PORT.get("alertmanager", "19013"))))
+    MonitorList.append(MonitorUrl(
+        name="grafana", monitor_url=local_ip + str(MONITOR_PORT.get("grafana", "19014"))))
     MonitorUrl.objects.bulk_create(MonitorList)
+
 
 def create_default_env():
     """
@@ -63,9 +68,9 @@ def create_default_env():
     :return:
     """
     env_name = "default"
-    if Env.objects.filter(env_name=env_name).count() != 0:
+    if Env.objects.filter(name=env_name).count() != 0:
         return
-    Env(env_name=env_name).save()
+    Env(name=env_name).save()
 
 
 def main():
