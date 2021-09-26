@@ -153,90 +153,37 @@
     background: #fff;
     height: 50px;
   }
-  // .ant-layout {
-  //   background-color: #fafbfd;
-  //   background-color: #f1f3f5;
-  //   padding: 0px !important;
+
+  // 修改antd menu的原生选中样式
+  // 选中文字的颜色
+  .ant-menu.ant-menu-dark, .ant-menu-dark .ant-menu-sub, .ant-menu.ant-menu-dark .ant-menu-sub {
+    background-color: #192031;
+    color: #fff;
+  }
+  // .ant-layout-sider {
+  //   background-color: #2e4254;
   // }
-  // .ant-layout-header {
-  //   padding-left: 10px;
-  // }
-  // .ant-select:not(.ant-select-customize-input) .ant-select-selector {
-  //   border-color: #c4c6cc;
-  // }
-  // .ant-input {
-  //   border-color: #c4c6cc !important;
-  //   box-shadow: 0 0 0px 1000px white inset;
-  // }
-  // .ant-btn {
-  //   color: #63656e !important;
-  // }
-  // .ant-btn-primary {
-  //   color: white !important;
-  // }
-  // .ant-btn-primary[disabled] {
-  //   border-color: #dcdee5 !important;
-  //   background-color: #dcdee5 !important;
-  //   //#c4c6cc
-  // }
-  // .ant-menu.ant-menu-dark,
-  // .ant-menu-dark .ant-menu-sub,
-  // .ant-menu.ant-menu-dark .ant-menu-sub {
-  //   background-color: white;
-  //   color: #63656e !important;
+  // .ant-menu-dark.ant-menu-dark:not(.ant-menu-horizontal) .ant-menu-item-selected {
+  //   background-color: #4a6782;
+  //   color: #36bebc;
   // }
 
-  // .ant-menu-dark .ant-menu-item:hover,
-  // .ant-menu-dark .ant-menu-item-active,
-  // .ant-menu-dark .ant-menu-submenu-active,
-  // .ant-menu-dark .ant-menu-submenu-open,
-  // .ant-menu-dark .ant-menu-submenu-selected,
-  // .ant-menu-dark .ant-menu-submenu-title:hover {
-  //   color: #63656e !important;
+  // .ant-menu-dark .ant-menu-item:hover, .ant-menu-dark .ant-menu-item-active, .ant-menu-dark .ant-menu-submenu-active, .ant-menu-dark .ant-menu-submenu-open, .ant-menu-dark .ant-menu-submenu-selected, .ant-menu-dark .ant-menu-submenu-title:hover {
+  //   color: #36bebc;
   // }
-
-  // .ant-menu-dark .ant-menu-item,
-  // .ant-menu-dark .ant-menu-item-group-title,
-  // .ant-menu-dark .ant-menu-item > a,
-  // .ant-menu-dark .ant-menu-item > span > a {
-  //   color: #63656e !important;
+  // .ant-menu-dark .ant-menu-item:hover > .ant-menu-submenu-title > .ant-menu-submenu-arrow::after, .ant-menu-dark .ant-menu-item-active > .ant-menu-submenu-title > .ant-menu-submenu-arrow::after, .ant-menu-dark .ant-menu-submenu-active > .ant-menu-submenu-title > .ant-menu-submenu-arrow::after, .ant-menu-dark .ant-menu-submenu-open > .ant-menu-submenu-title > .ant-menu-submenu-arrow::after, .ant-menu-dark .ant-menu-submenu-selected > .ant-menu-submenu-title > .ant-menu-submenu-arrow::after, .ant-menu-dark .ant-menu-submenu-title:hover > .ant-menu-submenu-title > .ant-menu-submenu-arrow::after, .ant-menu-dark .ant-menu-item:hover > .ant-menu-submenu-title > .ant-menu-submenu-arrow::before, .ant-menu-dark .ant-menu-item-active > .ant-menu-submenu-title > .ant-menu-submenu-arrow::before, .ant-menu-dark .ant-menu-submenu-active > .ant-menu-submenu-title > .ant-menu-submenu-arrow::before, .ant-menu-dark .ant-menu-submenu-open > .ant-menu-submenu-title > .ant-menu-submenu-arrow::before, .ant-menu-dark .ant-menu-submenu-selected > .ant-menu-submenu-title > .ant-menu-submenu-arrow::before, .ant-menu-dark .ant-menu-submenu-title:hover > .ant-menu-submenu-title > .ant-menu-submenu-arrow::before {
+  //   background-color: #36bebc;
   // }
-  // .ant-menu-dark.ant-menu-dark:not(.ant-menu-horizontal)
-  //   .ant-menu-item-selected {
-  //   color: white !important;
-  //   //border-right: 2px solid #5487ef;
+  // .ant-menu-dark .ant-menu-item, .ant-menu-dark .ant-menu-item-group-title, .ant-menu-dark .ant-menu-item > a, .ant-menu-dark .ant-menu-item > span > a {
+  //   color: #fff
   // }
-  // //左侧菜单的展开图标
-  // .ant-menu.ant-menu-dark
-  //   .ant-menu-submenu-title
-  //   .ant-menu-submenu-arrow::after,
-  // .ant-menu-dark
-  //   .ant-menu-sub
-  //   .ant-menu-submenu-title
-  //   .ant-menu-submenu-arrow::after,
-  // .ant-menu.ant-menu-dark
-  //   .ant-menu-sub
-  //   .ant-menu-submenu-title
-  //   .ant-menu-submenu-arrow::after,
-  // .ant-menu.ant-menu-dark
-  //   .ant-menu-submenu-title
-  //   .ant-menu-submenu-arrow::before,
-  // .ant-menu-dark
-  //   .ant-menu-sub
-  //   .ant-menu-submenu-title
-  //   .ant-menu-submenu-arrow::before,
-  // .ant-menu.ant-menu-dark
-  //   .ant-menu-sub
-  //   .ant-menu-submenu-title
-  //   .ant-menu-submenu-arrow::before {
-  //   background-color: #63656e;
+  // .ant-menu-dark .ant-menu-item-selected .ant-menu-item-icon, .ant-menu-dark .ant-menu-item-selected .anticon {
+  //   color: #36bebc;
   // }
-  // // //鼠标悬停时menu
-  // // .ant-menu-inline >.ant-menu-item-active {
-  // //   background-color: #f6f6f9 !important;
-  // // }
-  // // //被选中的item就不要改变颜色了
-  // // .ant-menu-item-selecte:hover {
-  // //   background-color: #5487ef !important;
-  // // }
+  // .ant-menu-dark .ant-menu-item-selected .ant-menu-item-icon + span, .ant-menu-dark .ant-menu-item-selected .anticon + span {
+  //   color: #36bebc;
+  // }
+  // .ant-menu.ant-menu-dark .ant-menu-submenu-title .ant-menu-submenu-arrow, .ant-menu-dark .ant-menu-sub .ant-menu-submenu-title .ant-menu-submenu-arrow, .ant-menu.ant-menu-dark .ant-menu-sub .ant-menu-submenu-title .ant-menu-submenu-arrow {
+  //   opacity: 1;
+  // }
 }

@@ -27,6 +27,7 @@ const OmpModal = ({
   loading = false,
   afterClose = () => {},
   form,
+  initialValues={}
 }) => {
   const [modalForm] = Form.useForm();
   // 扩展formItem功能,为了能够在formitem的validator校验时获得当前form的实例进行操作
@@ -88,6 +89,7 @@ const OmpModal = ({
         labelCol={{ span: 7 }}
         wrapperCol={{ span: 14 }}
         onFinish={onFinish}
+        initialValues={initialValues}
       >
         {processedChildren}
         <Form.Item
