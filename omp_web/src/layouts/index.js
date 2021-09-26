@@ -250,7 +250,7 @@ const OmpLayout = (props) => {
               placement="bottomCenter"
               overlay={
                 <Menu className="menu">
-                  <Menu.Item>版本信息：V0.0.1</Menu.Item>
+                  <Menu.Item>版本信息：V0.1.0</Menu.Item>
                 </Menu>
               }
             >

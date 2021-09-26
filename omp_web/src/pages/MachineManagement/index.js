@@ -20,7 +20,12 @@ import {
   Dropdown,
 } from "antd";
 import { useState, useEffect, useRef } from "react";
-import { handleResponse, _idxInit, refreshTime, MessageTip } from "@/utils/utils";
+import {
+  handleResponse,
+  _idxInit,
+  refreshTime,
+  MessageTip,
+} from "@/utils/utils";
 import { fetchGet, fetchDelete, fetchPost, fetchPut } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 //import updata from "@/store_global/globalStore";
@@ -41,7 +46,7 @@ const MachineManagement = () => {
   //添加弹框的控制state
   const [addModalVisible, setAddMoadlVisible] = useState(false);
   //修改弹框的控制state
-  const [updateMoadlVisible, setUpdateMoadlVisible] = useState(false)
+  const [updateMoadlVisible, setUpdateMoadlVisible] = useState(false);
 
   //选中的数据
   const [checkedList, setCheckedList] = useState({});
@@ -66,15 +71,15 @@ const MachineManagement = () => {
     record: {},
   });
 
-  const [msgShow, setMsgShow] = useState(false)
+  const [msgShow, setMsgShow] = useState(false);
 
-  const msgRef = useRef(null)
+  const msgRef = useRef(null);
 
   //select 的onblur函数拿不到最新的search value,使用useref存(是最新的，但是因为失去焦点时会自动触发清空search，还是得使用ref存)
-  const searchValueRef = useRef(null)
-  
+  const searchValueRef = useRef(null);
+
   // 定义row存数据
-  const [row, setRow] = useState({})
+  const [row, setRow] = useState({});
 
   function fetchData(
     pageParams = { current: 1, pageSize: 10 },
@@ -86,7 +91,7 @@ const MachineManagement = () => {
       params: {
         page: pageParams.current,
         size: pageParams.pageSize,
-        ordering:ordering?ordering:null,
+        ordering: ordering ? ordering : null,
         ...searchParams,
       },
     })
@@ -123,33 +128,33 @@ const MachineManagement = () => {
       });
   };
 
-  const createHost = (data)=>{
+  const createHost = (data) => {
     // console.log(data)
-    //return 
+    //return
     setLoading(true);
-    data.ip = data.IPtext
-    delete data.IPtext
-    data.port = `${data.port}`
+    data.ip = data.IPtext;
+    delete data.IPtext;
+    data.port = `${data.port}`;
     fetchPost(apiRequest.machineManagement.hosts, {
       body: {
         ...data,
       },
     })
       .then((res) => {
-        if(res && res.data){
-          if(res.data.code == 1){
+        if (res && res.data) {
+          if (res.data.code == 1) {
             // msgRef.current = res.data.message
             // setMsgShow(true)
-            message.warning(res.data.message)
+            message.warning(res.data.message);
           }
-          if(res.data.code == 0){
-            message.success("添加主机成功")
+          if (res.data.code == 0) {
+            message.success("添加主机成功");
             fetchData(
               { current: pagination.current, pageSize: pagination.pageSize },
               { ip: selectValue },
               pagination.ordering
             );
-            setAddMoadlVisible(false)
+            setAddMoadlVisible(false);
           }
         }
       })
@@ -157,33 +162,33 @@ const MachineManagement = () => {
       .finally(() => {
         setLoading(false);
       });
-  }
+  };
 
-  const upDateHost = (data)=>{
+  const upDateHost = (data) => {
     setLoading(true);
-    data.ip = data.IPtext
-    delete data.IPtext
-    data.port = `${data.port}`
+    data.ip = data.IPtext;
+    delete data.IPtext;
+    data.port = `${data.port}`;
     fetchPut(`${apiRequest.machineManagement.hosts}${row.id}/`, {
       body: {
         ...data,
       },
     })
       .then((res) => {
-        if(res && res.data){
-          if(res.data.code == 1){
+        if (res && res.data) {
+          if (res.data.code == 1) {
             // msgRef.current = res.data.message
             // setMsgShow(true)
-            message.warning(res.data.message)
+            message.warning(res.data.message);
           }
-          if(res.data.code == 0){
-            message.success("更新主机信息成功")
+          if (res.data.code == 0) {
+            message.success("更新主机信息成功");
             fetchData(
               { current: pagination.current, pageSize: pagination.pageSize },
               { ip: selectValue },
               pagination.ordering
             );
-            setUpdateMoadlVisible(false)
+            setUpdateMoadlVisible(false);
           }
         }
       })
@@ -191,7 +196,7 @@ const MachineManagement = () => {
       .finally(() => {
         setLoading(false);
       });
-  }
+  };
 
   useEffect(() => {
     fetchData(pagination);
@@ -213,7 +218,7 @@ const MachineManagement = () => {
           style={{ marginLeft: 10 }}
           onClick={() => {
             dispatch(refreshTime());
-            console.log(pagination,"hosts/hosts/?page=1&size=10")
+            console.log(pagination, "hosts/hosts/?page=1&size=10");
             fetchData(
               { current: pagination.current, pageSize: pagination.pageSize },
               { ip: selectValue },
@@ -254,34 +259,43 @@ const MachineManagement = () => {
             }}
             searchValue={searchValue}
             onSelect={(e) => {
-              searchValueRef.current = ""
-              if(e == searchValue || (!searchValue)){
+              searchValueRef.current = "";
+              if (e == searchValue || !searchValue) {
                 setSelectValue(e);
                 fetchData(
-                  { current: pagination.current, pageSize: pagination.pageSize },
+                  {
+                    current: pagination.current,
+                    pageSize: pagination.pageSize,
+                  },
                   { ip: e },
                   pagination.ordering
                 );
-              }else{
+              } else {
                 setSelectValue(searchValue);
                 fetchData(
-                  { current: pagination.current, pageSize: pagination.pageSize },
+                  {
+                    current: pagination.current,
+                    pageSize: pagination.pageSize,
+                  },
                   { ip: e },
                   pagination.ordering
                 );
               }
             }}
             value={selectValue}
-            onSearch={(e)=>{
+            onSearch={(e) => {
               e && (searchValueRef.current = e);
-              setSearchValue(e)
+              setSearchValue(e);
             }}
-            onBlur={(e)=>{
+            onBlur={(e) => {
               //console.log(searchValueRef.current,"searchValueRef.current")
-              if(searchValueRef.current){
+              if (searchValueRef.current) {
                 setSelectValue(searchValueRef.current);
                 fetchData(
-                  { current: pagination.current, pageSize: pagination.pageSize },
+                  {
+                    current: pagination.current,
+                    pageSize: pagination.pageSize,
+                  },
                   { ip: selectValue },
                   pagination.ordering
                 );
@@ -314,9 +328,13 @@ const MachineManagement = () => {
               : null;
             setTimeout(() => {
               fetchData(e, pagination.searchParams, ordering);
-            },200);
+            }, 200);
           }}
-          columns={getColumnsConfig(setIsShowIsframe, setRow, setUpdateMoadlVisible)}
+          columns={getColumnsConfig(
+            setIsShowIsframe,
+            setRow,
+            setUpdateMoadlVisible
+          )}
           dataSource={dataSource}
           pagination={{
             showSizeChanger: true,
@@ -354,27 +372,31 @@ const MachineManagement = () => {
           checkedState={[checkedList, setCheckedList]}
         />
       </div>
-      <AddMachineModal
-        loading={loading}
-        visibleHandle={[addModalVisible, setAddMoadlVisible]}
-        createHost={createHost}
-        msgInfo={{
-          msgShow:msgShow,
-          setMsgShow:setMsgShow,
-          msg:msgRef.current
-        }}
-      />
-      <UpDateMachineModal
-        loading={loading}
-        visibleHandle={[updateMoadlVisible, setUpdateMoadlVisible]}
-        createHost={upDateHost}
-        row={row}
-        msgInfo={{
-          msgShow:msgShow,
-          setMsgShow:setMsgShow,
-          msg:msgRef.current
-        }}
-      />
+      {addModalVisible && (
+        <AddMachineModal
+          loading={loading}
+          visibleHandle={[addModalVisible, setAddMoadlVisible]}
+          createHost={createHost}
+          msgInfo={{
+            msgShow: msgShow,
+            setMsgShow: setMsgShow,
+            msg: msgRef.current,
+          }}
+        />
+      )}
+      {updateMoadlVisible && (
+        <UpDateMachineModal
+          loading={loading}
+          visibleHandle={[updateMoadlVisible, setUpdateMoadlVisible]}
+          createHost={upDateHost}
+          row={row}
+          msgInfo={{
+            msgShow: msgShow,
+            setMsgShow: setMsgShow,
+            msg: msgRef.current,
+          }}
+        />
+      )}
       <DetailHost
         isShowIframe={isShowIframe}
         setIsShowIsframe={setIsShowIsframe}
