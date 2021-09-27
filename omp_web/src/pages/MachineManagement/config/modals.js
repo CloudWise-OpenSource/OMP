@@ -20,6 +20,7 @@ import {
   isNumberChar,
   isLowercaseChar,
   isValidIpChar,
+  isExpression
 } from "@/utils/utils";
 import { fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
@@ -88,9 +89,7 @@ export const AddMachineModal = ({
                 if (!value) {
                   return Promise.resolve("success");
                 }
-                var reg =
-                  /[^a-zA-Z0-9\u4e00-\u9fa5\u3002\uff0c\uff1a\uff08\uff09\uff1f\u201c\u201d\u3001\uff01,/.!:()?@#$%^&*_""—-]/g;
-                if (!reg.test(value)) {
+                if (!isExpression(value)) {
                   if (isChineseChar(value)) {
                     return Promise.reject(`实例名称不支持中文`);
                   } else {
@@ -312,19 +311,17 @@ export const AddMachineModal = ({
             },
             {
               validator: (rule, value, callback) => {
-                var reg =
-                  /[^a-zA-Z0-9\u4e00-\u9fa5\u3002\uff0c\uff1a\uff08\uff09\uff1f\u201c\u201d\u3001\uff01,/.!:()?@#$%^&*_""—-]/g;
                 if (value) {
-                  if (!reg.test(value)) {
-                    if (value.length < 8) {
-                      return Promise.reject("密码长度为8到16位");
-                    } else {
+                  if (!isExpression(value)) {
                       if (isChineseChar(value)) {
                         return Promise.reject("密码不支持中文");
                       } else {
-                        return Promise.resolve("success");
+                        if (value.length < 8) {
+                          return Promise.reject("密码长度为8到16位");
+                        } else {
+                          return Promise.resolve("success");
+                        }
                       }
-                    }
                   } else {
                     return Promise.reject(`密码不支持输入表情`);
                   }
@@ -408,9 +405,7 @@ export const UpDateMachineModal = ({
                 if (!value) {
                   return Promise.resolve("success");
                 }
-                var reg =
-                  /[^a-zA-Z0-9\u4e00-\u9fa5\u3002\uff0c\uff1a\uff08\uff09\uff1f\u201c\u201d\u3001\uff01,/.!:()?@#$%^&*_""—-]/g;
-                if (!reg.test(value)) {
+                if (!isExpression(value)) {
                   if (isChineseChar(value)) {
                     return Promise.reject("实例名称不支持中文");
                   } else {
@@ -608,19 +603,17 @@ export const UpDateMachineModal = ({
             },
             {
               validator: (rule, value, callback) => {
-                var reg =
-                  /[^a-zA-Z0-9\u4e00-\u9fa5\u3002\uff0c\uff1a\uff08\uff09\uff1f\u201c\u201d\u3001\uff01,/.!:()?@#$%^&*_""—-]/g;
                 if (value) {
-                  if (!reg.test(value)) {
-                    if (value.length < 8) {
-                      return Promise.reject("密码长度为8到16位");
-                    } else {
+                  if (!isExpression(value)) {
                       if (isChineseChar(value)) {
                         return Promise.reject("密码不支持中文");
                       } else {
-                        return Promise.resolve("success");
+                        if (value.length < 8) {
+                          return Promise.reject("密码长度为8到16位");
+                        } else {
+                          return Promise.resolve("success");
+                        }
                       }
-                    }
                   } else {
                     return Promise.reject(`密码不支持输入表情`);
                   }
