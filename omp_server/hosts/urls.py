@@ -10,7 +10,8 @@ from rest_framework.routers import DefaultRouter
 
 from hosts.views import (
     HostListView, HostDetailView, HostFieldCheckView,
-    IpListView, HostMaintenanceView, HostAgentRestartView
+    IpListView, HostMaintenanceView, HostAgentRestartView,
+    HostOperateLogView
 )
 
 router = DefaultRouter()
@@ -21,3 +22,4 @@ router.register("ips", IpListView, basename="ips")
 router.register("maintain", HostMaintenanceView, basename="maintain")
 router.register("restartHostAgent", HostAgentRestartView,
                 basename="restartHostAgent")
+router.register("operateLog", HostOperateLogView, basename="operateLog")
