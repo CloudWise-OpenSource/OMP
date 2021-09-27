@@ -107,9 +107,6 @@ const OmpModal = ({
             loading={loading}
             type="primary"
             htmlType="submit"
-            onClick={()=>{
-              setLoading && setLoading(true)
-            }}
           >
             确定
           </Button>
