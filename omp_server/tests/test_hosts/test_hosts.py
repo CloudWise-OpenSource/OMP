@@ -4,14 +4,16 @@ from unittest import mock
 from rest_framework.reverse import reverse
 
 from tests.base import AutoLoginTest
-from hosts.tasks import deploy_agent
-from hosts.tasks import host_agent_restart
+from tests.mixin import HostsResourceMixin
+from hosts.tasks import (
+    deploy_agent, host_agent_restart
+)
 from db_models.models import Host
 from utils.plugin.ssh import SSH
 from utils.plugin.crypto import AESCryptor
 
 
-class CreateHostTest(AutoLoginTest):
+class CreateHostTest(AutoLoginTest, HostsResourceMixin):
     """ 创建主机测试类 """
 
     def setUp(self):
@@ -25,21 +27,8 @@ class CreateHostTest(AutoLoginTest):
             "username": "root",
             "password": "root_password",
             "data_folder": "/data",
-            "operate_system": "centos",
+            "operate_system": "CentOS",
         }
-
-    def create_host(self):
-        """ 创建主机，返回主机对象 """
-        return Host.objects.create(
-            instance_name="default_name",
-            ip="127.0.0.20",
-            port=36000,
-            username="root",
-            password="root_password",
-            data_folder="/data",
-            operate_system="centos",
-            env=self.default_env,
-        )
 
     def test_error_field_instance_name(self):
         """ 测试错误字段校验，instance_name """
@@ -96,7 +85,7 @@ class CreateHostTest(AutoLoginTest):
         })
 
         # instance_name 已存在 -> 创建失败
-        host_obj = self.create_host()
+        host_obj = self.get_hosts(1)[0]
         data = self.correct_host_data.copy()
         data.update({"instance_name": host_obj.instance_name})
         resp = self.post(self.create_host_url, data).json()
@@ -105,7 +94,7 @@ class CreateHostTest(AutoLoginTest):
             "message": "instance_name: 实例名已经存在;",
             "data": None
         })
-        host_obj.delete(soft=False)
+        self.destroy_hosts()
 
     def test_error_field_ip(self):
         """ 测试错误字段校验，ip """
@@ -131,7 +120,7 @@ class CreateHostTest(AutoLoginTest):
         })
 
         # ip 已存在 -> 创建失败
-        host_obj = self.create_host()
+        host_obj = self.get_hosts(1)[0]
         data = self.correct_host_data.copy()
         data.update({"ip": host_obj.ip})
         resp = self.post(self.create_host_url, data).json()
@@ -140,7 +129,7 @@ class CreateHostTest(AutoLoginTest):
             "message": "ip: IP已经存在;",
             "data": None
         })
-        host_obj.delete(soft=False)
+        self.destroy_hosts()
 
     def test_error_field_port(self):
         """ 测试错误字段校验，port """
@@ -301,8 +290,9 @@ class CreateHostTest(AutoLoginTest):
         host_info = resp.get("data")
         self.assertTrue(host_info is not None)
         for k, v in self.correct_host_data.items():
-            # 密码字段不展示
+            # 密码字段加密处理，不相等
             if k == "password":
+                self.assertNotEqual(host_info.get(k), v)
                 continue
             # 各字段值相等
             self.assertEqual(host_info.get(k), v)
@@ -341,7 +331,7 @@ class CreateHostTest(AutoLoginTest):
         host_obj.delete(soft=False)
 
 
-class ListHostTest(AutoLoginTest):
+class ListHostTest(AutoLoginTest, HostsResourceMixin):
     """ 主机列表测试类 """
 
     def setUp(self):
@@ -349,32 +339,9 @@ class ListHostTest(AutoLoginTest):
         self.create_host_url = reverse("hosts-list")
         self.list_host_url = reverse("hosts-list")
 
-    def create_hosts(self):
-        """ 创建测试主机 """
-        aes_crypto = AESCryptor()
-        host_obj_ls = []
-        for i in range(50):
-            host_obj = Host.objects.create(
-                instance_name=f"test_create_{i + 1}",
-                ip=f"130.110.90.{i + 1}",
-                port=36000,
-                username="root",
-                password=aes_crypto.encode("root_password"),
-                data_folder="/data",
-                operate_system="centos",
-                env=self.default_env,
-            )
-            host_obj_ls.append(host_obj)
-        return host_obj_ls
-
-    @staticmethod
-    def delete_hosts():
-        """ 创建测试主机 """
-        Host.objects.filter(instance_name__contains="test_create_").delete()
-
     def test_hosts_list(self):
         """ 测试主机列表 """
-        host_obj_ls = self.create_hosts()
+        host_obj_ls = self.get_hosts(50)
 
         # 查询主机列表 -> 展示所有主机
         resp = self.get(self.list_host_url).json()
@@ -412,32 +379,11 @@ class ListHostTest(AutoLoginTest):
         # TODO 监控动态字段排序
 
         # 删除主机
-        self.delete_hosts()
+        self.destroy_hosts()
 
 
-class UpdateHostTest(AutoLoginTest):
+class UpdateHostTest(AutoLoginTest, HostsResourceMixin):
     """ 更新主机测试类 """
-
-    def create_hosts(self):
-        """ 创建多台主机 """
-        host_obj_ls = []
-        for i in range(10):
-            host_obj = Host.objects.create(
-                instance_name=f"update_host_{i + 1}",
-                ip=f"130.110.90.{i + 1}",
-                port=36000,
-                username="root",
-                password="root_password",
-                data_folder="/data",
-                operate_system="centos",
-                env=self.default_env,
-            )
-            host_obj_ls.append(host_obj)
-        return host_obj_ls
-
-    @staticmethod
-    def delete_hosts():
-        Host.objects.filter(instance_name__contains="update_host_").delete()
 
     @mock.patch.object(SSH, "check", return_value=(True, ""))
     def test_update_host(self, ssh_mock):
@@ -446,12 +392,12 @@ class UpdateHostTest(AutoLoginTest):
         # 更新不存在主机 -> 更新失败
         resp = self.put(reverse("hosts-detail", [99]), {
             "instance_name": "mysql_instance_1",
-            "ip": "120.100.80.60",
+            "ip": "127.0.0.255",
             "port": 36000,
             "username": "root",
             "password": "root_password",
             "data_folder": "/data",
-            "operate_system": "centos",
+            "operate_system": "CentOS",
         }).json()
         self.assertDictEqual(resp, {
             "code": 1,
@@ -459,15 +405,15 @@ class UpdateHostTest(AutoLoginTest):
             "data": None
         })
 
-        host_obj_ls = self.create_hosts()
+        host_obj_ls = self.get_hosts(10)
         # 更新已存在主机，修改主机 IP -> 更新失败
         host_obj = host_obj_ls[0]
         resp = self.put(reverse("hosts-detail", [host_obj.id]), {
             "instance_name": host_obj.instance_name,
-            "ip": "120.100.80.60",
+            "ip": "127.0.0.255",
             "port": host_obj.port,
             "username": host_obj.username,
-            "password": host_obj.password,
+            "password": AESCryptor().decode(host_obj.password),
             "data_folder": host_obj.data_folder,
             "operate_system": host_obj.operate_system,
         }).json()
@@ -483,7 +429,7 @@ class UpdateHostTest(AutoLoginTest):
             "ip": host_obj.ip,
             "port": host_obj.port,
             "username": host_obj.username,
-            "password": host_obj.password,
+            "password": AESCryptor().decode(host_obj.password),
             "data_folder": host_obj.data_folder,
             "operate_system": host_obj.operate_system,
         }).json()
@@ -512,7 +458,7 @@ class UpdateHostTest(AutoLoginTest):
         self.assertNotEqual(
             host_obj.modified,
             Host.objects.filter(id=host_obj.id).first().modified)
-        self.delete_hosts()
+        self.destroy_hosts()
 
     @mock.patch.object(SSH, "check", return_value=(True, ""))
     def test_partial_update_host(self, ssh_mock):
@@ -528,7 +474,7 @@ class UpdateHostTest(AutoLoginTest):
             "data": None
         })
 
-        host_obj_ls = self.create_hosts()
+        host_obj_ls = self.get_hosts(10)
         # 更新已存在主机，修改主机 IP -> 更新失败
         host_obj = host_obj_ls[0]
         resp = self.patch(reverse("hosts-detail", [host_obj.id]), {
@@ -566,40 +512,19 @@ class UpdateHostTest(AutoLoginTest):
         self.assertNotEqual(
             host_obj.modified,
             Host.objects.filter(id=host_obj.id).first().modified)
-        self.delete_hosts()
+        self.destroy_hosts()
 
 
-class HostFieldCheckTest(AutoLoginTest):
+class HostFieldCheckTest(AutoLoginTest, HostsResourceMixin):
     """ 主机字段校验测试类 """
 
     def setUp(self):
         super(HostFieldCheckTest, self).setUp()
         self.field_check_url = reverse("fields-list")
 
-    def create_hosts(self):
-        """ 创建多台主机 """
-        host_obj_ls = []
-        for i in range(2):
-            host_obj = Host.objects.create(
-                instance_name=f"check_field_{i + 1}",
-                ip=f"130.110.90.{i + 1}",
-                port=36000,
-                username="root",
-                password="root_password",
-                data_folder="/data",
-                operate_system="centos",
-                env=self.default_env,
-            )
-            host_obj_ls.append(host_obj)
-        return host_obj_ls
-
-    @staticmethod
-    def delete_hosts():
-        Host.objects.filter(instance_name__contains="check_field_").delete()
-
     def test_create_host_check(self):
         """ 测试创建主机场景 """
-        host_obj_ls = self.create_hosts()
+        host_obj_ls = self.get_hosts(2)
         host_obj = host_obj_ls[0]
 
         # instance_name 重复 -> 验证结果 False
@@ -641,13 +566,12 @@ class HostFieldCheckTest(AutoLoginTest):
             "message": "success",
             "data": True
         })
-        self.delete_hosts()
+
+        self.destroy_hosts()
 
     def test_error_host_check(self):
         """ 测试更新主机场景 """
-        host_obj_ls = self.create_hosts()
-        host_obj_one = host_obj_ls[0]
-        host_obj_two = host_obj_ls[1]
+        host_obj_one, host_obj_two = self.get_hosts(2)
 
         # instance_name 重复 (为主机自身 instance_name) -> 验证结果 True
         resp = self.post(self.field_check_url, {
@@ -692,43 +616,20 @@ class HostFieldCheckTest(AutoLoginTest):
             "message": "success",
             "data": False
         })
-        self.delete_hosts()
+        self.destroy_hosts()
 
 
-class ListIPTest(AutoLoginTest):
+class ListIPTest(AutoLoginTest, HostsResourceMixin):
     """ IP 列表测试类 """
 
     def setUp(self):
         super(ListIPTest, self).setUp()
         self.ip_list_url = reverse("ips-list")
 
-    def create_hosts(self):
-        """ 创建测试主机 """
-        host_obj_ls = []
-        for i in range(100):
-            host_obj = Host.objects.create(
-                instance_name=f"test_ip_ls_{i + 1}",
-                ip=f"130.110.90.{i + 1}",
-                port=36000,
-                username="root",
-                password="root_password",
-                data_folder="/data",
-                operate_system="centos",
-                env=self.default_env,
-            )
-            host_obj_ls.append(host_obj)
-        return host_obj_ls
-
-    @staticmethod
-    def delete_hosts():
-        """ 创建测试主机 """
-        Host.objects.filter(
-            instance_name__contains="test_ip_ls_").delete()
-
     def test_ip_list(self):
         """ 测试 IP 列表 """
+        self.get_hosts(100)
 
-        self.create_hosts()
         # 查询主机列表 -> 返回所有主机列表数据
         resp = self.get(self.ip_list_url).json()
         self.assertEqual(resp.get("code"), 0)
@@ -736,44 +637,22 @@ class ListIPTest(AutoLoginTest):
         self.assertEqual(
             set(resp.get("data")),
             set(Host.objects.all().values_list("ip", flat=True)))
-        self.delete_hosts()
+
+        self.destroy_hosts()
 
 
-class HostMaintainTest(AutoLoginTest):
+class HostMaintainTest(AutoLoginTest, HostsResourceMixin):
     """ 主机维护模式测试类 """
 
     def setUp(self):
         super(HostMaintainTest, self).setUp()
         self.host_maintain_url = reverse("maintain-list")
 
-    def create_hosts(self):
-        """ 创建测试主机 """
-        host_obj_ls = []
-        for i in range(20):
-            host_obj = Host.objects.create(
-                instance_name=f"maintain_{i + 1}",
-                ip=f"10.20.30.{i + 1}",
-                port=36000,
-                username="root",
-                password="root_password",
-                data_folder="/data",
-                operate_system="centos",
-                env=self.default_env,
-            )
-            host_obj_ls.append(host_obj)
-        return host_obj_ls
-
-    @staticmethod
-    def delete_hosts():
-        """ 创建测试主机 """
-        Host.objects.filter(
-            instance_name__contains="maintain_").delete()
-
     def test_error_field(self):
         """ 测试错误字段校验 """
-
-        host_obj_ls = self.create_hosts()
+        host_obj_ls = self.get_hosts(20)
         host_obj_id_ls = list(map(lambda x: x.id, host_obj_ls))
+
         # host_ids 中含不存在的 ID -> 修改失败
         not_exists_id = 666
         random_host_ls = random.sample(host_obj_id_ls, 5)
@@ -799,12 +678,13 @@ class HostMaintainTest(AutoLoginTest):
             "message": "host_ids: 存在已 '关闭' 维护模式的主机;",
             "data": None
         })
-        self.delete_hosts()
+
+        self.destroy_hosts()
 
     def test_correct_field(self):
         """ 正确字段校验 """
         # TODO 模拟调用进入维护模式函数
-        host_obj_ls = self.create_hosts()
+        host_obj_ls = self.get_hosts(20)
         host_obj_id_ls = list(map(lambda x: x.id, host_obj_ls))
 
         # 正确字段，开启维护模式 -> 操作成功
@@ -841,37 +721,22 @@ class HostMaintainTest(AutoLoginTest):
             id__in=random_host_ls
         ).values_list("is_maintenance", flat=True)
         self.assertTrue(not any(is_maintenance_ls))
-        self.delete_hosts()
+
+        self.destroy_hosts()
 
 
-class HostAgentRestartTest(AutoLoginTest):
+class HostAgentRestartTest(AutoLoginTest, HostsResourceMixin):
     """ 主机维护模式测试类 """
 
     def setUp(self):
         super(HostAgentRestartTest, self).setUp()
         self.host_restartHostAgent_url = reverse("restartHostAgent-list")
 
-    def create_hosts(self):
-        """ 创建测试主机 """
-        host_obj_ls = []
-        for i in range(2):
-            host_obj = Host.objects.create(
-                instance_name=f"restart_{i + 1}",
-                ip=f"127.0.0.{i + 1}",
-                port=36000,
-                username="root",
-                password="root_password",
-                data_folder="/data",
-                operate_system="centos",
-                env=self.default_env,
-            )
-            host_obj_ls.append(host_obj)
-        return host_obj_ls
-
     @mock.patch.object(host_agent_restart, "delay", return_value=None)
     def test_success(self, host_agent_restart_mock):
         """ 请求成功测试 """
-        host_obj_ls = self.create_hosts()
+        host_obj_ls = self.get_hosts(2)
+
         host_obj_id_ls = list(map(lambda x: x.id, host_obj_ls))
         resp = self.post(
             self.host_restartHostAgent_url,
@@ -885,12 +750,17 @@ class HostAgentRestartTest(AutoLoginTest):
             }
         })
 
+        self.destroy_hosts()
+
     @mock.patch.object(host_agent_restart, "delay", return_value=None)
     def test_failed(self, host_agent_restart_mock):
-        """ 请求成功测试 """
-        self.create_hosts()
+        """ 请求失败测试 """
+        self.get_hosts(2)
+
         resp = self.post(
             self.host_restartHostAgent_url,
             data={"host_ids": [random.randint(10000, 20000)]}
         ).json()
         self.assertEqual(resp.get("code"), 1)
+
+        self.destroy_hosts()

@@ -1,6 +1,7 @@
 """
 主机序列化器
 """
+import logging
 
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -17,6 +18,8 @@ from utils.validator import (
 )
 from utils.plugin.ssh import SSH
 from utils.plugin.crypto import AESCryptor
+
+logger = logging.getLogger('server')
 
 
 class HostSerializer(ModelSerializer):
@@ -112,10 +115,15 @@ class HostSerializer(ModelSerializer):
         )
         is_connect, _ = ssh.check()
         if not is_connect:
+            logger.info(f"主机SSH连通性校验失败: "
+                        f"ip-{attrs.get('ip')},"
+                        f"port-{attrs.get('port')},"
+                        f"username-{attrs.get('username')},"
+                        f"password-{attrs.get('password')}")
             raise ValidationError({"ip": "主机SSH连通性校验失败"})
 
         # 如果未传递 env，则指定默认环境
-        if not attrs.get("") and not self.instance:
+        if not attrs.get("env") and not self.instance:
             attrs["env"] = Env.objects.get(id=1)
 
         # 主机密码加密处理
@@ -124,10 +132,17 @@ class HostSerializer(ModelSerializer):
 
     def create(self, validated_data):
         """ 创建主机 """
+        ip = validated_data.get('ip')
+        logger.info(f"主机{ip}-创建成功")
         instance = super(HostSerializer, self).create(validated_data)
         # 异步下发 Agent
+        logger.info(f"主机{ip}-异步下发Agent任务")
         deploy_agent.delay(instance.id)
         return instance
+    #
+    # def update(self, instance, validated_data):
+    #     print("update")
+    #     return super(HostSerializer, self).update(instance, validated_data)
 
 
 class HostFieldCheckSerializer(ModelSerializer):
@@ -135,9 +150,7 @@ class HostFieldCheckSerializer(ModelSerializer):
 
     id = serializers.IntegerField(
         help_text="主机ID，更新时需要此字段",
-        required=False
-    )
-
+        required=False)
     instance_name = serializers.CharField(
         help_text="实例名",
         max_length=16, required=False,
@@ -187,9 +200,8 @@ class HostMaintenanceSerializer(Serializer):
 
     def validate_host_ids(self, host_ids):
         """ 校验主机 ID 列表中主机是否都存在 """
-        exists_ids = set(Host.objects.filter(
-            id__in=host_ids
-        ).values_list("id", flat=True))
+        exists_ids = Host.objects.filter(
+            id__in=host_ids).values_list("id", flat=True)
         diff = set(host_ids) - set(exists_ids)
         if diff:
             raise ValidationError(
@@ -212,12 +224,15 @@ class HostMaintenanceSerializer(Serializer):
 
     def create(self, validated_data):
         """ 进入 / 退出维护 """
+        host_ids = validated_data.get("host_ids")
+        is_maintenance = validated_data.get("is_maintenance")
         # TODO 调用进入维护模式函数
         # 如果操作成功，则更新数据库配置
         if True:
-            Host.objects.filter(
-                id__in=validated_data.get("host_ids")
-            ).update(is_maintenance=validated_data.get("is_maintenance"))
+            Host.objects.filter(id__in=host_ids).update(
+                is_maintenance=is_maintenance)
+            status = "开启" if is_maintenance else "关闭"
+            logger.info(f"主机{status}维护模式成功: {host_ids}")
         return validated_data
 
     def update(self, instance, validated_data):
@@ -235,9 +250,8 @@ class HostAgentRestartSerializer(Serializer):
 
     def validate_host_ids(self, host_ids):
         """ 校验主机 ID 列表中主机是否都存在 """
-        exists_ids = set(Host.objects.filter(
-            id__in=host_ids
-        ).values_list("id", flat=True))
+        exists_ids = Host.objects.filter(
+            id__in=host_ids).values_list("id", flat=True)
         diff = set(host_ids) - set(exists_ids)
         if diff:
             raise ValidationError(
