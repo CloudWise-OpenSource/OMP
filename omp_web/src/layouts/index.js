@@ -14,11 +14,7 @@ import { useHistory, useLocation } from "react-router-dom";
 import { CustomBreadcrumb, OmpModal } from "@/components";
 import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-import {
-  handleResponse,
-  _idxInit,
-  logout
-} from "@/utils/utils";
+import { handleResponse, _idxInit, logout } from "@/utils/utils";
 
 const { Header, Content, Footer, Sider } = Layout;
 const { SubMenu } = Menu;
@@ -38,6 +34,25 @@ const OmpLayout = (props) => {
     "/product-settings",
     "/system-settings",
   ];
+
+  const headerLink = [
+    // { title: "仪表盘", path: "/homepage" },
+    { title: "快速部署", path: "/products-management/version/rapidDeployment" },
+    // { title: "数据上传", path: "/products-management/version/upload" },
+    // { title: "深度分析", path: "/operation-management/report" },
+    {
+      title: "监控平台",
+      path: "/proxy/v1/grafana/d/XrwAXz_Mz/mian-ban-lie-biao",
+    },
+  ];
+
+  const [currentOpenedKeys, setCurrentOpenedKeys] = useState([]);
+  const [selectedKeys, setSelectedKeys] = useState([]);
+  //修改密码弹框
+  const [showModal, setShowModal] = useState(false);
+  //用户相关信息
+  const [userInfo, setUserInfo] = useState({});
+
   const menu = (
     <Menu className="menu">
       <Menu.Item key="changePass" onClick={() => setShowModal(true)}>
@@ -48,12 +63,6 @@ const OmpLayout = (props) => {
       </Menu.Item>
     </Menu>
   );
-  const [currentOpenedKeys, setCurrentOpenedKeys] = useState([]);
-  const [selectedKeys, setSelectedKeys] = useState([]);
-  //修改密码弹框
-  const [showModal, setShowModal] = useState(false);
-  //用户相关信息
-  const [userInfo, setUserInfo] = useState({})
 
   const toggle = () => {
     setCollapsed(!collapsed);
@@ -131,8 +140,8 @@ const OmpLayout = (props) => {
           //message.warning("登录失效,请重新登录")
           //history.replace("/login");
         }
-        console.log(res.data)
-        res.data && setUserInfo(res.data.data[0])
+        console.log(res.data);
+        res.data && setUserInfo(res.data.data[0]);
       })
       .catch((e) => {
         console.log(e);
@@ -142,16 +151,21 @@ const OmpLayout = (props) => {
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
-      <Sider trigger={null} collapsible collapsed={collapsed}>
+      <Sider
+        trigger={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+        collapsible
+        collapsed={collapsed}
+        onCollapse={toggle}
+      >
         <div
           style={{
             position: "relative",
             left: collapsed ? 0 : -15,
             display: "flex",
-            height: 46,
+            height: 60,
             color: "white",
             justifyContent: "center",
-            marginBottom:10
+            // /marginBottom:10
           }}
         >
           <div className={styles.headerLogo}>
@@ -179,9 +193,9 @@ const OmpLayout = (props) => {
           style={{
             height: "calc(100% - 60px)",
             //paddingTop:3,
-            borderRight: 0,
+            borderRight: "1px solid #d7d9e1",
           }}
-          theme="dark"
+          //theme="dark"
           onClick={onPathChange}
           onOpenChange={onOpenChange}
           openKeys={currentOpenedKeys}
@@ -215,20 +229,57 @@ const OmpLayout = (props) => {
             justifyContent: "space-between",
           }}
         >
-          {React.createElement(
+          {/* {React.createElement(
             collapsed ? MenuUnfoldOutlined : MenuFoldOutlined,
             {
               style: {
-                padding: "0 24px",
                 fontSize: "18px",
-                lineHeight: "60px",
                 cursor: "pointer",
                 transition: "color 0.3s",
+                display:"flex",
+                alignItems:"center",
+                position:"relative",
+                top:1
               },
               onClick: toggle,
             }
-          )}
-          <div className={styles.userAvatar} style={{ display: "flex" }}>
+          )} */}
+          <div style={{ display: "flex" }}>
+            {headerLink.map((item, idx) => {
+              return (
+                <div
+                  style={
+                    window.location.hash.includes(item.path)
+                      ? { background: "#0C1423", color: "#fff" }
+                      : { cursor: disabled ? "not-allowed" : null }
+                  }
+                  className={
+                    !disabled || item.title === "快速部署"
+                      ? styles.headerLink
+                      : styles.headerLinkNohover
+                  }
+                  key={idx}
+                  onClick={() => {
+                    if (!disabled || item.title === "快速部署") {
+                      if (item.title === "监控平台") {
+                        window.open(
+                          "/proxy/v1/grafana/d/XrwAXz_Mz/mian-ban-lie-biao"
+                        );
+                      } else {
+                        history.push(item.path);
+                      }
+                    }
+                  }}
+                >
+                  {item.title}
+                </div>
+              );
+            })}
+          </div>
+          <div
+            className={styles.userAvatar}
+            style={{ display: "flex", position: "relative", top: 2 }}
+          >
             <Dropdown overlay={menu} trigger={["click"]}>
               <div
                 style={{
@@ -267,11 +318,16 @@ const OmpLayout = (props) => {
             </Dropdown>
           </div>
         </Header>
+        <CustomBreadcrumb />
         <Content style={{ margin: "0 16px" }}>
-          <CustomBreadcrumb />
           <div
             //className="site-layout-background"
-            style={{ padding: 0, paddingBottom: 30, height:"calc(100% - 30px)",backgroundColor:"#fff" }}
+            style={{
+              padding: 0,
+              paddingBottom: 30,
+              height: "calc(100% - 10px)",
+              backgroundColor: "#fff",
+            }}
           >
             {props.children}
           </div>
@@ -283,7 +339,7 @@ const OmpLayout = (props) => {
             textAlign: "center",
             height: 40,
             padding: 0,
-            paddingTop: 10,
+            paddingTop: 5,
             // position:"absolute",
             // bottom:0
           }}

@@ -146,7 +146,7 @@ const MachineManagement = () => {
           if (res.data.code == 1) {
             // msgRef.current = res.data.message
             // setMsgShow(true)
-            message.warning(res.data.message);
+            message.warning(res.data.message.split(":")[1].replace(/;/g,""));
           }
           if (res.data.code == 0) {
             message.success("添加主机成功");
@@ -180,7 +180,7 @@ const MachineManagement = () => {
           if (res.data.code == 1) {
             // msgRef.current = res.data.message
             // setMsgShow(true)
-            message.warning(res.data.message);
+            message.warning(res.data.message.split(":")[1].replace(/;/g,""));
           }
           if (res.data.code == 0) {
             message.success("更新主机信息成功");
