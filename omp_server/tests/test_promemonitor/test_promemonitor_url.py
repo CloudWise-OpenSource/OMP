@@ -10,11 +10,14 @@ class PromemonitorTest(AutoLoginTest):
         super(PromemonitorTest, self).setUp()
         self.create_monitorurl_url = reverse("monitorurl-list")
         self.multiple_update = self.create_monitorurl_url + "multiple_update/"
-        MonitorList=[]
-        local_ip="127.0.0.1:"
-        MonitorList.append(MonitorUrl(id="1",name="prometheus",monitor_url=local_ip+str(MONITOR_PORT.get("prometheus","19011"))))
-        MonitorList.append(MonitorUrl(id="2",name="alertmanager", monitor_url=local_ip+str(MONITOR_PORT.get("alertmanager","19013"))))
-        MonitorList.append(MonitorUrl(id="3",name="grafana", monitor_url=local_ip+str(MONITOR_PORT.get("grafana","19014"))))
+        MonitorList = []
+        local_ip = "127.0.0.1:"
+        MonitorList.append(MonitorUrl(id="1", name="prometheus",
+                                      monitor_url=local_ip + str(MONITOR_PORT.get("prometheus", "19011"))))
+        MonitorList.append(MonitorUrl(id="2", name="alertmanager",
+                                      monitor_url=local_ip + str(MONITOR_PORT.get("alertmanager", "19013"))))
+        MonitorList.append(MonitorUrl(
+            id="3", name="grafana", monitor_url=local_ip + str(MONITOR_PORT.get("grafana", "19014"))))
         MonitorUrl.objects.bulk_create(MonitorList)
 
     def test_list_promeurl(self):
@@ -126,11 +129,10 @@ class PromemonitorTest(AutoLoginTest):
             {
                 "name": "test2",
                 "monitor_url": "127.0.0.1:8080"
-            }
+        }
         ]).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
-        #self.assertEqual(resp.get("data"), "1")
 
     def test_partial_update_promeurl(self):
         # 修改url, -> 创建成功
@@ -140,15 +142,13 @@ class PromemonitorTest(AutoLoginTest):
         }]).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
-         
 
         # 修改url批量, -> 创建成功
         resp = self.patch(self.multiple_update, [
             {
                 "id": "2",
                 "monitor_url": "127.0.0.1:29999"
-            }
-            , {
+            }, {
                 "id": "3",
                 "monitor_url": "127.0.0.1:19999"
             }]).json()
