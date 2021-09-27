@@ -11,6 +11,7 @@ from hosts.tasks import (
 from db_models.models import Host
 from utils.plugin.ssh import SSH
 from utils.plugin.crypto import AESCryptor
+from promemonitor.alertmanager import Alertmanager
 
 
 class CreateHostTest(AutoLoginTest, HostsResourceMixin):
@@ -275,6 +276,19 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         self.assertDictEqual(resp, {
             "code": 1,
             "message": "ip: SSH登录失败;",
+            "data": None
+        })
+
+    @mock.patch.object(SSH, "check", return_value=(True, ""))
+    @mock.patch.object(SSH, "is_sudo", return_value=(False, "is sudo"))
+    def test_wrong_username(self, si_sudo, ssh_mock):
+        """ 测试创建主机，SSH 用户 sudo 权限未通过 """
+
+        # 正确字段，ssh 校验未通过 -> 创建失败
+        resp = self.post(self.create_host_url, self.correct_host_data).json()
+        self.assertDictEqual(resp, {
+            "code": 1,
+            "message": "username: 用户权限错误，请使用root或具备sudo免密用户;",
             "data": None
         })
 
@@ -684,49 +698,98 @@ class HostMaintainTest(AutoLoginTest, HostsResourceMixin):
 
         self.destroy_hosts()
 
-    def test_correct_field(self):
+    @mock.patch.object(Alertmanager, "set_maintain_by_host_list", return_value=[1, 2, 3])
+    @mock.patch.object(Alertmanager, "revoke_maintain_by_host_list", return_value=[1, 2, 3])
+    def test_correct_field(self, mock_down, mock_up):
         """ 正确字段校验 """
-        pass
-        # # TODO 模拟调用进入维护模式函数
-        # host_obj_ls = self.get_hosts(20)
-        # host_obj_id_ls = list(map(lambda x: x.id, host_obj_ls))
-        #
-        # # 正确字段，开启维护模式 -> 操作成功
-        # random_host_ls = random.sample(host_obj_id_ls, 5)
-        # data = {
-        #     "is_maintenance": True,
-        #     "host_ids": random_host_ls
-        # }
-        # resp = self.post(self.host_maintain_url, data).json()
-        # self.assertDictEqual(resp, {
-        #     "code": 0,
-        #     "message": "success",
-        #     "data": data
-        # })
-        # # host_ids中主机，is_maintenance 状态均为 True
-        # is_maintenance_ls = Host.objects.filter(
-        #     id__in=random_host_ls
-        # ).values_list("is_maintenance", flat=True)
-        # self.assertTrue(all(is_maintenance_ls))
-        #
-        # # 关闭维护模式
-        # data = {
-        #     "is_maintenance": False,
-        #     "host_ids": random_host_ls
-        # }
-        # resp = self.post(self.host_maintain_url, data).json()
-        # self.assertDictEqual(resp, {
-        #     "code": 0,
-        #     "message": "success",
-        #     "data": data
-        # })
-        # # host_ids中主机，is_maintenance 状态均为 False
-        # is_maintenance_ls = Host.objects.filter(
-        #     id__in=random_host_ls
-        # ).values_list("is_maintenance", flat=True)
-        # self.assertTrue(not any(is_maintenance_ls))
-        #
-        # self.destroy_hosts()
+
+        host_obj_ls = self.get_hosts(20)
+        host_obj_id_ls = list(map(lambda x: x.id, host_obj_ls))
+
+        # 正确字段，开启维护模式 -> 操作成功
+        random_host_ls = random.sample(host_obj_id_ls, 5)
+        data = {
+            "is_maintenance": True,
+            "host_ids": random_host_ls
+        }
+        resp = self.post(self.host_maintain_url, data).json()
+        self.assertDictEqual(resp, {
+            "code": 0,
+            "message": "success",
+            "data": data
+        })
+        # host_ids中主机，is_maintenance 状态均为 True
+        is_maintenance_ls = Host.objects.filter(
+            id__in=random_host_ls
+        ).values_list("is_maintenance", flat=True)
+        self.assertTrue(all(is_maintenance_ls))
+
+        # 关闭维护模式
+        data = {
+            "is_maintenance": False,
+            "host_ids": random_host_ls
+        }
+        resp = self.post(self.host_maintain_url, data).json()
+        self.assertDictEqual(resp, {
+            "code": 0,
+            "message": "success",
+            "data": data
+        })
+        # host_ids中主机，is_maintenance 状态均为 False
+        is_maintenance_ls = Host.objects.filter(
+            id__in=random_host_ls
+        ).values_list("is_maintenance", flat=True)
+        self.assertTrue(not any(is_maintenance_ls))
+
+        self.destroy_hosts()
+
+    @mock.patch.object(Alertmanager, "set_maintain_by_host_list", return_value=None)
+    @mock.patch.object(Alertmanager, "revoke_maintain_by_host_list", return_value=None)
+    def test_alert_manager_error(self, mock_down, mock_up):
+        """ alert manage 返回值异常 """
+
+        host_obj_ls = self.get_hosts(20)
+        host_obj_id_ls = list(map(lambda x: x.id, host_obj_ls))
+
+        # 正确字段，开启维护模式 -> 操作成功
+        random_host_ls = random.sample(host_obj_id_ls, 5)
+        resp = self.post(self.host_maintain_url, {
+            "is_maintenance": True,
+            "host_ids": random_host_ls
+        }).json()
+        self.assertDictEqual(resp, {
+            "code": 1,
+            "message": "主机'开启'维护模式失败",
+            "data": None
+        })
+        # host_ids中主机，is_maintenance 状态均为 True
+        is_maintenance_ls = Host.objects.filter(
+            id__in=random_host_ls
+        ).values_list("is_maintenance", flat=True)
+        self.assertTrue(not any(is_maintenance_ls))
+
+        # 修改数据库
+        Host.objects.filter(
+            id__in=random_host_ls
+        ).update(is_maintenance=True)
+
+        # 关闭维护模式
+        resp = self.post(self.host_maintain_url, {
+            "is_maintenance": False,
+            "host_ids": random_host_ls
+        }).json()
+        self.assertDictEqual(resp, {
+            "code": 1,
+            "message": "主机'关闭'维护模式失败",
+            "data": None
+        })
+        # host_ids中主机，is_maintenance 状态均为 False
+        is_maintenance_ls = Host.objects.filter(
+            id__in=random_host_ls
+        ).values_list("is_maintenance", flat=True)
+        self.assertTrue(all(is_maintenance_ls))
+
+        self.destroy_hosts()
 
 
 class HostAgentRestartTest(AutoLoginTest, HostsResourceMixin):
