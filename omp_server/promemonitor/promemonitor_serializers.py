@@ -1,34 +1,36 @@
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer, ListSerializer
 from rest_framework.exceptions import ValidationError
-#from rest_framework.serializers import ValidationError
 from db_models.models import MonitorUrl
 
 
-class MonitorUrlSerializer(ListSerializer):
+class MonitorUrlListSerializer(ListSerializer):
 
     def to_internal_value(self, data):
         return data
 
     def validate(self, data):
         queryset = MonitorUrl.objects.all()
-        Method=self.context["request"].method
+        Method = self.context["request"].method
         for i in data:
             if Method in ('PATCH', 'PUT', 'DELETE'):
                 if not i.get("id"):
-                    raise serializers.ValidationError(f"id是必须字段")
-            monitor_url=i.get("monitor_url")
+                    raise serializers.ValidationError("id是必须字段")
+            monitor_url = i.get("monitor_url")
             if Method != 'GET':
                 if not monitor_url:
-                    raise serializers.ValidationError(f"monitor_url是必须字段")
+                    raise serializers.ValidationError("monitor_url是必须字段")
                 if len(monitor_url) > 128:
-                    raise serializers.ValidationError(f"monitor_url字段超过128,detail:{monitor_url}")
-                name=i.get("name")
+                    raise serializers.ValidationError(
+                        f"monitor_url字段超过128,detail:{monitor_url}")
+                name = i.get("name")
                 if name:
                     if queryset.filter(name=name).exists():
-                        raise serializers.ValidationError(f"name字段已经存在,detail:{name}")
+                        raise serializers.ValidationError(
+                            f"name字段已经存在,detail:{name}")
                     if len(name) > 32:
-                        raise serializers.ValidationError(f"name字段长度超过32,detail:{name}")  
+                        raise serializers.ValidationError(
+                            f"name字段长度超过32,detail:{name}")
                 else:
                     raise serializers.ValidationError("name字段不为空")
         return data
@@ -56,7 +58,7 @@ class MonitorUrlSerializer(ModelSerializer):
     class Meta:
         model = MonitorUrl
         fields = "__all__"
-        list_serializer_class = MonitorUrlSerializer
+        list_serializer_class = MonitorUrlListSerializer
 
     def validate_name(self, name):
         """ 校验name是否重复 """
