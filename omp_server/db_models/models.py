@@ -136,7 +136,7 @@ class Host(TimeStampMixin, DeleteMixin):
 class HostOperateLog(models.Model):
     """ 主机操作记录表 """
 
-    objects = None
+    # objects = None
     username = models.CharField(
         "操作用户", max_length=128, help_text="操作用户")
     description = models.CharField(

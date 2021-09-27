@@ -53,8 +53,10 @@ class HostListView(GenericViewSet, ListModelMixin, CreateModelMixin):
         # 主机密码解密
         for host_info in serializer_data:
             aes_crypto = AESCryptor()
-            host_info["password"] = aes_crypto.decode(
-                host_info.get("password"))
+            password = aes_crypto.decode(host_info.get("password"))
+            # 密码返回 base64 编码结果
+            import base64
+            host_info["password"] = base64.b64encode(password.encode())
 
         # 实时获取主机动态
         prometheus_obj = Prometheus()
