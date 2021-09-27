@@ -4,7 +4,7 @@
 import django_filters
 from django_filters.rest_framework import FilterSet
 
-from db_models.models import Host
+from db_models.models import (Host, HostOperateLog)
 
 
 class HostFilter(FilterSet):
@@ -15,3 +15,14 @@ class HostFilter(FilterSet):
     class Meta:
         model = Host
         fields = ("ip",)
+
+
+class HostOperateFilter(FilterSet):
+    """ 主机日志过滤类 """
+
+    host_id = django_filters.CharFilter(
+        help_text="主机 ID", field_name="host_id", lookup_expr="exact")
+
+    class Meta:
+        model = HostOperateLog
+        fields = ("host_id",)

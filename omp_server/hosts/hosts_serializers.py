@@ -37,7 +37,7 @@ class HostSerializer(ModelSerializer):
         validators=[
             NoEmojiValidator(),
             NoChineseValidator(),
-            ReValidator(regex=r"^[-a-z0-9].*$"),
+            ReValidator(regex=r"^[-a-zA-Z0-9].*$"),
         ])
     ip = serializers.IPAddressField(
         help_text="IP地址",
@@ -68,7 +68,7 @@ class HostSerializer(ModelSerializer):
         required=True, max_length=255,
         error_messages={"required": "必须包含[data_folder]字段"},
         validators=[
-            ReValidator(regex=r"^/[/-_a-zA-Z0-9]+$"),
+            ReValidator(regex=r"^/[-_/a-zA-Z0-9]+$"),
         ])
     operate_system = serializers.CharField(
         help_text="操作系统",
@@ -335,3 +335,12 @@ class HostAgentRestartSerializer(Serializer):
             id__in=validated_data.get("host_ids", [])
         ).update(host_agent=1)
         return validated_data
+
+
+class HostOperateLogSerializer(ModelSerializer):
+    """ 主机操作记录序列化器类 """
+
+    class Meta:
+        """ 元数据 """
+        model = HostOperateLog
+        fields = '__all__'
