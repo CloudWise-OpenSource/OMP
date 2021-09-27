@@ -23,6 +23,7 @@ import {
 } from "@/utils/utils";
 import { fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
+import { useState } from "react";
 
 //const [modalForm] = Form.useForm();
 
@@ -35,9 +36,10 @@ export const AddMachineModal = ({
   setLoading
 }) => {
   const [modalForm] = Form.useForm();
+  const [modalLoading, setmodalLoading] = useState(false)
   return (
     <OmpModal
-      loading={loading}
+      loading={loading || modalLoading}
       setLoading={setLoading}
       visibleHandle={visibleHandle}
       title={
@@ -102,6 +104,7 @@ export const AddMachineModal = ({
                         return Promise.resolve("success");
                       }else{
                         return new Promise((resolve, rej)=>{
+                          setmodalLoading(true)
                           fetchPost(apiRequest.machineManagement.checkHost, {
                             body: {
                               instance_name:value
@@ -119,6 +122,9 @@ export const AddMachineModal = ({
                               }
                             })
                             .catch((e) => console.log(e))
+                            .finally(() => {
+                              setmodalLoading(false);
+                            });
                         });
                       }
                     } else {
@@ -171,7 +177,7 @@ export const AddMachineModal = ({
             {
               validator: (rule, value, callback) => {
                 var reg =
-                  /[^a-zA-Z0-9\u4e00-\u9fa5\u3002\uff0c\uff1a\uff08\uff09\uff1f\u201c\u201d\u3001\uff01\_\-\/]/g;
+                  /[^a-zA-Z0-9\_\-\/]/g;
                 if (!value) {
                   return Promise.resolve("success");
                 } else if (!reg.test(value) && value.startsWith("/")) {
@@ -197,7 +203,7 @@ export const AddMachineModal = ({
           rules={[
             {
               required: true,
-              message: "请输入IP地址",
+              message: "请输入IP地址或端口号",
             },
           ]}
         >
@@ -215,6 +221,7 @@ export const AddMachineModal = ({
                       }
                       if (isValidIpChar(value)) {
                         return new Promise((resolve, rej)=>{
+                          setmodalLoading(true)
                           fetchPost(apiRequest.machineManagement.checkHost, {
                             body: {
                               ip:value
@@ -232,6 +239,9 @@ export const AddMachineModal = ({
                               }
                             })
                             .catch((e) => console.log(e))
+                            .finally(() => {
+                              setmodalLoading(false);
+                            });
                         })
                       } else {
                         return Promise.reject("请输入正确格式的IP地址");
@@ -264,7 +274,7 @@ export const AddMachineModal = ({
             {
               validator: (rule, value, callback) => {
                 var reg =
-                  /[^a-zA-Z0-9\u4e00-\u9fa5\u3002\uff0c\uff1a\uff08\uff09\uff1f\u201c\u201d\u3001\uff01\_\-]/g;
+                  /[^a-zA-Z0-9\_\-]/g;
                 if (value) {
                   if (!reg.test(value)) {
                     if (isChineseChar(value)) {
@@ -342,7 +352,7 @@ export const UpDateMachineModal = ({
   setLoading
 }) => {
   const [modalForm] = Form.useForm();
-  console.log(row)
+  // console.log(row)
   return (
     <OmpModal
       loading={loading}
@@ -414,6 +424,7 @@ export const UpDateMachineModal = ({
                         return Promise.resolve("success");
                       }else{
                         return new Promise((resolve, rej)=>{
+                          setmodalLoading(true)
                           fetchPost(apiRequest.machineManagement.checkHost, {
                             body: {
                               instance_name:value,
@@ -432,6 +443,9 @@ export const UpDateMachineModal = ({
                               }
                             })
                             .catch((e) => console.log(e))
+                            .finally(() => {
+                              setmodalLoading(false);
+                            });
                         })
                       }
                     } else {
@@ -484,7 +498,7 @@ export const UpDateMachineModal = ({
             {
               validator: (rule, value, callback) => {
                 var reg =
-                  /[^a-zA-Z0-9\u4e00-\u9fa5\u3002\uff0c\uff1a\uff08\uff09\uff1f\u201c\u201d\u3001\uff01\_\-\/]/g;
+                /[^a-zA-Z0-9\_\-\/]/g;
                 if (!value) {
                   return Promise.resolve("success");
                 } else if (!reg.test(value) && value.startsWith("/")) {
@@ -510,7 +524,7 @@ export const UpDateMachineModal = ({
           rules={[
             {
               required: true,
-              message: "请输入IP地址",
+              message: "请输入IP地址或端口号",
             },
           ]}
         >
@@ -556,7 +570,7 @@ export const UpDateMachineModal = ({
             {
               validator: (rule, value, callback) => {
                 var reg =
-                  /[^a-zA-Z0-9\u4e00-\u9fa5\u3002\uff0c\uff1a\uff08\uff09\uff1f\u201c\u201d\u3001\uff01\_\-]/g;
+                /[^a-zA-Z0-9\_\-]/g;
                 if (value) {
                   if (!reg.test(value)) {
                     if (isChineseChar(value)) {
