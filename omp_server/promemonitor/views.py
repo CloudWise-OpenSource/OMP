@@ -13,7 +13,6 @@ from rest_framework.mixins import (
 )
 
 
-#class MonitorUrlViewSet(ListModelMixin,CreateModelMixin,UpdateModelMixin,GenericViewSet):
 class MonitorUrlViewSet(ListModelMixin,CreateModelMixin,GenericViewSet):
     """
         list:
@@ -42,12 +41,15 @@ class MonitorUrlViewSet(ListModelMixin,CreateModelMixin,GenericViewSet):
 
     @action(methods=['patch'], detail=False)
     def multiple_update(self, request, *args, **kwargs):
+        '''批量添加。校验为单个校验,出现异常直接抛出'''
         partial = kwargs.pop('partial', True)
         instances = [] 
         for item in request.data: 
             instance = get_object_or_404(MonitorUrl, id=int(item['id']))
             serializer = super().get_serializer(instance, data=item, partial=partial)
             serializer.is_valid(raise_exception=True)
-            serializer.save()
-            instances.append(serializer.data)
-        return Response(instances)
+            instances.append(serializer)
+        Save = [ i.save() for i in instances ]
+        Data = [ i.data for i in instances ]
+        return Response(Data)
+	
