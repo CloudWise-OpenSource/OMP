@@ -10,9 +10,11 @@ from rest_framework.serializers import (
 )
 
 from db_models.models import (
-    Host, Env
+    Host, Env, HostOperateLog
 )
-from hosts.tasks import host_agent_restart
+from hosts.tasks import (
+    deploy_agent, host_agent_restart
+)
 
 from utils.validator import (
     ReValidator, NoEmojiValidator, NoChineseValidator
@@ -136,11 +138,9 @@ class HostSerializer(ModelSerializer):
                 f"password-{attrs.get('password')}")
             raise ValidationError({
                 "username": "用户权限错误，请使用root或具备sudo免密用户"})
-
         # 如果未传递 env，则指定默认环境
         if not attrs.get("env") and not self.instance:
             attrs["env"] = Env.objects.get(id=1)
-
         # 主机密码加密处理
         attrs["password"] = AESCryptor().encode(attrs.get("password"))
         return attrs
@@ -151,26 +151,36 @@ class HostSerializer(ModelSerializer):
         instance = super(HostSerializer, self).create(validated_data)
         logger.info(f"主机{ip}-创建成功")
         # 写入操作记录
-        # HostOperateLog.objects.create(
-        #     username=self.context["request"].user.username,
-        #     description="创建主机",
-        #     host=instance,
-        # )
+        HostOperateLog.objects.create(
+            username=self.context["request"].user.username,
+            description="创建主机",
+            host=instance,
+        )
         # 异步下发 Agent
         logger.info(f"主机{ip}-异步下发Agent任务")
-        # deploy_agent.delay(instance.id)
+        deploy_agent.delay(instance.id)
         return instance
 
     def update(self, instance, validated_data):
         """ 更新主机 """
-        # for key, value in validated_data.items():
-        #     try:
-        #         if getattr(instance, key) != value:
-        #             #
-        #     except AttributeError as err:
-        #         logger.error(f"主机模型未获取到{key}属性")
-        #         continue
-        # print(getattr(instance, "password"))
+        log_ls = []
+        username = self.context["request"].user.username
+
+        # 获取所有发生修改字段
+        for key, new_value in validated_data.items():
+            old_value = getattr(instance, key)
+            if old_value != new_value:
+                description = f"修改[{getattr(Host, key).field.help_text}]"
+                if key != "password":
+                    description += f": 由[{getattr(instance, key)}]修改为[{new_value}]"
+                log_ls.append(HostOperateLog(
+                    username=username,
+                    description=description,
+                    host=instance))
+
+        # 写入主机操作记录表中
+        HostOperateLog.objects.bulk_create(log_ls)
+
         return super(HostSerializer, self).update(instance, validated_data)
 
 
@@ -227,6 +237,17 @@ class HostMaintenanceSerializer(Serializer):
         error_messages={"required": "必须包含[host_ids]字段"},
         allow_empty=False)
 
+    def write_host_log(self, host_queryset, status):
+        """ 写入主机日志 """
+        log_ls = []
+        for host in host_queryset:
+            log_ls.append(HostOperateLog(
+                username=self.context["request"].user.username,
+                description=f"{status}[维护模式]",
+                result="failed",
+                host=host))
+        HostOperateLog.objects.bulk_create(log_ls)
+
     def validate_host_ids(self, host_ids):
         """ 校验主机 ID 列表中主机是否都存在 """
         exists_ids = Host.objects.filter(
@@ -265,13 +286,19 @@ class HostMaintenanceSerializer(Serializer):
             res_ls = alert_manager.set_maintain_by_host_list(host_ls)
         else:
             res_ls = alert_manager.revoke_maintain_by_host_list(host_ls)
-        # 如果操作失败，则抛出异常，返回值待完善
+
+        # 操作失败
         if not res_ls:
             logger.error(f"主机'{status}'维护模式失败: {host_ids}")
+            # 操作失败记录写入
+            self.write_host_log(host_queryset, status)
             raise OperateError(f"主机'{status}'维护模式失败")
+
         # 操作成功
         host_queryset.update(is_maintenance=is_maintenance)
         logger.info(f"主机{status}维护模式成功: {host_ids}")
+        # 操作成功记录写入
+        self.write_host_log(host_queryset, status)
         return validated_data
 
     def update(self, instance, validated_data):
