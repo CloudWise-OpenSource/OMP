@@ -115,7 +115,7 @@ class Alertmanager:
                 value=item.get('ip'), name='instance')
             if not maintain_id:
                 logger.error(f'设置主机{item.get("ip")}维护失败!')
-                return False
+                return None
             maintain = Maintain(matcher_name='instance',
                                 matcher_value=item.get('ip'), maintain_id=maintain_id)
             maintain_list.append(maintain)
@@ -129,20 +129,29 @@ class Alertmanager:
         """
         maintain_id = self.add_setting(value=env_name, name='env_name')
         if not maintain_id:
-            return False
+            return None
         Maintain.objects.create(matcher_name='env_name',
                                 matcher_value=env_name, maintain_id=maintain_id)
-        return [maintain_id]
+        return maintain_id
 
     def revoke_maintain_by_host_list(self, host_list):
         for item in host_list:
             maintain = Maintain.objects.filter(
                 matcher_name='instance', matcher_value=item.get('ip')).first()
+            if not maintain:
+                return False
             maintain_id = maintain.maintain_id
-            self.delete_setting(maintain_id)
+            delete_setting_result = self.delete_setting(maintain_id)
+            if not delete_setting_result:
+                return False
+            Maintain.objects.delete(maintain)
+        return True
 
     def revoke_maintain_by_env_name(self, env_name):
         maintain = Maintain.objects.filter(
             matcher_name='env_name', matcher_value=env_name).first()
+        if not maintain:
+            return False
         maintain_id = maintain.maintain_id
         self.delete_setting(maintain_id)
+        return True
