@@ -59,6 +59,7 @@ class HostListView(GenericViewSet, ListModelMixin, CreateModelMixin):
         # 实时获取主机动态
         prometheus_obj = Prometheus()
         serializer_data = prometheus_obj.get_host_info(serializer_data)
+
         # 获取请求中 ordering 字段
         query_field = request.query_params.get("ordering", "")
         reverse_flag = False

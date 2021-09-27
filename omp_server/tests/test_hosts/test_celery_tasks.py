@@ -25,12 +25,12 @@ class HostCeleryTaskTest(BaseTest):
         super(HostCeleryTaskTest, self).setUp()
         self.correct_host_data = {
             "instance_name": "mysql_instance_1",
-            "ip": "120.100.80.60",
+            "ip": "127.0.0.10",
             "port": 36000,
             "username": "root",
             "password": "uea_xeU_d_6YHCCY7Q-e2xZolSw2z2C3KGhLY6iMdnI",
             "data_folder": "/data",
-            "operate_system": "centos",
+            "operate_system": "CentOS",
         }
         self.host = Host(**self.correct_host_data)
         self.host.save()
