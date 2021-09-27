@@ -27,7 +27,8 @@ const OmpModal = ({
   loading = false,
   afterClose = () => {},
   form,
-  initialValues={}
+  initialValues={},
+  setLoading
 }) => {
   const [modalForm] = Form.useForm();
   // 扩展formItem功能,为了能够在formitem的validator校验时获得当前form的实例进行操作
@@ -106,6 +107,9 @@ const OmpModal = ({
             loading={loading}
             type="primary"
             htmlType="submit"
+            onClick={()=>{
+              setLoading && setLoading(true)
+            }}
           >
             确定
           </Button>

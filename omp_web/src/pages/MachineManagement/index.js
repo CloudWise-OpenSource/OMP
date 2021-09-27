@@ -374,6 +374,7 @@ const MachineManagement = () => {
       </div>
       {addModalVisible && (
         <AddMachineModal
+          setLoading={setLoading}
           loading={loading}
           visibleHandle={[addModalVisible, setAddMoadlVisible]}
           createHost={createHost}
@@ -387,6 +388,7 @@ const MachineManagement = () => {
       {updateMoadlVisible && (
         <UpDateMachineModal
           loading={loading}
+          setLoading={setLoading}
           visibleHandle={[updateMoadlVisible, setUpdateMoadlVisible]}
           createHost={upDateHost}
           row={row}
