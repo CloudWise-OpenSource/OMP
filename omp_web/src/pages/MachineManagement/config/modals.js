@@ -350,6 +350,7 @@ export const UpDateMachineModal = ({
 }) => {
   const [modalForm] = Form.useForm();
   // console.log(row)
+  const [modalLoading, setmodalLoading] = useState(false)
   return (
     <OmpModal
       loading={loading}
