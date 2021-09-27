@@ -9,10 +9,11 @@
 """
 整个项目内的异常处理方法
 """
-
+from django.db import DatabaseError
 from rest_framework.views import exception_handler
 from rest_framework.response import Response
-from django.db import DatabaseError
+
+from utils.exceptions import GeneralError
 
 
 def res_is_none(exc, context):
@@ -29,6 +30,9 @@ def res_is_none(exc, context):
         response.data["message"] = "数据库错误"
     elif isinstance(exc, NameError):
         response.data["message"] = "变量未定义被引用"
+    elif isinstance(exc, GeneralError) \
+            or issubclass(exc, GeneralError):
+        response.data["message"] = str(exc)
     else:
         response.data["message"] = "后端程序错误"
     return response

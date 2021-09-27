@@ -111,6 +111,7 @@ const MachineManagement = () => {
       .catch((e) => console.log(e))
       .finally(() => {
         setLoading(false);
+        fetchIPlist()
       });
   }
 
@@ -145,7 +146,7 @@ const MachineManagement = () => {
           if (res.data.code == 1) {
             // msgRef.current = res.data.message
             // setMsgShow(true)
-            message.warning(res.data.message);
+            message.warning(res.data.message.split(":")[1].replace(/;/g,""));
           }
           if (res.data.code == 0) {
             message.success("添加主机成功");
@@ -179,7 +180,7 @@ const MachineManagement = () => {
           if (res.data.code == 1) {
             // msgRef.current = res.data.message
             // setMsgShow(true)
-            message.warning(res.data.message);
+            message.warning(res.data.message.split(":")[1].replace(/;/g,""));
           }
           if (res.data.code == 0) {
             message.success("更新主机信息成功");
@@ -200,7 +201,6 @@ const MachineManagement = () => {
 
   useEffect(() => {
     fetchData(pagination);
-    fetchIPlist();
   }, []);
 
   return (
@@ -249,18 +249,19 @@ const MachineManagement = () => {
             style={{ width: 200 }}
             onInputKeyDown={(e) => {
               if (e.code == "Enter") {
-                setSelectValue(searchValue);
-                // fetchData(
-                //   { current: 1, pageSize: 10 },
-                //   { ip: searchValue },
-                //   pagination.ordering
-                // );
+                //console.log("点击了",searchValueRef.current )
+                setSelectValue(searchValueRef.current);
+                fetchData(
+                  { current: 1, pageSize: 10 },
+                  { ip: searchValueRef.current },
+                  pagination.ordering
+                );
               }
             }}
             searchValue={searchValue}
             onSelect={(e) => {
-              searchValueRef.current = "";
               if (e == searchValue || !searchValue) {
+                //console.log(1)
                 setSelectValue(e);
                 fetchData(
                   {
@@ -271,16 +272,18 @@ const MachineManagement = () => {
                   pagination.ordering
                 );
               } else {
+                //console.log(2)
                 setSelectValue(searchValue);
                 fetchData(
                   {
                     current: pagination.current,
                     pageSize: pagination.pageSize,
                   },
-                  { ip: e },
+                  { ip: searchValueRef.current },
                   pagination.ordering
                 );
               }
+              searchValueRef.current = "";
             }}
             value={selectValue}
             onSearch={(e) => {
@@ -296,7 +299,7 @@ const MachineManagement = () => {
                     current: pagination.current,
                     pageSize: pagination.pageSize,
                   },
-                  { ip: selectValue },
+                  { ip: searchValueRef.current },
                   pagination.ordering
                 );
               }
