@@ -111,6 +111,7 @@ const MachineManagement = () => {
       .catch((e) => console.log(e))
       .finally(() => {
         setLoading(false);
+        fetchIPlist()
       });
   }
 
@@ -200,7 +201,6 @@ const MachineManagement = () => {
 
   useEffect(() => {
     fetchData(pagination);
-    fetchIPlist();
   }, []);
 
   return (
