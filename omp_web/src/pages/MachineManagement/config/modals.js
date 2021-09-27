@@ -98,25 +98,29 @@ export const AddMachineModal = ({
                       isLowercaseChar(startChar) ||
                       startChar == "-"
                     ) {
-                      return new Promise((resolve, rej)=>{
-                        fetchPost(apiRequest.machineManagement.checkHost, {
-                          body: {
-                            instance_name:value
-                          },
-                        })
-                          .then((res) => {
-                            if(res && res.data){
-                              if(res.data.data){
-                                resolve("success")
-                              }else{
-                                rej(
-                                  `实例名称重复`
-                                );
-                              }
-                            }
+                      if(value.length >16) {
+                        return Promise.resolve("success");
+                      }else{
+                        return new Promise((resolve, rej)=>{
+                          fetchPost(apiRequest.machineManagement.checkHost, {
+                            body: {
+                              instance_name:value
+                            },
                           })
-                          .catch((e) => console.log(e))
-                      });
+                            .then((res) => {
+                              if(res && res.data){
+                                if(res.data.data){
+                                  resolve("success")
+                                }else{
+                                  rej(
+                                    `实例名称重复`
+                                  );
+                                }
+                              }
+                            })
+                            .catch((e) => console.log(e))
+                        });
+                      }
                     } else {
                       return Promise.reject(
                         `实例名称开头只支持小写字母、数字或"-"`
@@ -406,26 +410,30 @@ export const UpDateMachineModal = ({
                       isLowercaseChar(startChar) ||
                       startChar == "-"
                     ) {
-                      return new Promise((resolve, rej)=>{
-                        fetchPost(apiRequest.machineManagement.checkHost, {
-                          body: {
-                            instance_name:value,
-                            id:row.id
-                          },
-                        })
-                          .then((res) => {
-                            if(res && res.data){
-                              if(res.data.data){
-                                resolve("success")
-                              }else{
-                                rej(
-                                  `实例名称重复`
-                                );
-                              }
-                            }
+                      if(value.length > 16){
+                        return Promise.resolve("success");
+                      }else{
+                        return new Promise((resolve, rej)=>{
+                          fetchPost(apiRequest.machineManagement.checkHost, {
+                            body: {
+                              instance_name:value,
+                              id:row.id
+                            },
                           })
-                          .catch((e) => console.log(e))
-                      })
+                            .then((res) => {
+                              if(res && res.data){
+                                if(res.data.data){
+                                  resolve("success")
+                                }else{
+                                  rej(
+                                    `实例名称重复`
+                                  );
+                                }
+                              }
+                            })
+                            .catch((e) => console.log(e))
+                        })
+                      }
                     } else {
                       return Promise.reject(
                         `实例名称开头只支持小写字母、数字或"-"`
