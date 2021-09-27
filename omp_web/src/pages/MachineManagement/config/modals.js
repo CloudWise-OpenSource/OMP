@@ -32,11 +32,13 @@ export const AddMachineModal = ({
   onFinish,
   createHost,
   msgInfo,
+  setLoading
 }) => {
   const [modalForm] = Form.useForm();
   return (
     <OmpModal
       loading={loading}
+      setLoading={setLoading}
       visibleHandle={visibleHandle}
       title={
         <span>
@@ -332,13 +334,15 @@ export const UpDateMachineModal = ({
   onFinish,
   createHost,
   msgInfo,
-  row
+  row,
+  setLoading
 }) => {
   const [modalForm] = Form.useForm();
   console.log(row)
   return (
     <OmpModal
       loading={loading}
+      setLoading={setLoading}
       visibleHandle={visibleHandle}
       title={
         <span>
