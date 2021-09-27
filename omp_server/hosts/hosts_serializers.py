@@ -9,8 +9,9 @@ from rest_framework.serializers import (
     ModelSerializer, Serializer
 )
 
-from db_models.models import (Host, Env)
-from hosts.tasks import deploy_agent
+from db_models.models import (
+    Host, Env
+)
 from hosts.tasks import host_agent_restart
 
 from utils.validator import (
@@ -18,6 +19,8 @@ from utils.validator import (
 )
 from utils.plugin.ssh import SSH
 from utils.plugin.crypto import AESCryptor
+from utils.exceptions import OperateError
+from promemonitor.alertmanager import Alertmanager
 
 logger = logging.getLogger('server')
 
@@ -115,12 +118,24 @@ class HostSerializer(ModelSerializer):
         )
         is_connect, _ = ssh.check()
         if not is_connect:
-            logger.info(f"主机SSH连通性校验失败: "
-                        f"ip-{attrs.get('ip')},"
-                        f"port-{attrs.get('port')},"
-                        f"username-{attrs.get('username')},"
-                        f"password-{attrs.get('password')}")
-            raise ValidationError({"ip": "主机SSH连通性校验失败"})
+            logger.info(
+                f"主机SSH连通性校验失败: "
+                f"ip-{attrs.get('ip')},"
+                f"port-{attrs.get('port')},"
+                f"username-{attrs.get('username')},"
+                f"password-{attrs.get('password')}")
+            raise ValidationError({"ip": "SSH登录失败"})
+        # 校验用户是否具有 sudo 权限
+        is_sudo, _ = ssh.is_sudo()
+        if not is_sudo:
+            logger.info(
+                f"用户校验失败: "
+                f"ip-{attrs.get('ip')},"
+                f"port-{attrs.get('port')},"
+                f"username-{attrs.get('username')},"
+                f"password-{attrs.get('password')}")
+            raise ValidationError({
+                "username": "用户权限错误，请使用root或具备sudo免密用户"})
 
         # 如果未传递 env，则指定默认环境
         if not attrs.get("env") and not self.instance:
@@ -133,16 +148,30 @@ class HostSerializer(ModelSerializer):
     def create(self, validated_data):
         """ 创建主机 """
         ip = validated_data.get('ip')
-        logger.info(f"主机{ip}-创建成功")
         instance = super(HostSerializer, self).create(validated_data)
+        logger.info(f"主机{ip}-创建成功")
+        # 写入操作记录
+        # HostOperateLog.objects.create(
+        #     username=self.context["request"].user.username,
+        #     description="创建主机",
+        #     host=instance,
+        # )
         # 异步下发 Agent
         logger.info(f"主机{ip}-异步下发Agent任务")
-        deploy_agent.delay(instance.id)
+        # deploy_agent.delay(instance.id)
         return instance
-    #
-    # def update(self, instance, validated_data):
-    #     print("update")
-    #     return super(HostSerializer, self).update(instance, validated_data)
+
+    def update(self, instance, validated_data):
+        """ 更新主机 """
+        # for key, value in validated_data.items():
+        #     try:
+        #         if getattr(instance, key) != value:
+        #             #
+        #     except AttributeError as err:
+        #         logger.error(f"主机模型未获取到{key}属性")
+        #         continue
+        # print(getattr(instance, "password"))
+        return super(HostSerializer, self).update(instance, validated_data)
 
 
 class HostFieldCheckSerializer(ModelSerializer):
@@ -223,16 +252,26 @@ class HostMaintenanceSerializer(Serializer):
         return attrs
 
     def create(self, validated_data):
-        """ 进入 / 退出维护 """
+        """ 进入 / 退出维护模式 """
         host_ids = validated_data.get("host_ids")
         is_maintenance = validated_data.get("is_maintenance")
-        # TODO 调用进入维护模式函数
-        # 如果操作成功，则更新数据库配置
-        if True:
-            Host.objects.filter(id__in=host_ids).update(
-                is_maintenance=is_maintenance)
-            status = "开启" if is_maintenance else "关闭"
-            logger.info(f"主机{status}维护模式成功: {host_ids}")
+        status = "开启" if is_maintenance else "关闭"
+        host_queryset = Host.objects.filter(id__in=host_ids)
+        host_ls = list(host_queryset.values("ip"))
+
+        # 根据 is_maintenance 判断主机进入 / 退出维护模式
+        alert_manager = Alertmanager()
+        if is_maintenance:
+            res_ls = alert_manager.set_maintain_by_host_list(host_ls)
+        else:
+            res_ls = alert_manager.revoke_maintain_by_host_list(host_ls)
+        # 如果操作失败，则抛出异常，返回值待完善
+        if not res_ls:
+            logger.error(f"主机'{status}'维护模式失败: {host_ids}")
+            raise OperateError(f"主机'{status}'维护模式失败")
+        # 操作成功
+        host_queryset.update(is_maintenance=is_maintenance)
+        logger.info(f"主机{status}维护模式成功: {host_ids}")
         return validated_data
 
     def update(self, instance, validated_data):
