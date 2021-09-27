@@ -51,7 +51,6 @@ def create_default_monitor_url():
     """
     if MonitorUrl.objects.all().count() != 0:
         return
-<<<<<<< HEAD
     MonitorList = []
     local_ip = "127.0.0.1:"
     MonitorList.append(
@@ -60,7 +59,6 @@ def create_default_monitor_url():
         MonitorUrl(id="2", name="alertmanager", monitor_url=local_ip + str(MONITOR_PORT.get("alertmanager", "19013"))))
     MonitorList.append(MonitorUrl(
         id="3", name="grafana", monitor_url=local_ip + str(MONITOR_PORT.get("grafana", "19014"))))
->>>>>>> 3a63a4448367161acd390f869d60e3e0a361a332
     MonitorUrl.objects.bulk_create(MonitorList)
 
 
