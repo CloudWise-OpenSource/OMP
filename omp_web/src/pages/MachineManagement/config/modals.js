@@ -113,10 +113,10 @@ export const AddMachineModal = ({
                         return Promise.resolve("success");
                       } else {
                         return new Promise((resolve, rej) => {
-                          if (timer.current) {
-                            clearTimeout(timer.current);
-                          }
-                          timer.current = setTimeout(() => {
+                          // if (timer.current) {
+                          //   clearTimeout(timer.current);
+                          // }
+                          //timer.current = setTimeout(() => {
                             setmodalLoading(true);
                             fetchPost(apiRequest.machineManagement.checkHost, {
                               body: {
@@ -136,7 +136,7 @@ export const AddMachineModal = ({
                               .finally(() => {
                                 setmodalLoading(false);
                               });
-                          }, 600);
+                          //}, 600);
                         });
                       }
                     }
@@ -245,10 +245,10 @@ export const AddMachineModal = ({
                 }
                 if (isValidIpChar(value)) {
                   return new Promise((resolve, rej) => {
-                    if (timer.current) {
-                      clearTimeout(timer.current);
-                    }
-                    timer.current = setTimeout(() => {
+                    // if (timer.current) {
+                    //   clearTimeout(timer.current);
+                    // }
+                    //timer.current = setTimeout(() => {
                       setmodalLoading(true);
                       fetchPost(apiRequest.machineManagement.checkHost, {
                         body: {
@@ -268,7 +268,7 @@ export const AddMachineModal = ({
                         .finally(() => {
                           setmodalLoading(false);
                         });
-                    }, 600);
+                    //}, 600);
                   });
                 } else {
                   return Promise.reject("请输入正确格式的IP地址");
@@ -479,10 +479,10 @@ export const UpDateMachineModal = ({
                         return Promise.resolve("success");
                       } else {
                         return new Promise((resolve, rej) => {
-                          if (timer.current) {
-                            clearTimeout(timer.current);
-                          }
-                          timer.current = setTimeout(() => {
+                          // if (timer.current) {
+                          //   clearTimeout(timer.current);
+                          // }
+                          // timer.current = setTimeout(() => {
                             setmodalLoading(true);
                             fetchPost(apiRequest.machineManagement.checkHost, {
                               body: {
@@ -503,7 +503,7 @@ export const UpDateMachineModal = ({
                               .finally(() => {
                                 setmodalLoading(false);
                               });
-                          }, 600);
+                          //}, 600);
                         });
                       }
                     }
