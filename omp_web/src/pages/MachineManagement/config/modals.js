@@ -26,11 +26,12 @@ import {
   isLowercaseChar,
   isValidIpChar,
   isExpression,
+  isLetterChar,
 } from "@/utils/utils";
 import { fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-import { useState } from "react";
-import star from "./asterisk.svg"
+import { useState, useRef } from "react";
+import star from "./asterisk.svg";
 
 //const [modalForm] = Form.useForm();
 
@@ -44,6 +45,8 @@ export const AddMachineModal = ({
 }) => {
   const [modalForm] = Form.useForm();
   const [modalLoading, setmodalLoading] = useState(false);
+  const timer = useRef(null);
+
   return (
     <OmpModal
       loading={loading || modalLoading}
@@ -99,7 +102,7 @@ export const AddMachineModal = ({
                 let startChar = value.slice(0, 1);
                 if (
                   isNumberChar(startChar) ||
-                  isLowercaseChar(startChar) ||
+                  isLetterChar(startChar) ||
                   startChar == "-"
                 ) {
                   if (!isExpression(value)) {
@@ -110,25 +113,30 @@ export const AddMachineModal = ({
                         return Promise.resolve("success");
                       } else {
                         return new Promise((resolve, rej) => {
-                          setmodalLoading(true);
-                          fetchPost(apiRequest.machineManagement.checkHost, {
-                            body: {
-                              instance_name: value,
-                            },
-                          })
-                            .then((res) => {
-                              if (res && res.data) {
-                                if (res.data.data) {
-                                  resolve("success");
-                                } else {
-                                  rej(`实例名称已存在`);
-                                }
-                              }
+                          if (timer.current) {
+                            clearTimeout(timer.current);
+                          }
+                          timer.current = setTimeout(() => {
+                            setmodalLoading(true);
+                            fetchPost(apiRequest.machineManagement.checkHost, {
+                              body: {
+                                instance_name: value,
+                              },
                             })
-                            .catch((e) => console.log(e))
-                            .finally(() => {
-                              setmodalLoading(false);
-                            });
+                              .then((res) => {
+                                if (res && res.data) {
+                                  if (res.data.data) {
+                                    resolve("success");
+                                  } else {
+                                    rej(`实例名称已存在`);
+                                  }
+                                }
+                              })
+                              .catch((e) => console.log(e))
+                              .finally(() => {
+                                setmodalLoading(false);
+                              });
+                          }, 600);
                         });
                       }
                     }
@@ -136,9 +144,7 @@ export const AddMachineModal = ({
                     return Promise.reject("实例名称不支持表情");
                   }
                 } else {
-                  return Promise.reject(
-                    `实例名称开头只支持小写字母、数字或"-"`
-                  );
+                  return Promise.reject(`实例名称开头只支持字母、数字或"-"`);
                 }
               },
             },
@@ -184,24 +190,26 @@ export const AddMachineModal = ({
                 if (!value) {
                   return Promise.resolve("success");
                 } else {
-                  if(value.startsWith("/")){
+                  if (value.startsWith("/")) {
                     if (!isChineseChar(value)) {
-                      if(!reg.test(value)) {
+                      if (!reg.test(value)) {
                         return Promise.resolve("success");
-                      }else{
+                      } else {
                         return Promise.reject(
                           `数据分区只支持字母、数字、"/"、"-"和"_"`
                         );
                       }
-                    }else{
-                      return Promise.reject(`数据分区只支持字母、数字、"/"、"-"和"_"`);
+                    } else {
+                      return Promise.reject(
+                        `数据分区只支持字母、数字、"/"、"-"和"_"`
+                      );
                     }
                   } else {
                     return Promise.reject(`数据分区开头必须为"/"`);
                   }
                 }
-              } 
-            }
+              },
+            },
           ]}
         >
           <Input maxLength={255} placeholder={"请输入数据分区"} />
@@ -210,7 +218,15 @@ export const AddMachineModal = ({
         <Form.Item
           name="ip"
           key="ip"
-          label={<span><img src={star} style={{position:"relative",top:-2,left:-3}}/>IP地址</span>}
+          label={
+            <span>
+              <img
+                src={star}
+                style={{ position: "relative", top: -2, left: -3 }}
+              />
+              IP地址
+            </span>
+          }
           useforminstanceinvalidator="true"
           rules={[
             // {
@@ -219,35 +235,40 @@ export const AddMachineModal = ({
             // },
             {
               validator: (rule, v, callback) => {
-                let value = modalForm.getFieldValue("IPtext")
-                let portValue = modalForm.getFieldValue("port")
+                let value = modalForm.getFieldValue("IPtext");
+                let portValue = modalForm.getFieldValue("port");
                 if (!value) {
                   return Promise.reject("请输入IP地址或端口号");
                 }
-                if(!portValue){
+                if (!portValue) {
                   return Promise.reject("请输入IP地址或端口号");
                 }
                 if (isValidIpChar(value)) {
                   return new Promise((resolve, rej) => {
-                    setmodalLoading(true);
-                    fetchPost(apiRequest.machineManagement.checkHost, {
-                      body: {
-                        ip: value,
-                      },
-                    })
-                      .then((res) => {
-                        if (res && res.data) {
-                          if (res.data.data) {
-                            resolve("success");
-                          } else {
-                            rej(`ip地址已存在`);
-                          }
-                        }
+                    if (timer.current) {
+                      clearTimeout(timer.current);
+                    }
+                    timer.current = setTimeout(() => {
+                      setmodalLoading(true);
+                      fetchPost(apiRequest.machineManagement.checkHost, {
+                        body: {
+                          ip: value,
+                        },
                       })
-                      .catch((e) => console.log(e))
-                      .finally(() => {
-                        setmodalLoading(false);
-                      });
+                        .then((res) => {
+                          if (res && res.data) {
+                            if (res.data.data) {
+                              resolve("success");
+                            } else {
+                              rej(`ip地址已存在`);
+                            }
+                          }
+                        })
+                        .catch((e) => console.log(e))
+                        .finally(() => {
+                          setmodalLoading(false);
+                        });
+                    }, 600);
                   });
                 } else {
                   return Promise.reject("请输入正确格式的IP地址");
@@ -265,7 +286,7 @@ export const AddMachineModal = ({
                 seforminstanceinvalidator="true"
                 // rules={[
                 //   {
-                    
+
                 //   },
                 // ]}
               >
@@ -275,7 +296,14 @@ export const AddMachineModal = ({
             <span style={{ display: "flex", alignItems: "center" }}>:</span>
             <Col span={4}>
               <Form.Item name="port" key="port" noStyle>
-                <InputNumber style={{ width: 82 }} min={1} max={65535} />
+                <InputNumber
+                  onChange={() => {
+                    modalForm.validateFields(["ip"]);
+                  }}
+                  style={{ width: 82 }}
+                  min={1}
+                  max={65535}
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -296,20 +324,20 @@ export const AddMachineModal = ({
                 var startReg = /[^a-zA-Z0-9\_]/g;
                 if (value) {
                   let startChar = value.slice(0, 1);
-                  if(!startReg.test(startChar)){
+                  if (!startReg.test(startChar)) {
                     if (isChineseChar(value)) {
                       return Promise.reject(`用户名只支持数字、字母、"-"或"_"`);
-                    }else{
-                      if(!reg.test(value)){
+                    } else {
+                      if (!reg.test(value)) {
                         return Promise.resolve("success");
-                      }else{
-                        return Promise.reject(`用户名只支持数字、字母、"-"或"_"`);
+                      } else {
+                        return Promise.reject(
+                          `用户名只支持数字、字母、"-"或"_"`
+                        );
                       }
                     }
-                  }else{
-                    return Promise.reject(
-                      `用户名开头只支持数字、字母、或"_"`
-                    );
+                  } else {
+                    return Promise.reject(`用户名开头只支持数字、字母、或"_"`);
                   }
                 } else {
                   return Promise.resolve("success");
@@ -318,11 +346,15 @@ export const AddMachineModal = ({
             },
           ]}
         >
-          <Input  suffix={
+          <Input
+            suffix={
               <Tooltip title="请使用root或具有sudo免密码权限的用户">
                 <InfoCircleOutlined style={{ color: "rgba(0,0,0,.45)" }} />
               </Tooltip>
-            } maxLength={16} placeholder={"请输入用户名"} />
+            }
+            maxLength={16}
+            placeholder={"请输入用户名"}
+          />
         </Form.Item>
 
         <Form.Item
@@ -376,9 +408,10 @@ export const UpDateMachineModal = ({
   const [modalForm] = Form.useForm();
   // console.log(row)
   const [modalLoading, setmodalLoading] = useState(false);
+  const timer = useRef(null);
   return (
     <OmpModal
-    loading={loading || modalLoading}
+      loading={loading || modalLoading}
       setLoading={setLoading}
       visibleHandle={visibleHandle}
       title={
@@ -435,7 +468,7 @@ export const UpDateMachineModal = ({
                 let startChar = value.slice(0, 1);
                 if (
                   isNumberChar(startChar) ||
-                  isLowercaseChar(startChar) ||
+                  isLetterChar(startChar) ||
                   startChar == "-"
                 ) {
                   if (!isExpression(value)) {
@@ -446,26 +479,31 @@ export const UpDateMachineModal = ({
                         return Promise.resolve("success");
                       } else {
                         return new Promise((resolve, rej) => {
-                          setmodalLoading(true);
-                          fetchPost(apiRequest.machineManagement.checkHost, {
-                            body: {
-                              instance_name: value,
-                              id:row.id
-                            },
-                          })
-                            .then((res) => {
-                              if (res && res.data) {
-                                if (res.data.data) {
-                                  resolve("success");
-                                } else {
-                                  rej(`实例名称已存在`);
-                                }
-                              }
+                          if (timer.current) {
+                            clearTimeout(timer.current);
+                          }
+                          timer.current = setTimeout(() => {
+                            setmodalLoading(true);
+                            fetchPost(apiRequest.machineManagement.checkHost, {
+                              body: {
+                                instance_name: value,
+                                id: row.id,
+                              },
                             })
-                            .catch((e) => console.log(e))
-                            .finally(() => {
-                              setmodalLoading(false);
-                            });
+                              .then((res) => {
+                                if (res && res.data) {
+                                  if (res.data.data) {
+                                    resolve("success");
+                                  } else {
+                                    rej(`实例名称已存在`);
+                                  }
+                                }
+                              })
+                              .catch((e) => console.log(e))
+                              .finally(() => {
+                                setmodalLoading(false);
+                              });
+                          }, 600);
                         });
                       }
                     }
@@ -473,9 +511,7 @@ export const UpDateMachineModal = ({
                     return Promise.reject("实例名称不支持表情");
                   }
                 } else {
-                  return Promise.reject(
-                    `实例名称开头只支持小写字母、数字或"-"`
-                  );
+                  return Promise.reject(`实例名称开头只支持字母、数字或"-"`);
                 }
               },
             },
@@ -521,24 +557,26 @@ export const UpDateMachineModal = ({
                 if (!value) {
                   return Promise.resolve("success");
                 } else {
-                  if(value.startsWith("/")){
+                  if (value.startsWith("/")) {
                     if (!isChineseChar(value)) {
-                      if(!reg.test(value)) {
+                      if (!reg.test(value)) {
                         return Promise.resolve("success");
-                      }else{
+                      } else {
                         return Promise.reject(
                           `数据分区只支持字母、数字、"/"、"-"和"_"`
                         );
                       }
-                    }else{
-                      return Promise.reject(`数据分区只支持字母、数字、"/"、"-"和"_"`);
+                    } else {
+                      return Promise.reject(
+                        `数据分区只支持字母、数字、"/"、"-"和"_"`
+                      );
                     }
                   } else {
                     return Promise.reject(`数据分区开头必须为"/"`);
                   }
                 }
-              } 
-            }
+              },
+            },
           ]}
         >
           <Input maxLength={255} placeholder={"请输入数据分区"} />
@@ -547,16 +585,24 @@ export const UpDateMachineModal = ({
         <Form.Item
           name="ip"
           key="ip"
-          label={<span><img src={star} style={{position:"relative",top:-2,left:-3}}/>IP地址</span>}
+          label={
+            <span>
+              <img
+                src={star}
+                style={{ position: "relative", top: -2, left: -3 }}
+              />
+              IP地址
+            </span>
+          }
           rules={[
             {
               validator: (rule, v, callback) => {
-                let value = modalForm.getFieldValue("IPtext")
-                let portValue = modalForm.getFieldValue("port")
+                let value = modalForm.getFieldValue("IPtext");
+                let portValue = modalForm.getFieldValue("port");
                 if (!value) {
                   return Promise.reject("请输入IP地址或端口号");
                 }
-                if(!portValue){
+                if (!portValue) {
                   return Promise.reject("请输入IP地址或端口号");
                 }
                 if (isValidIpChar(value)) {
@@ -565,7 +611,7 @@ export const UpDateMachineModal = ({
                     fetchPost(apiRequest.machineManagement.checkHost, {
                       body: {
                         ip: value,
-                        id:row.id
+                        id: row.id,
                       },
                     })
                       .then((res) => {
@@ -613,7 +659,14 @@ export const UpDateMachineModal = ({
             <span style={{ display: "flex", alignItems: "center" }}>:</span>
             <Col span={4}>
               <Form.Item name="port" key="port" noStyle>
-                <InputNumber style={{ width: 82 }} min={1} max={65535} />
+                <InputNumber
+                  style={{ width: 82 }}
+                  min={1}
+                  max={65535}
+                  onChange={() => {
+                    modalForm.validateFields(["ip"]);
+                  }}
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -634,20 +687,20 @@ export const UpDateMachineModal = ({
                 var startReg = /[^a-zA-Z0-9\_]/g;
                 if (value) {
                   let startChar = value.slice(0, 1);
-                  if(!startReg.test(startChar)){
+                  if (!startReg.test(startChar)) {
                     if (isChineseChar(value)) {
                       return Promise.reject(`用户名只支持数字、字母、"-"或"_"`);
-                    }else{
-                      if(!reg.test(value)){
+                    } else {
+                      if (!reg.test(value)) {
                         return Promise.resolve("success");
-                      }else{
-                        return Promise.reject(`用户名只支持数字、字母、"-"或"_"`);
+                      } else {
+                        return Promise.reject(
+                          `用户名只支持数字、字母、"-"或"_"`
+                        );
                       }
                     }
-                  }else{
-                    return Promise.reject(
-                      `用户名开头只支持数字、字母、或"_"`
-                    );
+                  } else {
+                    return Promise.reject(`用户名开头只支持数字、字母、或"_"`);
                   }
                 } else {
                   return Promise.resolve("success");
