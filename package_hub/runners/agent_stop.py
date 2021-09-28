@@ -34,10 +34,19 @@ def update_agent_detail(agent_id_lst):
     :return:
     """
     try:
+        if not isinstance(agent_id_lst, list):
+            return
         # 数据库中的agent是正常的，如果其id不再present列表内，则将其状态更新为'2-启动失败'
-        obj_list = Host.objects.filter(
-            host_agent=0).exclude(id__in=agent_id_lst).all()
-        obj_list.update(host_agent=2)
+        # 如果当前在线id列表有值，那么排除此部分值后刷新Agent状态
+        # 如果当前在线id列表无值，说明所有 原正常的Agent 均处于离线状态
+        if len(agent_id_lst) != 0:
+            Host.objects.filter(
+                host_agent=0).exclude(
+                ip__in=agent_id_lst).all().update(host_agent=2)
+        else:
+            Host.objects.filter(host_agent=0).update(host_agent=2)
+        Host.objects.filter(
+            ip__in=agent_id_lst).all().update(host_agent=0)
         logger.info(f"失联Agent: {agent_id_lst}状态更新成功!")
     except Exception as e:
         logger.error(f"{agent_id_lst}状态更新失败: {str(e)}")
