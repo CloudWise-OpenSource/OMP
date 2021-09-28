@@ -38,13 +38,13 @@ def real_deploy_agent(host_obj):
         f"Deploy Agent for {host_obj.ip}, Params: "
         f"username: {host_obj.username}; "
         f"port: {host_obj.port}; "
-        f"install_dir: {host_obj.data_folder}!")
+        f"install_dir: {host_obj.agent_dir}!")
     _obj = Agent(
         host=host_obj.ip,
         port=host_obj.port,
         username=host_obj.username,
         password=AESCryptor().decode(host_obj.password),
-        install_dir=host_obj.data_folder
+        install_dir=host_obj.agent_dir
     )
     flag, message = _obj.agent_deploy()
     logger.info(
@@ -92,7 +92,7 @@ def real_host_agent_restart(host_obj):
         f"Restart Agent for {host_obj.ip}, Params: "
         f"username: {host_obj.username}; "
         f"port: {host_obj.port}; "
-        f"install_dir: {host_obj.data_folder}!")
+        f"install_dir: {host_obj.agent_dir}!")
     _obj = SSH(
         hostname=host_obj.ip,
         port=host_obj.port,
@@ -100,7 +100,7 @@ def real_host_agent_restart(host_obj):
         password=AESCryptor().decode(host_obj.password),
     )
     _script_path = os.path.join(
-        host_obj.data_folder, "omp_salt_agent/bin/omp_salt_agent")
+        host_obj.agent_dir, "omp_salt_agent/bin/omp_salt_agent")
     flag, message = _obj.cmd(f"bash {_script_path} restart")
     logger.info(
         f"Restart host agent for {host_obj.ip}: "

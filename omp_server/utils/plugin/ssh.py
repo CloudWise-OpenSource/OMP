@@ -118,7 +118,11 @@ class SSH(object):
         :return:
         """
         self._get_connection()
-        command = "test -d {0} || mkdir -p {0}".format(remote_path)
+        if self.username == "root":
+            command = "test -d {0} || mkdir -p {0}".format(remote_path)
+        else:
+            command = f"sudo mkdir -p {remote_path} && " \
+                      f"sudo chown -R {self.username}.{self.username} {remote_path}"
         self.cmd(command)
 
     def file_push(self, file, remote_path="/tmp"):

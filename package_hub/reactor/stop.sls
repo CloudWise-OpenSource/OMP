@@ -1,3 +1,3 @@
 agent_start:
-  runner.agent_stop.update:
+  runner.agent_start.update:
     - agent_id: {{ data['id'] }}
