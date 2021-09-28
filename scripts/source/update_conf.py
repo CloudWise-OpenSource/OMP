@@ -79,6 +79,8 @@ reactor:
     - salt://reactor/auth.sls
   - 'salt/minion/*/start':
     - salt://reactor/start.sls
+  - 'salt/presence/present':
+    - salt://reactor/stop.sls
 runner_dirs:
   - {os.path.join(PROJECT_FOLDER, 'package_hub/runners')}
 """
