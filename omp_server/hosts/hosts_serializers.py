@@ -119,33 +119,37 @@ class HostSerializer(ModelSerializer):
 
     def validate(self, attrs):
         """ 主机信息验证 """
+        ip = attrs.get("ip")
+        port = attrs.get("port")
+        username = attrs.get("username")
+        password = attrs.get("password")
+        data_folder = attrs.get('data_folder')
+
         # 校验主机 SSH 连通性
-        ssh = SSH(
-            hostname=attrs.get("ip"),
-            port=attrs.get("port"),
-            username=attrs.get("username"),
-            password=attrs.get("password")
-        )
+        ssh = SSH(ip, port, username, password)
         is_connect, _ = ssh.check()
         if not is_connect:
-            logger.info(
-                f"主机SSH连通性校验失败: "
-                f"ip-{attrs.get('ip')},"
-                f"port-{attrs.get('port')},"
-                f"username-{attrs.get('username')},"
-                f"password-{attrs.get('password')}")
+            logger.info(f"主机SSH连通性校验未通过: ip-{ip},port-{port},"
+                        f"username-{username},password-{password}")
             raise ValidationError({"ip": "SSH登录失败"})
         # 校验用户是否具有 sudo 权限
         is_sudo, _ = ssh.is_sudo()
         if not is_sudo:
-            logger.info(
-                f"用户校验失败: "
-                f"ip-{attrs.get('ip')},"
-                f"port-{attrs.get('port')},"
-                f"username-{attrs.get('username')},"
-                f"password-{attrs.get('password')}")
+            logger.info(f"用户权限校验未通过: ip-{ip},port-{port},"
+                        f"username-{username},password-{password}")
             raise ValidationError({
                 "username": "用户权限错误，请使用root或具备sudo免密用户"})
+
+        # 如果数据分区不存在，则创建数据分区
+        success, _ = ssh.cmd(
+            f"if [ ! -d {data_folder} ]; "
+            f"then mkdir {data_folder}; fi")
+        if not success:
+            logger.info(f"数据分区创建失败: ip-{ip},port-{port},"
+                        f"username-{username},password-{password}"
+                        f"data_folder-{data_folder}")
+            ValidationError({"data_folder": "创建数据分区操作失败"})
+
         # 如果未传递 env，则指定默认环境
         if not attrs.get("env") and not self.instance:
             attrs["env"] = Env.objects.get(id=1)

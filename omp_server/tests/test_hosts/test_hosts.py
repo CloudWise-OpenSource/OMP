@@ -304,8 +304,9 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
 
     @mock.patch.object(SSH, "check", return_value=(True, ""))
     @mock.patch.object(SSH, "is_sudo", return_value=(True, "is sudo"))
+    @mock.patch.object(SSH, "cmd", return_value=(True, ""))
     @mock.patch.object(deploy_agent, "delay", return_value=None)
-    def test_correct_field(self, deploy_agent_mock, is_sudo, ssh_mock):
+    def test_correct_field(self, deploy_agent_mock, cmd_mock, is_sudo, ssh_mock):
         """ 测试正确字段 """
 
         # 正确字段 -> 创建成功
@@ -401,8 +402,6 @@ class ListHostTest(AutoLoginTest, HostsResourceMixin):
         self.assertEqual(resp.get("message"), "success")
         self.assertEqual(first_host.get("ip"), last_host.ip)
 
-        # TODO 监控动态字段排序
-
         # 删除主机
         self.destroy_hosts()
 
@@ -412,7 +411,8 @@ class UpdateHostTest(AutoLoginTest, HostsResourceMixin):
 
     @mock.patch.object(SSH, "check", return_value=(True, ""))
     @mock.patch.object(SSH, "is_sudo", return_value=(True, "is sudo"))
-    def test_update_host(self, is_sudo, ssh_mock):
+    @mock.patch.object(SSH, "cmd", return_value=(True, ""))
+    def test_update_host(self, cmd_mock, is_sudo, ssh_mock):
         """ 测试更新一个主机 """
 
         # 更新不存在主机 -> 更新失败
