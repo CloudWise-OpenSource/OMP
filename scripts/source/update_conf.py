@@ -14,14 +14,23 @@ import os
 import sys
 import yaml
 import socket
-
 from ruamel.yaml import YAML
+import shutil
 
 CURRENT_FILE_PATH = os.path.dirname(os.path.abspath(__file__))
 PROJECT_FOLDER = os.path.dirname(os.path.dirname(CURRENT_FILE_PATH))
 
 config_path = os.path.join(PROJECT_FOLDER, "config/omp.yaml")
+PROJECT_DATA_PATH = os.path.join(PROJECT_FOLDER, "data")
+PROJECT_LOG_PATH = os.path.join(PROJECT_FOLDER, "log")
 
+sys.path.append(os.path.join(PROJECT_FOLDER, "omp_server"))
+import django
+# 加载Django环境
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "omp_server.settings")
+django.setup()
+
+from utils.parse_config import MONITOR_PORT
 
 def get_config_dic():
     """
@@ -341,6 +350,180 @@ def check_port_is_used():
         sys.exit(1)
 
 
+def replace_placeholder(path, placeholder_list):
+    """配置文件占位符替换
+    参数: path 要替换的文件路径, 占位符字典列表 [{"key":"value"}]
+    """
+    try:
+        if not os.path.isfile(path):
+            print("No such file {}".format(path))
+            sys.exit(1)
+
+        if not os.path.isfile(f'{path}.template'):
+            shutil.copyfile(path, f'{path}.template')
+        os.remove(path)
+        shutil.copyfile(f'{path}.template', path)
+        with open(path, "r") as f:
+            data = f.read()
+            for item in placeholder_list:
+                for k, v in item.items():
+                    placeholder = "${{{}}}".format(k)
+                    data = data.replace(placeholder, str(v))
+        with open(path, "w") as f:
+            f.write(data)
+        return True
+    except Exception as e:
+        print(f"Updata Conf Failed, Check Error {str(e)}")
+        return False
+
+
+def update_prometheus():
+    """
+    更新uwsgi的配置文件
+    :return:
+    """
+    prometheus_path = os.path.join(
+        PROJECT_FOLDER, "component/prometheus")
+
+    """
+    更新当前服务需要更改的配置
+    :return:
+    """
+
+    # 修改 conf/prometheus.yml
+    MONITOR_PORT.get("prometheus",'19011')
+    CW_PROMETHEUS_PORT = MONITOR_PORT.get("prometheus")
+    CW_ALERTMANAGER_PORT = MONITOR_PORT.get("alertmanager")
+    prometheus_yml_file = os.path.join(prometheus_path, 'conf', 'prometheus.yml')
+    omp_prometheus_data_path = os.path.join(PROJECT_DATA_PATH, "prometheus")
+    omp_prometheus_log_path = os.path.join(PROJECT_LOG_PATH, "prometheus")
+
+    cpy_placeholder_script = [
+        {'CW_PROMETHEUS_PORT': CW_PROMETHEUS_PORT},
+        {'CW_ALERTMANAGER_PORT': CW_ALERTMANAGER_PORT},
+    ]
+
+    replace_placeholder(prometheus_yml_file, cpy_placeholder_script)
+
+    # 修改 scripts/prometheus
+    sp_placeholder_script = [
+        {'OMP_PROMETHEUS_DATA_PATH': omp_prometheus_data_path},
+        {'OMP_PROMETHEUS_LOG_PATH': omp_prometheus_log_path},
+        {'CW_PROMETHEUS_PORT': CW_PROMETHEUS_PORT}
+    ]
+    if not os.path.exists(omp_prometheus_data_path):
+        os.makedirs(omp_prometheus_data_path)
+    if not os.path.exists(omp_prometheus_log_path):
+        os.makedirs(omp_prometheus_log_path)
+    sl_file = os.path.join(prometheus_path, 'scripts', 'prometheus')
+    replace_placeholder(sl_file, sp_placeholder_script)
+
+
+def update_grafana():
+    """
+    更新当前服务需要更改的配置
+    :return:
+    """
+    grafana_path = os.path.join(PROJECT_FOLDER, "component/grafana")
+    omp_grafana_log_path = os.path.join(PROJECT_LOG_PATH, "grafana")
+
+    # 修改 conf/defaults.ini
+    cdi_file = os.path.join(grafana_path, 'conf', 'defaults.ini')
+    CW_GRAFANA_PORT = MONITOR_PORT.get("alertmanager",'19014')
+    cdi_placeholder_script = [
+        {'CW-HTTP-PORT': CW_GRAFANA_PORT},
+        {'OMP_GRAFANA_LOG_PATH': omp_grafana_log_path},
+    ]
+    replace_placeholder(cdi_file, cdi_placeholder_script)
+
+    # 修改 scripts/grafana
+    sa_placeholder_script = [
+        {'OMP_GRAFANA_LOG_PATH': omp_grafana_log_path},
+    ]
+    if not os.path.exists(omp_grafana_log_path):
+        os.makedirs(omp_grafana_log_path)
+    sa_file = os.path.join(grafana_path, 'scripts', 'grafana')
+    replace_placeholder(sa_file, sa_placeholder_script)
+
+
+def update_alertmanager():
+    """
+    更新当前服务需要更改的配置
+    :return:
+    """
+    alertmanager_path = os.path.join(PROJECT_FOLDER, "component/alertmanager")
+    omp_alertmanager_log_path = os.path.join(PROJECT_LOG_PATH, "alertmanager")
+    # 修改 conf/alertmanager.yml
+    EMAIL_SEND = MONITOR_PORT.get('test', '123456789@qq.com')
+    SMTP_SMARTHOST = MONITOR_PORT.get('test', '1smtp.qq.com:465')
+    EMAIL_SEND_USER = MONITOR_PORT.get('test', '123456789@qq.com')
+    EMAIL_SEND_PASSWORD = MONITOR_PORT.get('test', 'xxxxxxxx')
+    SMTP_HELLO = MONITOR_PORT.get('test', 'qq.com')
+    EMAIL_ADDRESS = MONITOR_PORT.get('test', '987654321@qq.com')
+    RECEIVER = MONITOR_PORT.get('test', 'commonuser')
+    EMAIL_SEND_INTERVAL = MONITOR_PORT.get('test', '30m')
+    WEBHOOK_URL = MONITOR_PORT.get('test', 'http://127.0.0.1:19001/api/v1/scheduler/monitor/alert')
+
+    alertmanager_yml_file = os.path.join(alertmanager_path, 'conf', 'alertmanager.yml')
+
+    cay_placeholder_script = [
+        {'EMAIL_SEND': EMAIL_SEND},
+        {'SMTP_SMARTHOST': SMTP_SMARTHOST},
+        {'EMAIL_SEND_USER': EMAIL_SEND_USER},
+        {'EMAIL_SEND_PASSWORD': EMAIL_SEND_PASSWORD},
+        {'SMTP_HELLO': SMTP_HELLO},
+        {'EMAIL_ADDRESS': EMAIL_ADDRESS},
+        {'RECEIVER': RECEIVER},
+        {'EMAIL_SEND_INTERVAL': EMAIL_SEND_INTERVAL},
+        {'WEBHOOK_URL': WEBHOOK_URL}
+    ]
+    replace_placeholder(alertmanager_yml_file, cay_placeholder_script)
+
+    # 修改 scripts/alertmanager
+    CW_ALERTMANAGER_PORT = MONITOR_PORT.get('alertmanager', '19013')
+    sa_placeholder_script = [
+        {'OMP_ALERTMANAGER_LOG_PATH': omp_alertmanager_log_path},
+        {'CW_ALERTMANAGER_PORT': CW_ALERTMANAGER_PORT}
+    ]
+    if not os.path.exists(omp_alertmanager_log_path):
+        os.makedirs(omp_alertmanager_log_path)
+    sa_file = os.path.join(alertmanager_path, 'scripts', 'alertmanager')
+    replace_placeholder(sa_file, sa_placeholder_script)
+
+
+def update_loki():
+    """
+    更新当前服务需要更改的配置
+    :return:
+    """
+    loki_path = os.path.join(PROJECT_FOLDER, "component/loki")
+    omp_loki_log_path = os.path.join(PROJECT_LOG_PATH, "loki")
+    omp_loki_data_path = os.path.join(PROJECT_DATA_PATH, "loki")
+    loki_retention_period = MONITOR_PORT.get('test', '168h')
+
+    # 修改 conf/loki.yml
+    CW_LOKI_PORT = MONITOR_PORT.get('loki', 19012)
+    loki_yml_file = os.path.join(loki_path, 'conf', 'loki.yml')
+
+    cly_placeholder_script = [
+        {'CW_LOKI_PORT': CW_LOKI_PORT},
+        {'OMP_LOKI_DATA_PATH': omp_loki_data_path}
+    ]
+    if not os.path.exists(omp_loki_data_path):
+        os.makedirs(omp_loki_data_path)
+    replace_placeholder(loki_yml_file, cly_placeholder_script)
+
+    # 修改 scripts/loki
+    sa_placeholder_script = [
+        {'OMP_LOKI_LOG_PATH': omp_loki_log_path},
+        {'LOKI_RETENTION_PERIOD': loki_retention_period}
+    ]
+    if not os.path.exists(omp_loki_log_path):
+        os.makedirs(omp_loki_log_path)
+    sl_file = os.path.join(loki_path, 'scripts', 'loki')
+    replace_placeholder(sl_file, sa_placeholder_script)
+
+
 def main(local_ip, run_user):
     """
     更新配置文件主流程
@@ -354,6 +537,11 @@ def main(local_ip, run_user):
     update_salt_master()
     update_uwsgi()
     update_nginx()
+    update_prometheus()
+    update_grafana()
+    update_alertmanager()
+    update_loki()
+
     print("Finish Update Conf!")
 
 
