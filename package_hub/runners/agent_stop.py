@@ -34,7 +34,9 @@ def update_agent_detail(agent_id_lst):
     :return:
     """
     try:
-        obj_list = Host.objects.exclude(id__in=agent_id_lst).all()
+        # 数据库中的agent是正常的，如果其id不再present列表内，则将其状态更新为'2-启动失败'
+        obj_list = Host.objects.filter(
+            host_agent=0).exclude(id__in=agent_id_lst).all()
         obj_list.update(host_agent=2)
         logger.info(f"失联Agent: {agent_id_lst}状态更新成功!")
     except Exception as e:
