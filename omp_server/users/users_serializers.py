@@ -96,3 +96,25 @@ class JwtSerializer(JSONWebTokenSerializer):
 
     def update(self, instance, validated_data):
         raise RuntimeError("`update()` is not available")
+
+
+class UserUpdatePasswordSerializer(ModelSerializer):
+    """ 用户更新密码序列化器 """
+
+    username = serializers.CharField(
+        max_length=32, required=True,
+        error_messages={"required": "必须包含名字"},
+        help_text="用户名")
+    old_password = serializers.CharField(
+        max_length=32, required=True,
+        error_messages={"required": "必须包含password字段"},
+        help_text="密码")
+    new_password = serializers.CharField(
+        max_length=32, required=True,
+        error_messages={"required": "必须包含password字段"},
+        help_text="密码")
+
+    class Meta:
+        """ 元数据 """
+        model = UserProfile
+        fields = "__all__"
