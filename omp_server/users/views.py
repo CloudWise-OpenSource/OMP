@@ -122,7 +122,7 @@ class JwtAPIView(JSONWebTokenAPIView):
 class UserUpdatePasswordView(GenericViewSet, CreateModelMixin):
     """
         create:
-        创建一个新用户
+        修改用户密码
     """
 
     queryset = UserProfile.objects.all()
