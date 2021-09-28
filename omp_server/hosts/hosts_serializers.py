@@ -83,7 +83,7 @@ class HostSerializer(ModelSerializer):
     class Meta:
         """ 元数据 """
         model = Host
-        exclude = ("is_deleted",)
+        exclude = ("is_deleted", "agent_dir",)
         read_only_fields = (
             "service_num", "alert_num", "host_name", "operate_system",
             "memory", "cpu", "disk", "is_maintenance", "host_agent",
@@ -160,6 +160,8 @@ class HostSerializer(ModelSerializer):
     def create(self, validated_data):
         """ 创建主机 """
         ip = validated_data.get('ip')
+        # 指定 Agent 安装目录为 data_folder
+        validated_data['agent_dir'] = validated_data.get("data_folder")
         instance = super(HostSerializer, self).create(validated_data)
         logger.info(f"主机{ip}-创建成功")
         # 写入操作记录
