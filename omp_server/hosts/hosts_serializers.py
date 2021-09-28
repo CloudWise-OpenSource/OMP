@@ -142,8 +142,7 @@ class HostSerializer(ModelSerializer):
 
         # 如果数据分区不存在，则创建数据分区
         success, _ = ssh.cmd(
-            f"if [ ! -d {data_folder} ]; "
-            f"then mkdir {data_folder}; fi")
+            f"test -d {data_folder} || mkdir -p {data_folder}")
         if not success:
             logger.info(f"数据分区创建失败: ip-{ip},port-{port},"
                         f"username-{username},password-{password}"
