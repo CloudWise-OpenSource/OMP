@@ -34,10 +34,9 @@ def update_agent_detail(agent_id_lst):
     :return:
     """
     try:
-        for target in agent_id_lst:
-            obj_list = Host.objects.filter(ip=target)
-            obj_list.update(host_agent=2)
-            logger.info(f"{target}状态更新成功!")
+        obj_list = Host.objects.exclude(id__in=agent_id_lst).all()
+        obj_list.update(host_agent=2)
+        logger.info(f"失联Agent: {agent_id_lst}状态更新成功!")
     except Exception as e:
         logger.error(f"{agent_id_lst}状态更新失败: {str(e)}")
 
