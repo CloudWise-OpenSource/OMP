@@ -74,8 +74,21 @@ class SSH(object):
         who = stdout.readline().strip()
         if who == self.username:
             return True, "check passed"
-        else:
-            return False, f"stdout: {who}"
+        return False, f"stdout: {who}"
+
+    def is_sudo(self):
+        """
+        检查用户是否具有sudo权限
+        :return: is_sudo, message
+        """
+        self._get_connection()
+        if self.is_error:
+            return False, str(self.error_message)
+        _, stdout, _ = self.ssh_client.exec_command("sudo -n echo 'success'")
+        res = stdout.readline().strip()
+        if res == "success":
+            return True, "is sudo"
+        return False, "not sudo"
 
     def cmd(self, command, timeout=SSH_TIMEOUT, get_pty=True):
         """
@@ -105,7 +118,11 @@ class SSH(object):
         :return:
         """
         self._get_connection()
-        command = "test -d {0} || mkdir -p {0}".format(remote_path)
+        if self.username == "root":
+            command = "test -d {0} || mkdir -p {0}".format(remote_path)
+        else:
+            command = f"sudo mkdir -p {remote_path} && " \
+                      f"sudo chown -R {self.username}.{self.username} {remote_path}"
         self.cmd(command)
 
     def file_push(self, file, remote_path="/tmp"):

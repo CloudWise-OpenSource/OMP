@@ -71,32 +71,6 @@
       font-weight: 500;
     }
 
-    .headerLink {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 25px;
-      color: #8d919c;
-      font-weight: 500;
-      font-size: 14px;
-      cursor: pointer;
-    }
-
-    .headerLinkNohover {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 15px;
-      color: #8d919c;
-      font-weight: 500;
-      font-size: 14px;
-      cursor: pointer;
-    }
-
-    .headerLink:hover {
-      background: #273146;
-    }
-
     .userAvatar {
       width: 100px;
       //margin-right: 70px;
@@ -127,9 +101,38 @@
   //   }
 }
 
+.headerLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 30px;
+  color: #8d919c;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.headerLinkNohover {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 15px;
+  color: #8d919c;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.headerLink:hover {
+  background: #121925;
+}
+
 :global {
   .site-layout .site-layout-background {
-    background: #fff;
+    // background: #fff;
+    background-color: #192132;
+    color: white;
+    height: 60px;
   }
   #components-layout-demo-custom-trigger .trigger {
     padding: 0 24px;
@@ -148,18 +151,26 @@
     margin: 16px;
     background: rgba(255, 255, 255, 0.3);
   }
-  
-  .site-layout .site-layout-background {
+  .ant-layout-sider-trigger {
     background: #fff;
-    height: 50px;
+    color: black;
+    font-size: 18px;
+    border-right: 1px solid #d7d9e1,
   }
+  .ant-layout-sider-children {
+    background: #171e2b;
+  }
+  // .site-layout .site-layout-background {
+  //   background: #fff;
+  //   height: 50px;
+  // }
 
   // 修改antd menu的原生选中样式
   // 选中文字的颜色
-  .ant-menu.ant-menu-dark, .ant-menu-dark .ant-menu-sub, .ant-menu.ant-menu-dark .ant-menu-sub {
-    background-color: #192031;
-    color: #fff;
-  }
+  // .ant-menu.ant-menu-dark, .ant-menu-dark .ant-menu-sub, .ant-menu.ant-menu-dark .ant-menu-sub {
+  //   background-color: #192031;
+  //   color: #fff;
+  // }
   // .ant-layout-sider {
   //   background-color: #2e4254;
   // }
@@ -186,4 +197,12 @@
   // .ant-menu.ant-menu-dark .ant-menu-submenu-title .ant-menu-submenu-arrow, .ant-menu-dark .ant-menu-sub .ant-menu-submenu-title .ant-menu-submenu-arrow, .ant-menu.ant-menu-dark .ant-menu-sub .ant-menu-submenu-title .ant-menu-submenu-arrow {
   //   opacity: 1;
   // }
+  .ant-spin-nested-loading {
+    height: 100%;
+    width: 100%;
+  }
+  .ant-spin-container {
+    height: 100%;
+    width: 100%;
+  }
 }

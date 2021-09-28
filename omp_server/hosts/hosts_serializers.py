@@ -9,15 +9,20 @@ from rest_framework.serializers import (
     ModelSerializer, Serializer
 )
 
-from db_models.models import (Host, Env)
-from hosts.tasks import deploy_agent
-from hosts.tasks import host_agent_restart
+from db_models.models import (
+    Host, Env, HostOperateLog
+)
+from hosts.tasks import (
+    deploy_agent, host_agent_restart
+)
 
 from utils.validator import (
     ReValidator, NoEmojiValidator, NoChineseValidator
 )
 from utils.plugin.ssh import SSH
 from utils.plugin.crypto import AESCryptor
+from utils.exceptions import OperateError
+from promemonitor.alertmanager import Alertmanager
 
 logger = logging.getLogger('server')
 
@@ -32,7 +37,7 @@ class HostSerializer(ModelSerializer):
         validators=[
             NoEmojiValidator(),
             NoChineseValidator(),
-            ReValidator(regex=r"^[-a-z0-9].*$"),
+            ReValidator(regex=r"^[-a-zA-Z0-9].*$"),
         ])
     ip = serializers.IPAddressField(
         help_text="IP地址",
@@ -63,7 +68,7 @@ class HostSerializer(ModelSerializer):
         required=True, max_length=255,
         error_messages={"required": "必须包含[data_folder]字段"},
         validators=[
-            ReValidator(regex=r"^/[/-_a-zA-Z0-9]+$"),
+            ReValidator(regex=r"^/[-_/a-zA-Z0-9]+$"),
         ])
     operate_system = serializers.CharField(
         help_text="操作系统",
@@ -78,7 +83,7 @@ class HostSerializer(ModelSerializer):
     class Meta:
         """ 元数据 """
         model = Host
-        exclude = ("is_deleted",)
+        exclude = ("is_deleted", "agent_dir",)
         read_only_fields = (
             "service_num", "alert_num", "host_name", "operate_system",
             "memory", "cpu", "disk", "is_maintenance", "host_agent",
@@ -104,28 +109,49 @@ class HostSerializer(ModelSerializer):
             raise ValidationError("IP已经存在")
         return ip
 
+    def validate_data_folder(self, data_folder):
+        """ 校验数据分区是否合理 """
+        dir_ls = data_folder.split("/")
+        for dir_name in dir_ls:
+            if dir_name != "" and dir_name.startswith("-"):
+                raise ValidationError("数据分区目录不能以'-'开头")
+        return data_folder
+
     def validate(self, attrs):
         """ 主机信息验证 """
+        ip = attrs.get("ip")
+        port = attrs.get("port")
+        username = attrs.get("username")
+        password = attrs.get("password")
+        data_folder = attrs.get('data_folder')
+
         # 校验主机 SSH 连通性
-        ssh = SSH(
-            hostname=attrs.get("ip"),
-            port=attrs.get("port"),
-            username=attrs.get("username"),
-            password=attrs.get("password")
-        )
+        ssh = SSH(ip, port, username, password)
         is_connect, _ = ssh.check()
         if not is_connect:
-            logger.info(f"主机SSH连通性校验失败: "
-                        f"ip-{attrs.get('ip')},"
-                        f"port-{attrs.get('port')},"
-                        f"username-{attrs.get('username')},"
-                        f"password-{attrs.get('password')}")
-            raise ValidationError({"ip": "主机SSH连通性校验失败"})
+            logger.info(f"主机SSH连通性校验未通过: ip-{ip},port-{port},"
+                        f"username-{username},password-{password}")
+            raise ValidationError({"ip": "SSH登录失败"})
+        # 校验用户是否具有 sudo 权限
+        is_sudo, _ = ssh.is_sudo()
+        if not is_sudo:
+            logger.info(f"用户权限校验未通过: ip-{ip},port-{port},"
+                        f"username-{username},password-{password}")
+            raise ValidationError({
+                "username": "用户权限错误，请使用root或具备sudo免密用户"})
+
+        # 如果数据分区不存在，则创建数据分区
+        success, _ = ssh.cmd(
+            f"test -d {data_folder} || mkdir -p {data_folder}")
+        if not success:
+            logger.info(f"数据分区创建失败: ip-{ip},port-{port},"
+                        f"username-{username},password-{password}"
+                        f"data_folder-{data_folder}")
+            ValidationError({"data_folder": "创建数据分区操作失败"})
 
         # 如果未传递 env，则指定默认环境
         if not attrs.get("env") and not self.instance:
             attrs["env"] = Env.objects.get(id=1)
-
         # 主机密码加密处理
         attrs["password"] = AESCryptor().encode(attrs.get("password"))
         return attrs
@@ -133,16 +159,42 @@ class HostSerializer(ModelSerializer):
     def create(self, validated_data):
         """ 创建主机 """
         ip = validated_data.get('ip')
-        logger.info(f"主机{ip}-创建成功")
+        # 指定 Agent 安装目录为 data_folder
+        validated_data['agent_dir'] = validated_data.get("data_folder")
         instance = super(HostSerializer, self).create(validated_data)
+        logger.info(f"主机{ip}-创建成功")
+        # 写入操作记录
+        HostOperateLog.objects.create(
+            username=self.context["request"].user.username,
+            description="创建主机",
+            host=instance,
+        )
         # 异步下发 Agent
         logger.info(f"主机{ip}-异步下发Agent任务")
         deploy_agent.delay(instance.id)
         return instance
-    #
-    # def update(self, instance, validated_data):
-    #     print("update")
-    #     return super(HostSerializer, self).update(instance, validated_data)
+
+    def update(self, instance, validated_data):
+        """ 更新主机 """
+        log_ls = []
+        username = self.context["request"].user.username
+
+        # 获取所有发生修改字段
+        for key, new_value in validated_data.items():
+            old_value = getattr(instance, key)
+            if old_value != new_value:
+                description = f"修改[{getattr(Host, key).field.help_text}]"
+                if key != "password":
+                    description += f": 由[{getattr(instance, key)}]修改为[{new_value}]"
+                log_ls.append(HostOperateLog(
+                    username=username,
+                    description=description,
+                    host=instance))
+
+        # 写入主机操作记录表中
+        HostOperateLog.objects.bulk_create(log_ls)
+
+        return super(HostSerializer, self).update(instance, validated_data)
 
 
 class HostFieldCheckSerializer(ModelSerializer):
@@ -198,6 +250,17 @@ class HostMaintenanceSerializer(Serializer):
         error_messages={"required": "必须包含[host_ids]字段"},
         allow_empty=False)
 
+    def write_host_log(self, host_queryset, status):
+        """ 写入主机日志 """
+        log_ls = []
+        for host in host_queryset:
+            log_ls.append(HostOperateLog(
+                username=self.context["request"].user.username,
+                description=f"{status}[维护模式]",
+                result="failed",
+                host=host))
+        HostOperateLog.objects.bulk_create(log_ls)
+
     def validate_host_ids(self, host_ids):
         """ 校验主机 ID 列表中主机是否都存在 """
         exists_ids = Host.objects.filter(
@@ -223,16 +286,32 @@ class HostMaintenanceSerializer(Serializer):
         return attrs
 
     def create(self, validated_data):
-        """ 进入 / 退出维护 """
+        """ 进入 / 退出维护模式 """
         host_ids = validated_data.get("host_ids")
         is_maintenance = validated_data.get("is_maintenance")
-        # TODO 调用进入维护模式函数
-        # 如果操作成功，则更新数据库配置
-        if True:
-            Host.objects.filter(id__in=host_ids).update(
-                is_maintenance=is_maintenance)
-            status = "开启" if is_maintenance else "关闭"
-            logger.info(f"主机{status}维护模式成功: {host_ids}")
+        status = "开启" if is_maintenance else "关闭"
+        host_queryset = Host.objects.filter(id__in=host_ids)
+        host_ls = list(host_queryset.values("ip"))
+
+        # 根据 is_maintenance 判断主机进入 / 退出维护模式
+        alert_manager = Alertmanager()
+        if is_maintenance:
+            res_ls = alert_manager.set_maintain_by_host_list(host_ls)
+        else:
+            res_ls = alert_manager.revoke_maintain_by_host_list(host_ls)
+
+        # 操作失败
+        if not res_ls:
+            logger.error(f"主机'{status}'维护模式失败: {host_ids}")
+            # 操作失败记录写入
+            self.write_host_log(host_queryset, status)
+            raise OperateError(f"主机'{status}'维护模式失败")
+
+        # 操作成功
+        host_queryset.update(is_maintenance=is_maintenance)
+        logger.info(f"主机{status}维护模式成功: {host_ids}")
+        # 操作成功记录写入
+        self.write_host_log(host_queryset, status)
         return validated_data
 
     def update(self, instance, validated_data):
@@ -269,3 +348,12 @@ class HostAgentRestartSerializer(Serializer):
             id__in=validated_data.get("host_ids", [])
         ).update(host_agent=1)
         return validated_data
+
+
+class HostOperateLogSerializer(ModelSerializer):
+    """ 主机操作记录序列化器类 """
+
+    class Meta:
+        """ 元数据 """
+        model = HostOperateLog
+        fields = '__all__'

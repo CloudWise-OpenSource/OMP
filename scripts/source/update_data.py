@@ -54,11 +54,11 @@ def create_default_monitor_url():
     MonitorList = []
     local_ip = "127.0.0.1:"
     MonitorList.append(
-        MonitorUrl(name="prometheus", monitor_url=local_ip + str(MONITOR_PORT.get("prometheus", "19011"))))
+        MonitorUrl(id="1", name="prometheus", monitor_url=local_ip + str(MONITOR_PORT.get("prometheus", "19011"))))
     MonitorList.append(
-        MonitorUrl(name="alertmanager", monitor_url=local_ip + str(MONITOR_PORT.get("alertmanager", "19013"))))
+        MonitorUrl(id="2", name="alertmanager", monitor_url=local_ip + str(MONITOR_PORT.get("alertmanager", "19013"))))
     MonitorList.append(MonitorUrl(
-        name="grafana", monitor_url=local_ip + str(MONITOR_PORT.get("grafana", "19014"))))
+        id="3", name="grafana", monitor_url=local_ip + str(MONITOR_PORT.get("grafana", "19014"))))
     MonitorUrl.objects.bulk_create(MonitorList)
 
 

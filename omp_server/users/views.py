@@ -17,7 +17,7 @@ from rest_framework_jwt.settings import api_settings
 from db_models.models import (UserProfile, OperateLog)
 from users.users_serializers import (
     UserSerializer, JwtSerializer,
-    OperateLogSerializer,
+    OperateLogSerializer, UserUpdatePasswordSerializer
 )
 
 
@@ -101,7 +101,8 @@ class JwtAPIView(JSONWebTokenAPIView):
         if serializer.is_valid():
             user = serializer.object.get("user") or request.user
             token = serializer.object.get("token")
-            response_data = api_settings.JWT_RESPONSE_PAYLOAD_HANDLER(token, user, request)
+            response_data = api_settings.JWT_RESPONSE_PAYLOAD_HANDLER(
+                token, user, request)
             response = Response(response_data)
             if api_settings.JWT_AUTH_COOKIE:
                 # remember 取值 True，则 cookie 过期时间为 7 天
@@ -116,3 +117,15 @@ class JwtAPIView(JSONWebTokenAPIView):
                 )
             return response
         return Response(serializer.errors, status=status.HTTP_200_OK)
+
+
+class UserUpdatePasswordView(GenericViewSet, CreateModelMixin):
+    """
+        create:
+        修改用户密码
+    """
+
+    queryset = UserProfile.objects.all()
+    serializer_class = UserUpdatePasswordSerializer
+    # 操作描述
+    post_description = "更新用户密码"

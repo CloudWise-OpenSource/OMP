@@ -50,6 +50,27 @@ class SshUtilTest(BaseTest):
         self.assertEqual(self.ssh._get_connection(), None)
         self.assertEqual(self.ssh.is_error, None)
 
+    def test_is_sudo_success(self):
+        """
+        测试sudo
+        :return:
+        """
+        self.assertEqual(self.ssh.is_sudo()[0], True)
+
+    def test_is_sudo_failed(self):
+        """
+        测试sudo
+        :return:
+        """
+        ssh_obj = SSH(
+            hostname="10.0.7.146",
+            port=36000,
+            username="common",
+            password="Yunzhihui@123",
+            timeout=60
+        )
+        self.assertEqual(ssh_obj.is_sudo()[0], False)
+
     @mock.patch.object(SSHClient, "exec_command", return_value=("", b"", 0))
     def test_ssh_check_failed(self, exec_command):
         """
