@@ -81,6 +81,12 @@ const MachineManagement = () => {
   // 定义row存数据
   const [row, setRow] = useState({});
 
+  // 主机详情历史数据
+  const [historyData, setHistoryData] = useState([])
+  
+  // 主机详情loading
+  const [historyLoading, setHistoryLoading] = useState([])
+
   function fetchData(
     pageParams = { current: 1, pageSize: 10 },
     searchParams,
@@ -199,6 +205,24 @@ const MachineManagement = () => {
       });
   };
 
+  const fetchHistoryData = (id)=>{
+    setHistoryLoading(true);
+    fetchGet(apiRequest.machineManagement.operateLog, {
+      params: {
+        id : id
+      },
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          setHistoryData(res.data);
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setHistoryLoading(false);
+      });
+  }
+
   useEffect(() => {
     fetchData(pagination);
   }, []);
@@ -235,6 +259,7 @@ const MachineManagement = () => {
           <Select
             allowClear
             onClear={() => {
+              searchValueRef.current=""
               setSelectValue();
               setSearchValue();
               fetchData(
@@ -324,7 +349,8 @@ const MachineManagement = () => {
       >
         <OmpTable
           loading={loading}
-          //scroll={{y:'calc(100vh - 520px)'}}
+          // scroll={{x:1400}}
+          // scroll={{ x: 1400 }}
           onChange={(e, filters, sorter) => {
             let ordering = sorter.order
               ? `${sorter.order == "descend" ? "" : "-"}${sorter.columnKey}`
@@ -336,7 +362,8 @@ const MachineManagement = () => {
           columns={getColumnsConfig(
             setIsShowIsframe,
             setRow,
-            setUpdateMoadlVisible
+            setUpdateMoadlVisible,
+            fetchHistoryData
           )}
           dataSource={dataSource}
           pagination={{
@@ -405,6 +432,8 @@ const MachineManagement = () => {
       <DetailHost
         isShowIframe={isShowIframe}
         setIsShowIsframe={setIsShowIsframe}
+        loading={historyLoading}
+        data={historyData}
       />
     </OmpContentWrapper>
   );

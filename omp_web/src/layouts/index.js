@@ -5,6 +5,7 @@ import {
   DashboardOutlined,
   CaretDownOutlined,
   QuestionCircleOutlined,
+  CaretUpOutlined
 } from "@ant-design/icons";
 import React, { useState, useEffect } from "react";
 import img from "@/config/logo/logo.svg";
@@ -15,11 +16,14 @@ import { CustomBreadcrumb, OmpModal } from "@/components";
 import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import { handleResponse, _idxInit, logout } from "@/utils/utils";
+import { useSelector, useDispatch } from "react-redux";
+import { getSetViewSizeAction, getChangeEnvInfoAction } from "./store/actionsCreators";
 
 const { Header, Content, Footer, Sider } = Layout;
 const { SubMenu } = Menu;
 
 const OmpLayout = (props) => {
+  const reduxDispatch = useDispatch();
   const history = useHistory();
   const location = useLocation();
   //不可用状态是一个全局状态，放在layout
@@ -149,6 +153,15 @@ const OmpLayout = (props) => {
       .finally(() => setLoading(false));
   }, []);
 
+    // 这里做一个视口查询，存入store, 其他组件可以根据视口大小进行自适应
+    reduxDispatch(
+      getSetViewSizeAction({
+        height: document.documentElement.clientHeight,
+        width: document.documentElement.clientWidth,
+      })
+    );
+  
+
   return (
     <Layout style={{ minHeight: "100vh" }}>
       <Sider
@@ -156,6 +169,7 @@ const OmpLayout = (props) => {
         collapsible
         collapsed={collapsed}
         onCollapse={toggle}
+        collapsedWidth={50}
       >
         <div
           style={{
@@ -165,7 +179,8 @@ const OmpLayout = (props) => {
             height: 60,
             color: "white",
             justifyContent: "center",
-            // /marginBottom:10
+            // /marginBottom:10,
+            backgroundColor:"#171e2b"
           }}
         >
           <div className={styles.headerLogo}>
@@ -201,6 +216,13 @@ const OmpLayout = (props) => {
           openKeys={currentOpenedKeys}
           selectedKeys={selectedKeys}
           //theme="red"
+          expandIcon={(e)=>{
+            if(e.isOpen){
+              return <CaretUpOutlined /> 
+            }else{
+              return <CaretDownOutlined />
+            }
+          }}
         >
           <Menu.Item key="/homepage" icon={<DashboardOutlined />}>
             仪表盘
@@ -337,9 +359,9 @@ const OmpLayout = (props) => {
             //color: "#acb5ba",
             backgroundColor: "rgba(0,0,0,0)",
             textAlign: "center",
-            height: 40,
+            height: 30,
             padding: 0,
-            paddingTop: 5,
+            paddingTop: 0,
             // position:"absolute",
             // bottom:0
           }}
