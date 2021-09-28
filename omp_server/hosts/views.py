@@ -10,13 +10,14 @@ from rest_framework.response import Response
 
 from django_filters.rest_framework.backends import DjangoFilterBackend
 
-from db_models.models import Host
+from db_models.models import (Host, HostOperateLog)
 from utils.pagination import PageNumberPager
 from utils.plugin.crypto import AESCryptor
-from hosts.hosts_filters import HostFilter
+from hosts.hosts_filters import (HostFilter, HostOperateFilter)
 from hosts.hosts_serializers import (
     HostSerializer, HostMaintenanceSerializer,
-    HostFieldCheckSerializer, HostAgentRestartSerializer
+    HostFieldCheckSerializer, HostAgentRestartSerializer,
+    HostOperateLogSerializer
 )
 from promemonitor.prometheus import Prometheus
 
@@ -99,6 +100,8 @@ class HostFieldCheckView(GenericViewSet, CreateModelMixin):
     """
     queryset = Host.objects.filter(is_deleted=False)
     serializer_class = HostFieldCheckSerializer
+    # 操作信息描述
+    post_description = "校验主机字段重复性"
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -125,9 +128,9 @@ class HostMaintenanceView(GenericViewSet, CreateModelMixin):
         主机进入 / 退出维护模式
     """
     queryset = Host.objects.filter(is_deleted=False)
+    serializer_class = HostMaintenanceSerializer
     # 操作信息描述
     post_description = "修改主机维护模式"
-    serializer_class = HostMaintenanceSerializer
 
 
 class HostAgentRestartView(GenericViewSet, CreateModelMixin):
@@ -136,6 +139,20 @@ class HostAgentRestartView(GenericViewSet, CreateModelMixin):
         主机重启Agent接口
     """
     queryset = Host.objects.filter(is_deleted=False)
+    serializer_class = HostAgentRestartSerializer
     # 操作信息描述
     post_description = "重启主机Agent"
-    serializer_class = HostAgentRestartSerializer
+
+
+class HostOperateLogView(GenericViewSet, ListModelMixin):
+    """
+        list:
+        主机操作记录
+    """
+    queryset = HostOperateLog.objects.all()
+    serializer_class = HostOperateLogSerializer
+    # 过滤，排序字段
+    filter_backends = (DjangoFilterBackend,)
+    filter_class = HostOperateFilter
+    # 操作信息描述
+    get_description = "查询主机操作记录"

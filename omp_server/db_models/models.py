@@ -122,6 +122,8 @@ class Host(TimeStampMixin, DeleteMixin):
         blank=True, null=True, help_text="监控Agent异常信息")
     is_maintenance = models.BooleanField(
         "维护模式", default=False, help_text="维护模式")
+    agent_dir = models.CharField(
+        "Agent安装目录", max_length=256, default="/data", help_text="Agent安装目录")
     env = models.ForeignKey(
         Env, null=True, on_delete=models.SET_NULL,
         verbose_name="环境", help_text="环境")
@@ -136,7 +138,7 @@ class Host(TimeStampMixin, DeleteMixin):
 class HostOperateLog(models.Model):
     """ 主机操作记录表 """
 
-    # objects = None
+    objects = None
     username = models.CharField(
         "操作用户", max_length=128, help_text="操作用户")
     description = models.CharField(

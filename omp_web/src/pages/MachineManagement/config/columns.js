@@ -1,9 +1,9 @@
 import { nonEmptyProcessing, renderDisc } from "@/utils/utils";
 import { DownOutlined, DesktopOutlined } from "@ant-design/icons";
-import { Dropdown, Menu, Drawer } from "antd";
+import { Dropdown, Menu, Drawer, Tooltip, Spin } from "antd";
 import moment from "moment";
 
-export const DetailHost = ({ isShowIframe, setIsShowIsframe })=>{
+export const DetailHost = ({ isShowIframe, setIsShowIsframe, loading, data })=>{
   return (
     <Drawer
         title={
@@ -22,7 +22,7 @@ export const DetailHost = ({ isShowIframe, setIsShowIsframe })=>{
         width={`calc(100% - 200px)`}
         style={{
           height: "calc(100%)",
-          paddingTop: "50px",
+          paddingTop: "60px",
         }}
         onClose={() => {
           setIsShowIsframe({
@@ -39,7 +39,7 @@ export const DetailHost = ({ isShowIframe, setIsShowIsframe })=>{
         }}
         destroyOnClose={true}
       >
-        <div style={{ height: "calc(100% - 60px)", width: "100%", display: "flex" }}>
+        <div style={{ height: "calc(100% - 65px)", width: "100%", display: "flex" }}>
           <div
             style={{
               height: "100%",
@@ -147,6 +147,8 @@ export const DetailHost = ({ isShowIframe, setIsShowIsframe })=>{
               <div style={{flex:1}}>{isShowIframe.record.service_num} 个</div>
               </div>
             </div>
+
+      <Spin spinning={loading}>
             <div style={{
               height: "calc(100% - 220px)",
               marginTop:20,
@@ -155,10 +157,12 @@ export const DetailHost = ({ isShowIframe, setIsShowIsframe })=>{
               borderRadius: "5px",
               backgroundColor:"#fff",
               //height:200
-              padding:20
+              padding:20,
             }}>
                <div style={{paddingBottom:35,fontSize:16}}>历史记录</div>
             </div>
+
+        </Spin>
           </div>
         </div>
       </Drawer>
@@ -193,7 +197,7 @@ const renderStatus = (text)=>{
   }
 }
 
-const getColumnsConfig = (setIsShowIsframe, setRow, setUpdateMoadlVisible)=>{
+const getColumnsConfig = (setIsShowIsframe, setRow, setUpdateMoadlVisible, fetchHistoryData)=>{
   return [
     {
       title: "IP地址",
@@ -207,12 +211,17 @@ const getColumnsConfig = (setIsShowIsframe, setRow, setUpdateMoadlVisible)=>{
         if(str == "-"){
           return "-"
         }else{
-          return <a onClick={()=> setIsShowIsframe({
+          return <a onClick={()=> {
+          fetchHistoryData(record.id)
+          setIsShowIsframe({
             isOpen:true,
             record:record
-          })}>{str}</a>
+          })
+        }}>{str}</a>
         }
       },
+      //ellipsis: true,
+      //fixed: "left"
     },
     {
       title: "实例名称",
@@ -220,6 +229,25 @@ const getColumnsConfig = (setIsShowIsframe, setRow, setUpdateMoadlVisible)=>{
       dataIndex: "instance_name",
       align: "center",
       render: nonEmptyProcessing,
+      // ellipsis: true,
+      // render: (text, record) => {
+      //   let str = nonEmptyProcessing(text)
+      //   if(str == "-"){
+      //     return "-"
+      //   }else{
+      //     return <Tooltip title={text}>
+      //        <div
+      //     style={{
+      //       overflow: "hidden",
+      //       whiteSpace: "nowrap",
+      //       textOverflow: "ellipsis",
+      //     }}
+      //   >
+      //     {text}
+      //   </div>
+      //     </Tooltip>
+      //   }
+      // }
     },
     {
       title: "CPU使用率",
@@ -228,6 +256,8 @@ const getColumnsConfig = (setIsShowIsframe, setRow, setUpdateMoadlVisible)=>{
       align: "center",
       sorter: (a, b) => a.cpu_usage - b.cpu_usage,
       sortDirections: ["descend", "ascend"],
+      //ellipsis: true,
+      //width:100,
       render: (text) => {
         let str = nonEmptyProcessing(text);
         return str == "-" ? "-" : `${str}%`;
@@ -240,6 +270,8 @@ const getColumnsConfig = (setIsShowIsframe, setRow, setUpdateMoadlVisible)=>{
       sorter: (a, b) => a.mem_usage - b.mem_usage,
       sortDirections: ["descend", "ascend"],
       align: "center",
+      //ellipsis: true,
+      //width:100,
       render: (text) => {
         let str = nonEmptyProcessing(text);
         return str == "-" ? "-" : `${str}%`;
@@ -248,15 +280,17 @@ const getColumnsConfig = (setIsShowIsframe, setRow, setUpdateMoadlVisible)=>{
     {
       title: "根分区使用率",
       key: "root_disk_usage",
+      //width:120,
       dataIndex: "root_disk_usage",
       align: "center",
+      //ellipsis: true,
       sorter: (a, b) => a.root_disk_usage - b.root_disk_usage,
       sortDirections: ["descend", "ascend"],
       render: (text) => {
         let str = nonEmptyProcessing(text);
         return str == "-" ? "-" : `${str}%`;
       },
-      width:120
+     // width:120
     },
     {
       title: "数据分区使用率",
@@ -264,6 +298,7 @@ const getColumnsConfig = (setIsShowIsframe, setRow, setUpdateMoadlVisible)=>{
       key: "data_disk_usag",
       dataIndex: "data_disk_usag",
       align: "center",
+      //ellipsis: true,
       sorter: (a, b) => a.data_disk_usag - b.data_disk_usag,
       sortDirections: ["descend", "ascend"],
       render: (text) => {
@@ -275,8 +310,9 @@ const getColumnsConfig = (setIsShowIsframe, setRow, setUpdateMoadlVisible)=>{
       title: "维护模式",
       key: "is_maintenance",
       dataIndex: "is_maintenance",
-      ellipsis: true,
+      //ellipsis: true,
       align: "center",
+      //ellipsis: true,
       render: (text)=>{
         if(nonEmptyProcessing(text)=="-")return "-"
         return text?"是":"否"
@@ -287,6 +323,7 @@ const getColumnsConfig = (setIsShowIsframe, setRow, setUpdateMoadlVisible)=>{
       key: "host_agent",
       dataIndex: "host_agent",
       align: "center",
+      //ellipsis: true,
       sorter: (a, b) => a.host_agent - b.host_agent,
       sortDirections: ["descend", "ascend"],
       render: (text) => {
@@ -300,6 +337,7 @@ const getColumnsConfig = (setIsShowIsframe, setRow, setUpdateMoadlVisible)=>{
       sorter: (a, b) => a.monitor_agent - b.monitor_agent,
       sortDirections: ["descend", "ascend"],
       align: "center",
+      //ellipsis: true,
       render: (text) => {
         return renderStatus(text)
       },
@@ -309,6 +347,7 @@ const getColumnsConfig = (setIsShowIsframe, setRow, setUpdateMoadlVisible)=>{
       key: "service_num",
       dataIndex: "service_num",
       align: "center",
+     // ellipsis: true,
       sorter: (a, b) => a.service_num - b.service_num,
       sortDirections: ["descend", "ascend"],
     },
@@ -317,15 +356,17 @@ const getColumnsConfig = (setIsShowIsframe, setRow, setUpdateMoadlVisible)=>{
       key: "alert_num",
       dataIndex: "alert_num",
       align: "center",
+      //ellipsis: true,
       sorter: (a, b) => a.alert_num - b.alert_num,
       sortDirections: ["descend", "ascend"],
     },
     {
       title: "操作",
-      width: 100,
+      width: 120,
       key: "",
       dataIndex: "",
       align: "center",
+      // /fixed: "right",
       render: function renderFunc(text, record, index) {
         return (
           <div onClick={()=>{
@@ -334,7 +375,7 @@ const getColumnsConfig = (setIsShowIsframe, setRow, setUpdateMoadlVisible)=>{
             <a>监控</a>
             <Dropdown arrow overlay={renderMenu(setUpdateMoadlVisible)}>
               <a>
-                更多
+                更多{" "}
                 <DownOutlined style={{ position: "relative", top: 1 }} />
               </a>
             </Dropdown>

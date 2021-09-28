@@ -14,7 +14,9 @@ from django.contrib.auth.hashers import make_password
 
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import (
+    ModelSerializer, Serializer
+)
 from rest_framework_jwt.serializers import JSONWebTokenSerializer
 
 from db_models.models import (UserProfile, OperateLog)
@@ -96,3 +98,33 @@ class JwtSerializer(JSONWebTokenSerializer):
 
     def update(self, instance, validated_data):
         raise RuntimeError("`update()` is not available")
+
+
+class UserUpdatePasswordSerializer(Serializer):
+    """ 用户更新密码序列化器 """
+
+    username = serializers.CharField(
+        max_length=32, required=True,
+        error_messages={"required": "必须包含名字"},
+        help_text="用户名")
+    old_password = serializers.CharField(
+        max_length=32, required=True,
+        error_messages={"required": "必须包含password字段"},
+        help_text="密码")
+    new_password = serializers.CharField(
+        max_length=32, required=True,
+        error_messages={"required": "必须包含password字段"},
+        help_text="密码")
+
+    def validate_username(self, username):
+        print(username)
+        return username
+
+    def validate_password(self, password):
+        print(password)
+
+    def create(self, validated_data):
+        pass
+
+    def update(self, instance, validated_data):
+        pass

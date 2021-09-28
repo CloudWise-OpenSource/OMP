@@ -31,7 +31,8 @@ export const apiRequest = {
     hosts: "/api/hosts/hosts/",
     ipList:"/api/hosts/ips/",
     // 主机名和ip地址校验接口
-    checkHost:"/api/hosts/fields/"
+    checkHost:"/api/hosts/fields/",
+    operateLog:"/api/hosts/operateLog/"
   },
   productsManagement: {
     // 产品管理-服务管理
