@@ -128,9 +128,9 @@ class HostMaintenanceView(GenericViewSet, CreateModelMixin):
         主机进入 / 退出维护模式
     """
     queryset = Host.objects.filter(is_deleted=False)
+    serializer_class = HostMaintenanceSerializer
     # 操作信息描述
     post_description = "修改主机维护模式"
-    serializer_class = HostMaintenanceSerializer
 
 
 class HostAgentRestartView(GenericViewSet, CreateModelMixin):
@@ -155,4 +155,4 @@ class HostOperateLogView(GenericViewSet, ListModelMixin):
     filter_backends = (DjangoFilterBackend,)
     filter_class = HostOperateFilter
     # 操作信息描述
-    get_description = "查询主机"
+    get_description = "查询主机操作记录"

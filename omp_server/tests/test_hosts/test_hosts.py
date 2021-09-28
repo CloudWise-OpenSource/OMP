@@ -244,13 +244,23 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
             "data": None
         })
 
-        # data_folder 不以 / 开头 -> 创建失败
+        # data_folder 不以 '/' 开头 -> 创建失败
         data = self.correct_host_data.copy()
         data.update({"data_folder": "data"})
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
             "message": "data_folder: 字段格式不合法;",
+            "data": None
+        })
+
+        # data_folder 目录以 '-' 开头 -> 创建失败
+        data = self.correct_host_data.copy()
+        data.update({"data_folder": "/data/-myDir"})
+        resp = self.post(self.create_host_url, data).json()
+        self.assertDictEqual(resp, {
+            "code": 1,
+            "message": "data_folder: 数据分区目录不能以'-'开头;",
             "data": None
         })
 

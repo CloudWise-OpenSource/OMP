@@ -109,6 +109,14 @@ class HostSerializer(ModelSerializer):
             raise ValidationError("IP已经存在")
         return ip
 
+    def validate_data_folder(self, data_folder):
+        """ 校验数据分区是否合理 """
+        dir_ls = data_folder.split("/")
+        for dir_name in dir_ls:
+            if dir_name != "" and dir_name.startswith("-"):
+                raise ValidationError("数据分区目录不能以'-'开头")
+        return data_folder
+
     def validate(self, attrs):
         """ 主机信息验证 """
         # 校验主机 SSH 连通性
