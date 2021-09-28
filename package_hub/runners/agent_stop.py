@@ -27,24 +27,25 @@ from db_models.models import Host
 logger = logging.getLogger("server")
 
 
-def update_agent_detail(target):
+def update_agent_detail(agent_id_lst):
     """
     获取agent详情的方法
-    :param target: agent的id
+    :param agent_id_lst: agent的id lst
     :return:
     """
     try:
-        obj_list = Host.objects.filter(ip=target)
-        obj_list.update(host_agent=2)
-        logger.info(f"{target}状态更新成功!")
+        for target in agent_id_lst:
+            obj_list = Host.objects.filter(ip=target)
+            obj_list.update(host_agent=2)
+            logger.info(f"{target}状态更新成功!")
     except Exception as e:
-        logger.error(f"{target}状态更新失败: {str(e)}")
+        logger.error(f"{agent_id_lst}状态更新失败: {str(e)}")
 
 
-def update(agent_id):
+def update(agent_id_lst):
     """
     更新agent的代码
-    :param agent_id:
+    :param agent_id_lst:
     :return:
     """
-    update_agent_detail(target=agent_id)
+    update_agent_detail(agent_id_lst=agent_id_lst)
