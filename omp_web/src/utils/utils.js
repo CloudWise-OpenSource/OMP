@@ -1903,9 +1903,20 @@ export const isExpression = (str)=>{
   return reg.test(str);
 }
 
+// 校验空格
+export const isSpace = (str)=>{
+  return str.includes(" ");
+}
+
 export function debounce(fn, wait) {
   return function () {
       clearTimeout(window.timer);
       window.timer = setTimeout(fn, wait);
   }
+}
+
+// 校验密码
+export function isPassword(str){
+  var reg = /[^a-zA-Z0-9\`\~\!\?\@\#\$\%\^\&\,\(\)\[\]\{\}\_\+\_\*\/\.\;\:]/g;
+  return reg.test(str);
 }

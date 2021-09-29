@@ -28,7 +28,9 @@ const OmpModal = ({
   afterClose = () => {},
   form,
   initialValues={},
-  setLoading
+  setLoading,
+  okBtnText,
+  beForeOk
 }) => {
   const [modalForm] = Form.useForm();
   // 扩展formItem功能,为了能够在formitem的validator校验时获得当前form的实例进行操作
@@ -103,13 +105,17 @@ const OmpModal = ({
           >
             取消
           </Button>
+          <span onClick={()=>{
+             beForeOk()
+          }}>
           <Button
             loading={loading}
             type="primary"
             htmlType="submit"
           >
-            确定
+            {okBtnText || "确定"}
           </Button>
+          </span>
         </Form.Item>
       </Form>
     </Modal>

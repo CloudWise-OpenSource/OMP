@@ -7,15 +7,15 @@ import {
   QuestionCircleOutlined,
   CaretUpOutlined
 } from "@ant-design/icons";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import img from "@/config/logo/logo.svg";
 import styles from "./index.module.less";
 import routerConfig from "@/config/router.config";
 import { useHistory, useLocation } from "react-router-dom";
 import { CustomBreadcrumb, OmpModal } from "@/components";
-import { fetchGet, fetchPost } from "@/utils/request";
+import { fetchGet, fetchPost, fetchPut } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-import { handleResponse, _idxInit, logout } from "@/utils/utils";
+import { handleResponse, _idxInit, logout, isPassword } from "@/utils/utils";
 import { useSelector, useDispatch } from "react-redux";
 import { getSetViewSizeAction, getChangeEnvInfoAction } from "./store/actionsCreators";
 
@@ -97,18 +97,29 @@ const OmpLayout = (props) => {
   };
 
   const onPassWordChange = (data) => {
+    // console.log(userInfo)
+    // logout();
+    // return 
+    console.log(data)
     setLoading(true);
-    fetchPost(apiRequest.auth.password, {
+    fetchPost(apiRequest.auth.changePassword, {
       body: {
-        ...data,
+        username: localStorage.getItem("username"),
+        old_password: data.old_password,
+        new_password: data.new_password2
       },
     })
       .then((res) => {
-        handleResponse(res);
-        if (res.code == 0) {
-          setShowModal(false);
-          logout();
-        }
+        handleResponse(res, (res) => {
+          console.log(res)
+          if(res.code == 0){
+            message.success("修改密码成功, 请重新登录")
+            setShowModal(false);
+            setTimeout(()=>{
+            logout();
+            },1000)
+          }
+        })
       })
       .catch((e) => console.log(e))
       .finally(() => {
@@ -144,7 +155,7 @@ const OmpLayout = (props) => {
           //message.warning("登录失效,请重新登录")
           //history.replace("/login");
         }
-        console.log(res.data);
+        //console.log(res.data);
         res.data && setUserInfo(res.data.data[0]);
       })
       .catch((e) => {
@@ -160,7 +171,9 @@ const OmpLayout = (props) => {
         width: document.documentElement.clientWidth,
       })
     );
-  
+
+    // 防止在校验进入死循环
+  const flag = useRef(null)
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
@@ -312,7 +325,7 @@ const OmpLayout = (props) => {
                   cursor: "pointer",
                 }}
               >
-                {userInfo?.username}{" "}
+                {localStorage.getItem("username")}{" "}
                 <CaretDownOutlined
                   style={{ position: "relative", top: 1, left: 3 }}
                 />
@@ -374,6 +387,12 @@ const OmpLayout = (props) => {
         onFinish={onPassWordChange}
         visibleHandle={[showModal, setShowModal]}
         title="修改密码"
+        beForeOk = {()=>{
+          flag.current = true
+        }}
+        afterClose = {()=>{
+          flag.current = null
+        }}
       >
         <Form.Item
           label="当前密码"
@@ -384,22 +403,62 @@ const OmpLayout = (props) => {
               required: true,
               message: "请输入当前用户密码",
             },
+            {
+              validator: (rule, value, callback) => {
+                if (value) {
+                  if(!isPassword(value)){
+                    if(value.length < 8) {
+                      return Promise.reject("密码长度为8到16位");
+                    }
+                    return Promise.resolve("success");
+                  }else{
+                    return Promise.reject(
+                      `密码只支持数字、字母以及常用英文符号`
+                    );
+                  }
+                } else {
+                  return Promise.resolve("success");
+                }
+              },
+            },
           ]}
         >
-          <Input.Password placeholder="请输入当前密码" />
+          <Input.Password maxLength={16} placeholder="请输入当前密码" />
         </Form.Item>
         <Form.Item
           label="新密码"
           name="new_password1"
           key="new_password1"
+          useforminstanceinvalidator="true"
           rules={[
             {
               required: true,
               message: "请输入新密码",
             },
+            {
+              validator: (rule, value, callback,passwordModalForm) => {
+                if (value) {
+                  if(!flag.current){
+                    passwordModalForm.validateFields(["new_password2"])
+                  }
+                  if(!isPassword(value)){
+                    if(value.length < 8) {
+                      return Promise.reject("密码长度为8到16位");
+                    }
+                    return Promise.resolve("success");
+                  }else{
+                    return Promise.reject(
+                      `密码只支持数字、字母以及常用英文符号`
+                    );
+                  }
+                } else {
+                  return Promise.resolve("success");
+                }
+              },
+            },
           ]}
         >
-          <Input.Password placeholder="请设置新密码" />
+          <Input.Password maxLength={16} placeholder="请设置新密码" />
         </Form.Item>
         <Form.Item
           label="确认密码"
@@ -413,19 +472,32 @@ const OmpLayout = (props) => {
             },
             {
               validator: (rule, value, callback, passwordModalForm) => {
-                if (
-                  passwordModalForm.getFieldValue().new_password1 === value ||
-                  !value
-                ) {
-                  return Promise.resolve("success");
+                if (value) {
+                  if(!isPassword(value)){
+                    if(value.length < 8) {
+                      return Promise.reject("密码长度为8到16位");
+                    }
+                    if (
+                      passwordModalForm.getFieldValue().new_password1 === value ||
+                      !value
+                    ) {
+                      return Promise.resolve("success");
+                    } else {
+                      return Promise.reject("两次密码输入不一致");
+                    }
+                  }else{
+                    return Promise.reject(
+                      `密码只支持数字、字母以及常用英文符号`
+                    );
+                  }
                 } else {
-                  return Promise.reject("两次密码输入不一致");
+                  return Promise.resolve("success");
                 }
               },
             },
           ]}
         >
-          <Input.Password placeholder="请再次输入新密码" />
+          <Input.Password maxLength={16} placeholder="请再次输入新密码" />
         </Form.Item>
       </OmpModal>
     </Layout>
