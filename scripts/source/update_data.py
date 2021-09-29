@@ -37,11 +37,11 @@ def create_default_user():
     password = "Common@123"
     if UserProfile.objects.filter(username=username).count() != 0:
         return
-    UserProfile(
+    UserProfile.objects.create_superuser(
         username=username,
         password=make_password(password),
         email="admin@yunzhihui.com"
-    ).save()
+    )
 
 
 def create_default_monitor_url():
