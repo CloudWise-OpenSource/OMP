@@ -357,3 +357,25 @@ class HostOperateLogSerializer(ModelSerializer):
         """ 元数据 """
         model = HostOperateLog
         fields = '__all__'
+
+
+class HostBatchValidateSerializer(Serializer):
+    """ 主机数据批量验证 """
+
+    hosts_info = serializers.ListSerializer(
+        child=serializers.IntegerField(),
+        help_text="主机数据列表",
+        required=True,
+        error_messages={"required": "必须包含[host_ids]字段"},
+        allow_empty=False)
+
+    def validate_hosts_info(self, hosts_info):
+        """ 校验主机数据列表 """
+        # TODO 待补充
+        return hosts_info
+
+    def create(self, validated_data):
+        pass
+
+    def update(self, instance, validated_data):
+        pass
