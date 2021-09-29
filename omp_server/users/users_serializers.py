@@ -27,7 +27,8 @@ class UserSerializer(ModelSerializer):
     """ 用户序列化类 """
     re_password = serializers.CharField(
         max_length=32, required=True,
-        write_only=True, error_messages={"required": "必须包含re_password字段"},
+        write_only=True,
+        error_messages={"required": "必须包含re_password字段"},
         help_text="二次确认密码")
     email = serializers.EmailField(
         required=True,
@@ -35,6 +36,7 @@ class UserSerializer(ModelSerializer):
         help_text="电子邮件")
     password = serializers.CharField(
         max_length=32, required=True,
+        write_only=True,
         error_messages={"required": "必须包含password字段"},
         help_text="密码")
     username = serializers.CharField(
@@ -45,7 +47,9 @@ class UserSerializer(ModelSerializer):
     class Meta:
         """ 元数据 """
         model = UserProfile
-        fields = ["id", "username", "password", "email", "re_password"]
+        fields = ("id", "username", "password", "email", "re_password",
+                  "date_joined", "is_active", "is_superuser")
+        read_only_fields = ("date_joined", "is_active", "is_superuser")
 
     def validate_username(self, username):
         """
