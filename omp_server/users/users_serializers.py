@@ -9,7 +9,7 @@
 """
 用户序列化使用方法
 """
-
+from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password
 
 from rest_framework import serializers
@@ -20,6 +20,7 @@ from rest_framework.serializers import (
 from rest_framework_jwt.serializers import JSONWebTokenSerializer
 
 from db_models.models import (UserProfile, OperateLog)
+from utils.validator import UserPasswordValidator
 
 
 class UserSerializer(ModelSerializer):
@@ -104,27 +105,43 @@ class UserUpdatePasswordSerializer(Serializer):
     """ 用户更新密码序列化器 """
 
     username = serializers.CharField(
+        help_text="用户名",
         max_length=32, required=True,
-        error_messages={"required": "必须包含名字"},
-        help_text="用户名")
+        error_messages={"required": "必须包含名字"})
     old_password = serializers.CharField(
-        max_length=32, required=True,
+        help_text="原密码", required=True,
+        min_length=8, max_length=16,
         error_messages={"required": "必须包含password字段"},
-        help_text="密码")
+        validators=[
+            UserPasswordValidator(),
+        ])
     new_password = serializers.CharField(
-        max_length=32, required=True,
+        help_text="新密码", required=True,
+        min_length=8, max_length=16,
         error_messages={"required": "必须包含password字段"},
-        help_text="密码")
+        validators=[
+            UserPasswordValidator(),
+        ])
 
-    def validate_username(self, username):
-        print(username)
-        return username
-
-    def validate_password(self, password):
-        print(password)
+    def validate(self, attrs):
+        """ 校验，用户的原密码是否正确 """
+        credentials = {
+            "username": attrs.get("username"),
+            "password": attrs.get("old_password")
+        }
+        user = authenticate(**credentials)
+        if not user:
+            raise ValidationError({"old_password": "原密码不正确"})
+        attrs["user_obj"] = user
+        return attrs
 
     def create(self, validated_data):
-        pass
+        """ 用户密码加密入库 """
+        user = validated_data["user_obj"]
+        user.set_password(
+            validated_data.get("new_password"))
+        user.save()
+        return validated_data
 
     def update(self, instance, validated_data):
         pass
