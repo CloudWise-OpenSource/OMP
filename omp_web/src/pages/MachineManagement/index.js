@@ -91,6 +91,12 @@ const MachineManagement = () => {
   // 重启主机agent
   const [restartHostAgentModal, setRestartHostAgentModal] = useState(false)
 
+  // 重启监控agent
+  const [restartMonterAgentModal, setRestartMonterAgentModal] = useState(false)
+
+  // 开启维护
+  const [openMaintainModal, setOpenMaintainModal] = useState(false)
+
   function fetchData(
     pageParams = { current: 1, pageSize: 10 },
     searchParams,
@@ -213,7 +219,7 @@ const MachineManagement = () => {
     setHistoryLoading(true);
     fetchGet(apiRequest.machineManagement.operateLog, {
       params: {
-        id: id,
+        host_id: id,
       },
     })
       .then((res) => {
@@ -290,7 +296,7 @@ const MachineManagement = () => {
               <Menu.Item
                 key="openMaintain"
                 style={{ textAlign: "center" }}
-                //onClick={() => setDeleteModalVisible(true)}
+                onClick={() => setOpenMaintainModal(true)}
                 disabled={Object.keys(checkedList).length == 0}
               >
                 开启维护模式
@@ -325,6 +331,7 @@ const MachineManagement = () => {
                 onClick={() => {
                   //setAddMoadlVisible(true);
                   //setAddMachineForm({});
+                  setRestartMonterAgentModal(true)
                 }}
               >
                 重启监控Agent
@@ -553,6 +560,44 @@ const MachineManagement = () => {
               .flat(1).length
           }
           台主机 主机Agent ？
+        </div>
+      </OmpMessageModal>
+
+      <OmpMessageModal
+        visibleHandle={[restartMonterAgentModal, setRestartMonterAgentModal]}
+        title={<span><ExclamationCircleOutlined style={{fontSize:20, color:"#f0a441",paddingRight:"10px", position:"relative", top:2}}/>提示</span>}
+        loading={loading}
+        // onFinish={() => {
+        //   fetchRestartHostAgent();
+        // }}
+      >
+        <div style={{padding:"20px"}}>
+          确定要重启{" "}
+          {
+            Object.keys(checkedList)
+              .map((k) => checkedList[k])
+              .flat(1).length
+          }
+          台主机 监控Agent ？
+        </div>
+      </OmpMessageModal>
+
+      <OmpMessageModal
+        visibleHandle={[openMaintainModal, setOpenMaintainModal]}
+        title={<span><ExclamationCircleOutlined style={{fontSize:20, color:"#f0a441",paddingRight:"10px", position:"relative", top:2}}/>提示</span>}
+        loading={loading}
+        // onFinish={() => {
+        //   fetchRestartHostAgent();
+        // }}
+      >
+        <div style={{padding:"20px"}}>
+          确定要对{" "}
+          {
+            Object.keys(checkedList)
+              .map((k) => checkedList[k])
+              .flat(1).length
+          }
+          台主机 开启维护模式 ？
         </div>
       </OmpMessageModal>
     </OmpContentWrapper>
