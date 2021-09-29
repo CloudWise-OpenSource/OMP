@@ -199,7 +199,7 @@ class UsersTest(AutoLoginTest):
         username = "delete_user"
         password = "delete_user"
         email = "delete_user@cloudwise.com"
-        user = UserProfile.objects.create_user(
+        UserProfile.objects.create_user(
             username=username,
             password=password,
             email=email,
@@ -212,3 +212,48 @@ class UsersTest(AutoLoginTest):
             'message': 'Not found.',
             'data': None
         })
+
+
+class UserUpdatePasswordTest(AutoLoginTest):
+    """ 用户更新密码测试类 """
+
+    def setUp(self):
+        super(UserUpdatePasswordTest, self).setUp()
+        self.update_password_url = reverse("updatePassword-list")
+
+    def test_update_password(self):
+        """ 测试更新密码 """
+
+        # 原密码错误 -> 更新失败
+        resp = self.post(self.update_password_url, {
+            "username": self.default_user.username,
+            "old_password": "error_password",
+            "new_password": "new_password"
+        }).json()
+        self.assertDictEqual(resp, {
+            "code": 1,
+            "message": "old_password: 原密码不正确;",
+            "data": None
+        })
+
+        # 新密码包含中文特殊符号 -> 更新失败
+        resp = self.post(self.update_password_url, {
+            "username": self.default_user.username,
+            "old_password": "error_password",
+            "new_password": "zh。～password"
+        }).json()
+        self.assertDictEqual(resp, {
+            "code": 1,
+            "message": "new_password: 字段格式不合法;",
+            "data": None
+        })
+
+        # 原密码正确 -> 更新成功
+        resp = self.post(self.update_password_url, {
+            "username": self.default_user.username,
+            "old_password": self.default_user.password,
+            "new_password": "new_password"
+        }).json()
+        self.assertEqual(resp.get("code"), 0)
+        self.assertEqual(resp.get("message"), "success")
+        self.assertTrue(resp.get("data") is not None)
