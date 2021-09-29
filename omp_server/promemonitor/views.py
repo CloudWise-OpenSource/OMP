@@ -1,6 +1,6 @@
 # Create your views here.
-from promemonitor.promemonitor_serializers import MonitorUrlSerializer, AlertSerializer
-from db_models.models import MonitorUrl, Alert
+from promemonitor.promemonitor_serializers import MonitorUrlSerializer, AlertSerializer, MaintainSerializer
+from db_models.models import MonitorUrl, Alert, Maintain
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
@@ -74,3 +74,14 @@ class AlertViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
             serializer.save()
             instances.append(serializer.data)
         return Response(instances)
+
+
+class MaintainViewSet(GenericViewSet, CreateModelMixin):
+    """
+    create:
+    全局进入 / 退出维护模式
+    """
+    queryset = Maintain.objects.all()
+    serializer_class = MaintainSerializer
+    # 操作信息描述
+    post_description = "更新全局维护状态"

@@ -1,7 +1,13 @@
+import logging
+
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer, ListSerializer
 from rest_framework.exceptions import ValidationError
-from db_models.models import MonitorUrl, Alert
+from db_models.models import MonitorUrl, Alert, Maintain
+from utils.exceptions import OperateError
+from promemonitor.alertmanager import Alertmanager
+
+logger = logging.getLogger('server')
 
 
 class MonitorUrlListSerializer(ListSerializer):
@@ -185,4 +191,55 @@ class AlertSerializer(ModelSerializer):
 
     class Meta:
         model = Alert
+        fields = "__all__"
+
+
+class MaintainSerializer(ModelSerializer):
+
+    maintain_id = serializers.CharField(
+        help_text="维护唯一标识",
+        required=False, max_length=1024,
+        error_messages={"required": "maintain_id不可重复"}
+    )
+    matcher_name = serializers.CharField(
+        help_text="匹配标签",
+        required=True, max_length=1024,
+        error_messages={"required": "必须包含匹配标签"}
+    )
+    matcher_value = serializers.CharField(
+        help_text="维护唯一标识",
+        required=True, max_length=1024,
+        error_messages={"required": "必须包含匹配标签值"}
+    )
+
+    def validate(self, attrs):
+        """ 校验env_name是否存在 """
+        return attrs
+
+    def create(self, validated_data):
+        """ 进入 / 退出维护模式 """
+        maintain_id = validated_data.get("maintain_id")
+        # matcher_name = validated_data.get("matcher_name")
+        matcher_value = validated_data.get("matcher_value")
+        status = "开启" if maintain_id else "关闭"
+
+        # 根据 maintain_id 判断主机进入 / 退出维护模式
+        alert_manager = Alertmanager()
+        if maintain_id:
+            res_ls = alert_manager.set_maintain_by_env_name(matcher_value)
+        else:
+            res_ls = alert_manager.revoke_maintain_by_env_name(matcher_value)
+
+        # 操作失败
+        if not res_ls:
+            logger.error(f"全局{status}维护模式失败")
+            # 操作失败记录写入
+            raise OperateError(f"全局{status}维护模式失败")
+
+        # 操作成功
+        logger.info(f"全局{status}维护模式成功")
+        return validated_data
+
+    class Meta:
+        model = Maintain
         fields = "__all__"
