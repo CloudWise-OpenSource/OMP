@@ -156,7 +156,8 @@ class HostSerializer(ModelSerializer):
         if not attrs.get("env") and not self.instance:
             attrs["env"] = Env.objects.get(id=1)
         # 主机密码加密处理
-        attrs["password"] = AESCryptor().encode(attrs.get("password"))
+        if attrs.get("password"):
+            attrs["password"] = AESCryptor().encode(attrs.get("password"))
         return attrs
 
     def create(self, validated_data):
