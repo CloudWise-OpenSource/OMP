@@ -68,8 +68,8 @@ const UserManagement = () => {
       title: "用户名",
       key: "username",
       dataIndex: "username",
-      sorter: (a, b) => a.username - b.username,
-      sortDirections: ["descend", "ascend"],
+      //sorter: (a, b) => a.username - b.username,
+        // sortDirections: ["descend", "ascend"],
       align: "center",
       render: nonEmptyProcessing,
     },
@@ -77,24 +77,36 @@ const UserManagement = () => {
       title: "角色",
       key: "is_superuser",
       dataIndex: "is_superuser",
-      sorter: (a, b) => a.is_superuser - b.is_superuser,
-      sortDirections: ["descend", "ascend"],
+      //sorter: (a, b) => a.is_superuser - b.is_superuser,
+      //sortDirections: ["descend", "ascend"],
       align: "center",
-      render: nonEmptyProcessing,
+      render: (text)=>{
+        if(text){
+            return "普通用户"
+        }else{
+            return "超级用户"
+        }
+      },
     },
     {
       title: "用户状态",
       key: "is_active",
       dataIndex: "is_active",
       align: "center",
-      render: nonEmptyProcessing,
+      render: (text)=>{
+        if(text){
+            return "正常"
+        }else{
+            return "停用"
+        }
+      },
     },
     {
       title: "创建时间",
       key: "date_joined",
       dataIndex: "date_joined",
       align: "center",
-      width: 300,
+     // width: 300,
       render: (text) => {
         if (text) {
           return moment(text).format("YYYY-MM-DD HH:mm:ss");
@@ -103,13 +115,13 @@ const UserManagement = () => {
         }
       },
     },
-    {
-      title: "描述",
-      key: "describe",
-      dataIndex: "describe",
-      align: "center",
-      render: nonEmptyProcessing,
-    },
+    // {
+    //   title: "描述",
+    //   key: "describe",
+    //   dataIndex: "describe",
+    //   align: "center",
+    //   render: nonEmptyProcessing,
+    // },
     {
       title: "用户操作",
       key: "1",
@@ -213,6 +225,7 @@ const UserManagement = () => {
   //console.log(checkedList)
     // 防止在校验进入死循环
     const flag = useRef(null)
+
   return (
     <OmpContentWrapper>
       <div style={{ display: "flex" }}>
@@ -220,7 +233,32 @@ const UserManagement = () => {
           <span style={{ width: 60, display: "flex", alignItems: "center" }}>
             用户名:
           </span>
-          <Select
+          <Input.Search placeholder="请输入用户名"
+          allowClear
+          onSearch={(e)=>{
+              setSelectValue(e)
+              console.log(e)
+              fetchData(
+                { current: pagination.current, pageSize: pagination.pageSize },
+                {username:e},
+                pagination.ordering
+              );
+          }} 
+          style={{ width: 200 }} />
+
+          {/* <Input placeholder="请输入用户名" style={{width:200}}
+             allowClear
+             onChange={(e)=>{
+                console.log(e.target.value)
+                if(!e.target.value){
+
+                }
+             }}
+             onClear={() => {
+               
+             }}
+          /> */}
+          {/* <Select
             allowClear
             onClear={() => {
               searchValueRef.current = "";
@@ -301,7 +339,7 @@ const UserManagement = () => {
                 </Select.Option>
               );
             })}
-          </Select>
+          </Select> */}
           <Button
             style={{ marginLeft: 10 }}
             onClick={() => {
