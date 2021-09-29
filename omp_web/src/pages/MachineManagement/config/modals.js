@@ -27,6 +27,7 @@ import {
   isValidIpChar,
   isExpression,
   isLetterChar,
+  isSpace
 } from "@/utils/utils";
 import { fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
@@ -46,12 +47,13 @@ export const AddMachineModal = ({
   const [modalForm] = Form.useForm();
   const [modalLoading, setmodalLoading] = useState(false);
   const timer = useRef(null);
-
+  const timer2 = useRef(null)
   return (
     <OmpModal
-      loading={loading || modalLoading}
+    loading={modalLoading ? modalLoading : loading}
       setLoading={setLoading}
       visibleHandle={visibleHandle}
+      okBtnText={modalLoading ? "校验中" : (loading?"创建中":null)}
       title={
         <span>
           <span style={{ position: "relative", left: "-10px" }}>
@@ -112,11 +114,14 @@ export const AddMachineModal = ({
                       if (value.length > 16) {
                         return Promise.resolve("success");
                       } else {
+                        if(isSpace(value)){
+                          return Promise.reject("实例名称不支持空格");
+                        }
                         return new Promise((resolve, rej) => {
-                          // if (timer.current) {
-                          //   clearTimeout(timer.current);
-                          // }
-                          //timer.current = setTimeout(() => {
+                          if (timer.current) {
+                            clearTimeout(timer.current);
+                          }
+                          timer.current = setTimeout(() => {
                             setmodalLoading(true);
                             fetchPost(apiRequest.machineManagement.checkHost, {
                               body: {
@@ -136,7 +141,7 @@ export const AddMachineModal = ({
                               .finally(() => {
                                 setmodalLoading(false);
                               });
-                          //}, 600);
+                          }, 400);
                         });
                       }
                     }
@@ -245,10 +250,10 @@ export const AddMachineModal = ({
                 }
                 if (isValidIpChar(value)) {
                   return new Promise((resolve, rej) => {
-                    // if (timer.current) {
-                    //   clearTimeout(timer.current);
-                    // }
-                    //timer.current = setTimeout(() => {
+                    if (timer2.current) {
+                      clearTimeout(timer2.current);
+                    }
+                    timer2.current = setTimeout(() => {
                       setmodalLoading(true);
                       fetchPost(apiRequest.machineManagement.checkHost, {
                         body: {
@@ -268,7 +273,7 @@ export const AddMachineModal = ({
                         .finally(() => {
                           setmodalLoading(false);
                         });
-                    //}, 600);
+                    }, 600);
                   });
                 } else {
                   return Promise.reject("请输入正确格式的IP地址");
@@ -376,6 +381,9 @@ export const AddMachineModal = ({
                       if (value.length < 8) {
                         return Promise.reject("密码长度为8到16位");
                       } else {
+                        if(isSpace(value)){
+                          return Promise.reject("密码不支持空格");
+                        }
                         return Promise.resolve("success");
                       }
                     }
@@ -409,10 +417,12 @@ export const UpDateMachineModal = ({
   // console.log(row)
   const [modalLoading, setmodalLoading] = useState(false);
   const timer = useRef(null);
+  const timer2 = useRef(null);
   return (
     <OmpModal
-      loading={loading || modalLoading}
+      loading={modalLoading ? modalLoading : loading}
       setLoading={setLoading}
+      okBtnText={modalLoading ? "校验中" : (loading?"修改中":null)}
       visibleHandle={visibleHandle}
       title={
         <span>
@@ -478,11 +488,14 @@ export const UpDateMachineModal = ({
                       if (value.length > 16) {
                         return Promise.resolve("success");
                       } else {
+                        if(isSpace(value)){
+                          return Promise.reject("实例名称不支持空格");
+                        }
                         return new Promise((resolve, rej) => {
-                          // if (timer.current) {
-                          //   clearTimeout(timer.current);
-                          // }
-                          // timer.current = setTimeout(() => {
+                          if (timer.current) {
+                            clearTimeout(timer.current);
+                          }
+                          timer.current = setTimeout(() => {
                             setmodalLoading(true);
                             fetchPost(apiRequest.machineManagement.checkHost, {
                               body: {
@@ -503,7 +516,7 @@ export const UpDateMachineModal = ({
                               .finally(() => {
                                 setmodalLoading(false);
                               });
-                          //}, 600);
+                          }, 400);
                         });
                       }
                     }
@@ -739,6 +752,9 @@ export const UpDateMachineModal = ({
                       if (value.length < 8) {
                         return Promise.reject("密码长度为8到16位");
                       } else {
+                        if(isSpace(value)){
+                          return Promise.reject("密码不支持空格");
+                        }
                         return Promise.resolve("success");
                       }
                     }

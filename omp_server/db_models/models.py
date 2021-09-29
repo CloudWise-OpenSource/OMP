@@ -154,6 +154,7 @@ class HostOperateLog(models.Model):
         """ 元数据 """
         db_table = "omp_host_operate_log"
         verbose_name = verbose_name_plural = "主机操作记录"
+        ordering = ("-created",)
 
 
 class MonitorUrl(models.Model):

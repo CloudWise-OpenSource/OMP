@@ -2,9 +2,7 @@
 用户视图相关函数
 """
 import datetime
-from django.contrib.auth import authenticate
 from rest_framework import status
-from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import (
@@ -61,31 +59,6 @@ class OperateLogView(ListModelMixin, RetrieveModelMixin, GenericViewSet):
     queryset = OperateLog.objects.all()
     serializer_class = OperateLogSerializer
     get_description = "获取用户操作记录"
-
-
-class UpdatePasswordView(APIView):
-    """更新密码视图"""
-    post_description = "更新密码"
-
-    def post(self, request):
-        """
-        更新密码视图
-        :param request:
-        :return:
-        """
-        data = request.data
-        username = data.get("username")
-        old_password = data.get("old_password")
-        user = authenticate(username=username, password=old_password)
-        if not user:
-            return Response({"code": 1, "message": "用户名或免密错误"})
-        new_password = data.get("new_password")
-        re_password = data.pop("re_password")
-        if new_password != re_password:
-            return Response({"code": 1, "message": "两次密码不一致"})
-        user.set_password(data.get("new_password"))
-        user.save()
-        return Response({"code": 0, "message": "success"})
 
 
 class JwtAPIView(JSONWebTokenAPIView):
