@@ -17,7 +17,7 @@ from hosts.hosts_filters import (HostFilter, HostOperateFilter)
 from hosts.hosts_serializers import (
     HostSerializer, HostMaintenanceSerializer,
     HostFieldCheckSerializer, HostAgentRestartSerializer,
-    HostOperateLogSerializer
+    HostOperateLogSerializer, HostBatchValidateSerializer
 )
 from promemonitor.prometheus import Prometheus
 
@@ -156,3 +156,14 @@ class HostOperateLogView(GenericViewSet, ListModelMixin):
     filter_class = HostOperateFilter
     # 操作信息描述
     get_description = "查询主机操作记录"
+
+
+class HostBatchValidateView(GenericViewSet, CreateModelMixin):
+    """
+        create:
+        主机数据批量验证
+    """
+    queryset = Host.objects.filter(is_deleted=False)
+    serializer_class = HostBatchValidateSerializer
+    # 操作描述信息
+    post_description = "主机数据批量验证"
