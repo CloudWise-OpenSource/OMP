@@ -30,7 +30,7 @@ const OmpModal = ({
   initialValues={},
   setLoading,
   okBtnText,
-  beForeOk
+  beForeOk=()=>{}
 }) => {
   const [modalForm] = Form.useForm();
   // 扩展formItem功能,为了能够在formitem的validator校验时获得当前form的实例进行操作

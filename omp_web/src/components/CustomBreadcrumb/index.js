@@ -16,6 +16,8 @@ const breadcrumbNameMap = {
   homepage: "仪表盘",
   "resource-management": "资源管理",
   "machine-management": "主机管理",
+  "system-settings": "系统管理",
+  "user-management": "用户管理"
   // "/machine-management/used": "已使用",
   // "/machine-management/unused": "未使用",
 };
