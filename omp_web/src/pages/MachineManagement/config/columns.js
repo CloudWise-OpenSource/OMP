@@ -1,9 +1,16 @@
 import { nonEmptyProcessing, renderDisc } from "@/utils/utils";
 import { DownOutlined, DesktopOutlined } from "@ant-design/icons";
-import { Dropdown, Menu, Drawer, Tooltip, Spin } from "antd";
+import { Dropdown, Menu, Drawer, Tooltip, Spin, Timeline } from "antd";
 import moment from "moment";
+import styles from "../index.module.less"
+import { useSelector } from "react-redux";
+import { useRef } from "react";
 
 export const DetailHost = ({ isShowIframe, setIsShowIsframe, loading, data })=>{
+  console.log(data)
+  // 视口宽度
+  const viewHeight = useSelector((state) => state.layouts.viewSize.height);
+  const wrapperRef = useRef(null)
   return (
     <Drawer
         title={
@@ -35,7 +42,7 @@ export const DetailHost = ({ isShowIframe, setIsShowIsframe, loading, data })=>{
           padding: 10,
           //paddingLeft:10,
           backgroundColor: "#e7e9f0", //"#f4f6f8"
-          height:"100%"
+          height:"calc(100%)"
         }}
         destroyOnClose={true}
       >
@@ -74,11 +81,11 @@ export const DetailHost = ({ isShowIframe, setIsShowIsframe, loading, data })=>{
             </div>
             <div style={{display:"flex",paddingTop:20,paddingBottom:10,borderBottom: "solid 1px rgb(220,220,220)"}}>
               <div style={{flex:1}}>CPU</div>
-              <div style={{flex:1}}>{isShowIframe.record.cpu} c</div>
+              <div style={{flex:1}}>{nonEmptyProcessing(isShowIframe.record.cpu)} c</div>
             </div>
             <div style={{display:"flex",paddingTop:20,paddingBottom:10,borderBottom: "solid 1px rgb(220,220,220)"}}>
               <div style={{flex:1}}>内存</div>
-              <div style={{flex:1}}>{isShowIframe.record.memory} G</div>
+              <div style={{flex:1}}>{nonEmptyProcessing(isShowIframe.record.memory)} G</div>
             </div>
             <div style={{display:"flex",paddingTop:20,paddingBottom:10,borderBottom: "solid 1px rgb(220,220,220)"}}>
               <div style={{flex:1}}>硬盘</div>
@@ -93,7 +100,7 @@ export const DetailHost = ({ isShowIframe, setIsShowIsframe, loading, data })=>{
                     </span>
                   </div>
                 ))
-              ):""}</div>
+              ):"-"}</div>
             </div>
             <div style={{display:"flex",paddingTop:20,paddingBottom:10,borderBottom: "solid 1px rgb(220,220,220)"}}>
               <div style={{flex:1}}>创建时间</div>
@@ -148,8 +155,9 @@ export const DetailHost = ({ isShowIframe, setIsShowIsframe, loading, data })=>{
               </div>
             </div>
 
-      <Spin spinning={loading}>
-            <div style={{
+            <div 
+            ref={wrapperRef}
+            style={{
               height: "calc(100% - 220px)",
               marginTop:20,
               width: "99%",
@@ -158,11 +166,20 @@ export const DetailHost = ({ isShowIframe, setIsShowIsframe, loading, data })=>{
               backgroundColor:"#fff",
               //height:200
               padding:20,
+              //overflow:"hidden"
             }}>
-               <div style={{paddingBottom:35,fontSize:16}}>历史记录</div>
+               <div style={{paddingBottom:20,fontSize:16}}>历史记录</div>
+              <Spin spinning={loading} wrapperClassName={styles.omp_spin_wrapper}>
+                <Timeline style={{overflowY:"scroll",paddingTop:10,height:wrapperRef.current?wrapperRef.current?.offsetHeight - 100:100}}>
+                  {data.map(item=>{
+                    return <Timeline.Item key={item.id}>
+                      <p style={{color:"#595959"}}>{item.username} {item.description}</p>
+                      <p style={{color:"#595959"}}>{moment(item.created).format("YYYY-MM-DD HH:mm:ss")}</p>
+                    </Timeline.Item>
+                  })}
+              </Timeline>
+            </Spin>
             </div>
-
-        </Spin>
           </div>
         </div>
       </Drawer>

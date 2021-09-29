@@ -8,7 +8,8 @@ export const apiRequest = {
     login: "/api/login/", // 登入
     // 首次请求用于验证登出
     users: "/api/users/users/",
-
+    // 修改密码
+    changePassword: "/api/users/updatePassword/",
 
 
 
@@ -32,7 +33,10 @@ export const apiRequest = {
     ipList:"/api/hosts/ips/",
     // 主机名和ip地址校验接口
     checkHost:"/api/hosts/fields/",
-    operateLog:"/api/hosts/operateLog/"
+    operateLog:"/api/hosts/operateLog/",
+
+    // 重启主机agent
+    restartHostAgent:"/api/hosts/restartHostAgent/"
   },
   productsManagement: {
     // 产品管理-服务管理
