@@ -27,7 +27,7 @@ import {
   refreshTime,
   MessageTip,
 } from "@/utils/utils";
-import { fetchGet, fetchDelete, fetchPost, fetchPut } from "@/utils/request";
+import { fetchGet, fetchDelete, fetchPost, fetchPut, fetchPatch } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 //import updata from "@/store_global/globalStore";
 import { AddMachineModal, UpDateMachineModal } from "./config/modals";
@@ -96,6 +96,13 @@ const MachineManagement = () => {
 
   // 开启维护
   const [openMaintainModal, setOpenMaintainModal] = useState(false)
+  // 关闭维护
+  const [closeMaintainModal, setCloseMaintainModal] = useState(false)
+
+  // 开启维护（单次）
+  const [openMaintainOneModal, setOpenMaintainOneModal] = useState(false)
+  // 关闭维护（单次）
+  const [closeMaintainOneModal, setCloseMaintainOneModal] = useState(false)
 
   function fetchData(
     pageParams = { current: 1, pageSize: 10 },
@@ -186,7 +193,7 @@ const MachineManagement = () => {
     data.ip = data.IPtext;
     delete data.IPtext;
     data.port = `${data.port}`;
-    fetchPut(`${apiRequest.machineManagement.hosts}${row.id}/`, {
+    fetchPatch(`${apiRequest.machineManagement.hosts}${row.id}/`, {
       body: {
         ...data,
       },
@@ -308,6 +315,7 @@ const MachineManagement = () => {
                 onClick={() => {
                   //setAddMoadlVisible(true);
                   //setAddMachineForm({});
+                  setCloseMaintainModal(true)
                 }}
               >
                 关闭维护模式
@@ -471,7 +479,9 @@ const MachineManagement = () => {
             setIsShowIsframe,
             setRow,
             setUpdateMoadlVisible,
-            fetchHistoryData
+            fetchHistoryData,
+            setCloseMaintainOneModal,
+            setOpenMaintainOneModal
           )}
           dataSource={dataSource}
           pagination={{
@@ -483,7 +493,7 @@ const MachineManagement = () => {
                   display: "flex",
                   width: "200px",
                   justifyContent: "space-between",
-                  lineHeight: 3,
+                  lineHeight: 2.8,
                 }}
               >
                 <p>
@@ -592,12 +602,61 @@ const MachineManagement = () => {
       >
         <div style={{padding:"20px"}}>
           确定要对{" "}
-          {
+          <span style={{fontWeight:500}}>{
             Object.keys(checkedList)
               .map((k) => checkedList[k])
               .flat(1).length
           }
-          台主机 开启维护模式 ？
+          台</span> 主机下发 <span style={{fontWeight:500}}>开启维护模式</span> 操作？
+        </div>
+      </OmpMessageModal>
+
+      <OmpMessageModal
+        visibleHandle={[closeMaintainModal, setCloseMaintainModal]}
+        title={<span><ExclamationCircleOutlined style={{fontSize:20, color:"#f0a441",paddingRight:"10px", position:"relative", top:2}}/>提示</span>}
+        loading={loading}
+        // onFinish={() => {
+        //   fetchRestartHostAgent();
+        // }}
+      >
+        <div style={{padding:"20px"}}>
+          确定要对{" "}
+          <span style={{fontWeight:500}}>{
+            Object.keys(checkedList)
+              .map((k) => checkedList[k])
+              .flat(1).length
+          }
+          台</span> 主机下发 <span style={{fontWeight:500}}>关闭维护模式</span> 操作？
+        </div>
+      </OmpMessageModal>
+
+      <OmpMessageModal
+        visibleHandle={[openMaintainOneModal, setOpenMaintainOneModal]}
+        title={<span><ExclamationCircleOutlined style={{fontSize:20, color:"#f0a441",paddingRight:"10px", position:"relative", top:2}}/>提示</span>}
+        loading={loading}
+        // onFinish={() => {
+        //   fetchRestartHostAgent();
+        // }}
+      >
+        <div style={{padding:"20px"}}>
+          确定要对{" "}
+          <span style={{fontWeight:500}}>
+            当前</span> 主机下发 <span style={{fontWeight:500}}>开启维护模式</span> 操作？
+        </div>
+      </OmpMessageModal>
+
+      <OmpMessageModal
+        visibleHandle={[closeMaintainOneModal, setCloseMaintainOneModal]}
+        title={<span><ExclamationCircleOutlined style={{fontSize:20, color:"#f0a441",paddingRight:"10px", position:"relative", top:2}}/>提示</span>}
+        loading={loading}
+        // onFinish={() => {
+        //   fetchRestartHostAgent();
+        // }}
+      >
+        <div style={{padding:"20px"}}>
+          确定要对{" "}
+          <span style={{fontWeight:500}}>
+            当前</span> 主机下发 <span style={{fontWeight:500}}>关闭维护模式</span> 操作？
         </div>
       </OmpMessageModal>
     </OmpContentWrapper>
