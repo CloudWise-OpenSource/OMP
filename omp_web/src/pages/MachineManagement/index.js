@@ -1,39 +1,28 @@
 import {
   OmpContentWrapper,
-  OmpDatePicker,
-  OmpOperationWrapper,
   OmpTable,
-  OmpCollapseWrapper,
-  OmpButton,
   OmpMessageModal,
-  OmpModal,
-  OmpIframe,
 } from "@/components";
 import {
   Button,
-  Input,
   Select,
-  Badge,
-  Form,
   message,
   Menu,
   Dropdown,
-  Table
 } from "antd";
 import { useState, useEffect, useRef } from "react";
 import {
   handleResponse,
   _idxInit,
   refreshTime,
-  MessageTip,
 } from "@/utils/utils";
-import { fetchGet, fetchDelete, fetchPost, fetchPut, fetchPatch } from "@/utils/request";
+import { fetchGet, fetchPost, fetchPatch } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 //import updata from "@/store_global/globalStore";
 import { AddMachineModal, UpDateMachineModal } from "./config/modals";
 import { useDispatch } from "react-redux";
 import getColumnsConfig, { DetailHost } from "./config/columns";
-import { DesktopOutlined, DownOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
+import { DownOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 
 const MachineManagement = () => {
   const dispatch = useDispatch();

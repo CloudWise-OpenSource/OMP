@@ -17,9 +17,9 @@ const breadcrumbNameMap = {
   "resource-management": "资源管理",
   "machine-management": "主机管理",
   "system-settings": "系统管理",
-  "user-management": "用户管理"
-  // "/machine-management/used": "已使用",
-  // "/machine-management/unused": "未使用",
+  "user-management": "用户管理",
+  "monitoring-settings": "监控设置",
+  "system-management": "系统管理"
 };
 
 // 基于面包屑组件的一层封装，用于匹配当前路由地址，动态展示页面路径

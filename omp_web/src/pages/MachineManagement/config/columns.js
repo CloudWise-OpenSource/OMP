@@ -67,8 +67,8 @@ export const DetailHost = ({
           <div
             style={{
               display: "flex",
-              paddingTop: 20,
-              paddingBottom: 10,
+              //paddingTop: 15,
+              paddingBottom: 5,
               borderBottom: "solid 1px rgb(220,220,220)",
             }}
           >
@@ -78,8 +78,19 @@ export const DetailHost = ({
           <div
             style={{
               display: "flex",
-              paddingTop: 20,
-              paddingBottom: 10,
+              paddingTop: 15,
+              paddingBottom: 5,
+              borderBottom: "solid 1px rgb(220,220,220)",
+            }}
+          >
+            <div style={{ flex: 1 }}>HOSTNAME</div>
+            <div style={{ flex: 1 }}>{nonEmptyProcessing(isShowIframe.record.host_name)}</div>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              paddingTop: 15,
+              paddingBottom: 5,
               borderBottom: "solid 1px rgb(220,220,220)",
             }}
           >
@@ -89,8 +100,8 @@ export const DetailHost = ({
           <div
             style={{
               display: "flex",
-              paddingTop: 20,
-              paddingBottom: 10,
+              paddingTop: 15,
+              paddingBottom: 5,
               borderBottom: "solid 1px rgb(220,220,220)",
             }}
           >
@@ -100,8 +111,8 @@ export const DetailHost = ({
           <div
             style={{
               display: "flex",
-              paddingTop: 20,
-              paddingBottom: 10,
+              paddingTop: 15,
+              paddingBottom: 5,
               borderBottom: "solid 1px rgb(220,220,220)",
             }}
           >
@@ -111,8 +122,8 @@ export const DetailHost = ({
           <div
             style={{
               display: "flex",
-              paddingTop: 20,
-              paddingBottom: 10,
+              paddingTop: 15,
+              paddingBottom: 5,
               borderBottom: "solid 1px rgb(220,220,220)",
             }}
           >
@@ -122,8 +133,8 @@ export const DetailHost = ({
           <div
             style={{
               display: "flex",
-              paddingTop: 20,
-              paddingBottom: 10,
+              paddingTop: 15,
+              paddingBottom: 5,
               borderBottom: "solid 1px rgb(220,220,220)",
             }}
           >
@@ -135,8 +146,8 @@ export const DetailHost = ({
           <div
             style={{
               display: "flex",
-              paddingTop: 20,
-              paddingBottom: 10,
+              paddingTop: 15,
+              paddingBottom: 5,
               borderBottom: "solid 1px rgb(220,220,220)",
             }}
           >
@@ -148,8 +159,8 @@ export const DetailHost = ({
           <div
             style={{
               display: "flex",
-              paddingTop: 20,
-              paddingBottom: 10,
+              paddingTop: 15,
+              paddingBottom: 5,
               borderBottom: "solid 1px rgb(220,220,220)",
             }}
           >
@@ -176,8 +187,8 @@ export const DetailHost = ({
           <div
             style={{
               display: "flex",
-              paddingTop: 20,
-              paddingBottom: 10,
+              paddingTop: 15,
+              paddingBottom: 5,
               borderBottom: "solid 1px rgb(220,220,220)",
             }}
           >
@@ -191,8 +202,8 @@ export const DetailHost = ({
           <div
             style={{
               display: "flex",
-              paddingTop: 20,
-              paddingBottom: 10,
+              paddingTop: 15,
+              paddingBottom: 5,
               borderBottom: "solid 1px rgb(220,220,220)",
             }}
           >

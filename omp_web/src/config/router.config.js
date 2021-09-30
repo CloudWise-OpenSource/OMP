@@ -2,8 +2,10 @@
 import WarningRecord from "@/pages/OperationManagement/WarningRecord";
 //import VersionManagement from "@/pages/ProductsManagement/VersionManagement";
 import MachineManagement from "@/pages/MachineManagement"
-import { DesktopOutlined, ClusterOutlined, ProfileOutlined, SettingOutlined } from "@ant-design/icons";
-import UserManagement from "@/pages/SystemSettings/UserManagement"
+import UserManagement from "@/pages/UserManagement";
+import MonitoringSettings from "@/pages/MonitoringSettings"
+import SystemManagement from "@/pages/SystemManagement"
+import { DesktopOutlined, ClusterOutlined, ProfileOutlined, SettingOutlined, LineChartOutlined } from "@ant-design/icons";
 
 export default [
   {
@@ -31,6 +33,18 @@ export default [
     ],
   },
   {
+    menuTitle: "应用监控",
+    menuIcon: <LineChartOutlined />,
+    menuKey: "/application-monitoring",
+    children: [
+      {
+        title: "监控设置",
+        path: "/application-monitoring/monitoring-settings",
+        component: MonitoringSettings ,
+      },
+    ],
+  },
+  {
     menuTitle: "系统设置",
     menuIcon: <SettingOutlined />,
     menuKey: "/system-settings",
@@ -39,6 +53,11 @@ export default [
         title: "用户管理",
         path: "/system-settings/user-management",
         component: UserManagement,
+      },
+      {
+        title: "系统管理",
+        path: "/system-settings/system-management",
+        component: SystemManagement,
       },
     ],
   },
