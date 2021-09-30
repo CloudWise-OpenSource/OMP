@@ -1,24 +1,13 @@
 import {
   OmpContentWrapper,
-  OmpDatePicker,
-  OmpOperationWrapper,
   OmpTable,
-  OmpCollapseWrapper,
-  OmpButton,
-  OmpMessageModal,
   OmpModal,
-  OmpIframe,
 } from "@/components";
 import {
   Button,
   Input,
-  Select,
-  Badge,
   Form,
   message,
-  Menu,
-  Dropdown,
-  Table,
 } from "antd";
 import { useState, useEffect, useRef } from "react";
 import {
@@ -30,7 +19,7 @@ import {
   logout,
   isPassword 
 } from "@/utils/utils";
-import { fetchGet, fetchDelete, fetchPost, fetchPut } from "@/utils/request";
+import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 //import updata from "@/store_global/globalStore";
 import { useDispatch } from "react-redux";
@@ -65,6 +54,15 @@ const UserManagement = () => {
 
   const columns = [
     {
+      title: "序列",
+      key: "_idx",
+      dataIndex: "_idx",
+      //sorter: (a, b) => a.username - b.username,
+        // sortDirections: ["descend", "ascend"],
+      align: "center",
+      render: nonEmptyProcessing,
+    },
+    {
       title: "用户名",
       key: "username",
       dataIndex: "username",
@@ -82,9 +80,9 @@ const UserManagement = () => {
       align: "center",
       render: (text)=>{
         if(text){
-            return "普通用户"
+            return "普通管理员"
         }else{
-            return "超级用户"
+            return "超级管理员"
         }
       },
     },
@@ -171,7 +169,12 @@ const UserManagement = () => {
         if(!searchParams){
             setUserListSource(res.data.results.map(item=>item.username))
         }
-          setDataSource(res.data.results);
+          setDataSource( res.data.results.map((item,idx)=>{
+            return {
+              ...item,
+              _idx: (idx + 1) +  (pageParams.current - 1)*pageParams.pageSize
+            }
+          }));
           setPagination({
             ...pagination,
             total: res.data.count,
@@ -245,101 +248,6 @@ const UserManagement = () => {
               );
           }} 
           style={{ width: 200 }} />
-
-          {/* <Input placeholder="请输入用户名" style={{width:200}}
-             allowClear
-             onChange={(e)=>{
-                console.log(e.target.value)
-                if(!e.target.value){
-
-                }
-             }}
-             onClear={() => {
-               
-             }}
-          /> */}
-          {/* <Select
-            allowClear
-            onClear={() => {
-              searchValueRef.current = "";
-              setSelectValue();
-              setSearchValue();
-              fetchData(
-                { current: pagination.current, pageSize: pagination.pageSize },
-                {},
-                pagination.ordering
-              );
-            }}
-            showSearch
-            placeholder="请输入用户名"
-            loading={searchLoading}
-            style={{ width: 200 }}
-            onInputKeyDown={(e) => {
-              if (e.code == "Enter") {
-                //console.log("点击了",searchValueRef.current )
-                setSelectValue(searchValueRef.current);
-                fetchData(
-                  { current: 1, pageSize: 10 },
-                  { username: searchValueRef.current },
-                  pagination.ordering
-                );
-              }
-            }}
-            searchValue={searchValue}
-            onSelect={(e) => {
-              if (e == searchValue || !searchValue) {
-                //console.log(1)
-                setSelectValue(e);
-                fetchData(
-                  {
-                    current: pagination.current,
-                    pageSize: pagination.pageSize,
-                  },
-                  { username: e },
-                  pagination.ordering
-                );
-              } else {
-                //console.log(2)
-                setSelectValue(searchValue);
-                fetchData(
-                  {
-                    current: pagination.current,
-                    pageSize: pagination.pageSize,
-                  },
-                  { username: searchValueRef.current },
-                  pagination.ordering
-                );
-              }
-              searchValueRef.current = "";
-            }}
-            value={selectValue}
-            onSearch={(e) => {
-              e && (searchValueRef.current = e);
-              setSearchValue(e);
-            }}
-            onBlur={(e) => {
-              //console.log(searchValueRef.current,"searchValueRef.current")
-              if (searchValueRef.current) {
-                setSelectValue(searchValueRef.current);
-                fetchData(
-                  {
-                    current: pagination.current,
-                    pageSize: pagination.pageSize,
-                  },
-                  { username: searchValueRef.current },
-                  pagination.ordering
-                );
-              }
-            }}
-          >
-            {userListSource.map((item) => {
-              return (
-                <Select.Option value={item} key={item}>
-                  {item}
-                </Select.Option>
-              );
-            })}
-          </Select> */}
           <Button
             style={{ marginLeft: 10 }}
             onClick={() => {
