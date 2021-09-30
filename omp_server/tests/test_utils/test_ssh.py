@@ -6,7 +6,11 @@
 # Version: 1.0
 # Introduction:
 
-import os
+"""
+ssh 单元测试代码
+# TODO 待完善，与环境隔离
+"""
+
 from unittest import mock
 
 from paramiko import SSHClient
@@ -77,14 +81,9 @@ class SshUtilTest(BaseTest):
         测试ssh检查报错
         :return:
         """
-        _test_file_path = "/tmp/exec_command.txt"
-        with open(_test_file_path, "w") as fp:
-            fp.write("exec_command")
-        fp_a = open(_test_file_path, "r")
-        exec_command.side_effect = [("", fp_a, 0), ]
-        os.remove(_test_file_path)
+        stdout = mock.MagicMock()
+        exec_command.side_effect = [("", stdout, 0), ]
         self.assertEqual(self.ssh.check()[0], False)
-        fp_a.close()
 
     def test_ssh_check_success(self):
         """

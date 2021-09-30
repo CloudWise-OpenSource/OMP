@@ -50,6 +50,7 @@ def get_agent_detail(target):
                 cpu=res.get("cpu", 0),
                 disk=res.get("disk", {}),
                 host_agent=0,
+                host_name=res.get("hostname")
             )
             logger.info(f"更新{target}状态成功!")
         else:
@@ -58,7 +59,8 @@ def get_agent_detail(target):
                 memory=res.get("memory", {}).get("memory_total", 0),
                 cpu=res.get("cpu", 0),
                 disk=res.get("disk", {}),
-                host_agent=0
+                host_agent=0,
+                host_name=res.get("hostname")
             ).save()
             logger.info(f"插入{target}状态成功!")
     except Exception as e:
