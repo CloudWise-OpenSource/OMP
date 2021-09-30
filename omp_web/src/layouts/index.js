@@ -18,6 +18,7 @@ import { apiRequest } from "@/config/requestApi";
 import { handleResponse, _idxInit, logout, isPassword } from "@/utils/utils";
 import { useSelector, useDispatch } from "react-redux";
 import { getSetViewSizeAction, getChangeEnvInfoAction } from "./store/actionsCreators";
+import { getMaintenanceChangeAction } from "@/pages/SystemManagement/store/actionsCreators";
 
 const { Header, Content, Footer, Sider } = Layout;
 const { SubMenu } = Menu;
@@ -174,6 +175,25 @@ const OmpLayout = (props) => {
 
     // 防止在校验进入死循环
   const flag = useRef(null)
+      
+  // 查询全局维护模式状态
+  const queryMaintainState = ()=>{
+    reduxDispatch(getMaintenanceChangeAction(true));
+    fetchGet(apiRequest.environment.queryMaintainState)
+    .then((res) => {
+      if (res.data) {
+        console.log(res)
+      }
+    })
+    .catch((e) => {
+      console.log(e);
+    })
+    .finally();
+  }
+
+  useEffect(()=>{
+    queryMaintainState()
+  },[])
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
