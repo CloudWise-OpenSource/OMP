@@ -158,7 +158,7 @@ const MachineManagement = () => {
           if (res.data.code == 1) {
             // msgRef.current = res.data.message
             // setMsgShow(true)
-            message.warning(res.data.message.split(":")[1].replace(/;/g, ""));
+            message.warning(res.data.message);
           }
           if (res.data.code == 0) {
             message.success("添加主机成功");
@@ -192,7 +192,7 @@ const MachineManagement = () => {
           if (res.data.code == 1) {
             // msgRef.current = res.data.message
             // setMsgShow(true)
-            message.warning(res.data.message.split(":")[1].replace(/;/g, ""));
+            message.warning(res.data.message);
           }
           if (res.data.code == 0) {
             message.success("更新主机信息成功");
@@ -254,6 +254,75 @@ const MachineManagement = () => {
       .finally(() => {
         setLoading(false);
         setRestartHostAgentModal(false)
+        setCheckedList({})
+        fetchData(
+          { current: pagination.current, pageSize: pagination.pageSize },
+          { ip: selectValue },
+          pagination.ordering
+        );
+      });
+  };
+
+  // 主机进入｜退出维护模式
+   // 重启主机agent
+   const fetchMaintainChange = (e,checkedList) => {
+     let host_arr = []
+     if(e){
+      host_arr = Object.keys(checkedList)
+      .map((k) => checkedList[k])
+      .flat(1).filter(item=>{
+        return !item.is_maintenance
+      })
+     }else{
+      host_arr = Object.keys(checkedList)
+      .map((k) => checkedList[k])
+      .flat(1).filter(item=>{
+        return item.is_maintenance
+      })
+     }
+     if(host_arr.length == 0){
+      setLoading(false);
+      setOpenMaintainOneModal(false)
+      setCloseMaintainOneModal(false)
+      setOpenMaintainModal(false)
+      setCloseMaintainModal(false)
+      setCheckedList({})
+      if(e){
+        message.success("主机开启维护模式成功")
+      }else{
+        message.success("主机关闭维护模式成功")
+      }
+       return
+     }
+    setLoading(true);
+    fetchPost(apiRequest.machineManagement.hostsMaintain, {
+      body: {
+        is_maintenance:e,
+        host_ids:  host_arr.map(item=>item.id),
+      },
+    })
+      .then((res) => {
+        //handleResponse(res, (res) => {
+          console.log(res)
+          if(res.data.code == 0){
+            if(e){
+              message.success("主机开启维护模式成功")
+            }else{
+              message.success("主机关闭维护模式成功")
+            }
+          }
+          if(res.data.code == 1){
+            message.warning(res.data.message)
+          }
+        // });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setLoading(false);
+        setOpenMaintainOneModal(false)
+        setCloseMaintainOneModal(false)
+        setOpenMaintainModal(false)
+        setCloseMaintainModal(false)
         setCheckedList({})
         fetchData(
           { current: pagination.current, pageSize: pagination.pageSize },
@@ -553,12 +622,12 @@ const MachineManagement = () => {
       >
         <div style={{padding:"20px"}}>
           确定要重启{" "}
-          {
+          <span style={{fontWeight:500}}>{
             Object.keys(checkedList)
               .map((k) => checkedList[k])
               .flat(1).length
           }
-          台主机 主机Agent ？
+          台</span> 主机 <span style={{fontWeight:500}}>主机Agent</span> ？
         </div>
       </OmpMessageModal>
 
@@ -572,12 +641,13 @@ const MachineManagement = () => {
       >
         <div style={{padding:"20px"}}>
           确定要重启{" "}
+          <span style={{fontWeight:500}}>
           {
             Object.keys(checkedList)
               .map((k) => checkedList[k])
               .flat(1).length
           }
-          台主机 监控Agent ？
+          台</span> 主机 <span style={{fontWeight:500}}>监控Agent</span> ？
         </div>
       </OmpMessageModal>
 
@@ -585,9 +655,9 @@ const MachineManagement = () => {
         visibleHandle={[openMaintainModal, setOpenMaintainModal]}
         title={<span><ExclamationCircleOutlined style={{fontSize:20, color:"#f0a441",paddingRight:"10px", position:"relative", top:2}}/>提示</span>}
         loading={loading}
-        // onFinish={() => {
-        //   fetchRestartHostAgent();
-        // }}
+        onFinish={() => {
+          fetchMaintainChange(true,checkedList)
+        }}
       >
         <div style={{padding:"20px"}}>
           确定要对{" "}
@@ -604,9 +674,9 @@ const MachineManagement = () => {
         visibleHandle={[closeMaintainModal, setCloseMaintainModal]}
         title={<span><ExclamationCircleOutlined style={{fontSize:20, color:"#f0a441",paddingRight:"10px", position:"relative", top:2}}/>提示</span>}
         loading={loading}
-        // onFinish={() => {
-        //   fetchRestartHostAgent();
-        // }}
+        onFinish={() => {
+          fetchMaintainChange(false,checkedList)
+        }}
       >
         <div style={{padding:"20px"}}>
           确定要对{" "}
@@ -623,9 +693,10 @@ const MachineManagement = () => {
         visibleHandle={[openMaintainOneModal, setOpenMaintainOneModal]}
         title={<span><ExclamationCircleOutlined style={{fontSize:20, color:"#f0a441",paddingRight:"10px", position:"relative", top:2}}/>提示</span>}
         loading={loading}
-        // onFinish={() => {
-        //   fetchRestartHostAgent();
-        // }}
+        onFinish={() => {
+          console.log(1111)
+          fetchMaintainChange(true,[row])
+        }}
       >
         <div style={{padding:"20px"}}>
           确定要对{" "}
@@ -638,9 +709,9 @@ const MachineManagement = () => {
         visibleHandle={[closeMaintainOneModal, setCloseMaintainOneModal]}
         title={<span><ExclamationCircleOutlined style={{fontSize:20, color:"#f0a441",paddingRight:"10px", position:"relative", top:2}}/>提示</span>}
         loading={loading}
-        // onFinish={() => {
-        //   fetchRestartHostAgent();
-        // }}
+        onFinish={() => {
+          fetchMaintainChange(false,[row])
+        }}
       >
         <div style={{padding:"20px"}}>
           确定要对{" "}
