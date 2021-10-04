@@ -186,10 +186,3 @@ class SaltClient(object):
         except Exception as e:
             logger.error(f"发送文件过程中程序出现错误: {traceback.format_exc()}")
             return False, f"发送文件过程中出现错误: {str(e)}"
-
-
-if __name__ == '__main__':
-    test_obj = SaltClient()
-    test_res = test_obj.cp_file(
-        "ruban-dev", "salt://scripts/test.sh", "/data/salt/test/script")
-    print(test_res)
