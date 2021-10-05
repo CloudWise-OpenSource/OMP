@@ -226,7 +226,7 @@ LOGGING = {
         },
         'server': {
             'handlers': ['default', 'error'],
-            'level': "ERROR",
+            'level': "INFO",
             'propagate': True
         }
     }

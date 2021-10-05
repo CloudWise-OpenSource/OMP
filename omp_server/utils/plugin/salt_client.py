@@ -6,6 +6,10 @@
 # Version: 1.0
 # Introduction: 定义与salt交互过程中使用的某些类及方法。
 
+"""
+salt 封装的相关模块或方法
+"""
+
 import os
 import logging
 import traceback
@@ -17,6 +21,9 @@ salt_master_config = os.path.join(PROJECT_DIR, "config/salt/master")
 
 logger = logging.getLogger('server')
 
+SALT_ERROR_MSG = "Salt 执行错误，请检查相关配置是否正确！"
+AGENT_OFFLINE_MSG = "当前目标主机不在线或该目标主机未纳管！"
+
 
 class SaltClient(object):
     """本地salt管理接口"""
@@ -27,7 +34,7 @@ class SaltClient(object):
         :param config_path: salt-master的配置文件绝对路径
         """
         self.config_path = config_path
-        logger.info(f"根据配置文件路径: {self.config_path} 初始化salt客户端")
+        logger.info(f"Init salt client with config path: {self.config_path}!")
         self.client = salt.client.LocalClient(
             c_path=self.config_path, auto_reconnect=True)
 
@@ -70,7 +77,7 @@ class SaltClient(object):
         """
         try:
             logger.info(
-                f"通过salt执行function: {target}|{fun}|{arg}|{kwarg}|{timeout}")
+                f"Execute by salt fun_for_multi: {target}|{fun}|{arg}|{kwarg}|{timeout}")
             if kwarg is None:
                 kwarg = {}
             cmd_res = self.client.cmd(
@@ -82,10 +89,11 @@ class SaltClient(object):
                 timeout=timeout,
                 full_return=True
             )
-            logger.debug(f"salt fun执行结束获取到的结果为: {cmd_res}!")
+            logger.info(f"Execute by salt fun_for_multi res: {cmd_res}!")
             return cmd_res
         except Exception as e:
-            logger.error(f"通过salt执行模块报错: {traceback.format_exc()}")
+            logger.error(
+                f"Execute by salt fun_for_multi with Exception: {traceback.format_exc()}")
             return False, f"执行{str(fun)}过程中出现错误: {str(e)}"
 
     def fun(self, target, fun, arg=(), kwarg=None, timeout=None):
@@ -100,7 +108,7 @@ class SaltClient(object):
         """
         try:
             logger.info(
-                f"通过salt执行function: {target}|{fun}|{arg}|{kwarg}|{timeout}")
+                f"Execute by salt fun: {target}|{fun}|{arg}|{kwarg}|{timeout}")
             if kwarg is None:
                 kwarg = {}
             cmd_res = self.client.cmd(
@@ -111,11 +119,11 @@ class SaltClient(object):
                 timeout=timeout,
                 full_return=True
             )
-            # logger.info(f"salt fun执行结束获取到的结果为: {cmd_res}!")
+            logger.info(f"Execute by salt fun res: {cmd_res}!")
             if not isinstance(cmd_res, dict):
-                return False, "Salt 执行错误，请检查相关配置是否正确！"
+                return False, SALT_ERROR_MSG
             if target not in cmd_res:
-                return False, "当前目标主机不在线或该目标主机未纳管！"
+                return False, AGENT_OFFLINE_MSG
             if target in cmd_res and cmd_res[target] is False:
                 return False, "当前主机agent状态异常!"
             if 'retcode' not in cmd_res[target]:
@@ -124,7 +132,8 @@ class SaltClient(object):
                 return False, cmd_res[target]["ret"]
             return True, cmd_res[target]["ret"]
         except Exception as e:
-            logger.error(f"通过salt执行模块报错: {traceback.format_exc()}")
+            logger.error(
+                f"Execute by salt fun_for_multi with Exception: {traceback.format_exc()}")
             return False, f"执行{str(fun)}过程中出现错误: {str(e)}"
 
     def cmd(self, target, command, timeout):
@@ -136,6 +145,8 @@ class SaltClient(object):
         :return: 命令执行结果
         """
         try:
+            logger.info(
+                f"Execute by salt cmd: {target}|{command}|{timeout}")
             cmd_res = self.client.cmd(
                 tgt=target,
                 fun="cmd.run",
@@ -143,16 +154,18 @@ class SaltClient(object):
                 timeout=timeout,
                 full_return=True
             )
+            logger.info(f"Execute by salt cmd res: {cmd_res}")
             if not isinstance(cmd_res, dict):
-                return False, "Salt 执行错误，请检查相关配置是否正确！"
+                return False, SALT_ERROR_MSG
             if target not in cmd_res:
-                return False, "当前目标主机不在线或该目标主机未纳管！"
+                return False, AGENT_OFFLINE_MSG
             if 'retcode' not in cmd_res[target]:
                 return False, f"当前执行未出现预期结果，详情如下: {cmd_res[target]}"
             if cmd_res[target]["retcode"] != 0:
                 return False, cmd_res[target]["ret"]
             return True, cmd_res[target]["ret"]
         except Exception as e:
+            logger.error(f"Execute by salt cmd with Exception: {str(e)}")
             return False, f"执行命令的过程中出现错误: {str(e)}"
 
     def cp_file(self, target, source_path, target_path, makedirs=True):
@@ -165,6 +178,8 @@ class SaltClient(object):
         :return:
         """
         try:
+            logger.info(
+                f"Execute by salt cp_file: {target}|{source_path}|{target_path}|{makedirs}")
             source_path = "salt://" + source_path
             cmd_res = self.client.cmd(
                 tgt=target,
@@ -173,16 +188,17 @@ class SaltClient(object):
                 kwarg={"makedirs": makedirs},
                 timeout=60 * 10
             )
-            logger.info(f"执行发送文件的接口，获取到的返回结果是: {cmd_res}")
+            logger.info(f"Execute by salt cp_file res: {cmd_res}")
             if not isinstance(cmd_res, dict):
-                return False, "Salt 执行错误，请检查相关配置是否正确！"
+                return False, SALT_ERROR_MSG
             if target not in cmd_res:
-                return False, "当前目标主机不在线或该目标主机未纳管！"
+                return False, AGENT_OFFLINE_MSG
             if "PermissionError" in cmd_res[target] and "Permission denied" in cmd_res[target]:
                 return False, "当前目标主机上此用户无法在目标路径下创建目录或文件！"
             if str(cmd_res[target]).startswith(target_path):
                 return True, cmd_res[target]
             return False, f"当前出现未知错误: {cmd_res[target]}"
         except Exception as e:
-            logger.error(f"发送文件过程中程序出现错误: {traceback.format_exc()}")
+            logger.error(
+                f"Execute by salt cp_file with Exception: {traceback.format_exc()}")
             return False, f"发送文件过程中出现错误: {str(e)}"

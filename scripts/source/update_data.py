@@ -21,7 +21,6 @@ sys.path.append(os.path.join(PROJECT_DIR, "omp_server"))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "omp_server.settings")
 django.setup()
 
-from django.contrib.auth.hashers import make_password
 from db_models.models import UserProfile
 from db_models.models import MonitorUrl
 from utils.parse_config import MONITOR_PORT
@@ -39,7 +38,7 @@ def create_default_user():
         return
     UserProfile.objects.create_superuser(
         username=username,
-        password=make_password(password),
+        password=password,
         email="admin@yunzhihui.com"
     )
 
