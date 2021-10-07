@@ -175,7 +175,7 @@ LOGGER_CLASS = 'concurrent_log_handler.ConcurrentRotatingFileHandler'
 LOG_BACKUP_SIZE = 1024 * 1024 * 100
 LOGGING = {
     'version': 1,
-    'disable_existing_loggers': True,
+    'disable_existing_loggers': False,
     'formatters': {
         'standard': {
             'format': '[%(asctime)s][%(levelname)s] %(pathname)s %(lineno)d -> %(message)s'}
@@ -226,7 +226,7 @@ LOGGING = {
         },
         'server': {
             'handlers': ['default', 'error'],
-            'level': "ERROR",
+            'level': "INFO",
             'propagate': True
         }
     }
