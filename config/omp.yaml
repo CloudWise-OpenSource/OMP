@@ -2,8 +2,10 @@
 global_user: common
 # 初始化时由用户输入本机的ip地址
 local_ip: 10.0.1.160
-# SSH超时时间，单位秒
-ssh_timeout: 60
+# SSH执行命令超时时间，单位秒
+ssh_cmd_timeout: 60
+# SSH连通性校验超时时间，单位秒
+ssh_check_timeout: 10
 # redis相关配置
 redis:
   host: 127.0.0.1
