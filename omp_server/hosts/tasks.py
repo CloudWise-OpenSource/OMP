@@ -105,13 +105,19 @@ def real_host_agent_restart(host_obj):
     logger.info(
         f"Restart host agent for {host_obj.ip}: "
         f"get flag: {flag}; get res: {message}")
+    # 使用filter查询然后使用update方法进行处理，防止多任务环境
     if flag:
-        host_obj.host_agent = 0
+        # host_obj.host_agent = 0
+        Host.objects.filter(ip=host_obj.ip).update(host_agent=0)
     else:
-        host_obj.host_agent = 2
-        host_obj.host_agent_error = \
-            str(message)[:200] if len(str(message)) > 200 else str(message)
-    host_obj.save()
+        # host_obj.host_agent = 2
+        # host_obj.host_agent_error = \
+        #     str(message)[:200] if len(str(message)) > 200 else str(message)
+        Host.objects.filter(ip=host_obj.ip).update(
+            host_agent=2,
+            host_agent_error=str(message)[:200] if len(
+                str(message)) > 200 else str(message)
+        )
 
 
 @shared_task
