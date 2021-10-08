@@ -13,6 +13,7 @@ SALT="${PROJECT_FOLDER}/component/env/bin/salt"
 SALT_KEY="${PROJECT_FOLDER}/component/env/bin/salt-key"
 SALT_CONFIG_DIR="${PROJECT_FOLDER}/config/salt"
 
+# 列出当前salt管理的key
 function list_salt_keys() {
   $PYTHON3 $SALT_KEY -L -c $SALT_CONFIG_DIR
 }
