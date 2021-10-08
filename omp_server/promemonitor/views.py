@@ -7,6 +7,8 @@ from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import (ListModelMixin, CreateModelMixin)
+from django.views.generic import View
+# from promemonitor.alert_util import AlertAnalysis
 
 
 # class MonitorUrlViewSet(ListModelMixin,CreateModelMixin,UpdateModelMixin,GenericViewSet):
@@ -77,12 +79,19 @@ class AlertViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
         return Response(instances)
 
 
-class MaintainViewSet(GenericViewSet, CreateModelMixin):
+class MaintainViewSet(GenericViewSet, CreateModelMixin, ListModelMixin):
     """
     create:
     全局进入 / 退出维护模式
     """
-    queryset = Maintain.objects.all()
+    queryset = Maintain.objects.filter(
+        matcher_name='env_name', matcher_value='default')
     serializer_class = MaintainSerializer
     # 操作信息描述
     post_description = "更新全局维护状态"
+
+
+class ReceiveAlert(View):
+
+    def post(self, requests):
+        pass
