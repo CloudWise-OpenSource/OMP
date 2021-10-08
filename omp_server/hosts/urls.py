@@ -23,5 +23,5 @@ router.register("maintain", HostMaintenanceView, basename="maintain")
 router.register("restartHostAgent", HostAgentRestartView,
                 basename="restartHostAgent")
 router.register("operateLog", HostOperateLogView, basename="operateLog")
-router.register("batchImport", HostBatchImportView,
+router.register("batchValidate", HostBatchImportView,
                 basename="batchValidate")
