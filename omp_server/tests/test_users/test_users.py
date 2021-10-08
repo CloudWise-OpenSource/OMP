@@ -24,7 +24,7 @@ class UsersTest(AutoLoginTest):
         }).json()
         self.assertDictEqual(resp, {
             'code': 1,
-            'message': 'username: 用户名已存在;',
+            'message': '用户名已存在;',
             'data': None
         })
 
@@ -37,7 +37,7 @@ class UsersTest(AutoLoginTest):
         }).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "re_password: 两次密码不一致;",
+            "message": "两次密码不一致;",
             "data": None
         })
 
@@ -50,7 +50,7 @@ class UsersTest(AutoLoginTest):
         }).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "email: 邮箱格式不正确;",
+            "message": "邮箱格式不正确;",
             "data": None
         })
 
@@ -140,7 +140,7 @@ class UsersTest(AutoLoginTest):
         }).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "re_password: 两次密码不一致;",
+            "message": "两次密码不一致;",
             "data": None
         })
 
@@ -232,7 +232,7 @@ class UserUpdatePasswordTest(AutoLoginTest):
         }).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "old_password: 原密码不正确;",
+            "message": "原密码不正确;",
             "data": None
         })
 
@@ -244,7 +244,7 @@ class UserUpdatePasswordTest(AutoLoginTest):
         }).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "new_password: 字段格式不合法;",
+            "message": "新密码格式不合法;",
             "data": None
         })
 

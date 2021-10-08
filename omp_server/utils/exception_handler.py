@@ -57,7 +57,8 @@ def res_is_not_none(exc, context, response):
         for key, value in response.data.items():
             if not isinstance(value, list):
                 continue
-            error_message += f"{key}: "
+            # 调整序列化器校验返回字段格式，不展示键的名称
+            # error_message += f"{key}: "
             for el in value:
                 error_message += f"{str(el)};"
             error_message += " "
