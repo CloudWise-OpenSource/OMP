@@ -1,6 +1,3 @@
-from django.shortcuts import render
-
-# Create your views here.
 from promemonitor.promemonitor_serializers import MonitorUrlSerializer
 from db_models.models import MonitorUrl
 from rest_framework.response import Response
@@ -8,12 +5,11 @@ from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import (
-    ListModelMixin, CreateModelMixin, RetrieveModelMixin,
-    DestroyModelMixin, UpdateModelMixin
+    ListModelMixin, CreateModelMixin
 )
 
 
-class MonitorUrlViewSet(ListModelMixin,CreateModelMixin,GenericViewSet):
+class MonitorUrlViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
     """
         list:
         查询监控地址列表
@@ -27,7 +23,6 @@ class MonitorUrlViewSet(ListModelMixin,CreateModelMixin,GenericViewSet):
     serializer_class = MonitorUrlSerializer
     queryset = MonitorUrl.objects.all()
 
-
     def get_serializer(self, *args, **kwargs):
         serializer_class = self.get_serializer_class()
         kwargs.setdefault('context', self.get_serializer_context())
@@ -38,18 +33,17 @@ class MonitorUrlViewSet(ListModelMixin,CreateModelMixin,GenericViewSet):
         else:
             return serializer_class(*args, **kwargs)
 
-
     @action(methods=['patch'], detail=False)
     def multiple_update(self, request, *args, **kwargs):
         '''批量添加。校验为单个校验,出现异常直接抛出'''
         partial = kwargs.pop('partial', True)
-        instances = [] 
-        for item in request.data: 
+        instances = []
+        for item in request.data.get('data'):
             instance = get_object_or_404(MonitorUrl, id=int(item['id']))
             serializer = super().get_serializer(instance, data=item, partial=partial)
             serializer.is_valid(raise_exception=True)
             instances.append(serializer)
-        Save = [ i.save() for i in instances ]
-        Data = [ i.data for i in instances ]
-        return Response(Data)
-	
+        for i in instances:
+            i.save()
+        data = [i.data for i in instances]
+        return Response(data)
