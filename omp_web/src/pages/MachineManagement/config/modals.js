@@ -1,5 +1,5 @@
+import React from "react";
 import { OmpModal } from "@/components";
-
 import {
   Button,
   Input,
@@ -13,11 +13,19 @@ import {
   Row,
   Col,
   Tooltip,
+  Modal,
+  Steps,
+  Upload,
+  Result,
 } from "antd";
 import {
   PlusSquareOutlined,
   FormOutlined,
   InfoCircleOutlined,
+  ImportOutlined,
+  DownloadOutlined,
+  CloudUploadOutlined,
+  CheckCircleFilled,
 } from "@ant-design/icons";
 import {
   MessageTip,
@@ -27,14 +35,18 @@ import {
   isValidIpChar,
   isExpression,
   isLetterChar,
-  isSpace
+  isSpace,
 } from "@/utils/utils";
 import { fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import { useState, useRef } from "react";
 import star from "./asterisk.svg";
+import XLSX from "xlsx";
+import { OmpTable } from "@/components";
+// import BMF from 'browser-md5-file';
 
-//const [modalForm] = Form.useForm();
+// let bmf = new BMF()
+// const [modalForm] = Form.useForm();
 
 export const AddMachineModal = ({
   loading,
@@ -47,13 +59,13 @@ export const AddMachineModal = ({
   const [modalForm] = Form.useForm();
   const [modalLoading, setmodalLoading] = useState(false);
   const timer = useRef(null);
-  const timer2 = useRef(null)
+  const timer2 = useRef(null);
   return (
     <OmpModal
-    loading={modalLoading ? modalLoading : loading}
+      loading={modalLoading ? modalLoading : loading}
       setLoading={setLoading}
       visibleHandle={visibleHandle}
-      okBtnText={modalLoading ? "校验中" : (loading?"创建中":null)}
+      okBtnText={modalLoading ? "校验中" : loading ? "创建中" : null}
       title={
         <span>
           <span style={{ position: "relative", left: "-10px" }}>
@@ -114,7 +126,7 @@ export const AddMachineModal = ({
                       if (value.length > 16) {
                         return Promise.resolve("success");
                       } else {
-                        if(isSpace(value)){
+                        if (isSpace(value)) {
                           return Promise.reject("实例名称不支持空格");
                         }
                         return new Promise((resolve, rej) => {
@@ -381,7 +393,7 @@ export const AddMachineModal = ({
                       if (value.length < 8) {
                         return Promise.reject("密码长度为8到16位");
                       } else {
-                        if(isSpace(value)){
+                        if (isSpace(value)) {
                           return Promise.reject("密码不支持空格");
                         }
                         return Promise.resolve("success");
@@ -422,7 +434,7 @@ export const UpDateMachineModal = ({
     <OmpModal
       loading={modalLoading ? modalLoading : loading}
       setLoading={setLoading}
-      okBtnText={modalLoading ? "校验中" : (loading?"修改中":null)}
+      okBtnText={modalLoading ? "校验中" : loading ? "修改中" : null}
       visibleHandle={visibleHandle}
       title={
         <span>
@@ -488,7 +500,7 @@ export const UpDateMachineModal = ({
                       if (value.length > 16) {
                         return Promise.resolve("success");
                       } else {
-                        if(isSpace(value)){
+                        if (isSpace(value)) {
                           return Promise.reject("实例名称不支持空格");
                         }
                         return new Promise((resolve, rej) => {
@@ -650,22 +662,7 @@ export const UpDateMachineModal = ({
         >
           <Row gutter={8}>
             <Col span={16}>
-              <Form.Item
-                name="IPtext"
-                key="IPtext"
-                noStyle
-                // rules={[
-                //   {
-                //     validator: (rule, value, callback) => {
-                //       if (isValidIpChar(value) || !value) {
-                //         return Promise.resolve("success");
-                //       } else {
-                //         return Promise.reject("请输入正确格式的IP地址");
-                //       }
-                //     },
-                //   },
-                // ]}
-              >
+              <Form.Item name="IPtext" key="IPtext" noStyle>
                 <Input disabled placeholder={"例如: 192.168.10.10"} />
               </Form.Item>
             </Col>
@@ -752,7 +749,7 @@ export const UpDateMachineModal = ({
                       if (value.length < 8) {
                         return Promise.reject("密码长度为8到16位");
                       } else {
-                        if(isSpace(value)){
+                        if (isSpace(value)) {
                           return Promise.reject("密码不支持空格");
                         }
                         return Promise.resolve("success");
@@ -772,5 +769,373 @@ export const UpDateMachineModal = ({
         </Form.Item>
       </div>
     </OmpModal>
+  );
+};
+
+const getHeaderRow = (sheet) => {
+  const headers = [];
+  const range = XLSX.utils.decode_range(sheet["!ref"]);
+  let C;
+  const R = range.s.r;
+  for (C = range.s.c; C <= range.e.c; ++C) {
+    const cell = sheet[XLSX.utils.encode_cell({ c: C, r: R })];
+    let hdr = "UNKNOWN " + C;
+    if (cell && cell.t) hdr = XLSX.utils.format_cell(cell);
+    headers.push(hdr);
+  }
+  return headers;
+};
+
+class UploadExcelComponent extends React.Component {
+  state = {
+    loading: false,
+    excelData: {
+      header: null,
+      results: null,
+    },
+  };
+  draggerProps = () => {
+    let _this = this;
+    return {
+      name: "file",
+      multiple: false,
+      accept: ".xlsx",
+      maxCount: 1,
+      onChange(info) {
+        const { status } = info.file;
+        if (status === "done") {
+          console.log(info.file);
+          message.success(`${info.file.name} 文件解析成功`);
+        } else if (status === "error") {
+          message.error(
+            `${info.file.name} 文件解析失败, 请确保文件格式内容符合规范重新上传`
+          );
+        }
+      },
+      beforeUpload(file, fileList) {
+        console.log(file);
+        // bmf.md5(file,(err,md5)=>{
+        //   console.log(err,md5,"=====?---")
+        // })
+        // 校验文件大小
+        const fileSize = file.size / 1024 / 1024; //单位是M
+        console.log(fileSize);
+        if (Math.ceil(fileSize) > 10) {
+          message.error("仅支持传入10M以内文件");
+          return Upload.LIST_IGNORE;
+        }
+        if (!/\.(xlsx)$/.test(file.name)) {
+          message.error("仅支持传入.xlsx文件");
+          return Upload.LIST_IGNORE;
+        }
+      },
+      customRequest(e) {
+        _this.readerData(e.file).then(
+          (msg) => {
+            console.log(e);
+            e.onSuccess();
+          },
+          () => {
+            e.onError();
+          }
+        );
+      },
+    };
+  };
+  readerData = (rawFile) => {
+    // bmf.md5(rawFile,(err,md5)=>{
+    //   console.log(err,md5,"=====?")
+    // })
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        try {
+          const data = e.target.result;
+          const workbook = XLSX.read(data, { type: "array" });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const header = getHeaderRow(worksheet);
+          const results = XLSX.utils.sheet_to_json(worksheet);
+          console.log(header, results, "====");
+          this.generateData({ header, results });
+          resolve();
+        } catch (error) {
+          reject();
+        }
+      };
+      reader.readAsArrayBuffer(rawFile);
+    });
+  };
+  generateData = ({ header, results }) => {
+    this.setState({
+      excelData: { header, results },
+    });
+    this.props.uploadSuccess && this.props.uploadSuccess(this.state.excelData);
+  };
+  render() {
+    return (
+      <div>
+        <Upload.Dragger {...this.draggerProps()}>
+          <p className="ant-upload-drag-icon">
+            <CloudUploadOutlined />
+          </p>
+          <p style={{ textAlign: "center", color: "#575757" }}>
+            点击将文件拖拽到这里上传
+          </p>
+          <p
+            style={{
+              textAlign: "center",
+              color: "#8e8e8e",
+              fontSize: 13,
+              paddingTop: 10,
+            }}
+          >
+            支持扩展名: .xlsx
+          </p>
+        </Upload.Dragger>
+      </div>
+    );
+  }
+}
+
+/* 批量导入主机 */
+export const BatchImportMachineModal = ({
+  loading,
+  setLoading,
+  batchImport,
+  setBatchImport,
+}) => {
+  const [dataSource, setDataSource] = useState([]);
+  const [columns, setColumns] = useState([]);
+
+  const [stepNum, setStepNum] = useState(0);
+  return (
+    <Modal
+      title={
+        <span>
+          <span style={{ position: "relative", left: "-10px" }}>
+            <ImportOutlined />
+          </span>
+          <span>批量创建主机</span>
+        </span>
+      }
+      visible={batchImport}
+      footer={null}
+      width={800}
+      loading={loading}
+      // onFinish={(data) => {
+      //   createHost(data);
+      //   //onFinish("post", data);
+      // }}
+      bodyStyle={{
+        paddingLeft: 30,
+        paddingRight: 30,
+      }}
+      onCancel={() => {
+        setBatchImport(false);
+      }}
+      afterClose={() => {
+        setStepNum(0);
+        setDataSource([])
+        setColumns([])
+      }}
+      destroyOnClose
+    >
+      <Steps size="small" current={stepNum}>
+        <Steps.Step title="上传文件" />
+        <Steps.Step title="数据校验" />
+        <Steps.Step title="创建结果" />
+      </Steps>
+      <div style={{ paddingLeft: 30, paddingTop: 30 }}>
+        <div
+          style={{
+            visibility: stepNum == 0 ? "visible" : "hidden",
+            height: stepNum == 0 ? null : 0,
+            overflow: "hidden",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <div style={{ flex: 1, fontWeight: 500 }}>下载模版: </div>
+            <div style={{ flex: 10, paddingLeft: 20 }}>
+              <Button
+                icon={<DownloadOutlined />}
+                size="middle"
+                style={{ fontSize: 13 }}
+                onClick={() => {
+                  let a = document.createElement("a");
+                  a.href = `/api/hosts/batchValidate/`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                }}
+              >
+                点击下载
+              </Button>
+            </div>
+          </div>
+          <div style={{ display: "flex", marginTop: 30 }}>
+            <div style={{ flex: 1, fontWeight: 500 }}>上传文件: </div>
+            <div style={{ flex: 10, paddingLeft: 20 }}>
+              {batchImport && (
+                <UploadExcelComponent
+                  uploadSuccess={({ results, header }) => {
+                    console.log(results, header);
+                    let dataS = results
+                      .filter((item) => {
+                        if (item["字段名称(请勿编辑)"]?.includes("请勿编辑")) {
+                          return false;
+                        }
+                        if (!item["实例名[必填]"]) {
+                          return false;
+                        }
+                        return true;
+                      })
+                      .map((item, idx) => {
+                        return { ...item, key: idx };
+                      });
+                    let column = header.filter((item) => {
+                      if (
+                        item?.includes("请勿编辑") ||
+                        item?.includes("UNKNOWN")
+                      ) {
+                        return false;
+                      }
+                      return true;
+                    });
+                    // if(dataS.length == 0){
+                    //   message.warning("文件解析有效数据为空，请确保文件格式内容符合规范重新上传")
+                    // }
+                    setDataSource(dataS);
+                    setColumns(column);
+                  }}
+                />
+              )}
+
+              <div
+                style={{
+                  display: "inline-block",
+                  marginLeft: "50%",
+                  transform: "translateX(-50%)",
+                  marginTop: 40,
+                }}
+              >
+                <Button
+                  onClick={() => setStepNum(1)}
+                  type="primary"
+                  disabled={columns.length == 0}
+                >
+                  校验
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+        {stepNum == 1 && (
+          <>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                paddingBottom:10,
+              }}
+            >
+              <p
+                style={{ display: "flex", alignItems: "center", fontSize: 20 }}
+              >
+                <CheckCircleFilled
+                  style={{ color: "#52c41a", fontSize: 30, marginRight: 10 }}
+                />
+                数据校验成功 !
+              </p>
+            </div>
+            <OmpTable
+              bordered
+              columns={columns.map((item) => ({
+                title: item,
+                dataIndex: item,
+                key: item,
+                //width: 195,
+                align: "center",
+              }))}
+              dataSource={dataSource}
+              //size="small"
+              //pageSize
+              pagination={{
+                pageSize: 5,
+              }}
+            />
+            <div
+              style={{
+                display: "inline-block",
+                marginLeft: "50%",
+                transform: "translateX(-50%)",
+                marginTop: 40,
+              }}
+            >
+              <Button style={{ marginRight: 16 }} onClick={() => setStepNum(0)}>
+                上一步
+              </Button>
+              <Button
+                loading={loading}
+                type="primary"
+                htmlType="submit"
+                onClick={() => {
+                  setStepNum(2);
+                }}
+              >
+                创建
+              </Button>
+            </div>
+          </>
+        )}
+        {stepNum == 2 && (
+          <>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                paddingBottom:20,
+                paddingTop:30
+              }}
+            >
+              <p
+                style={{ display: "flex", alignItems: "center", fontSize: 20 }}
+              >
+                <CheckCircleFilled
+                  style={{ color: "#52c41a", fontSize: 30, marginRight: 10 }}
+                />
+                主机创建完成 !
+              </p>
+            </div>
+            <p style={{ textAlign: "center" }}>本次共创建 8 台主机</p>
+            <div
+              style={{
+                display: "inline-block",
+                marginLeft: "50%",
+                transform: "translateX(-50%)",
+                marginTop: 40,
+              }}
+            >
+              {/* <Button style={{ marginRight: 16 }} onClick={() => setStepNum(1)}>
+                上一步
+              </Button> */}
+              <Button
+                loading={loading}
+                type="primary"
+                htmlType="submit"
+                onClick={() => {
+                  setBatchImport(false);
+                }}
+              >
+                完成
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+    </Modal>
   );
 };

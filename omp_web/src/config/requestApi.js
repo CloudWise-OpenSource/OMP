@@ -3,7 +3,7 @@ export const apiRequest = {
     //环境数据查询
     //queryEnvList: "/api/v1/env"
     // 查询全局维护模式
-    queryMaintainState: "/api/promemonitor/maintain/",
+    queryMaintainState: "/api/promemonitor/global_maintain/",
   },
   auth: {
     // 用户认证

@@ -11,7 +11,7 @@ const getBaseUrl = (env) => {
 class NewAxios {
   constructor() {
     this.baseURL = getBaseUrl(process.env.NODE_ENV);
-    this.timeout = 10000;
+    this.timeout = 15000;
     this.withCredentials = true;
   }
 
