@@ -174,6 +174,8 @@ class MonitorUrl(models.Model):
 
 class Alert(models.Model):
     """告警数据表"""
+
+    objects = None
     is_read = models.IntegerField(
         "已读", default=0, help_text="此消息是否已读，0-未读；1-已读")
     alert_type = models.CharField(

@@ -1,23 +1,32 @@
+import logging
+
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer, ListSerializer
 from rest_framework.exceptions import ValidationError
-from db_models.models import MonitorUrl
+from db_models.models import MonitorUrl, Alert, Maintain
+from utils.exceptions import OperateError
+from promemonitor.alertmanager import Alertmanager
+
+logger = logging.getLogger('server')
 
 
 class MonitorUrlListSerializer(ListSerializer):
+
+    def update(self, instance, validated_data):
+        pass
 
     def to_internal_value(self, data):
         return data.get('data')
 
     def validate(self, data):
         queryset = MonitorUrl.objects.all()
-        Method = self.context["request"].method
+        method = self.context["request"].method
         for i in data:
-            if Method in ('PATCH', 'PUT', 'DELETE'):
+            if method in ('PATCH', 'PUT', 'DELETE'):
                 if not i.get("id"):
                     raise serializers.ValidationError("id是必须字段")
             monitor_url = i.get("monitor_url")
-            if Method != 'GET':
+            if method != 'GET':
                 if not monitor_url:
                     raise serializers.ValidationError("monitor_url是必须字段")
                 if len(monitor_url) > 128:
@@ -41,7 +50,9 @@ class MonitorUrlListSerializer(ListSerializer):
 
 
 class MonitorUrlSerializer(ModelSerializer):
-    """ 监控配置项序列化 """
+    """
+    监控配置项序列化
+    """
     name = serializers.CharField(
         max_length=32, required=True,
         error_messages={"invalid": "监控名字重复"},
@@ -50,6 +61,7 @@ class MonitorUrlSerializer(ModelSerializer):
         max_value=100, required=False,
         error_messages={"invalid": "id格式不正确"},
         help_text="id")
+
     monitor_url = serializers.CharField(
         required=True,
         error_messages={"invalid": "监控地址格式不正确"},
@@ -68,3 +80,166 @@ class MonitorUrlSerializer(ModelSerializer):
         if queryset.filter(name=name).exists():
             raise ValidationError("name已经存在")
         return name
+
+
+class AlertSerializer(ModelSerializer):
+    """
+    告警记录序列化
+    """
+
+    is_read = serializers.IntegerField(
+        help_text="是否已读",
+        required=True,
+        error_messages={"required": "必须包含是否已读字段"}
+    )
+
+    alert_type = serializers.CharField(
+        help_text="告警类型",
+        required=True, max_length=1024,
+        error_messages={"required": "必须包含告警类型字段"}
+    )
+
+    alert_host_ip = serializers.CharField(
+        help_text="告警来源主机ip",
+        required=True, max_length=1024,
+        error_messages={"required": "必须包含告警来源主机ip字段"}
+    )
+
+    alert_host_instance_name = serializers.CharField(
+        help_text="告警主机实例名称",
+        required=True, max_length=1024,
+        error_messages={"required": "必须包含告警主机实例名称字段"}
+    )
+
+    alert_service_name = serializers.CharField(
+        help_text="告警服务名称",
+        required=True, max_length=1024,
+        error_messages={"required": "必须包含告警服务名称字段"}
+    )
+
+    alert_service_instance_name = serializers.CharField(
+        help_text="告警服务实例名称",
+        required=True, max_length=1024,
+        error_messages={"required": "必须包含告告警服务实例名称字段"}
+    )
+
+    alert_service_type = serializers.CharField(
+        help_text="告警服务类型",
+        required=True, max_length=1024,
+        error_messages={"required": "必须包含告警服务类型字段"}
+    )
+
+    alert_level = serializers.CharField(
+        help_text="告警级别",
+        required=True, max_length=1024,
+        error_messages={"required": "必须包含告警级别字段"}
+    )
+
+    alert_describe = serializers.CharField(
+        help_text="告警描述",
+        required=True, max_length=1024,
+        error_messages={"required": "必须包含告警描述字段"}
+    )
+
+    alert_receiver = serializers.CharField(
+        help_text="告警接收人",
+        required=True, max_length=1024,
+        error_messages={"required": "必须包含告警接收人字段"}
+    )
+
+    alert_resolve = serializers.CharField(
+        help_text="告警解决方案",
+        required=True, max_length=1024,
+        error_messages={"required": "必须包含告警解决方案字段"}
+    )
+
+    alert_time = serializers.CharField(
+        help_text="告警发生时间",
+        required=True, max_length=1024,
+        error_messages={"required": "必须包含告警发生时间字段"}
+    )
+
+    create_time = serializers.CharField(
+        help_text="告警信息入库时间",
+        required=True, max_length=1024,
+        error_messages={"required": "必须包含告警信息入库时间字段"}
+    )
+
+    monitor_path = serializers.CharField(
+        help_text="跳转监控路径",
+        required=True, max_length=1024,
+        error_messages={"required": "必须包含跳转监控路径字段"}
+    )
+
+    monitor_log = serializers.CharField(
+        help_text="跳转监控日志路径",
+        required=True, max_length=1024,
+        error_messages={"required": "必须包含跳转监控日志路径字段"}
+    )
+
+    fingerprint = serializers.CharField(
+        help_text="告警的唯一标识",
+        required=True, max_length=1024,
+        error_messages={"required": "必须包含告警的唯一标识字段"}
+    )
+
+    env = serializers.CharField(
+        help_text="环境",
+        required=True, max_length=1024,
+        error_messages={"required": "必须包含告环境字段"}
+    )
+
+    class Meta:
+        model = Alert
+        fields = "__all__"
+
+
+class MaintainSerializer(ModelSerializer):
+
+    maintain_id = serializers.CharField(
+        help_text="维护唯一标识",
+        required=False, max_length=1024,
+        error_messages={"required": "maintain_id不可重复"}
+    )
+    matcher_name = serializers.CharField(
+        help_text="匹配标签",
+        required=True, max_length=1024,
+        error_messages={"required": "必须包含匹配标签"}
+    )
+    matcher_value = serializers.CharField(
+        help_text="维护唯一标识",
+        required=True, max_length=1024,
+        error_messages={"required": "必须包含匹配标签值"}
+    )
+
+    def validate(self, attrs):
+        """ 校验env_name是否存在 """
+        return attrs
+
+    def create(self, validated_data):
+        """ 进入 / 退出维护模式 """
+        maintain_id = validated_data.get("maintain_id")
+        # matcher_name = validated_data.get("matcher_name")
+        matcher_value = validated_data.get("matcher_value")
+        status = "开启" if maintain_id else "关闭"
+
+        # 根据 maintain_id 判断主机进入 / 退出维护模式
+        alert_manager = Alertmanager()
+        if maintain_id:
+            res_ls = alert_manager.set_maintain_by_env_name(matcher_value)
+        else:
+            res_ls = alert_manager.revoke_maintain_by_env_name(matcher_value)
+
+        # 操作失败
+        if not res_ls:
+            logger.error(f"全局{status}维护模式失败")
+            # 操作失败记录写入
+            raise OperateError(f"全局{status}维护模式失败")
+
+        # 操作成功
+        logger.info(f"全局{status}维护模式成功")
+        return validated_data
+
+    class Meta:
+        model = Maintain
+        fields = "__all__"

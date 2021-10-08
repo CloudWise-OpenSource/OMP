@@ -1,14 +1,17 @@
-from promemonitor.promemonitor_serializers import MonitorUrlSerializer
-from db_models.models import MonitorUrl
+# Create your views here.
+from promemonitor.promemonitor_serializers import MonitorUrlSerializer, AlertSerializer, MaintainSerializer
+from db_models.models import MonitorUrl, Alert, Maintain
+
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
-from rest_framework.mixins import (
-    ListModelMixin, CreateModelMixin
-)
+from rest_framework.mixins import (ListModelMixin, CreateModelMixin)
+from django.views.generic import View
+# from promemonitor.alert_util import AlertAnalysis
 
 
+# class MonitorUrlViewSet(ListModelMixin,CreateModelMixin,UpdateModelMixin,GenericViewSet):
 class MonitorUrlViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
     """
         list:
@@ -35,15 +38,60 @@ class MonitorUrlViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
 
     @action(methods=['patch'], detail=False)
     def multiple_update(self, request, *args, **kwargs):
-        '''批量添加。校验为单个校验,出现异常直接抛出'''
         partial = kwargs.pop('partial', True)
         instances = []
-        for item in request.data.get('data'):
+        for item in request.data:
             instance = get_object_or_404(MonitorUrl, id=int(item['id']))
             serializer = super().get_serializer(instance, data=item, partial=partial)
             serializer.is_valid(raise_exception=True)
-            instances.append(serializer)
-        for i in instances:
-            i.save()
-        data = [i.data for i in instances]
-        return Response(data)
+            serializer.save()
+            instances.append(serializer.data)
+        return Response(instances)
+
+
+class AlertViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
+    """
+    告警记录视图类
+    """
+    serializer_class = AlertSerializer
+    queryset = Alert.objects.all()
+
+    def get_serializer(self, *args, **kwargs):
+        serializer_class = self.get_serializer_class()
+        kwargs.setdefault('context', self.get_serializer_context())
+        if self.request:
+            if isinstance(self.request.data, list):
+                return serializer_class(many=True, *args, **kwargs)
+            return serializer_class(*args, **kwargs)
+        else:
+            return serializer_class(*args, **kwargs)
+
+    @action(methods=['patch'], detail=False)
+    def multiple_update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', True)
+        instances = []
+        for item in request.data:
+            instance = get_object_or_404(MonitorUrl, id=int(item['id']))
+            serializer = super().get_serializer(instance, data=item, partial=partial)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            instances.append(serializer.data)
+        return Response(instances)
+
+
+class MaintainViewSet(GenericViewSet, CreateModelMixin, ListModelMixin):
+    """
+    create:
+    全局进入 / 退出维护模式
+    """
+    queryset = Maintain.objects.filter(
+        matcher_name='env_name', matcher_value='default')
+    serializer_class = MaintainSerializer
+    # 操作信息描述
+    post_description = "更新全局维护状态"
+
+
+class ReceiveAlert(View):
+
+    def post(self, requests):
+        pass
