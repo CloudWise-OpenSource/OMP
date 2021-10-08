@@ -33,7 +33,7 @@ class HostsResourceMixin:
                 ip=f"{self.IP_START}.0.0.{index}",
                 port=36000,
                 username=f"root{index}",
-                password=aes_crypto.encode(f"root_{index}"),
+                password=aes_crypto.encode(f"password_{index}"),
                 data_folder="/data",
                 operate_system="CentOS",
                 env=env,

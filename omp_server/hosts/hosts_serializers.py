@@ -47,27 +47,30 @@ class HostSerializer(ModelSerializer):
         required=True,
         error_messages={"required": "必须包含[ip]字段"})
     port = serializers.IntegerField(
-        help_text="SSH端口，范围1~65535",
+        help_text="端口",
         required=True,
         min_value=1, max_value=65535,
         error_messages={"required": "必须包含[port]字段"})
     username = serializers.CharField(
-        help_text="SSH登录用户名",
+        help_text="用户名",
         required=True, max_length=16,
         error_messages={"required": "必须包含[username]字段"},
         validators=[
             ReValidator(regex=r"^[_a-zA-Z0-9][-_a-zA-Z0-9]+$"),
         ])
     password = serializers.CharField(
-        help_text="SSH登录密码",
-        required=True, max_length=16,
-        error_messages={"required": "必须包含[password]字段"},
+        help_text="密码",
+        required=True, min_length=8, max_length=16,
+        error_messages={
+            "required": "必须包含[password]字段",
+            "min_length": "密码长度需大于{min_length}",
+            "max_length": "密码长度需小于{max_length}"},
         validators=[
             NoEmojiValidator(),
             NoChineseValidator(),
         ])
     data_folder = serializers.CharField(
-        help_text="数据分区，需要以 / 开头",
+        help_text="数据分区",
         required=True, max_length=255,
         error_messages={"required": "必须包含[data_folder]字段"},
         validators=[
@@ -106,7 +109,7 @@ class HostSerializer(ModelSerializer):
         """ 校验IP是否重复 """
         if self.instance is not None:
             if ip != self.instance.ip:
-                raise ValidationError("该字段不可修改")
+                raise ValidationError("IP不可修改")
             return ip
         if Host.objects.filter(ip=ip).exists():
             raise ValidationError("IP已经存在")
@@ -272,7 +275,7 @@ class HostMaintenanceSerializer(Serializer):
         diff = set(host_ids) - set(exists_ids)
         if diff:
             raise ValidationError(
-                f"有不存在的ID ["
+                f"主机列表中有不存在的ID ["
                 f"{','.join(map(lambda x: str(x), diff))}"
                 f"]")
         return host_ids
@@ -285,7 +288,7 @@ class HostMaintenanceSerializer(Serializer):
         if queryset.exists():
             status = "开启" if attrs.get("is_maintenance") else "关闭"
             raise ValidationError({
-                "host_ids": f"存在已 '{status}' 维护模式的主机"
+                "host_ids": f"主机列表中存在已 '{status}' 维护模式的主机"
             })
         return attrs
 

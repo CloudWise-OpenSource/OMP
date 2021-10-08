@@ -40,7 +40,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "instance_name: 必须包含[instance_name]字段;",
+            "message": "必须包含[instance_name]字段;",
             "data": None
         })
 
@@ -51,7 +51,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "instance_name: Ensure this field has no more than 16 characters.;",
+            "message": "Ensure this field has no more than 16 characters.;",
             "data": None
         })
 
@@ -61,7 +61,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "instance_name: 字段不可含有中文;",
+            "message": "实例名不可含有中文;",
             "data": None
         })
 
@@ -71,7 +71,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "instance_name: 字段不可含有表情;",
+            "message": "实例名不可含有表情;",
             "data": None
         })
 
@@ -81,7 +81,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "instance_name: 字段格式不合法;",
+            "message": "实例名格式不合法;",
             "data": None
         })
 
@@ -92,7 +92,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "instance_name: 实例名已经存在;",
+            "message": "实例名已经存在;",
             "data": None
         })
         self.destroy_hosts()
@@ -106,7 +106,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "ip: 必须包含[ip]字段;",
+            "message": "必须包含[ip]字段;",
             "data": None
         })
 
@@ -116,7 +116,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "ip: Enter a valid IPv4 or IPv6 address.;",
+            "message": "Enter a valid IPv4 or IPv6 address.;",
             "data": None
         })
 
@@ -127,7 +127,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "ip: IP已经存在;",
+            "message": "IP已经存在;",
             "data": None
         })
         self.destroy_hosts()
@@ -141,7 +141,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "port: 必须包含[port]字段;",
+            "message": "必须包含[port]字段;",
             "data": None
         })
 
@@ -151,7 +151,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "port: Ensure this value is less than or equal to 65535.;",
+            "message": "Ensure this value is less than or equal to 65535.;",
             "data": None
         })
 
@@ -164,7 +164,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "username: 必须包含[username]字段;",
+            "message": "必须包含[username]字段;",
             "data": None
         })
 
@@ -174,7 +174,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "username: Ensure this field has no more than 16 characters.;",
+            "message": "Ensure this field has no more than 16 characters.;",
             "data": None
         })
 
@@ -184,7 +184,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "username: 字段格式不合法;",
+            "message": "用户名格式不合法;",
             "data": None
         })
 
@@ -197,7 +197,17 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "password: 必须包含[password]字段;",
+            "message": "必须包含[password]字段;",
+            "data": None
+        })
+
+        # password 小于指定长度 -> 创建失败
+        data = self.correct_host_data.copy()
+        data.update({"password": "pass11"})
+        resp = self.post(self.create_host_url, data).json()
+        self.assertDictEqual(resp, {
+            "code": 1,
+            "message": "密码长度需大于8;",
             "data": None
         })
 
@@ -207,7 +217,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "password: Ensure this field has no more than 16 characters.;",
+            "message": "密码长度需小于16;",
             "data": None
         })
 
@@ -217,7 +227,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "password: 字段不可含有中文;",
+            "message": "密码不可含有中文;",
             "data": None
         })
 
@@ -227,7 +237,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "password: 字段不可含有表情;",
+            "message": "密码不可含有表情;",
             "data": None
         })
 
@@ -240,7 +250,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "data_folder: 必须包含[data_folder]字段;",
+            "message": "必须包含[data_folder]字段;",
             "data": None
         })
 
@@ -250,7 +260,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "data_folder: 字段格式不合法;",
+            "message": "数据分区格式不合法;",
             "data": None
         })
 
@@ -260,7 +270,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "data_folder: 数据分区目录不能以'-'开头;",
+            "message": "数据分区目录不能以'-'开头;",
             "data": None
         })
 
@@ -273,7 +283,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "operate_system: 必须包含[operate_system]字段;",
+            "message": "必须包含[operate_system]字段;",
             "data": None
         })
 
@@ -285,7 +295,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, self.correct_host_data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "ip: SSH登录失败;",
+            "message": "SSH登录失败;",
             "data": None
         })
 
@@ -298,7 +308,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, self.correct_host_data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "username: 用户权限错误，请使用root或具备sudo免密用户;",
+            "message": "用户权限错误，请使用root或具备sudo免密用户;",
             "data": None
         })
 
@@ -445,7 +455,7 @@ class UpdateHostTest(AutoLoginTest, HostsResourceMixin):
         }).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "ip: 该字段不可修改;",
+            "message": "IP不可修改;",
             "data": None
         })
 
@@ -461,7 +471,7 @@ class UpdateHostTest(AutoLoginTest, HostsResourceMixin):
         }).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "instance_name: 实例名已经存在;",
+            "message": "实例名已经存在;",
             "data": None
         })
 
@@ -509,7 +519,7 @@ class UpdateHostTest(AutoLoginTest, HostsResourceMixin):
         }).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "ip: 该字段不可修改;",
+            "message": "IP不可修改;",
             "data": None
         })
 
@@ -519,7 +529,7 @@ class UpdateHostTest(AutoLoginTest, HostsResourceMixin):
         }).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "instance_name: 实例名已经存在;",
+            "message": "实例名已经存在;",
             "data": None
         })
 
@@ -690,7 +700,7 @@ class HostMaintainTest(AutoLoginTest, HostsResourceMixin):
         }).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": f"host_ids: 有不存在的ID [{not_exists_id}];",
+            "message": f"主机列表中有不存在的ID [{not_exists_id}];",
             "data": None
         })
 
@@ -702,7 +712,7 @@ class HostMaintainTest(AutoLoginTest, HostsResourceMixin):
         }).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "host_ids: 存在已 '关闭' 维护模式的主机;",
+            "message": "主机列表中存在已 '关闭' 维护模式的主机;",
             "data": None
         })
 
