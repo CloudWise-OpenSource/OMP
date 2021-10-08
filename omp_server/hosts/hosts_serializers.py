@@ -37,7 +37,9 @@ class HostSerializer(ModelSerializer):
     instance_name = serializers.CharField(
         help_text="实例名",
         required=True, max_length=16,
-        error_messages={"required": "必须包含[instance_name]字段"},
+        error_messages={
+            "required": "必须包含[instance_name]字段",
+            "max_length": "实例名长度需小于{max_length}"},
         validators=[
             NoEmojiValidator(),
             NoChineseValidator(),
@@ -55,7 +57,9 @@ class HostSerializer(ModelSerializer):
     username = serializers.CharField(
         help_text="用户名",
         required=True, max_length=16,
-        error_messages={"required": "必须包含[username]字段"},
+        error_messages={
+            "required": "必须包含[username]字段",
+            "max_length": "用户名长度需小于{max_length}"},
         validators=[
             ReValidator(regex=r"^[_a-zA-Z0-9][-_a-zA-Z0-9]+$"),
         ])
