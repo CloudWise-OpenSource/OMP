@@ -86,7 +86,8 @@ class SSH(object):
         self._get_connection()
         if self.is_error:
             return False, str(self.error_message)
-        _, stdout, _ = self.ssh_client.exec_command("sudo -n echo 'success'")
+        _, stdout, _ = self.ssh_client.exec_command(
+            "sudo -n echo 'success'", get_pty=True)
         res = stdout.readline().strip()
         if res == "success":
             return True, "is sudo"
