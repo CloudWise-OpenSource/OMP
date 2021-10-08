@@ -12,7 +12,6 @@ export const DetailHost = ({
   loading,
   data,
 }) => {
-  console.log(data);
   // 视口宽度
   const viewHeight = useSelector((state) => state.layouts.viewSize.height);
   const wrapperRef = useRef(null);

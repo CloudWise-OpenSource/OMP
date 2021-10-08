@@ -178,11 +178,10 @@ const OmpLayout = (props) => {
       
   // 查询全局维护模式状态
   const queryMaintainState = ()=>{
-    reduxDispatch(getMaintenanceChangeAction(true));
     fetchGet(apiRequest.environment.queryMaintainState)
     .then((res) => {
       if (res.data) {
-        console.log(res)
+        reduxDispatch(getMaintenanceChangeAction(res.data.data.length !== 0));
       }
     })
     .catch((e) => {
