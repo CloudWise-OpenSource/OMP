@@ -33,7 +33,7 @@ urlpatterns_inside = [
     path("login/", JwtAPIView.as_view(), name="login"),
     path("users/", include(users_router.urls), name="users"),
     path("hosts/", include(hosts_router.urls), name="hosts"),
-    path("promemonitor/",include(promemonitor_router.urls), name="promemonitor"),
+    path("promemonitor/", include(promemonitor_router.urls), name="promemonitor"),
 ]
 
 urlpatterns = [

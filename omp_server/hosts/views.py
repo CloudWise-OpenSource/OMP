@@ -167,3 +167,9 @@ class HostBatchValidateView(GenericViewSet, CreateModelMixin):
     serializer_class = HostBatchValidateSerializer
     # 操作描述信息
     post_description = "主机数据批量验证"
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        print(serializer.is_valid())
+        result_dict = serializer.validated_data.get("result_dict")
+        return Response(result_dict)

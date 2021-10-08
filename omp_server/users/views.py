@@ -12,11 +12,15 @@ from rest_framework.mixins import (
 from rest_framework_jwt.views import JSONWebTokenAPIView
 from rest_framework_jwt.settings import api_settings
 
+from django_filters.rest_framework.backends import DjangoFilterBackend
+
+from utils.pagination import PageNumberPager
 from db_models.models import (UserProfile, OperateLog)
 from users.users_serializers import (
     UserSerializer, JwtSerializer,
     OperateLogSerializer, UserUpdatePasswordSerializer
 )
+from users.users_filters import UserFilter
 
 
 class UsersView(ListModelMixin, RetrieveModelMixin, CreateModelMixin,
@@ -40,8 +44,13 @@ class UsersView(ListModelMixin, RetrieveModelMixin, CreateModelMixin,
         partial_update:
         更新一个现有用户的一个或多个字段
     """
-    queryset = UserProfile.objects.all()
+    queryset = UserProfile.objects.all().order_by("id")
     serializer_class = UserSerializer
+    pagination_class = PageNumberPager
+    # 过滤字段
+    filter_backends = (DjangoFilterBackend,)
+    filter_class = UserFilter
+    # 操作描述信息
     get_description = "获取用户"
     post_description = "新建用户"
     put_description = "更新用户"
@@ -58,6 +67,7 @@ class OperateLogView(ListModelMixin, RetrieveModelMixin, GenericViewSet):
     """
     queryset = OperateLog.objects.all()
     serializer_class = OperateLogSerializer
+    # 操作描述信息
     get_description = "获取用户操作记录"
 
 

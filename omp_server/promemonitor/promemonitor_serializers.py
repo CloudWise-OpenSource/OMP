@@ -16,7 +16,7 @@ class MonitorUrlListSerializer(ListSerializer):
         pass
 
     def to_internal_value(self, data):
-        return data
+        return data.get('data')
 
     def validate(self, data):
         queryset = MonitorUrl.objects.all()

@@ -107,3 +107,12 @@ export const fetchDelete = (url, params) =>
       ...params?.params,
     },
   });
+
+  export const fetchPatch = (url, params) =>
+  new NewAxios().request({
+    url: url,
+    method: "Patch",
+    data: {
+      ...params?.body,
+    },
+  });

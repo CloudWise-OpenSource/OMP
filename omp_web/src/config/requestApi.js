@@ -2,6 +2,8 @@ export const apiRequest = {
   environment: {
     //环境数据查询
     //queryEnvList: "/api/v1/env"
+    // 查询全局维护模式
+    queryMaintainState: "/api/promemonitor/maintain/",
   },
   auth: {
     // 用户认证
@@ -10,15 +12,6 @@ export const apiRequest = {
     users: "/api/users/users/",
     // 修改密码
     changePassword: "/api/users/updatePassword/",
-
-
-
-
-
-
-
-    logout: "/api/v1/auth/logout", // 登出
-    password: "/api/v1/auth/password", // 修改密码
   },
   homepage: {
     host: "/api/v1/home/host",
@@ -36,8 +29,21 @@ export const apiRequest = {
     operateLog:"/api/hosts/operateLog/",
 
     // 重启主机agent
-    restartHostAgent:"/api/hosts/restartHostAgent/"
+    restartHostAgent:"/api/hosts/restartHostAgent/",
+
+    // 主机进入退出维护模式
+    hostsMaintain:"/api/hosts/maintain/"
   },
+  MonitoringSettings: {
+    // 配置初始查询监控
+    monitorurl:"/api/promemonitor/monitorurl/",
+    // 修改配置监控
+    multiple_update:"/api/promemonitor/monitorurl/multiple_update/"
+  },
+
+
+
+
   productsManagement: {
     // 产品管理-服务管理
     all: "/api/v1/services/all", // 全部服务

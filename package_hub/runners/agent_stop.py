@@ -47,7 +47,7 @@ def update_agent_detail(agent_id_lst):
             Host.objects.filter(host_agent=0).update(host_agent=2)
         Host.objects.filter(
             ip__in=agent_id_lst).all().update(host_agent=0)
-        logger.info(f"失联Agent: {agent_id_lst}状态更新成功!")
+        logger.info(f"更新当前在线Agent: {agent_id_lst}状态更新成功!")
     except Exception as e:
         logger.error(f"{agent_id_lst}状态更新失败: {str(e)}")
 

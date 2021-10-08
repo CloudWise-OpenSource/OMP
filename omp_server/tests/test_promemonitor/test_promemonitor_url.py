@@ -41,10 +41,9 @@ class PromemonitorTest(AutoLoginTest):
             "data": None
         })
         # name名字重复,批量创建 -> 无法创建
-        resp = self.post(self.create_monitorurl_url, [{
+        resp = self.post(self.create_monitorurl_url, {"data":[{
             "name": "prometheus",
-            "monitor_url": "127.0.0.1:8080",
-        }]).json()
+        }]}).json()
         self.assertDictEqual(resp, {
             "code": 1,
             "message": "non_field_errors: name字段已经存在,detail:prometheus;",
@@ -62,9 +61,9 @@ class PromemonitorTest(AutoLoginTest):
         })
 
         # name名字空,批量创建 -> 无法创建
-        resp = self.post(self.create_monitorurl_url, [{
+        resp = self.post(self.create_monitorurl_url, {"data": [{
             "monitor_url": "127.0.0.1:8080",
-        }]).json()
+        }]}).json()
         self.assertDictEqual(resp, {
             "code": 1,
             "message": "non_field_errors: name字段不为空;",
@@ -83,10 +82,10 @@ class PromemonitorTest(AutoLoginTest):
         })
 
         # name字段超限,批量创建 -> 无法创建
-        resp = self.post(self.create_monitorurl_url, [{
+        resp = self.post(self.create_monitorurl_url, {"data": [{
             "name": "prometheusprometheusprometheusprometheusprometheusprometheusprometheusprometheus",
             "monitor_url": "127.0.0.1:8080",
-        }]).json()
+        }]}).json()
         self.assertDictEqual(resp, {
             "code": 1,
             "message": "non_field_errors: name字段长度超过32,detail:prometheusprometheusprometheusprometheusprometheusprometheusprometheusprometheus;",
@@ -104,9 +103,9 @@ class PromemonitorTest(AutoLoginTest):
         })
 
         # monitor_url字段空,批量 -> 无法创建
-        resp = self.post(self.create_monitorurl_url, [{
+        resp = self.post(self.create_monitorurl_url, {"data": [{
             "name": "test1",
-        }]).json()
+        }]}).json()
         self.assertDictEqual(resp, {
             "code": 1,
             "message": "non_field_errors: monitor_url是必须字段;",
@@ -122,7 +121,7 @@ class PromemonitorTest(AutoLoginTest):
         self.assertEqual(resp.get("message"), "success")
 
         # 成功批量
-        resp = self.post(self.create_monitorurl_url, [{
+        resp = self.post(self.create_monitorurl_url, {"data": [{
             "name": "test3",
             "monitor_url": "127.0.0.1:8080"
         },
@@ -130,27 +129,27 @@ class PromemonitorTest(AutoLoginTest):
                 "name": "test2",
                 "monitor_url": "127.0.0.1:8080"
         }
-        ]).json()
+        ]}).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
 
     def test_partial_update_promeurl(self):
         # 修改url, -> 创建成功
-        resp = self.patch(self.multiple_update, [{
+        resp = self.patch(self.multiple_update, {"data":[{
             "id": "3",
             "monitor_url": "127.0.0.1:19999"
-        }]).json()
+        }]}).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
 
         # 修改url批量, -> 创建成功
-        resp = self.patch(self.multiple_update, [
+        resp = self.patch(self.multiple_update, {"data": [
             {
                 "id": "2",
                 "monitor_url": "127.0.0.1:29999"
             }, {
                 "id": "3",
                 "monitor_url": "127.0.0.1:19999"
-            }]).json()
+            }]}).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")

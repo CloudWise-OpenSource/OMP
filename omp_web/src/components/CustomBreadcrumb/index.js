@@ -4,10 +4,20 @@ import { Link, withRouter } from "react-router-dom";
 import styles from "./index.module.less";
 import OmpMaintenanceModal from "@/components/OmpMaintenanceModal";
 //import { context } from "@/layouts";
-import { fetchGet } from "@/utils/request";
+import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import { handleResponse, refreshTime } from "@/utils/utils";
 import { useSelector, useDispatch } from "react-redux";
+import {
+  AlertFilled
+} from "@ant-design/icons";
+import {
+  OmpMessageModal,
+} from "@/components";
+import {
+  ExclamationCircleOutlined,
+} from "@ant-design/icons";
+import { getMaintenanceChangeAction } from "@/pages/SystemManagement/store/actionsCreators";
 /*eslint-disable*/
 //跟路由路径保持一致
 const breadcrumbNameMap = {
@@ -16,26 +26,31 @@ const breadcrumbNameMap = {
   homepage: "仪表盘",
   "resource-management": "资源管理",
   "machine-management": "主机管理",
-  // "/machine-management/used": "已使用",
-  // "/machine-management/unused": "未使用",
+  "system-settings": "系统管理",
+  "user-management": "用户管理",
+  "monitoring-settings": "监控设置",
+  "system-management": "系统管理"
 };
 
 // 基于面包屑组件的一层封装，用于匹配当前路由地址，动态展示页面路径
 const CustomBreadcrumb = withRouter(({ location }) => {
   const dispatch = useDispatch();
-
+  const [loading, setLoading] = useState(false);
   //是否展示维护模式提示词
   const time = useSelector(
     (state) => state.customBreadcrumb.time
   );
 
+  const isMaintenance = useSelector(
+    (state) => state.systemManagement.isMaintenance
+  );
+
+  const [closeMaintenanceModal, setCloseMaintenanceModal] = useState(false);
+
   //const appContext = useContext(context);
 
   //定义在首页时当前组件展示的时间
   const [curentTime, setCurentTime] = useState("");
-
-  //维护模式modal显示隐藏state
-  const [maintainModal, setMaintainModal] = useState(false);
 
   const pathSnippets = location.pathname;
 
@@ -83,13 +98,87 @@ const CustomBreadcrumb = withRouter(({ location }) => {
     dispatch(refreshTime())
   }, []);
 
+   // 更改维护模式
+   const changeMaintain = (e)=>{
+    setLoading(true);
+    fetchPost(apiRequest.environment.queryMaintainState, {
+      body: {
+        matcher_name:"env_name",
+        matcher_value:"default"
+      },
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          if(res.code == 0){
+            if (e) {   
+                message.success("已进入全局维护模式")
+                dispatch(getMaintenanceChangeAction(true));
+              } else {
+                message.success("已退出全局维护模式")
+                dispatch(getMaintenanceChangeAction(false));
+              }
+          }
+          if(res.code == 1){
+            message.warning(res.message)
+          }
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setLoading(false);
+        setCloseMaintenanceModal(false);
+      });
+}
+
   return (
     <div className={styles.customNav}>
-      <Breadcrumb>{extraBreadcrumbItems()}</Breadcrumb>
-      <div />
-      <span className={styles.timeStampContainer} style={{ paddingRight: 0 }}>
+      {/* <div> */}
+        <Breadcrumb>{extraBreadcrumbItems()}</Breadcrumb>
+      {/* </div> */}
+      {isMaintenance ? (
+            <span
+              className={styles.timeStampContainer}
+            >
+              <AlertFilled style={{ fontSize: "14px", color:"rgba(247, 207, 54)" }} type="alert" theme="filled" />{" "}
+              当前处于维护模式, 退出维护模式请点击
+              <span
+                onClick={() => {
+                  setCloseMaintenanceModal(true);
+                }}
+                style={{ color: "#2e7cee", cursor: "pointer" }}
+              >
+                {" "}
+                这里
+              </span>
+            </span>
+          ):<span />}
+          {/* <span /> */}
+      {/* <span className={styles.timeStampContainer} style={{ paddingRight: 0 }}>
         刷新时间: {time}
-      </span>
+      </span> */}
+       <OmpMessageModal
+        visibleHandle={[closeMaintenanceModal, setCloseMaintenanceModal]}
+        title={
+          <span>
+            <ExclamationCircleOutlined
+              style={{
+                fontSize: 20,
+                color: "#f0a441",
+                paddingRight: "10px",
+                position: "relative",
+                top: 2,
+              }}
+            />
+            提示
+          </span>
+        }
+        loading={loading}
+        onFinish={() => {
+          changeMaintain(false)
+        }}
+      >
+        <div style={{ padding: "20px" }}>确定退出全局维护模式 ？</div>
+      </OmpMessageModal>
     </div>
   );
 });

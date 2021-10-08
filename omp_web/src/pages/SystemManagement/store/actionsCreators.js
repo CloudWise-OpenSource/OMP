@@ -6,10 +6,3 @@ export const getMaintenanceChangeAction = (value) => ({
         isMaintenance:value
     }
 });
-
-export const getRefreshTimeChangeAction = (value) => ({
-    type: actionTypes.CHANGE_REFRESHTIME,
-    payload: {
-        time:value
-    }
-});

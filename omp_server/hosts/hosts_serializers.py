@@ -2,6 +2,9 @@
 主机序列化器
 """
 import logging
+from concurrent.futures import (
+    ThreadPoolExecutor, as_completed
+)
 
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -153,7 +156,8 @@ class HostSerializer(ModelSerializer):
         if not attrs.get("env") and not self.instance:
             attrs["env"] = Env.objects.get(id=1)
         # 主机密码加密处理
-        attrs["password"] = AESCryptor().encode(attrs.get("password"))
+        if attrs.get("password"):
+            attrs["password"] = AESCryptor().encode(attrs.get("password"))
         return attrs
 
     def create(self, validated_data):
@@ -362,20 +366,41 @@ class HostOperateLogSerializer(ModelSerializer):
 class HostBatchValidateSerializer(Serializer):
     """ 主机数据批量验证 """
 
-    hosts_info = serializers.ListSerializer(
-        child=serializers.IntegerField(),
+    host_list = serializers.ListSerializer(
+        child=serializers.DictField(),
         help_text="主机数据列表",
         required=True,
-        error_messages={"required": "必须包含[host_ids]字段"},
+        error_messages={"required": "必须包含[host_info]字段"},
         allow_empty=False)
 
-    def validate_hosts_info(self, hosts_info):
+    def host_info_validate(self, host_data):
+        """ 单个主机信息验证 """
+
+        return "correct", host_data
+
+    def validate(self, attrs):
+        host_list = attrs.get("host_list")
         """ 校验主机数据列表 """
+        # 多线程校验主机数据正确性
+        with ThreadPoolExecutor(max_workers=50) as executor:
+            future_list = []
+            for host_data in host_list:
+                future_obj = executor.submit(
+                    self.host_info_validate, host_data)
+                future_list.append(future_obj)
+            result_dict = {
+                "correct": [],
+                "error": []
+            }
+            for future in as_completed(future_list):
+                flag, host_data = future.result()
+                result_dict[flag].append(host_data)
+        attrs["result_dict"] = result_dict
         # TODO 待补充
-        return hosts_info
+        return attrs
 
     def create(self, validated_data):
-        pass
+        return validated_data
 
     def update(self, instance, validated_data):
         pass
