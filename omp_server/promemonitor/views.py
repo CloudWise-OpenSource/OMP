@@ -5,13 +5,10 @@ from db_models.models import MonitorUrl, Alert, Maintain
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
-from rest_framework.viewsets import GenericViewSet
+from rest_framework.viewsets import GenericViewSet, ViewSet
 from rest_framework.mixins import (ListModelMixin, CreateModelMixin)
-from django.views.generic import View
-# from promemonitor.alert_util import AlertAnalysis
 
 
-# class MonitorUrlViewSet(ListModelMixin,CreateModelMixin,UpdateModelMixin,GenericViewSet):
 class MonitorUrlViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
     """
         list:
@@ -40,7 +37,7 @@ class MonitorUrlViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
     def multiple_update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', True)
         instances = []
-        for item in request.data:
+        for item in request.data.get('data'):
             instance = get_object_or_404(MonitorUrl, id=int(item['id']))
             serializer = super().get_serializer(instance, data=item, partial=partial)
             serializer.is_valid(raise_exception=True)
@@ -60,7 +57,7 @@ class AlertViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
         serializer_class = self.get_serializer_class()
         kwargs.setdefault('context', self.get_serializer_context())
         if self.request:
-            if isinstance(self.request.data, list):
+            if isinstance(self.request.data.get('data'), list):
                 return serializer_class(many=True, *args, **kwargs)
             return serializer_class(*args, **kwargs)
         else:
@@ -70,7 +67,7 @@ class AlertViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
     def multiple_update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', True)
         instances = []
-        for item in request.data:
+        for item in request.data.get('data'):
             instance = get_object_or_404(MonitorUrl, id=int(item['id']))
             serializer = super().get_serializer(instance, data=item, partial=partial)
             serializer.is_valid(raise_exception=True)
@@ -91,7 +88,7 @@ class MaintainViewSet(GenericViewSet, CreateModelMixin, ListModelMixin):
     post_description = "更新全局维护状态"
 
 
-class ReceiveAlert(View):
+class ReceiveAlertViewSet(ViewSet):
 
-    def post(self, requests):
-        pass
+    def create(self):
+        return 1111
