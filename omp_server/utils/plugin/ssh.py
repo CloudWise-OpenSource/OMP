@@ -7,7 +7,9 @@ import logging
 import paramiko
 from scp import SCPClient
 
-from utils.parse_config import SSH_TIMEOUT
+from utils.parse_config import (
+    SSH_CMD_TIMEOUT, SSH_CHECK_TIMEOUT
+)
 
 logger = logging.getLogger("server")
 
@@ -15,7 +17,7 @@ logger = logging.getLogger("server")
 class SSH(object):
     """ SSH 工具类 """
 
-    def __init__(self, hostname, port, username, password, timeout=SSH_TIMEOUT):
+    def __init__(self, hostname, port, username, password, timeout=SSH_CHECK_TIMEOUT):
         """
         初始化ssh
         :param hostname: 主机名或ip地址
@@ -84,13 +86,14 @@ class SSH(object):
         self._get_connection()
         if self.is_error:
             return False, str(self.error_message)
-        _, stdout, _ = self.ssh_client.exec_command("sudo -n echo 'success'")
+        _, stdout, _ = self.ssh_client.exec_command(
+            "sudo -n echo 'success'", get_pty=True)
         res = stdout.readline().strip()
         if res == "success":
             return True, "is sudo"
         return False, "not sudo"
 
-    def cmd(self, command, timeout=SSH_TIMEOUT, get_pty=True):
+    def cmd(self, command, timeout=SSH_CMD_TIMEOUT, get_pty=True):
         """
         执行shell命令
         :param command:

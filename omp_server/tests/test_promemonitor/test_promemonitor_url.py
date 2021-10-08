@@ -43,6 +43,7 @@ class PromemonitorTest(AutoLoginTest):
         # name名字重复,批量创建 -> 无法创建
         resp = self.post(self.create_monitorurl_url, {"data":[{
             "name": "prometheus",
+            "monitor_url": "127.0.0.1:8080"
         }]}).json()
         self.assertDictEqual(resp, {
             "code": 1,
