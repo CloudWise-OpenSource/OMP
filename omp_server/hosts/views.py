@@ -1,6 +1,10 @@
 """
 主机相关视图
 """
+import os
+from django.http import FileResponse
+from django.conf import settings
+
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import (
     ListModelMixin, CreateModelMixin, UpdateModelMixin
@@ -158,15 +162,30 @@ class HostOperateLogView(GenericViewSet, ListModelMixin):
     get_description = "查询主机操作记录"
 
 
-class HostBatchValidateView(GenericViewSet, CreateModelMixin):
+class HostBatchImportView(GenericViewSet, ListModelMixin, CreateModelMixin):
     """
+        list:
+        获取主机批量导入模板
+
         create:
         主机数据批量验证
     """
     queryset = Host.objects.filter(is_deleted=False)
     serializer_class = HostBatchValidateSerializer
     # 操作描述信息
+    get_description = "获取主机批量导入模板"
     post_description = "主机数据批量验证"
+
+    def list(self, request, *args, **kwargs):
+        template_file_name = "import_hosts_template.xlsx"
+        template_path = os.path.join(
+            settings.BASE_DIR.parent,
+            "package_hub", "template", template_file_name)
+        file = open(template_path, 'rb')
+        response = FileResponse(file)
+        response["Content-Type"] = "application/octet-stream"
+        response["Content-Disposition"] = f"attachment;filename={template_file_name}"
+        return response
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

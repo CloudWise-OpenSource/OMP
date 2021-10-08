@@ -11,7 +11,7 @@ from rest_framework.routers import DefaultRouter
 from hosts.views import (
     HostListView, HostDetailView, HostFieldCheckView,
     IpListView, HostMaintenanceView, HostAgentRestartView,
-    HostOperateLogView, HostBatchValidateView
+    HostOperateLogView, HostBatchImportView
 )
 
 router = DefaultRouter()
@@ -23,5 +23,5 @@ router.register("maintain", HostMaintenanceView, basename="maintain")
 router.register("restartHostAgent", HostAgentRestartView,
                 basename="restartHostAgent")
 router.register("operateLog", HostOperateLogView, basename="operateLog")
-router.register("batchValidate", HostBatchValidateView,
+router.register("batchImport", HostBatchImportView,
                 basename="batchValidate")

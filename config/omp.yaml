@@ -6,6 +6,8 @@ local_ip: 10.0.1.160
 ssh_cmd_timeout: 60
 # SSH连通性校验超时时间，单位秒
 ssh_check_timeout: 10
+# 线程池最大workers
+thread_pool_max_workers: 20
 # redis相关配置
 redis:
   host: 127.0.0.1

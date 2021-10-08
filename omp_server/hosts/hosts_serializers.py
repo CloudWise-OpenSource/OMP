@@ -25,6 +25,7 @@ from utils.validator import (
 from utils.plugin.ssh import SSH
 from utils.plugin.crypto import AESCryptor
 from utils.exceptions import OperateError
+from utils.parse_config import THREAD_POOL_MAX_WORKERS
 from promemonitor.alertmanager import Alertmanager
 
 logger = logging.getLogger('server')
@@ -373,7 +374,7 @@ class HostBatchValidateSerializer(Serializer):
         child=serializers.DictField(),
         help_text="主机数据列表",
         required=True,
-        error_messages={"required": "必须包含[host_info]字段"},
+        error_messages={"required": "必须包含[host_list]字段"},
         allow_empty=False)
 
     def host_info_validate(self, host_data):
@@ -385,7 +386,7 @@ class HostBatchValidateSerializer(Serializer):
         host_list = attrs.get("host_list")
         """ 校验主机数据列表 """
         # 多线程校验主机数据正确性
-        with ThreadPoolExecutor(max_workers=50) as executor:
+        with ThreadPoolExecutor(THREAD_POOL_MAX_WORKERS) as executor:
             future_list = []
             for host_data in host_list:
                 future_obj = executor.submit(
