@@ -37,17 +37,17 @@ class PromemonitorTest(AutoLoginTest):
         }).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "name: name已经存在;",
+            "message": "name已经存在;",
             "data": None
         })
         # name名字重复,批量创建 -> 无法创建
-        resp = self.post(self.create_monitorurl_url, {"data":[{
+        resp = self.post(self.create_monitorurl_url, {"data": [{
             "name": "prometheus",
             "monitor_url": "127.0.0.1:8080"
         }]}).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "non_field_errors: name字段已经存在,detail:prometheus;",
+            "message": "name字段已经存在,detail:prometheus;",
             "data": None
         })
 
@@ -57,7 +57,7 @@ class PromemonitorTest(AutoLoginTest):
         }).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "name: This field is required.;",
+            "message": "This field is required.;",
             "data": None
         })
 
@@ -67,7 +67,7 @@ class PromemonitorTest(AutoLoginTest):
         }]}).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "non_field_errors: name字段不为空;",
+            "message": "name字段不为空;",
             "data": None
         })
 
@@ -78,7 +78,7 @@ class PromemonitorTest(AutoLoginTest):
         }).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "name: Ensure this field has no more than 32 characters.;",
+            "message": "Ensure this field has no more than 32 characters.;",
             "data": None
         })
 
@@ -89,7 +89,7 @@ class PromemonitorTest(AutoLoginTest):
         }]}).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "non_field_errors: name字段长度超过32,detail:prometheusprometheusprometheusprometheusprometheusprometheusprometheusprometheus;",
+            "message": "name字段长度超过32,detail:prometheusprometheusprometheusprometheusprometheusprometheusprometheusprometheus;",
             "data": None
         })
 
@@ -99,7 +99,7 @@ class PromemonitorTest(AutoLoginTest):
         }).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "monitor_url: This field is required.;",
+            "message": "This field is required.;",
             "data": None
         })
 
@@ -109,7 +109,7 @@ class PromemonitorTest(AutoLoginTest):
         }]}).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "non_field_errors: monitor_url是必须字段;",
+            "message": "monitor_url是必须字段;",
             "data": None
         })
 
@@ -136,7 +136,7 @@ class PromemonitorTest(AutoLoginTest):
 
     def test_partial_update_promeurl(self):
         # 修改url, -> 创建成功
-        resp = self.patch(self.multiple_update, {"data":[{
+        resp = self.patch(self.multiple_update, {"data": [{
             "id": "3",
             "monitor_url": "127.0.0.1:19999"
         }]}).json()
