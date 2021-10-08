@@ -60,8 +60,10 @@ def res_is_not_none(exc, context, response):
             # 调整序列化器校验返回字段格式，不展示键的名称
             # error_message += f"{key}: "
             for el in value:
-                error_message += f"{str(el)};"
-            error_message += " "
+                error_message += f"{str(el)}; "
+        # 截取结尾的分号
+        if error_message.endswith("; "):
+            error_message = error_message[:-2]
         response.data["message"] = error_message.strip()
         response.data["data"] = None
     elif response.status_code == 401:
