@@ -27,7 +27,7 @@ class MonitorUrlViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
         serializer_class = self.get_serializer_class()
         kwargs.setdefault('context', self.get_serializer_context())
         if self.request:
-            if isinstance(self.request.data, list):
+            if isinstance(self.request.data.get("data"), list):
                 return serializer_class(many=True, *args, **kwargs)
             return serializer_class(*args, **kwargs)
         else:
