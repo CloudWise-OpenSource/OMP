@@ -50,14 +50,23 @@ def real_deploy_agent(host_obj):
     logger.info(
         f"Deploy Agent for {host_obj.ip}, Res Flag: {flag}; Res Message: {message}")
     # 更新主机Agent状态，0 正常；4 部署失败
+    # 使用filter查询然后使用update方法进行处理，防止多任务环境
     if flag:
-        host_obj.host_agent = 0
-        host_obj.host_agent_error = None
+        Host.objects.filter(ip=host_obj.ip).update(host_agent=0)
     else:
-        host_obj.host_agent = 4
-        host_obj.host_agent_error = \
-            str(message)[:200] if len(str(message)) > 200 else str(message)
-    host_obj.save()
+        Host.objects.filter(ip=host_obj.ip).update(
+            host_agent=4,
+            host_agent_error=str(message)[:200] if len(
+                str(message)) > 200 else str(message)
+        )
+    # if flag:
+    #     host_obj.host_agent = 0
+    #     host_obj.host_agent_error = None
+    # else:
+    #     host_obj.host_agent = 4
+    #     host_obj.host_agent_error = \
+    #         str(message)[:200] if len(str(message)) > 200 else str(message)
+    # host_obj.save()
 
 
 @shared_task
