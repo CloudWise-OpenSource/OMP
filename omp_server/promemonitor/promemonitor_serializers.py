@@ -218,14 +218,16 @@ class MaintainSerializer(ModelSerializer):
 
     def create(self, validated_data):
         """ 进入 / 退出维护模式 """
-        maintain_id = validated_data.get("maintain_id")
-        # matcher_name = validated_data.get("matcher_name")
+        matcher_name = validated_data.get("matcher_name")
         matcher_value = validated_data.get("matcher_value")
-        status = "开启" if maintain_id else "关闭"
+        maintain_queryset = Maintain.objects.filter(
+            matcher_name=matcher_name, matcher_value=matcher_value)
+
+        status = "开启" if not maintain_queryset.exists() else "关闭"
 
         # 根据 maintain_id 判断主机进入 / 退出维护模式
         alert_manager = Alertmanager()
-        if maintain_id:
+        if not maintain_queryset.exists():
             res_ls = alert_manager.set_maintain_by_env_name(matcher_value)
         else:
             res_ls = alert_manager.revoke_maintain_by_env_name(matcher_value)

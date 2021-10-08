@@ -154,4 +154,6 @@ class Alertmanager:
             return False
         maintain_id = maintain.maintain_id
         self.delete_setting(maintain_id)
+        Maintain.objects.filter(maintain_id=maintain_id).delete()
+
         return True

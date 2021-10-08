@@ -1,4 +1,6 @@
 # Create your views here.
+import logging
+
 from promemonitor.promemonitor_serializers import MonitorUrlSerializer, AlertSerializer, MaintainSerializer
 from db_models.models import MonitorUrl, Alert, Maintain
 
@@ -7,6 +9,9 @@ from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet, ViewSet
 from rest_framework.mixins import (ListModelMixin, CreateModelMixin)
+
+
+logger = logging.getLogger('server')
 
 
 class MonitorUrlViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
