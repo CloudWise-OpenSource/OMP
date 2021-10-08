@@ -22,7 +22,7 @@ PROJECT_FOLDER = os.path.dirname(os.path.dirname(CURRENT_FILE_PATH))
 
 config_path = os.path.join(PROJECT_FOLDER, "config/omp.yaml")
 PROJECT_DATA_PATH = os.path.join(PROJECT_FOLDER, "data")
-PROJECT_LOG_PATH = os.path.join(PROJECT_FOLDER, "log")
+PROJECT_LOG_PATH = os.path.join(PROJECT_FOLDER, "logs")
 
 sys.path.append(os.path.join(PROJECT_FOLDER, "omp_server"))
 import django
@@ -31,6 +31,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "omp_server.settings")
 django.setup()
 
 from utils.parse_config import MONITOR_PORT
+
 
 def get_config_dic():
     """
@@ -391,10 +392,11 @@ def update_prometheus():
     """
 
     # 修改 conf/prometheus.yml
-    MONITOR_PORT.get("prometheus",'19011')
+    MONITOR_PORT.get("prometheus", '19011')
     CW_PROMETHEUS_PORT = MONITOR_PORT.get("prometheus")
     CW_ALERTMANAGER_PORT = MONITOR_PORT.get("alertmanager")
-    prometheus_yml_file = os.path.join(prometheus_path, 'conf', 'prometheus.yml')
+    prometheus_yml_file = os.path.join(
+        prometheus_path, 'conf', 'prometheus.yml')
     omp_prometheus_data_path = os.path.join(PROJECT_DATA_PATH, "prometheus")
     omp_prometheus_log_path = os.path.join(PROJECT_LOG_PATH, "prometheus")
 
@@ -429,7 +431,7 @@ def update_grafana():
 
     # 修改 conf/defaults.ini
     cdi_file = os.path.join(grafana_path, 'conf', 'defaults.ini')
-    CW_GRAFANA_PORT = MONITOR_PORT.get("alertmanager",'19014')
+    CW_GRAFANA_PORT = MONITOR_PORT.get("alertmanager", '19014')
     cdi_placeholder_script = [
         {'CW-HTTP-PORT': CW_GRAFANA_PORT},
         {'OMP_GRAFANA_LOG_PATH': omp_grafana_log_path},
@@ -462,9 +464,11 @@ def update_alertmanager():
     EMAIL_ADDRESS = MONITOR_PORT.get('test', '987654321@qq.com')
     RECEIVER = MONITOR_PORT.get('test', 'commonuser')
     EMAIL_SEND_INTERVAL = MONITOR_PORT.get('test', '30m')
-    WEBHOOK_URL = MONITOR_PORT.get('test', 'http://127.0.0.1:19001/api/v1/scheduler/monitor/alert')
+    WEBHOOK_URL = MONITOR_PORT.get(
+        'test', 'http://127.0.0.1:19001/api/v1/scheduler/monitor/alert')
 
-    alertmanager_yml_file = os.path.join(alertmanager_path, 'conf', 'alertmanager.yml')
+    alertmanager_yml_file = os.path.join(
+        alertmanager_path, 'conf', 'alertmanager.yml')
 
     cay_placeholder_script = [
         {'EMAIL_SEND': EMAIL_SEND},
