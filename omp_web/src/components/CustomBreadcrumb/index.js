@@ -1,4 +1,4 @@
-import { Breadcrumb, Icon } from "antd";
+import { Breadcrumb, Icon, message } from "antd";
 import React, { useState, useEffect, useContext, useLayoutEffect } from "react";
 import { Link, withRouter } from "react-router-dom";
 import styles from "./index.module.less";
@@ -109,6 +109,7 @@ const CustomBreadcrumb = withRouter(({ location }) => {
     })
       .then((res) => {
         handleResponse(res, (res) => {
+          //console.log(res)
           if(res.code == 0){
             if (e) {   
                 message.success("已进入全局维护模式")
