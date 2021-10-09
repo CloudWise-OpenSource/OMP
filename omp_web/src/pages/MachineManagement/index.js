@@ -226,6 +226,41 @@ const MachineManagement = () => {
       });
   };
 
+  // 重启监控agent
+  const fetchRestartMonitorAgent = ()=>{
+    setLoading(true);
+    fetchPost(apiRequest.machineManagement.restartMonitorAgent, {
+      body: {
+        host_ids: Object.keys(checkedList)
+          .map((k) => checkedList[k])
+          .flat(1)
+          .map((item) => item.id),
+      },
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          console.log(res);
+          if (res.code == 0) {
+            message.success("重启监控Agent任务已下发");
+          }
+          if (res.code == 1) {
+            message.warning(res.message);
+          }
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setLoading(false);
+        setRestartMonterAgentModal(false);
+        setCheckedList({});
+        fetchData(
+          { current: pagination.current, pageSize: pagination.pageSize },
+          { ip: selectValue },
+          pagination.ordering
+        );
+      });
+  }
+
   // 重启主机agent
   const fetchRestartHostAgent = () => {
     setLoading(true);
@@ -262,7 +297,6 @@ const MachineManagement = () => {
   };
 
   // 主机进入｜退出维护模式
-  // 重启主机agent
   const fetchMaintainChange = (e, checkedList) => {
     let host_arr = [];
     if (e) {
@@ -529,7 +563,8 @@ const MachineManagement = () => {
       >
         <OmpTable
           loading={loading}
-          // scroll={{x:1400}}
+          //showSorterTooltip
+          scroll={{x:1400}}
           // scroll={{ x: 1400 }}
           onChange={(e, filters, sorter) => {
             let ordering = sorter.order
@@ -670,9 +705,9 @@ const MachineManagement = () => {
           </span>
         }
         loading={loading}
-        // onFinish={() => {
-        //   fetchRestartHostAgent();
-        // }}
+        onFinish={() => {
+          fetchRestartMonitorAgent();
+        }}
       >
         <div style={{ padding: "20px" }}>
           确定要重启{" "}

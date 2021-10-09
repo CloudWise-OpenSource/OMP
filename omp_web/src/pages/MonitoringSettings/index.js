@@ -1,36 +1,17 @@
 import {
   OmpContentWrapper,
-  OmpDatePicker,
-  OmpOperationWrapper,
-  OmpTable,
-  OmpCollapseWrapper,
-  OmpButton,
-  OmpMessageModal,
-  OmpModal,
-  OmpIframe,
 } from "@/components";
 import {
   Button,
   Input,
-  Select,
-  Badge,
   Form,
   message,
-  Menu,
-  Dropdown,
-  Table,
   Tabs,
   Spin,
 } from "antd";
 import { useState, useEffect, useRef } from "react";
 import {
   handleResponse,
-  _idxInit,
-  refreshTime,
-  MessageTip,
-  nonEmptyProcessing,
-  logout,
-  isPassword,
 } from "@/utils/utils";
 import { fetchGet, fetchPatch } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";

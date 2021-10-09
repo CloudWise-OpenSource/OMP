@@ -5,7 +5,9 @@ import MachineManagement from "@/pages/MachineManagement"
 import UserManagement from "@/pages/UserManagement";
 import MonitoringSettings from "@/pages/MonitoringSettings"
 import SystemManagement from "@/pages/SystemManagement"
-import { DesktopOutlined, ClusterOutlined, ProfileOutlined, SettingOutlined, LineChartOutlined } from "@ant-design/icons";
+import AlarmLog from "@/pages/AlarmLog"
+import ExceptionList from "@/pages/ExceptionList"
+import { DesktopOutlined, ClusterOutlined, ProfileOutlined, SettingOutlined, LineChartOutlined, AppstoreOutlined } from "@ant-design/icons";
 
 export default [
   {
@@ -21,12 +23,12 @@ export default [
     ],
   },
   {
-    menuTitle: "运维管理",
-    menuIcon: <ProfileOutlined />,
+    menuTitle: "应用管理",
+    menuIcon: <AppstoreOutlined />,
     menuKey: "/operation-management",
     children: [
       {
-        title: "告警记录",
+        title: "服务管理",
         path: "/operation-management/waring-records",
         component: WarningRecord ,
       },
@@ -37,6 +39,16 @@ export default [
     menuIcon: <LineChartOutlined />,
     menuKey: "/application-monitoring",
     children: [
+      {
+        title: "异常清单",
+        path: "/application-monitoring/exception-list",
+        component: ExceptionList ,
+      },
+      {
+        title: "告警记录",
+        path: "/application-monitoring/alarm-log",
+        component: AlarmLog ,
+      },
       {
         title: "监控设置",
         path: "/application-monitoring/monitoring-settings",
