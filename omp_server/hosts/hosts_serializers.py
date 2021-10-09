@@ -29,7 +29,7 @@ from utils.parse_config import THREAD_POOL_MAX_WORKERS
 from utils.public_serializer import HostIdsSerializer
 from promemonitor.alertmanager import Alertmanager
 
-logger = logging.getLogger('server')
+logger = logging.getLogger("server")
 
 
 class HostSerializer(ModelSerializer):
@@ -141,13 +141,13 @@ class HostSerializer(ModelSerializer):
         ssh = SSH(ip, port, username, password)
         is_connect, _ = ssh.check()
         if not is_connect:
-            logger.info(f"主机SSH连通性校验未通过: ip-{ip},port-{port},"
+            logger.info(f"host ssh connection failed: ip-{ip},port-{port},"
                         f"username-{username},password-{password}")
             raise ValidationError({"ip": "SSH登录失败"})
         # 校验用户是否具有 sudo 权限
         is_sudo, _ = ssh.is_sudo()
         if not is_sudo:
-            logger.info(f"用户权限校验未通过: ip-{ip},port-{port},"
+            logger.info(f"host ssh username permission failed: ip-{ip},port-{port},"
                         f"username-{username},password-{password}")
             raise ValidationError({
                 "username": "用户权限错误，请使用root或具备sudo免密用户"})
@@ -156,14 +156,14 @@ class HostSerializer(ModelSerializer):
         success, _ = ssh.cmd(
             f"test -d {data_folder} || mkdir -p {data_folder}")
         if not success:
-            logger.info(f"数据分区创建失败: ip-{ip},port-{port},"
+            logger.info(f"host create data folder failed: ip-{ip},port-{port},"
                         f"username-{username},password-{password}"
                         f"data_folder-{data_folder}")
             ValidationError({"data_folder": "创建数据分区操作失败"})
 
         # 如果未传递 env，则指定默认环境
         if not attrs.get("env") and not self.instance:
-            attrs["env"] = Env.objects.get(id=1)
+            attrs["env"] = Env.objects.filter(id=1).first()
         # 主机密码加密处理
         if attrs.get("password"):
             attrs["password"] = AESCryptor().encode(attrs.get("password"))
@@ -175,15 +175,14 @@ class HostSerializer(ModelSerializer):
         # 指定 Agent 安装目录为 data_folder
         validated_data['agent_dir'] = validated_data.get("data_folder")
         instance = super(HostSerializer, self).create(validated_data)
-        logger.info(f"主机{ip}-创建成功")
+        logger.info(f"host[{ip}] - create success")
         # 写入操作记录
         HostOperateLog.objects.create(
             username=self.context["request"].user.username,
             description="创建主机",
-            host=instance,
-        )
+            host=instance)
         # 异步下发 Agent
-        logger.info(f"主机{ip}-异步下发Agent任务")
+        logger.info(f"host[{ip}] - celery deploy agent")
         deploy_agent.delay(instance.id)
         return instance
 
@@ -285,6 +284,7 @@ class HostMaintenanceSerializer(HostIdsSerializer):
         host_ids = validated_data.get("host_ids")
         is_maintenance = validated_data.get("is_maintenance")
         status = "开启" if is_maintenance else "关闭"
+        en_status = "open" if is_maintenance else "close"
         host_queryset = Host.objects.filter(id__in=host_ids)
         host_ls = list(host_queryset.values("ip"))
 
@@ -297,14 +297,14 @@ class HostMaintenanceSerializer(HostIdsSerializer):
 
         # 操作失败
         if not res_ls:
-            logger.error(f"主机'{status}'维护模式失败: {host_ids}")
+            logger.error(f"host {en_status} maintain failed: {host_ids}")
             # 操作失败记录写入
             self.write_host_log(host_queryset, status)
             raise OperateError(f"主机'{status}'维护模式失败")
 
         # 操作成功
         host_queryset.update(is_maintenance=is_maintenance)
-        logger.info(f"主机{status}维护模式成功: {host_ids}")
+        logger.info(f"host {en_status} maintain success: {host_ids}")
         # 操作成功记录写入
         self.write_host_log(host_queryset, status)
         return validated_data
@@ -337,43 +337,86 @@ class HostOperateLogSerializer(ModelSerializer):
 
 
 class HostBatchValidateSerializer(Serializer):
-    """ 主机数据批量验证 """
+    """ 主机数据批量验证序列化类 """
 
     host_list = serializers.ListSerializer(
         child=serializers.DictField(),
         help_text="主机数据列表",
-        required=True,
-        error_messages={"required": "必须包含[host_list]字段"},
-        allow_empty=False)
+        required=True, allow_empty=False,
+        error_messages={"required": "必须包含[host_list]字段"}
+    )
+
+    def create(self, validated_data):
+        pass
+
+    def update(self, instance, validated_data):
+        pass
 
     def host_info_validate(self, host_data):
         """ 单个主机信息验证 """
-
-        return "correct", host_data
+        host_serializer = HostSerializer(data=host_data)
+        if host_serializer.is_valid():
+            return "correct", host_data
+        err_ls = []
+        for k, v in host_serializer.errors.items():
+            err_ls.append("; ".join(v))
+        host_data["validate_error"] = "; ".join(err_ls)
+        return "error", host_data
 
     def validate(self, attrs):
-        host_list = attrs.get("host_list")
         """ 校验主机数据列表 """
-        # 多线程校验主机数据正确性
+        host_list = attrs.get("host_list")[:]
+        result_dict = {
+            "correct": [],
+            "error": []
+        }
+        logger.info(f"host batch validate start: {host_list}")
+
+        # 校验主机列表中是否存在相同实例名或IP的数据
+        no_repeat_host = []
+        instance_name_list = list(
+            map(lambda x: x.get("instance_name"), host_list))
+        ip_list = list(map(lambda x: x.get("ip"), host_list))
+        for index, host in enumerate(host_list):
+            repeat_ls = []
+            if instance_name_list.count(host.get("instance_name")) > 1:
+                repeat_ls.append("实例名")
+            if ip_list.count(host.get("ip")) > 1:
+                repeat_ls.append("IP")
+            if repeat_ls:
+                host_info = host_list[index]
+                host_info["validate_error"] = f"{'、'.join(repeat_ls)}在表格中重复"
+                result_dict["error"].append(host_info)
+                continue
+            no_repeat_host.append(host_list[index])
+
+        # 校验主机数据正确性
         with ThreadPoolExecutor(THREAD_POOL_MAX_WORKERS) as executor:
             future_list = []
-            for host_data in host_list:
+            for host_data in no_repeat_host:
                 future_obj = executor.submit(
                     self.host_info_validate, host_data)
                 future_list.append(future_obj)
-            result_dict = {
-                "correct": [],
-                "error": []
-            }
             for future in as_completed(future_list):
                 flag, host_data = future.result()
                 result_dict[flag].append(host_data)
         attrs["result_dict"] = result_dict
-        # TODO 待补充
+        logger.info("host batch validate end")
         return attrs
 
+
+class HostBatchImportSerializer(Serializer):
+    """ 主机数据批量创建序列化类 """
+
+    host_list = serializers.ListSerializer(
+        child=serializers.DictField(),
+        help_text="主机数据列表",
+        required=True, allow_empty=False,
+        error_messages={"required": "必须包含[host_list]字段"}
+    )
+
     def create(self, validated_data):
-        return validated_data
+        pass
 
     def update(self, instance, validated_data):
         pass

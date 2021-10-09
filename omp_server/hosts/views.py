@@ -2,8 +2,10 @@
 主机相关视图
 """
 import os
+import logging
 from django.http import FileResponse
 from django.conf import settings
+from django.db import transaction
 
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import (
@@ -11,19 +13,24 @@ from rest_framework.mixins import (
 )
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
+from rest_framework.exceptions import ParseError
 
 from django_filters.rest_framework.backends import DjangoFilterBackend
 
-from db_models.models import (Host, HostOperateLog)
+from db_models.models import (Env, Host, HostOperateLog)
 from utils.pagination import PageNumberPager
 from utils.plugin.crypto import AESCryptor
+from hosts.tasks import deploy_agent
 from hosts.hosts_filters import (HostFilter, HostOperateFilter)
 from hosts.hosts_serializers import (
     HostSerializer, HostMaintenanceSerializer,
     HostFieldCheckSerializer, HostAgentRestartSerializer,
-    HostOperateLogSerializer, HostBatchValidateSerializer
+    HostOperateLogSerializer, HostBatchValidateSerializer,
+    HostBatchImportSerializer
 )
 from promemonitor.prometheus import Prometheus
+
+logger = logging.getLogger("server")
 
 
 class HostListView(GenericViewSet, ListModelMixin, CreateModelMixin):
@@ -162,7 +169,7 @@ class HostOperateLogView(GenericViewSet, ListModelMixin):
     get_description = "查询主机操作记录"
 
 
-class HostBatchImportView(GenericViewSet, ListModelMixin, CreateModelMixin):
+class HostBatchValidateView(GenericViewSet, ListModelMixin, CreateModelMixin):
     """
         list:
         获取主机批量导入模板
@@ -189,6 +196,52 @@ class HostBatchImportView(GenericViewSet, ListModelMixin, CreateModelMixin):
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        print(serializer.is_valid())
-        result_dict = serializer.validated_data.get("result_dict")
-        return Response(result_dict)
+        serializer.is_valid()
+        return Response(serializer.validated_data.get("result_dict"))
+
+
+class HostBatchImportView(GenericViewSet, CreateModelMixin):
+    """
+        create:
+        主机批量添加
+    """
+    serializer_class = HostBatchImportSerializer
+    # 操作描述信息
+    post_description = "主机批量添加"
+
+    def create(self, request, *args, **kwargs):
+        # 信任数据，只进行格式校验
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            logger.error(f"host batch import failed:{request.data}")
+            raise ParseError("数据格式错误")
+
+        # 主机、操作记录数据入库
+        default_env = Env.objects.filter(id=1).first()
+        with transaction.atomic():
+            host_objs = []
+            for host in serializer.data.get("host_list"):
+                password = host.pop("password")
+                host_objs.append(Host(
+                    password=AESCryptor().encode(password),
+                    agent_dir=host.get("data_folder"),
+                    env=default_env,
+                    **host,
+                ))
+            Host.objects.bulk_create(host_objs)
+            # bulk_create 不返回 id，需重查获取
+            instance_name_list = list(
+                map(lambda x: x.instance_name, host_objs))
+            host_instances = Host.objects.filter(
+                instance_name__in=instance_name_list)
+            operate_log_objs = []
+            for instance in host_instances:
+                operate_log_objs.append(HostOperateLog(
+                    username=request.user.username,
+                    description="创建主机",
+                    host=instance,
+                ))
+                # 异步下发 agent 任务
+                deploy_agent.delay(instance.id)
+            HostOperateLog.objects.bulk_create(operate_log_objs)
+        return Response("添加成功")

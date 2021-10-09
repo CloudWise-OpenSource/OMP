@@ -1,10 +1,13 @@
 import random
 from unittest import mock
 
+from django.http.response import FileResponse
 from rest_framework.reverse import reverse
 
 from tests.base import AutoLoginTest
-from tests.mixin import HostsResourceMixin
+from tests.mixin import (
+    HostsResourceMixin, HostBatchRequestMixin
+)
 from hosts.tasks import (
     deploy_agent, host_agent_restart
 )
@@ -851,3 +854,152 @@ class HostAgentRestartTest(AutoLoginTest, HostsResourceMixin):
         self.assertEqual(resp.get("code"), 1)
 
         self.destroy_hosts()
+
+
+class HostBatchValidateTest(AutoLoginTest, HostsResourceMixin, HostBatchRequestMixin):
+    """ 主机批量校验测试类 """
+
+    def setUp(self):
+        super(HostBatchValidateTest, self).setUp()
+        self.get_template_url = reverse("batchValidate-list")
+        self.batch_validate_url = reverse("batchValidate-list")
+
+    @staticmethod
+    def create_repeat_data(host_list, field_name):
+        """ 创建重复数据 """
+        instance_name = "mysql_{}"
+        ip = "10.0.0.{}"
+        repeat_number = random.randint(2, 5)
+        if field_name == "instance_name" or field_name == "all":
+            instance_name = host_list[repeat_number].get("instance_name")
+        if field_name == "ip" or field_name == "all":
+            ip = host_list[repeat_number].get("ip")
+        for i in range(repeat_number):
+            host_list.append({
+                "instance_name": instance_name.format(i),
+                "ip": ip.format(i),
+                "port": 36000,
+                "username": "root",
+                "password": "root_password",
+                "data_folder": "/data",
+                "operate_system": random.choice(("CentOS", "RedHat"))
+            })
+        return host_list, repeat_number
+
+    def test_get_host_batch_template(self):
+        """ 获取主机批量导入模板 """
+
+        # 获取主机批量导入模板 -> 返回文件
+        resp = self.get(self.get_template_url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(isinstance(resp, FileResponse))
+        self.assertTrue(resp.streaming)
+        self.assertTrue(resp.streaming_content is not None)
+
+    @mock.patch.object(SSH, "check", return_value=(True, ""))
+    @mock.patch.object(SSH, "is_sudo", return_value=(True, "is sudo"))
+    @mock.patch.object(SSH, "cmd", return_value=(True, ""))
+    @mock.patch.object(deploy_agent, "delay", return_value=None)
+    def test_batch_validate_error_field(self, deploy_agent_mock, cmd_mock, is_sudo, ssh_mock):
+        """ 测试批量校验错误字段 """
+
+        # 存在实例名重复 -> 返回值 error 中包含错误信息
+        host_number = 10
+        data = self.get_host_batch_request(host_number)
+        data["host_list"], repeat_number = self.create_repeat_data(
+            data.get("host_list"), "instance_name")
+        resp = self.post(self.batch_validate_url, data).json()
+        error_ls = resp.get("data").get("error", [])
+        self.assertEqual(len(error_ls), repeat_number + 1)
+        for error_host_info in error_ls:
+            self.assertEqual(
+                error_host_info.get("validate_error"),
+                "实例名在表格中重复"
+            )
+
+        #  存在IP重复 -> 返回值 error 中包含错误信息
+        host_number = 10
+        data = self.get_host_batch_request(host_number)
+        data["host_list"], repeat_number = self.create_repeat_data(
+            data.get("host_list"), "ip")
+        resp = self.post(self.batch_validate_url, data).json()
+        error_ls = resp.get("data").get("error", [])
+        self.assertEqual(len(error_ls), repeat_number + 1)
+        for error_host_info in error_ls:
+            self.assertEqual(
+                error_host_info.get("validate_error"),
+                "IP在表格中重复"
+            )
+
+        # 存在实例名、IP混合重复 -> 返回值 error 中包含错误信息
+        host_number = 10
+        data = self.get_host_batch_request(host_number)
+        data["host_list"], repeat_number = self.create_repeat_data(
+            data.get("host_list"), "all")
+        resp = self.post(self.batch_validate_url, data).json()
+        error_ls = resp.get("data").get("error", [])
+        self.assertEqual(len(error_ls), repeat_number + 1)
+        for error_host_info in error_ls:
+            self.assertEqual(
+                error_host_info.get("validate_error"),
+                "实例名、IP在表格中重复"
+            )
+
+    @mock.patch.object(SSH, "check", return_value=(True, ""))
+    @mock.patch.object(SSH, "is_sudo", return_value=(True, "is sudo"))
+    @mock.patch.object(SSH, "cmd", return_value=(True, ""))
+    @mock.patch.object(deploy_agent, "delay", return_value=None)
+    def test_batch_validate_correct_field(self, deploy_agent_mock, cmd_mock, is_sudo, ssh_mock):
+        """ 测试批量校验正确字段 """
+
+        # 正确字段 -> 返回值全部包含于 correct ，error 中无数据
+        host_number = 10
+        data = self.get_host_batch_request(host_number)
+        resp = self.post(self.batch_validate_url, data).json()
+        self.assertEqual(resp.get("code"), 0)
+        self.assertEqual(resp.get("message"), "success")
+        correct_ls = resp.get("data").get("correct", [])
+        error_ls = resp.get("data").get("error", [])
+        self.assertEqual(len(correct_ls), host_number)
+        self.assertEqual(len(error_ls), 0)
+
+
+class HostBatchImportTest(AutoLoginTest, HostsResourceMixin, HostBatchRequestMixin):
+    """ 主机批量校验测试类 """
+
+    def setUp(self):
+        super(HostBatchImportTest, self).setUp()
+        self.batch_import_url = reverse("batchImport-list")
+
+    @mock.patch.object(SSH, "check", return_value=(True, ""))
+    @mock.patch.object(SSH, "is_sudo", return_value=(True, "is sudo"))
+    @mock.patch.object(SSH, "cmd", return_value=(True, ""))
+    @mock.patch.object(deploy_agent, "delay", return_value=None)
+    def test_error_format(self, deploy_agent_mock, cmd_mock, is_sudo, ssh_mock):
+        """ 测试错误格式 """
+
+        # 格式错误 -> 添加失败
+        data = self.get_host_batch_request(10)
+        data["host_list"].append(12345)
+        resp = self.post(self.batch_import_url, data).json()
+        self.assertDictEqual(resp, {
+            "code": 1,
+            "message": "数据格式错误",
+            "data": None
+        })
+
+    @mock.patch.object(SSH, "check", return_value=(True, ""))
+    @mock.patch.object(SSH, "is_sudo", return_value=(True, "is sudo"))
+    @mock.patch.object(SSH, "cmd", return_value=(True, ""))
+    @mock.patch.object(deploy_agent, "delay", return_value=None)
+    def test_batch_import(self, deploy_agent_mock, cmd_mock, is_sudo, ssh_mock):
+        """ 测试批量添加主机 """
+
+        # 批量添加主机 -> 添加成功
+        data = self.get_host_batch_request(10)
+        resp = self.post(self.batch_import_url, data).json()
+        self.assertDictEqual(resp, {
+            "code": 0,
+            "message": "success",
+            "data": "添加成功"
+        })
