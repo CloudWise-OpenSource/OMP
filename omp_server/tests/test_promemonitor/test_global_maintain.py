@@ -22,7 +22,7 @@ class GlobalMaintainTest(AutoLoginTest):
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
         self.assertTrue(resp.get("data") is not None)
-        print('已设置全局维护:', resp)
+        # print('已设置全局维护:', resp)
 
         # 删除主机
         self.revoke_global_maintain(self.correct_maintain_data)
@@ -30,5 +30,5 @@ class GlobalMaintainTest(AutoLoginTest):
     def revoke_global_maintain(self, maintain_data):
         alertmanager = Alertmanager()
         alertmanager.revoke_maintain_by_env_name(env_name='default')
-        print(self.global_maintain_url)
-        print('已取消全局维护:', maintain_data)
+        # print(self.global_maintain_url)
+        # print('已取消全局维护:', maintain_data)

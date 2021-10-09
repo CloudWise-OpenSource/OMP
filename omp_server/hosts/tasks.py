@@ -19,12 +19,44 @@ from celery.utils.log import get_task_logger
 
 from db_models.models import Host
 from utils.plugin.ssh import SSH
+from utils.plugin.monitor_agent import MonitorAgentManager
 from utils.plugin.crypto import AESCryptor
 from utils.plugin.agent_util import Agent
 
 # 屏蔽celery任务日志中的paramiko日志
 logging.getLogger("paramiko").setLevel(logging.WARNING)
 logger = get_task_logger("celery_log")
+
+
+def deploy_monitor_agent(host_obj, salt_flag=True):
+    """
+    部署监控Agent
+    :param host_obj: 主机对象
+    :param salt_flag: 部署主机Agent成功或失败标志
+    :return:
+    """
+    logger.info(f"Deploy monitor agent for {host_obj.ip}")
+    if not salt_flag:
+        Host.objects.filter(ip=host_obj.ip).update(
+            monitor_agent=4,
+            monitor_agent_error="主机salt-agent部署失败!"
+        )
+        logger.error(
+            "Deploy monitor agent failed because salt agent deploy failed")
+        return
+    monitor_manager = MonitorAgentManager(host_objs=[host_obj])
+    install_flag, install_msg = monitor_manager.install()
+    logger.info(
+        f"Deploy monitor agent, "
+        f"install_flag: {install_flag}; install_msg: {install_msg}")
+    if not install_flag:
+        Host.objects.filter(ip=host_obj.ip).update(
+            monitor_agent=4,
+            monitor_agent_error=install_msg if len(
+                install_msg) < 200 else install_flag[:200]
+        )
+    else:
+        Host.objects.filter(ip=host_obj.ip).update(monitor_agent=0)
 
 
 def real_deploy_agent(host_obj):
@@ -48,7 +80,8 @@ def real_deploy_agent(host_obj):
     )
     flag, message = _obj.agent_deploy()
     logger.info(
-        f"Deploy Agent for {host_obj.ip}, Res Flag: {flag}; Res Message: {message}")
+        f"Deploy Agent for {host_obj.ip}, "
+        f"Res Flag: {flag}; Res Message: {message}")
     # 更新主机Agent状态，0 正常；4 部署失败
     # 使用filter查询然后使用update方法进行处理，防止多任务环境
     if flag:
@@ -59,14 +92,8 @@ def real_deploy_agent(host_obj):
             host_agent_error=str(message)[:200] if len(
                 str(message)) > 200 else str(message)
         )
-    # if flag:
-    #     host_obj.host_agent = 0
-    #     host_obj.host_agent_error = None
-    # else:
-    #     host_obj.host_agent = 4
-    #     host_obj.host_agent_error = \
-    #         str(message)[:200] if len(str(message)) > 200 else str(message)
-    # host_obj.save()
+    # 部署监控agent
+    deploy_monitor_agent(host_obj=host_obj, salt_flag=flag)
 
 
 @shared_task
