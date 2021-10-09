@@ -3,8 +3,11 @@ import logging
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer, ListSerializer
 from rest_framework.exceptions import ValidationError
-from db_models.models import MonitorUrl, Alert, Maintain
+
+from db_models.models import Host, MonitorUrl, Alert, Maintain
+from promemonitor.tasks import monitor_agent_restart
 from utils.exceptions import OperateError
+from utils.public_serializer import HostIdsSerializer
 from promemonitor.alertmanager import Alertmanager
 
 logger = logging.getLogger('server')
@@ -245,3 +248,17 @@ class MaintainSerializer(ModelSerializer):
     class Meta:
         model = Maintain
         fields = "__all__"
+
+
+class MonitorAgentRestartSerializer(HostIdsSerializer):
+    """ 监控Agent重启序列化类 """
+
+    def create(self, validated_data):
+        """ 主机Agent重启 """
+        for item in validated_data.get("host_ids", []):
+            monitor_agent_restart.delay(item)
+        # 下发任务后批量更新重启主机状态
+        Host.objects.filter(
+            id__in=validated_data.get("host_ids", [])
+        ).update(monitor_agent=1)
+        return validated_data

@@ -26,6 +26,7 @@ from utils.plugin.ssh import SSH
 from utils.plugin.crypto import AESCryptor
 from utils.exceptions import OperateError
 from utils.parse_config import THREAD_POOL_MAX_WORKERS
+from utils.public_serializer import HostIdsSerializer
 from promemonitor.alertmanager import Alertmanager
 
 logger = logging.getLogger('server')
@@ -248,19 +249,13 @@ class HostFieldCheckSerializer(ModelSerializer):
         return attrs
 
 
-class HostMaintenanceSerializer(Serializer):
+class HostMaintenanceSerializer(HostIdsSerializer):
     """ 主机维护模式序列化类 """
 
     is_maintenance = serializers.BooleanField(
         help_text="开启/关闭维护模式",
         required=True,
         error_messages={"required": "必须包含[is_maintenance]字段"})
-    host_ids = serializers.ListSerializer(
-        child=serializers.IntegerField(),
-        help_text="主机 ID 列表",
-        required=True,
-        error_messages={"required": "必须包含[host_ids]字段"},
-        allow_empty=False)
 
     def write_host_log(self, host_queryset, status):
         """ 写入主机日志 """
@@ -272,18 +267,6 @@ class HostMaintenanceSerializer(Serializer):
                 result="failed",
                 host=host))
         HostOperateLog.objects.bulk_create(log_ls)
-
-    def validate_host_ids(self, host_ids):
-        """ 校验主机 ID 列表中主机是否都存在 """
-        exists_ids = Host.objects.filter(
-            id__in=host_ids).values_list("id", flat=True)
-        diff = set(host_ids) - set(exists_ids)
-        if diff:
-            raise ValidationError(
-                f"主机列表中有不存在的ID ["
-                f"{','.join(map(lambda x: str(x), diff))}"
-                f"]")
-        return host_ids
 
     def validate(self, attrs):
         """ 校验列表中主机 '维护模式' 字段值是否正确 """
@@ -330,26 +313,8 @@ class HostMaintenanceSerializer(Serializer):
         pass
 
 
-class HostAgentRestartSerializer(Serializer):
+class HostAgentRestartSerializer(HostIdsSerializer):
     """ 主机Agent重启序列化类 """
-
-    host_ids = serializers.ListField(
-        help_text="主机 ID 列表",
-        required=True,
-        error_messages={"required": "必须包含[host_ids]字段"},
-        allow_empty=False)
-
-    def validate_host_ids(self, host_ids):
-        """ 校验主机 ID 列表中主机是否都存在 """
-        exists_ids = Host.objects.filter(
-            id__in=host_ids).values_list("id", flat=True)
-        diff = set(host_ids) - set(exists_ids)
-        if diff:
-            raise ValidationError(
-                f"有不存在的ID ["
-                f"{','.join(map(lambda x: str(x), diff))}"
-                f"]")
-        return host_ids
 
     def create(self, validated_data):
         """ 主机Agent重启 """
