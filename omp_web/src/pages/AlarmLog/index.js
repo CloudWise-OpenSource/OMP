@@ -1,5 +1,10 @@
-import { OmpContentWrapper, OmpTable, OmpMessageModal } from "@/components";
-import { Button, Select, message, Menu, Dropdown, Modal } from "antd";
+import {
+  OmpContentWrapper,
+  OmpTable,
+  OmpMessageModal,
+  OmpSelect,
+} from "@/components";
+import { Button, Select, message, Menu, Dropdown, Modal, Input } from "antd";
 import { useState, useEffect, useRef } from "react";
 import { handleResponse, _idxInit, refreshTime } from "@/utils/utils";
 import { fetchGet, fetchPost, fetchPatch } from "@/utils/request";
@@ -7,11 +12,6 @@ import { apiRequest } from "@/config/requestApi";
 //import updata from "@/store_global/globalStore";
 import { useDispatch } from "react-redux";
 import getColumnsConfig from "./config/columns";
-import {
-  DownOutlined,
-  ExclamationCircleOutlined,
-  ImportOutlined,
-} from "@ant-design/icons";
 
 const AlarmLog = () => {
   //console.log(location.state, "location.state");
@@ -26,7 +26,7 @@ const AlarmLog = () => {
   //table表格数据
   const [dataSource, setDataSource] = useState([]);
   const [ipListSource, setIpListSource] = useState([]);
-  const [searchValue, setSearchValue] = useState("");
+
   const [selectValue, setSelectValue] = useState();
 
   const [pagination, setPagination] = useState({
@@ -37,8 +37,8 @@ const AlarmLog = () => {
     searchParams: {},
   });
 
-  //select 的onblur函数拿不到最新的search value,使用useref存(是最新的，但是因为失去焦点时会自动触发清空search，还是得使用ref存)
-  const searchValueRef = useRef(null);
+  // 筛选label
+  const [labelControl, setLabelControl] = useState("ip");
 
   function fetchData(
     pageParams = { current: 1, pageSize: 10 },
@@ -94,14 +94,14 @@ const AlarmLog = () => {
                 "http://127.0.0.1:19013/proxy/v1/grafana/d/liz0yRCZz/applogs?var-app=dolaLogMonitorServer",
             },
           ]);
-          setPagination({
-            ...pagination,
-            total: res.data.count,
-            pageSize: pageParams.pageSize,
-            current: pageParams.current,
-            ordering: ordering,
-            searchParams: searchParams,
-          });
+          // setPagination({
+          //   ...pagination,
+          //   total: res.data.count,
+          //   pageSize: pageParams.pageSize,
+          //   current: pageParams.current,
+          //   ordering: ordering,
+          //   searchParams: searchParams,
+          // });
         });
       })
       .catch((e) => console.log(e))
@@ -129,8 +129,6 @@ const AlarmLog = () => {
     fetchData(pagination);
   }, []);
 
-  //console.log(checkedList)
-
   return (
     <OmpContentWrapper>
       <div style={{ display: "flex" }}>
@@ -144,91 +142,30 @@ const AlarmLog = () => {
         </Button>
 
         <div style={{ display: "flex", marginLeft: "auto" }}>
-          <span style={{ width: 60, display: "flex", alignItems: "center" }}>
-            IP地址:
-          </span>
-          <Select
-            allowClear
-            onClear={() => {
-              searchValueRef.current = "";
-              setSelectValue();
-              setSearchValue();
-              fetchData(
-                { current: pagination.current, pageSize: pagination.pageSize },
-                {},
-                pagination.ordering
-              );
-            }}
-            showSearch
-            placeholder="搜索"
-            loading={searchLoading}
-            style={{ width: 200 }}
-            onInputKeyDown={(e) => {
-              if (e.code == "Enter") {
-                //console.log("点击了",searchValueRef.current )
-                setSelectValue(searchValueRef.current);
-                fetchData(
-                  { current: 1, pageSize: 10 },
-                  { ip: searchValueRef.current },
-                  pagination.ordering
-                );
-              }
-            }}
-            searchValue={searchValue}
-            onSelect={(e) => {
-              if (e == searchValue || !searchValue) {
-                //console.log(1)
-                setSelectValue(e);
-                fetchData(
-                  {
-                    current: pagination.current,
-                    pageSize: pagination.pageSize,
-                  },
-                  { ip: e },
-                  pagination.ordering
-                );
-              } else {
-                //console.log(2)
-                setSelectValue(searchValue);
-                fetchData(
-                  {
-                    current: pagination.current,
-                    pageSize: pagination.pageSize,
-                  },
-                  { ip: searchValueRef.current },
-                  pagination.ordering
-                );
-              }
-              searchValueRef.current = "";
-            }}
-            value={selectValue}
-            onSearch={(e) => {
-              e && (searchValueRef.current = e);
-              setSearchValue(e);
-            }}
-            onBlur={(e) => {
-              //console.log(searchValueRef.current,"searchValueRef.current")
-              if (searchValueRef.current) {
-                setSelectValue(searchValueRef.current);
-                fetchData(
-                  {
-                    current: pagination.current,
-                    pageSize: pagination.pageSize,
-                  },
-                  { ip: searchValueRef.current },
-                  pagination.ordering
-                );
-              }
-            }}
-          >
-            {ipListSource.map((item) => {
-              return (
-                <Select.Option value={item} key={item}>
-                  {item}
-                </Select.Option>
-              );
-            })}
-          </Select>
+          <Input.Group compact style={{ display: "flex"}}> 
+            <Select
+              value={labelControl}
+              style={{ width: 100 }}
+              onChange={(e) => setLabelControl(e)}
+            >
+              <Select.Option value="ip"> IP地址</Select.Option>
+              <Select.Option value="instance_name">实例名称</Select.Option>
+            </Select>
+            {labelControl === "ip" && (
+              <OmpSelect
+                searchLoading={searchLoading}
+                selectValue={selectValue}
+                listSource={ipListSource}
+                setSelectValue={setSelectValue}
+                fetchData={fetchData}
+                pagination={pagination}
+              />
+            )}
+             {labelControl === "instance_name" && (
+              <Input placeholder="输入实例名称" style={{ width: 200 }}/>
+            )}
+          </Input.Group>
+
           <Button
             style={{ marginLeft: 10 }}
             onClick={() => {
@@ -254,7 +191,7 @@ const AlarmLog = () => {
       >
         <OmpTable
           loading={loading}
-          scroll={{x:1400}}
+          scroll={{ x: 1400 }}
           onChange={(e, filters, sorter) => {
             let ordering = sorter.order
               ? `${sorter.order == "descend" ? "" : "-"}${sorter.columnKey}`
@@ -297,7 +234,7 @@ const AlarmLog = () => {
             ),
             ...pagination,
           }}
-          rowKey={(record) => record.id}
+          rowKey={(record) => record.ip}
           checkedState={[checkedList, setCheckedList]}
         />
       </div>

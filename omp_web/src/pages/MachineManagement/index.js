@@ -1,4 +1,4 @@
-import { OmpContentWrapper, OmpTable, OmpMessageModal } from "@/components";
+import { OmpContentWrapper, OmpTable, OmpMessageModal, OmpSelect } from "@/components";
 import { Button, Select, message, Menu, Dropdown, Modal } from "antd";
 import { useState, useEffect, useRef } from "react";
 import { handleResponse, _idxInit, refreshTime } from "@/utils/utils";
@@ -21,8 +21,6 @@ import {
 const MachineManagement = () => {
   const dispatch = useDispatch();
 
-  //console.log(location.state, "location.state");
-
   const [loading, setLoading] = useState(false);
 
   const [searchLoading, setSearchLoading] = useState(false);
@@ -41,7 +39,6 @@ const MachineManagement = () => {
   //table表格数据
   const [dataSource, setDataSource] = useState([]);
   const [ipListSource, setIpListSource] = useState([]);
-  const [searchValue, setSearchValue] = useState("");
   const [selectValue, setSelectValue] = useState();
 
   const [pagination, setPagination] = useState({
@@ -61,9 +58,6 @@ const MachineManagement = () => {
   const [msgShow, setMsgShow] = useState(false);
 
   const msgRef = useRef(null);
-
-  //select 的onblur函数拿不到最新的search value,使用useref存(是最新的，但是因为失去焦点时会自动触发清空search，还是得使用ref存)
-  const searchValueRef = useRef(null);
 
   // 定义row存数据
   const [row, setRow] = useState({});
@@ -139,8 +133,6 @@ const MachineManagement = () => {
   };
 
   const createHost = (data) => {
-    // console.log(data)
-    //return
     setLoading(true);
     data.ip = data.IPtext;
     delete data.IPtext;
@@ -153,8 +145,6 @@ const MachineManagement = () => {
       .then((res) => {
         if (res && res.data) {
           if (res.data.code == 1) {
-            // msgRef.current = res.data.message
-            // setMsgShow(true)
             message.warning(res.data.message);
           }
           if (res.data.code == 0) {
@@ -239,7 +229,6 @@ const MachineManagement = () => {
     })
       .then((res) => {
         handleResponse(res, (res) => {
-          console.log(res);
           if (res.code == 0) {
             message.success("重启监控Agent任务已下发");
           }
@@ -274,7 +263,6 @@ const MachineManagement = () => {
     })
       .then((res) => {
         handleResponse(res, (res) => {
-          console.log(res);
           if (res.code == 0) {
             message.success("重启主机Agent任务已下发");
           }
@@ -336,8 +324,6 @@ const MachineManagement = () => {
       },
     })
       .then((res) => {
-        //handleResponse(res, (res) => {
-        console.log(res);
         if (res.data.code == 0) {
           if (e) {
             message.success("主机开启维护模式成功");
@@ -348,7 +334,6 @@ const MachineManagement = () => {
         if (res.data.code == 1) {
           message.warning(res.data.message);
         }
-        // });
       })
       .catch((e) => console.log(e))
       .finally(() => {
@@ -369,8 +354,6 @@ const MachineManagement = () => {
   useEffect(() => {
     fetchData(pagination);
   }, []);
-
-  //console.log(checkedList)
 
   return (
     <OmpContentWrapper>
@@ -411,8 +394,6 @@ const MachineManagement = () => {
                 style={{ textAlign: "center" }}
                 disabled={Object.keys(checkedList).length == 0}
                 onClick={() => {
-                  //setAddMoadlVisible(true);
-                  //setAddMachineForm({});
                   setCloseMaintainModal(true);
                 }}
               >
@@ -423,8 +404,6 @@ const MachineManagement = () => {
                 style={{ textAlign: "center" }}
                 disabled={Object.keys(checkedList).length == 0}
                 onClick={() => {
-                  //setAddMoadlVisible(true);
-                  //setAddMachineForm({});
                   setRestartHostAgentModal(true);
                 }}
               >
@@ -435,8 +414,6 @@ const MachineManagement = () => {
                 style={{ textAlign: "center" }}
                 disabled={Object.keys(checkedList).length == 0}
                 onClick={() => {
-                  //setAddMoadlVisible(true);
-                  //setAddMachineForm({});
                   setRestartMonterAgentModal(true);
                 }}
               >
@@ -456,93 +433,18 @@ const MachineManagement = () => {
           <span style={{ width: 60, display: "flex", alignItems: "center" }}>
             IP地址:
           </span>
-          <Select
-            allowClear
-            onClear={() => {
-              searchValueRef.current = "";
-              setSelectValue();
-              setSearchValue();
-              fetchData(
-                { current: pagination.current, pageSize: pagination.pageSize },
-                {},
-                pagination.ordering
-              );
-            }}
-            showSearch
-            placeholder="搜索"
-            loading={searchLoading}
-            style={{ width: 200 }}
-            onInputKeyDown={(e) => {
-              if (e.code == "Enter") {
-                //console.log("点击了",searchValueRef.current )
-                setSelectValue(searchValueRef.current);
-                fetchData(
-                  { current: 1, pageSize: 10 },
-                  { ip: searchValueRef.current },
-                  pagination.ordering
-                );
-              }
-            }}
-            searchValue={searchValue}
-            onSelect={(e) => {
-              if (e == searchValue || !searchValue) {
-                //console.log(1)
-                setSelectValue(e);
-                fetchData(
-                  {
-                    current: pagination.current,
-                    pageSize: pagination.pageSize,
-                  },
-                  { ip: e },
-                  pagination.ordering
-                );
-              } else {
-                //console.log(2)
-                setSelectValue(searchValue);
-                fetchData(
-                  {
-                    current: pagination.current,
-                    pageSize: pagination.pageSize,
-                  },
-                  { ip: searchValueRef.current },
-                  pagination.ordering
-                );
-              }
-              searchValueRef.current = "";
-            }}
-            value={selectValue}
-            onSearch={(e) => {
-              e && (searchValueRef.current = e);
-              setSearchValue(e);
-            }}
-            onBlur={(e) => {
-              //console.log(searchValueRef.current,"searchValueRef.current")
-              if (searchValueRef.current) {
-                setSelectValue(searchValueRef.current);
-                fetchData(
-                  {
-                    current: pagination.current,
-                    pageSize: pagination.pageSize,
-                  },
-                  { ip: searchValueRef.current },
-                  pagination.ordering
-                );
-              }
-            }}
-          >
-            {ipListSource.map((item) => {
-              return (
-                <Select.Option value={item} key={item}>
-                  {item}
-                </Select.Option>
-              );
-            })}
-          </Select>
+          <OmpSelect
+            searchLoading={searchLoading}
+            selectValue={selectValue}
+            listSource={ipListSource}
+            setSelectValue={setSelectValue}
+            fetchData={fetchData}
+            pagination={pagination}
+          />
           <Button
             style={{ marginLeft: 10 }}
             onClick={() => {
               dispatch(refreshTime());
-              console.log(pagination, "hosts/hosts/?page=1&size=10");
               fetchData(
                 { current: pagination.current, pageSize: pagination.pageSize },
                 { ip: selectValue },
@@ -563,9 +465,7 @@ const MachineManagement = () => {
       >
         <OmpTable
           loading={loading}
-          //showSorterTooltip
           scroll={{x:1400}}
-          // scroll={{ x: 1400 }}
           onChange={(e, filters, sorter) => {
             let ordering = sorter.order
               ? `${sorter.order == "descend" ? "" : "-"}${sorter.columnKey}`
@@ -811,7 +711,6 @@ const MachineManagement = () => {
         }
         loading={loading}
         onFinish={() => {
-          //console.log(1111)
           fetchMaintainChange(true, [row]);
         }}
       >

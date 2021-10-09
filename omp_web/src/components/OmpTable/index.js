@@ -10,8 +10,29 @@ import { Table, Pagination } from "antd";
 import styles from "./index.module.less";
 import { useLayoutEffect } from "react";
 import { useSelector } from "react-redux";
+import OmpTableFilter from "./components/OmpTableFilter"
 
-const OmpTable = ({ checkedState, ...residualParam }) => {
+const OmpTable = ({ checkedState, columns ,...residualParam }) => {
+  // console.log(residualParam)
+  // 当columns传入usefilter时，对该项做处理
+  const extensionsColumns = columns.map(item=>{
+    if(item.usefilter){
+        return {
+          ...item,
+          filterIcon: () => {
+            return <OmpTableFilter />
+          },
+          filters: [{ text: "mock", value: "mock" }],
+          filterDropdown: () => {
+            return <span key="mock_"></span>;
+          },
+        }
+    }
+    return {
+      ...item
+    }
+  })
+
   const [checkedList, setCheckedList] = checkedState ? checkedState : [];
   // 视口宽度
   const viewHeight = useSelector((state) => state.layouts.viewSize.height);
@@ -48,6 +69,7 @@ const OmpTable = ({ checkedState, ...residualParam }) => {
   return (
       <Table
         {...residualParam}
+        columns={extensionsColumns}
         //size="small"
         rowSelection={
           checkedState && {
