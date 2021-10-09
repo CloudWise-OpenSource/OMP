@@ -12,7 +12,7 @@ class MockResponse:
     """
     自定义mock response类
     """
-    status = 200
+    status_code = 200
 
     def __init__(self, data):
         self.text = json.dumps(data)
@@ -46,9 +46,16 @@ class TestPrometheus(TestCase):
         ]
         return correct_host_info_data
 
-    @mock.patch.object(requests, 'post', return_value='')
+    request_get_response = {"status": "success", "data": {"resultType": "vector", "result": [
+        {"metric": {"instance": "10.0.3.20"}, "value": [
+            1633782875.771, "11.360416666623973"]},
+        {"metric": {"instance": "10.0.3.21"}, "value": [
+            1633782875.771, "11.04166666666666"]}
+    ]}}
+
+    @mock.patch.object(requests, 'get', return_value='')
     def test_get_prometheus_info(self, mock_post):
-        mock_post.return_value = self.return_host_info_data()
+        mock_post.return_value = MockResponse(self.request_get_response)
         prometheus = Prometheus()
         result = prometheus.get_host_info(self.return_host_list())
         print(result)

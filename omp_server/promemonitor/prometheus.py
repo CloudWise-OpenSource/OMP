@@ -63,8 +63,7 @@ class Prometheus:
                     f'{{mode="idle"}}[2m])) by (instance))*100'
         # print(query_url)
         try:
-            get_cpu_response = requests.request(
-                method="GET", url=query_url, headers=headers)
+            get_cpu_response = requests.get(url=query_url, headers=headers)
             if get_cpu_response.status_code == 200:
                 cpu_usage_dict = get_cpu_response.json()
                 if cpu_usage_dict.get('status') != 'success':
@@ -102,8 +101,7 @@ class Prometheus:
         # print(query_url)
 
         try:
-            get_mem_response = requests.request(
-                method="GET", url=query_url, headers=headers)
+            get_mem_response = requests.get(url=query_url, headers=headers)
             if get_mem_response.status_code == 200:
                 mem_usage_dict = get_mem_response.json()
                 if mem_usage_dict.get('status') != 'success':
@@ -142,8 +140,8 @@ class Prometheus:
         # print(query_url)
 
         try:
-            get_root_disk_response = requests.request(
-                method="GET", url=query_url, headers=headers)
+            get_root_disk_response = requests.get(
+                url=query_url, headers=headers)
             if get_root_disk_response.status_code == 200:
                 root_disk_usage_dict = get_root_disk_response.json()
                 if root_disk_usage_dict.get('status') != 'success':
@@ -186,8 +184,8 @@ class Prometheus:
                         f'node_filesystem_free_bytes{{mountpoint="{host_data_disk}",instance="{host_ip}"}} - ' \
                         f'(-node_filesystem_size_bytes{{mountpoint="{host_data_disk}",instance="{host_ip}"}}))*100'
             try:
-                get_data_disk_response = requests.request(
-                    method="GET", url=query_url, headers=headers)
+                get_data_disk_response = requests.get(
+                    url=query_url, headers=headers)
                 if get_data_disk_response.status_code == 200:
                     data_disk_usage_dict = get_data_disk_response.json()
                     if data_disk_usage_dict.get('status') != 'success':
