@@ -33,23 +33,28 @@ class MonitorAgentRestartCeleryTaskTest(BaseTest):
         self.host.save()
 
     @mock.patch.object(SaltClient, "cmd", return_value=(True, "success"))
-    def test_restart_monitor_agent_success(self, agent_deploy):
+    @mock.patch.object(SaltClient, "__init__", return_value=None)
+    def test_restart_monitor_agent_success(self, *args, **kwargs):
         """
         测试重启主机Agent成功
         :return:
         """
         self.assertEqual(monitor_agent_restart(self.host.id), None)
 
-    @mock.patch.object(SaltClient, "cmd", return_value=(False, "error_message"))
-    def test_restart_agent_failed(self, agent_deploy):
+    @mock.patch.object(
+        SaltClient, "cmd", return_value=(False, "error_message"))
+    @mock.patch.object(SaltClient, "__init__", return_value=None)
+    def test_restart_agent_failed(self, *args, **kwargs):
         """
         测试重启主机Agent失败
         :return:
         """
         self.assertEqual(monitor_agent_restart(self.host.id), None)
 
-    @mock.patch.object(SaltClient, "cmd", return_value=(False, "error_message"))
-    def test_restart_agent_failed_with_wrong_id(self, agent_deploy):
+    @mock.patch.object(
+        SaltClient, "cmd", return_value=(False, "error_message"))
+    @mock.patch.object(SaltClient, "__init__", return_value=None)
+    def test_restart_agent_failed_with_wrong_id(self, *args, **kwargs):
         """
         测试重启主机Agent失败，主机id错误
         :return:
@@ -57,15 +62,18 @@ class MonitorAgentRestartCeleryTaskTest(BaseTest):
         self.assertEqual(monitor_agent_restart(1000), None)
 
     @mock.patch.object(SaltClient, "cmd", return_value=(True, "success"))
-    def test_real_restart_monitor_agent_success(self, agent_deploy):
+    @mock.patch.object(SaltClient, "__init__", return_value=None)
+    def test_real_restart_monitor_agent_success(self, *args, **kwargs):
         """
         测试重启主机Agent成功
         :return:
         """
         self.assertEqual(real_monitor_agent_restart(self.host), None)
 
-    @mock.patch.object(SaltClient, "cmd", return_value=(False, "error_message"))
-    def test_real_restart_monitor_agent_failed(self, agent_deploy):
+    @mock.patch.object(
+        SaltClient, "cmd", return_value=(False, "error_message"))
+    @mock.patch.object(SaltClient, "__init__", return_value=None)
+    def test_real_restart_monitor_agent_failed(self, *args, **kwargs):
         """
         测试重启主机Agent失败
         :return:

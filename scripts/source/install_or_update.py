@@ -6,13 +6,27 @@
 # Version: 1.0
 # Introduction:
 
+"""
+安装或更新server端代码，前端+后端
+"""
+
 import os
 import sys
 import subprocess
 
-
-OMP_HOME = "/data/omp"
-UPDATE_HOME = "/data/omp_update"
+# 获取当前项目目录，优先从环境变量中获取
+# 如果从环境变量中无法获取的话，则从当前文件寻找其家目录
+OMP_HOME = os.environ.get("OMP_HOME_PATH", "")
+UPDATE_HOME = os.environ.get("OMP_UPDATE_HOME_PATH", "")
+if not OMP_HOME or not UPDATE_HOME:
+    OMP_HOME = os.path.dirname(
+        os.path.dirname(
+            os.path.dirname(
+                os.path.realpath(__file__)
+            )
+        )
+    )
+    UPDATE_HOME = os.path.join(os.path.dirname(OMP_HOME), "omp_update")
 OMP_PYTHON_PATH = os.path.join(OMP_HOME, "component/env/bin/python3")
 OMP_MANAGE_PATH = os.path.join(OMP_HOME, "omp_server/manage.py")
 OMP_SHELL_PATH = os.path.join(OMP_HOME, "scripts/omp")
@@ -31,9 +45,11 @@ def cmd(command):
     )
     stdout, stderr = p.communicate()
     _out, _err, _code = stdout, stderr, p.returncode
-    print("Execute Command: {0}\nRETCODE: {1}\nSTDOUT: {2}\nSTDERR: {3}\n".format(
-        command, _code, _out, _err
-    ))
+    print(
+        "Execute Command: {0}\n"
+        "RETCODE: {1}\nSTDOUT: {2}\nSTDERR: {3}\n".format(
+            command, _code, _out, _err
+        ))
     return _out, _err, _code
 
 
@@ -189,4 +205,5 @@ if __name__ == '__main__':
     package_path, local_ip = sys_args
     if not os.path.exists(package_path):
         print("{0} Package Not Exist!".format(package_path))
+        exit(1)
     main(pack_path=package_path, ip_address=local_ip)
