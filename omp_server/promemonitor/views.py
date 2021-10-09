@@ -1,15 +1,15 @@
 # Create your views here.
 import logging
 
-from promemonitor.promemonitor_serializers import MonitorUrlSerializer, AlertSerializer, MaintainSerializer
+from promemonitor.promemonitor_serializers import MonitorUrlSerializer, AlertSerializer, MaintainSerializer, \
+    ReceiveAlertSerializer
 from db_models.models import MonitorUrl, Alert, Maintain
 
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
-from rest_framework.viewsets import GenericViewSet, ViewSet
+from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import (ListModelMixin, CreateModelMixin)
-
 
 logger = logging.getLogger('server')
 
@@ -93,7 +93,11 @@ class MaintainViewSet(GenericViewSet, CreateModelMixin, ListModelMixin):
     post_description = "更新全局维护状态"
 
 
-class ReceiveAlertViewSet(ViewSet):
-
-    def create(self):
-        return 1111
+class ReceiveAlertViewSet(GenericViewSet, CreateModelMixin):
+    """
+    接收alertmanager发送过来的告警消息后解析入库
+    """
+    queryset = None
+    serializer_class = ReceiveAlertSerializer
+    # 操作信息描述
+    post_description = "接收alertmanager告警信息"

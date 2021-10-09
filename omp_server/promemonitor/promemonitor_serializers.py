@@ -1,11 +1,13 @@
+import datetime
 import logging
 
 from rest_framework import serializers
-from rest_framework.serializers import ModelSerializer, ListSerializer
+from rest_framework.serializers import ModelSerializer, ListSerializer, Serializer
 from rest_framework.exceptions import ValidationError
 from db_models.models import MonitorUrl, Alert, Maintain
 from utils.exceptions import OperateError
 from promemonitor.alertmanager import Alertmanager
+from promemonitor.alert_util import AlertAnalysis
 
 logger = logging.getLogger('server')
 
@@ -195,7 +197,6 @@ class AlertSerializer(ModelSerializer):
 
 
 class MaintainSerializer(ModelSerializer):
-
     maintain_id = serializers.CharField(
         help_text="维护唯一标识",
         required=False, max_length=1024,
@@ -245,3 +246,46 @@ class MaintainSerializer(ModelSerializer):
     class Meta:
         model = Maintain
         fields = "__all__"
+
+
+class ReceiveAlertSerializer(Serializer):
+    origin_alert = serializers.CharField(
+        help_text="alertmanager 原生告警",
+        required=True,
+        error_messages={"required": "不可为空"},
+    )
+
+    def update(self, instance, validated_data):
+        pass
+
+    def create(self, validated_data):
+        alerts = validated_data.get('origin_alert').get('alerts')
+        alert_obj_list = []
+        for ele in alerts:
+            alert_analysis = AlertAnalysis(ele)
+            alert_info = alert_analysis()
+            if not alert_info:
+                continue
+            alert = Alert(
+                is_read=0,
+                alert_type=alert_info.get('alert_type'),
+                alert_host_ip=alert_info.get('alert_host_ip'),
+                alert_host_instance_name=alert_info.get(
+                    'alert_host_instance_name'),
+                alert_service_name=alert_info.get('alert_service_name'),
+                alert_service_instance_name='',  # TODO 暂时拿不到值
+                alert_service_type='',  # TODO 暂时拿不到值
+                alert_level=alert_info.get('alert_level'),
+                alert_describe=alert_info.get('alert_describe'),
+                alert_receiver=alert_info.get('alert_receiver'),
+                alert_resolve='',  # TODO 待后续
+                alert_time=alert_info.get('alert_time'),
+                create_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                monitor_path=alert_info.get('monitor'),
+                monitor_log=alert_info.get('monitor_log'),
+                fingerprint=alert_info.get('fingerprint'),
+                # env='default'  # TODO 此版本默认不赋值
+            )
+            alert_obj_list.append(alert)
+        Alert.objects.bulk_create(alert_obj_list)
+        return validated_data
