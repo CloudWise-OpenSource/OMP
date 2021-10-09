@@ -804,7 +804,7 @@ class UploadExcelComponent extends React.Component {
       onChange(info) {
         const { status } = info.file;
         if (status === "done") {
-          console.log(info.file);
+          //console.log(info.file);
           message.success(`${info.file.name} 文件解析成功`);
         } else if (status === "error") {
           message.error(
@@ -813,13 +813,13 @@ class UploadExcelComponent extends React.Component {
         }
       },
       beforeUpload(file, fileList) {
-        console.log(file);
+        //console.log(file);
         // bmf.md5(file,(err,md5)=>{
         //   console.log(err,md5,"=====?---")
         // })
         // 校验文件大小
         const fileSize = file.size / 1024 / 1024; //单位是M
-        console.log(fileSize);
+        //console.log(fileSize);
         if (Math.ceil(fileSize) > 10) {
           message.error("仅支持传入10M以内文件");
           return Upload.LIST_IGNORE;
@@ -832,7 +832,7 @@ class UploadExcelComponent extends React.Component {
       customRequest(e) {
         _this.readerData(e.file).then(
           (msg) => {
-            console.log(e);
+            //console.log(e);
             e.onSuccess();
           },
           () => {
@@ -857,7 +857,7 @@ class UploadExcelComponent extends React.Component {
           const worksheet = workbook.Sheets[firstSheetName];
           const header = getHeaderRow(worksheet);
           const results = XLSX.utils.sheet_to_json(worksheet);
-          console.log(header, results, "====");
+          //console.log(header, results, "====");
           this.generateData({ header, results });
           resolve();
         } catch (error) {
@@ -980,7 +980,7 @@ export const BatchImportMachineModal = ({
               {batchImport && (
                 <UploadExcelComponent
                   uploadSuccess={({ results, header }) => {
-                    console.log(results, header);
+                    //console.log(results, header);
                     let dataS = results
                       .filter((item) => {
                         if (item["字段名称(请勿编辑)"]?.includes("请勿编辑")) {
@@ -1074,7 +1074,11 @@ export const BatchImportMachineModal = ({
                 marginTop: 40,
               }}
             >
-              <Button style={{ marginRight: 16 }} onClick={() => setStepNum(0)}>
+              <Button style={{ marginRight: 16 }} onClick={() => {
+                setStepNum(0);
+                // setDataSource([])
+                // setColumns([])
+              }}>
                 上一步
               </Button>
               <Button

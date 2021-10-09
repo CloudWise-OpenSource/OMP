@@ -27,10 +27,10 @@ export const apiRequest = {
     // 主机名和ip地址校验接口
     checkHost:"/api/hosts/fields/",
     operateLog:"/api/hosts/operateLog/",
-
     // 重启主机agent
     restartHostAgent:"/api/hosts/restartHostAgent/",
-
+    // 重启监控agent
+    restartMonitorAgent:"/api/promemonitor/restartMonitorAgent/",
     // 主机进入退出维护模式
     hostsMaintain:"/api/hosts/maintain/"
   },
@@ -43,7 +43,7 @@ export const apiRequest = {
 
 
 
-
+// ========================================================
   productsManagement: {
     // 产品管理-服务管理
     all: "/api/v1/services/all", // 全部服务
