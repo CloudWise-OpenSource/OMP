@@ -64,6 +64,7 @@
   .ant-select-item-option-content{
     //font-size: 12px !important;
   }
+  //表格排序按钮紧贴title
   .ant-table-column-sorters {
     display:inline-flex;
     // align-items: center;
@@ -77,6 +78,26 @@
       left: 3px;
     }
     // .ant-table-column-sorter-full {}
+  }
+  //表格筛选按钮紧贴title
+  .ant-table-filter-column {
+    display:inline-flex;
+    .ant-table-column-title{
+      position: relative;
+      top:1px;
+      left: -4px;
+    }
+    .ant-dropdown-trigger {
+      position: relative;
+      left: 0px;
+    }
+    //是为了解决过滤图标和选中背景生效范围不一致问题
+    .ant-table-filter-trigger {
+      padding: 0 2px;
+      margin: 0;
+      position: relative;
+      left: 2px;
+    }
   }
 }
 

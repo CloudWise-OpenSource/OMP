@@ -1,5 +1,7 @@
-import { nonEmptyProcessing } from "@/utils/utils";
-import { Tooltip } from "antd";
+import { nonEmptyProcessing, colorConfig } from "@/utils/utils";
+import { Tooltip, Badge, Menu, Dropdown } from "antd";
+import { FilterFilled } from "@ant-design/icons";
+import OmpTableFilter from "@/components/OmpTable/components/OmpTableFilter"
 
 const getColumnsConfig = () => {
   return [
@@ -8,12 +10,15 @@ const getColumnsConfig = () => {
       key: "instance_name",
       dataIndex: "instance_name",
       align: "center",
-      width: 180,
+      //width: 180,
       ellipsis: true,
+      fixed: "left",
       render: (text) => {
         return (
           <Tooltip title={text}>
-            <span>{text ? text : "-"}</span>
+            <Badge dot offset={[5, 2]}>
+              {text ? text : "-"}
+            </Badge>
           </Tooltip>
         );
       },
@@ -22,45 +27,37 @@ const getColumnsConfig = () => {
       title: "IP地址",
       key: "ip",
       dataIndex: "ip",
-      width:180,
+      //width:180,
       sorter: (a, b) => a.ip - b.ip,
       sortDirections: ["descend", "ascend"],
       align: "center",
-      render: (text, record) => {
-        let str = nonEmptyProcessing(text);
-        if (str == "-") {
-          return "-";
-        } else {
-          return (
-            <a
-              onClick={() => {
-                fetchHistoryData(record.id);
-                setIsShowIsframe({
-                  isOpen: true,
-                  record: record,
-                });
-              }}
-            >
-              {str}
-            </a>
-          );
-        }
-      },
-      //ellipsis: true,
-      //fixed: "left"
     },
     {
       title: "级别",
-      key: "cpu_usage",
-      dataIndex: "cpu_usage",
+      key: "severity",
+      dataIndex: "severity",
       align: "center",
-      sorter: (a, b) => a.cpu_usage - b.cpu_usage,
-      sortDirections: ["descend", "ascend"],
+      // sorter: (a, b) => a.severity - b.severity,
+      // sortDirections: ["descend", "ascend"],
       //ellipsis: true,
-      width:120,
+      //width:120,
+      usefilter:true,
+      // filterIcon: () => {
+      //   return <OmpTableFilter />
+      // },
+      // filters: [{ text: "mock", value: "mock" }],
+      // filterDropdown: () => {
+      //   return <span key="mock_"></span>;
+      // },
       render: (text) => {
-        let str = nonEmptyProcessing(text);
-        return str == "-" ? "-" : `${str}%`;
+        switch (text) {
+          case "critical":
+            return <span style={{ color: colorConfig[text] }}>严重</span>;
+          case "warning":
+            return <span style={{ color: colorConfig[text] }}>警告</span>;
+          default:
+            return "-";
+        }
       },
     },
     {
@@ -71,7 +68,7 @@ const getColumnsConfig = () => {
       sortDirections: ["descend", "ascend"],
       align: "center",
       //ellipsis: true,
-      width:150,
+      //width:150,
       render: (text) => {
         let str = nonEmptyProcessing(text);
         return str == "-" ? "-" : `${str}%`;
@@ -79,37 +76,42 @@ const getColumnsConfig = () => {
     },
     {
       title: "告警描述",
-      key: "root_disk_usage",
-      dataIndex: "root_disk_usage",
+      key: "description",
+      dataIndex: "description",
       align: "center",
-      //width:280,
+      width: 420,
       ellipsis: true,
-      sorter: (a, b) => a.root_disk_usage - b.root_disk_usage,
+      sorter: (a, b) => a.description - b.description,
       sortDirections: ["descend", "ascend"],
       render: (text) => {
         let str = nonEmptyProcessing(text);
-        return str == "-" ? "-" : `${str}%`;
+        return (
+          <Tooltip title={text}>
+            <span>{text ? text : "-"}</span>
+          </Tooltip>
+        );
       },
     },
     {
       title: "告警时间",
-      width:180,
-      key: "data_disk_usag",
-      dataIndex: "data_disk_usag",
+      //width:180,
+      key: "date",
+      dataIndex: "date",
       align: "center",
       //ellipsis: true,
-      sorter: (a, b) => a.data_disk_usag - b.data_disk_usag,
+      sorter: (a, b) => a.date - b.date,
       sortDirections: ["descend", "ascend"],
       render: (text) => {
         let str = nonEmptyProcessing(text);
-        return str == "-" ? "-" : `${str}%`;
+        return str == "-" ? "-" : `${str}`;
       },
     },
     {
       title: "操作",
-    width: 140,
+      width: 140,
       key: "",
       dataIndex: "",
+      fixed: "right",
       align: "center",
       render: function renderFunc(text, record, index) {
         return (
