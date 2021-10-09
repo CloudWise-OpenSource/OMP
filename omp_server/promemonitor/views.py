@@ -4,6 +4,7 @@ import logging
 from promemonitor.promemonitor_serializers import MonitorUrlSerializer, AlertSerializer, MaintainSerializer, \
     ReceiveAlertSerializer
 from db_models.models import MonitorUrl, Alert, Maintain
+from utils.pagination import PageNumberPager
 
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
@@ -57,6 +58,7 @@ class AlertViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
     """
     serializer_class = AlertSerializer
     queryset = Alert.objects.all()
+    pagination_class = PageNumberPager
 
     def get_serializer(self, *args, **kwargs):
         serializer_class = self.get_serializer_class()
