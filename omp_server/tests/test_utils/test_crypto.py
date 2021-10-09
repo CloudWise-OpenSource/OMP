@@ -11,7 +11,7 @@ from utils.plugin.crypto import AESCryptor
 
 
 class CryptoUtilTest(BaseTest):
-    """ 主机Agent的测试类 """
+    """ 加密解密测试类 """
 
     def setUp(self):
         super(CryptoUtilTest, self).setUp()

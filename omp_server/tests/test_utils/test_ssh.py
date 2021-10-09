@@ -69,7 +69,7 @@ class StdoutMock(object):
 
 
 class SshUtilTest(BaseTest):
-    """ 主机Agent的测试类 """
+    """ ssh工具测试类 """
 
     def setUp(self):
         super(SshUtilTest, self).setUp()
