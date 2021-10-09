@@ -1,8 +1,9 @@
 # Create your views here.
-import logging
+"""
+监控相关视图
+"""
 
-from promemonitor.promemonitor_serializers import MonitorUrlSerializer, AlertSerializer, MaintainSerializer
-from db_models.models import MonitorUrl, Alert, Maintain
+import logging
 
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
@@ -10,6 +11,14 @@ from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet, ViewSet
 from rest_framework.mixins import (ListModelMixin, CreateModelMixin)
 
+from db_models.models import (
+    Host, MonitorUrl,
+    Alert, Maintain
+)
+from promemonitor.promemonitor_serializers import (
+    MonitorUrlSerializer, AlertSerializer,
+    MaintainSerializer, MonitorAgentRestartSerializer
+)
 
 logger = logging.getLogger('server')
 
@@ -97,3 +106,14 @@ class ReceiveAlertViewSet(ViewSet):
 
     def create(self):
         return 1111
+
+
+class MonitorAgentRestartView(GenericViewSet, CreateModelMixin):
+    """
+        create:
+        主机重启Agent接口
+    """
+    queryset = Host.objects.filter(is_deleted=False)
+    serializer_class = MonitorAgentRestartSerializer
+    # 操作信息描述
+    post_description = "重启监控Agent"
