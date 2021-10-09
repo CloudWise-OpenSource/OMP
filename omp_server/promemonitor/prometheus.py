@@ -218,8 +218,17 @@ class Prometheus:
 
     def get_host_info(self, host_list):
         """
-
+        获取主机负载基本信息
         """
+        for index, host in enumerate(host_list.copy()):
+            host_list[index]['cpu_usage'] = None
+            host_list[index]['cpu_status'] = None
+            host_list[index]['mem_usage'] = None
+            host_list[index]['mem_status'] = None
+            host_list[index]['root_disk_usage'] = None
+            host_list[index]['root_disk_status'] = None
+            host_list[index]['data_disk_usage'] = None
+            host_list[index]['data_disk_status'] = None
         host_list = self.get_host_cpu_usage(host_list)
         host_list = self.get_host_mem_usage(host_list)
         host_list = self.get_host_root_disk_usage(host_list)
