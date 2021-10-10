@@ -431,7 +431,7 @@ def update_grafana():
 
     # 修改 conf/defaults.ini
     cdi_file = os.path.join(grafana_path, 'conf', 'defaults.ini')
-    CW_GRAFANA_PORT = MONITOR_PORT.get("alertmanager", '19014')
+    CW_GRAFANA_PORT = MONITOR_PORT.get("grafana", '19014')
     cdi_placeholder_script = [
         {'CW-HTTP-PORT': CW_GRAFANA_PORT},
         {'OMP_GRAFANA_LOG_PATH': omp_grafana_log_path},
