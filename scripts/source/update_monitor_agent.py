@@ -48,8 +48,11 @@ def make_backups(pack_md5):
     backup_path = os.path.join(UPDATE_HOME, pack_md5)
     if not os.path.exists(backup_path):
         os.makedirs(backup_path)
-    shutil.copyfile(old_pack_path, backup_path)
-    shutil.rmtree(old_pack_path)
+    shutil.copyfile(
+        old_pack_path,
+        os.path.join(backup_path, os.path.basename(old_pack_path))
+    )
+    os.remove(old_pack_path)
 
 
 def update(pack_path, pack_md5):
@@ -62,13 +65,16 @@ def update(pack_path, pack_md5):
     # step1: 备份原文件
     make_backups(pack_md5=pack_md5)
     # step2: 复制新文件到目标路径
-    shutil.copyfile(pack_path, PACKAGE_HUB)
+    shutil.copyfile(
+        pack_path,
+        os.path.join(PACKAGE_HUB, os.path.basename(pack_path))
+    )
     # step3: 查询所有主机，更新监控Agent
     host_obj_lst = Host.objects.all()
     if not host_obj_lst.exists():
         return
     # 利用封装好的方法先卸载，再安装
-    agent_manager = MonitorAgentManager(host_objs=host_obj_lst)
+    agent_manager = MonitorAgentManager(host_objs=list(host_obj_lst))
     agent_manager.uninstall()
     install_flag, install_message = agent_manager.install()
     print(
@@ -95,5 +101,5 @@ if __name__ == '__main__':
     if not os.path.exists(package_path):
         print("{0} Package Not Exist!".format(package_path))
         exit(1)
-    package_md5 = get_file_md5(package_path)
+    flag, package_md5 = get_file_md5(package_path)
     main(pack_path=package_path, pack_md5=package_md5)

@@ -12,8 +12,12 @@
 
 import os
 import uuid
+import socket
+from unittest import mock
+
 from tests.base import BaseTest
 from utils.plugin.public_utils import get_file_md5
+from utils.plugin.public_utils import check_ip_port
 
 
 class GetFileMd5Test(BaseTest):
@@ -39,3 +43,35 @@ class GetFileMd5Test(BaseTest):
         """
         flag, message = get_file_md5(self.file_path)
         self.assertEqual(flag, True)
+
+
+class CheckIpPortTest(BaseTest):
+    """ ip 端口检查测试 """
+
+    def setUp(self):
+        super(CheckIpPortTest, self).setUp()
+
+    @mock.patch.object(socket.socket, "connect_ex", return_value=0)
+    def test_success(self, *args, **kwargs):
+        flag, msg = check_ip_port(ip="127.0.0.1", port=123)
+        self.assertEqual(flag, True)
+
+    @mock.patch.object(socket.socket, "connect_ex", return_value=1)
+    def test_failed(self, *args, **kwargs):
+        flag, msg = check_ip_port(ip="127.0.0.1", port=123)
+        self.assertEqual(flag, False)
+
+    def test_failed_with_ip_wrong(self):
+        flag, msg = check_ip_port(ip="127", port=123)
+        self.assertEqual(flag, False)
+        self.assertEqual(msg, "ip address not correct")
+
+    def test_failed_with_port_wrong(self):
+        flag, msg = check_ip_port(ip="127.0.0.1", port=123456)
+        self.assertEqual(flag, False)
+        self.assertEqual(msg, "port must be 0 ~ 65535")
+
+    def test_failed_with_port_str(self):
+        flag, msg = check_ip_port(ip="127.0.0.1", port="port")
+        self.assertEqual(flag, False)
+        self.assertEqual(msg, "port must be 0 ~ 65535, int or string")

@@ -58,7 +58,7 @@ class TestPrometheus(TestCase):
         mock_post.return_value = MockResponse(self.request_get_response)
         prometheus = Prometheus()
         result = prometheus.get_host_info(self.return_host_list())
-        print(result)
+        # print(result)
         self.assertListEqual(result,
                              self.return_host_info_data())
 
