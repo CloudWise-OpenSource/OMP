@@ -10,7 +10,8 @@ from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet, ViewSet
 from rest_framework.mixins import (ListModelMixin, CreateModelMixin)
-
+from promemonitor import grafana_url
+import json
 from db_models.models import (
     Host, MonitorUrl,
     Alert, Maintain
@@ -58,6 +59,25 @@ class MonitorUrlViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
             serializer.save()
             instances.append(serializer.data)
         return Response(instances)
+
+
+class GrafanaUrlViewSet(ListModelMixin, GenericViewSet):
+    """
+        list:
+        查询异常清单列表
+    """
+    queryset = MonitorUrl.objects.all()
+
+    def list(self, request, *args, **kwargs):
+        params = request.query_params.dict()
+        asc = params.pop('asc', False)
+        asc = True if asc == '0' else False
+        ordering = params.pop('ordering', 'date')
+        current = grafana_url.explain_prometheus(params)
+        prometheus_info = sorted(
+            current, key=lambda e: e.__getitem__(ordering), reverse=asc)
+        prometheus_json = json.dumps(prometheus_info, ensure_ascii=False)
+        return Response(prometheus_json)
 
 
 class AlertViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
