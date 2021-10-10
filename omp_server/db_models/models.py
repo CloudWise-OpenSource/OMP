@@ -393,3 +393,16 @@ class ApplicationHub(TimeStampMixin):
         """元数据"""
         db_table = 'omp_application'
         verbose_name = verbose_name_plural = "应用商店服务"
+
+
+class GrafanaMainPage(models.Model):
+    """Grafana 主面板信息表"""
+    instance_name = models.CharField(
+        "实例名字", max_length=32, unique=True, help_text="信息面板实例名字")
+    instance_url = models.CharField(
+        "实例地址", max_length=255, unique=True, help_text="实例文根地址")
+
+    class Meta:
+        """ 元数据 """
+        db_table = "omp_grafana_url"
+        verbose_name = verbose_name_plural = "grafana面板记录"

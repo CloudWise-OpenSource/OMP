@@ -5,7 +5,7 @@ from rest_framework.routers import DefaultRouter
 from promemonitor.views import (
     MonitorUrlViewSet, AlertViewSet,
     MaintainViewSet, ReceiveAlertViewSet,
-    MonitorAgentRestartView
+    MonitorAgentRestartView, GrafanaUrlViewSet
 )
 
 router = DefaultRouter()
@@ -16,4 +16,5 @@ router.register(r'restartMonitorAgent',
 router.register("global_maintain", MaintainViewSet, basename='global_maintain')
 router.register(r'receive_alert', ReceiveAlertViewSet,
                 basename='receive_alert')
+router.register(r'grafanaurl', GrafanaUrlViewSet, basename="grafanaurl")
 urlpatterns = router.urls
