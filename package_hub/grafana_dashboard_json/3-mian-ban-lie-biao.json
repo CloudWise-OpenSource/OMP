@@ -1,0 +1,44 @@
+{
+  "dashboard": {
+    "id": 3,
+    "uid": "XrwAXz_Mz",
+    "title": "面板列表",
+    "panels": [
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 20,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "folderId": null,
+        "maxItems": 100,
+        "query": "",
+        "showHeadings": false,
+        "showRecentlyViewed": false,
+        "showSearch": true,
+        "showStarred": false,
+        "tags": []
+      },
+      "pluginVersion": "7.4.3",
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Dashboard List",
+      "type": "dashlist"
+    }
+  ],
+    "templating": {
+    "list": []
+  },
+    "version": 1
+  }
+}
