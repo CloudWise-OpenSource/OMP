@@ -14,11 +14,13 @@ import os
 import json
 import pickle
 import shutil
-import requests
 import logging
 
+# import requests
+from ruamel.yaml import YAML
+
 from omp_server.settings import PROJECT_DIR
-from utils.parse_config import MONITOR_PORT
+# from utils.parse_config import MONITOR_PORT
 
 logger = logging.getLogger("server")
 
@@ -56,6 +58,9 @@ class PrometheusUtils(object):
             PROJECT_DIR, "component/prometheus/conf/targets")
         self.prometheus_node_rule_tpl = os.path.join(
             PROJECT_DIR, "package_hub/prometheus_rules_template/node_rule.yml")
+        self.prometheus_node_rule_tpl = os.path.join(
+            PROJECT_DIR,
+            "package_hub/prometheus_rules_template/node_data_rule.yml")
         self.prometheus_service_status_rule_tpl = os.path.join(
             PROJECT_DIR,
             "package_hub/prometheus_rules_template/service_status_rule.yml")
@@ -103,9 +108,133 @@ class PrometheusUtils(object):
         res = set(res)
         return [pickle.loads(i) for i in res]
 
+    @staticmethod
+    def get_dic_from_yaml(file_path):
+        """
+        从yaml中获取字典
+        :param file_path: 文件路径
+        :return:
+        """
+        with open(file_path, "r", encoding="utf8") as fp:
+            content = fp.read()
+        my_yaml = YAML()
+        return my_yaml.load(content)
+
+    @staticmethod
+    def write_dic_to_yaml(dic, file_path):
+        """
+        将字典写入yaml
+        :param dic: 字典数据
+        :param file_path: yaml文件路径
+        :return:
+        """
+        my_yaml = YAML()
+        with open(file_path, "w", encoding="utf8") as fp:
+            my_yaml.dump(dic, fp)
+
+    @staticmethod
+    def get_expr(num, env, data_path):
+        """
+        获取prometheus数据分区匹配规则
+        :param num:
+        :param env:
+        :param data_path:
+        :return:
+        """
+        _expr = \
+            """max((node_filesystem_size_bytes{env="ENV",
+            mountpoint="DATA_PATH"}-node_filesystem_free_bytes{env="ENV",
+            mountpoint="DATA_PATH"})*100/(node_filesystem_avail_bytes{
+            env="ENV",mountpoint="DATA_PATH"}+(node_filesystem_size_bytes{
+            env="ENV",mountpoint="DATA_PATH"}-node_filesystem_free_bytes{
+            env="ENV",mountpoint="DATA_PATH"})))by(instance)>= """
+        return _expr.replace("ENV", env).replace(
+            "DATA_PATH", data_path).replace("\n", "").replace(
+            " ", ""
+        ) + str(num)
+
+    def make_data_node_rule(self, level, data_path, env="default"):
+        """
+        生成数据分区告警规则
+        :param level: 告警级别
+        :param data_path: 数据分区路径
+        :param env: 主机所属环境
+        :return:
+        """
+        des = "主机 {{ $labels.instance }} 数据分区使用率为 " \
+              "{{ $value | humanize }}%, 大于阈值 "
+        return {
+            "alert": "host disk_data_used alert",
+            "annotations": {
+                "disk_data_path": f"{data_path}",
+                "consignee": f"{self.email_address}",
+                "description":
+                    des + "90%" if level == "critical" else des + "80%",
+                "summary": "disk_data_used (instance {{ $labels.instance }})"
+            },
+            "expr": self.get_expr(
+                90 if level == "critical" else 80, env, data_path),
+            "for": "1m",
+            "labels": {
+                "job": "nodeExporter",
+                "severity": level
+            }
+        }
+
+    def update_node_data_rule(self, data_path, env="default"):
+        """
+        更新主机data disk分区告警规则，当添加主机时使用
+        :rtype: tuple
+        :param data_path: 数据分区地址
+        :param env: 主机所属环境
+        :return:
+        """
+        data_rule_path = os.path.join(
+            self.prometheus_rules_path, f"{env}_node_data_rule.yml")
+        _critical = self.make_data_node_rule("critical", data_path, env)
+        _warning = self.make_data_node_rule("warning", data_path, env)
+        _critical_flag = True
+        _warning_flag = True
+        if not os.path.exists(data_rule_path):
+            node_data_rule_dic = {
+                "groups": [
+                    {
+                        "name": "node data disk alert",
+                        "rules": [
+                            _critical, _warning
+                        ]
+                    }
+                ]
+            }
+            self.write_dic_to_yaml(node_data_rule_dic, data_rule_path)
+            return True, "success by new create"
+        node_data_rule_dic = self.get_dic_from_yaml(data_rule_path)
+        for item in node_data_rule_dic.get("groups", []):
+            for el in item.get("rules", []):
+                if el.get("annotations", {}).get("disk_data_path") \
+                        == data_path and el.get("labels", {}).get("severity") \
+                        == "critical":
+                    _critical_flag = False
+                if el.get("annotations", {}).get("disk_data_path") \
+                        == data_path and el.get("labels", {}).get(
+                    "severity") \
+                        == "warning":
+                    _warning_flag = False
+        for item in node_data_rule_dic.get("groups", []):
+            if _critical_flag:
+                item["rules"].append(_critical)
+            if _warning_flag:
+                item["rules"].append(_warning)
+        self.write_dic_to_yaml(node_data_rule_dic, data_rule_path)
+        return True, "success"
+
     def add_rules(self, rule_type, env="default"):
         """
-        更新prometheus rules规则
+        rule_type:
+            node: 主机告警规则
+            service: 服务状态告警规则
+            exporter: exporter状态告警规则
+        更新prometheus rules规则, 建议在安装prometheus时进行更新
         :param rule_type: 更新方式
         :param env: 环境信息
         :return:
@@ -128,7 +257,7 @@ class PrometheusUtils(object):
                     node_rule_yml_file,
                     rules_file_placeholder_script
                 )
-        elif rule_type == "status":
+        elif rule_type == "service":
             status_rule_yml_file = os.path.join(
                 self.prometheus_rules_path,
                 f"{env}_service_status_rule.yml"
@@ -184,6 +313,13 @@ class PrometheusUtils(object):
 
     def add_node(self, nodes_data):
         """
+        nodes_data = [
+            {
+                "data_path": "/data",
+                "env": "default",
+                "ip": "127.0.0.1"
+            }
+        ]
         添加主机到自监控系统
         :param nodes_data: 新增的主机信息
         :return:
@@ -191,6 +327,7 @@ class PrometheusUtils(object):
         if not nodes_data:
             return False, "nodes_data can not be null"
         node_target_list = list()
+        # 遍历主机数据，添加主机层的告警规则
         for item in nodes_data:
             node_target_ele = {
                 "targets": [item["ip"] + ":" + str(self.monitor_port)],
@@ -199,8 +336,11 @@ class PrometheusUtils(object):
                     "env": item["env"]}
             }
             node_target_list.append(node_target_ele)
+            # 更新exporter的告警规则
             self.add_rules("exporter", item["env"])
-
+            # 更新数据分区的告警规则
+            self.update_node_data_rule(item["data_path"], item["env"])
+        # 增加主机的target配置文件(prometheus/conf/targets)
         if os.path.exists(self.node_exporter_targets_file):
             with open(self.node_exporter_targets_file, "r") as f:
                 content = f.read()
@@ -208,7 +348,6 @@ class PrometheusUtils(object):
                     old_node_target_list = json.loads(content)
                     node_target_list.extend(old_node_target_list)
         node_target_list = self.json_distinct(node_target_list)
-
         with open(self.node_exporter_targets_file, "w") as f2:
             json.dump(node_target_list, f2, ensure_ascii=False, indent=4)
         return True, "success"
@@ -220,7 +359,7 @@ class PrometheusUtils(object):
         :return:
         """
         if not nodes_data:
-            return None
+            return False, "nodes_data can not be null"
         if os.path.exists(self.node_exporter_targets_file):
             with open(self.node_exporter_targets_file, "r") as f:
                 content = f.read()
@@ -240,220 +379,4 @@ class PrometheusUtils(object):
                     break
         with open(self.node_exporter_targets_file, "w") as f2:
             json.dump(node_target_list, f2, ensure_ascii=False, indent=4)
-
-    @staticmethod
-    def get_service_port(service_exporter_name):
-        """
-        获取服务对应的exporter端口
-        :param service_exporter_name:服务名
-        :return:
-        """
-        # 补充获取服务exporter数据
-        port = MONITOR_PORT.get(service_exporter_name)
-        return port
-
-    def request_to_agent(self, dest_ip, dest_url, data):
-        """
-        更新Agent中的服务配置
-        :param dest_ip: 目标主机ip
-        :param dest_url: 目标主机Agent的url
-        :param data: 请求数据
-        :return:
-        """
-        try:
-            result = requests.post(
-                dest_url, headers=self.agent_request_header,
-                data=data
-            ).json()
-            if result["return_code"] == 0:
-                logger.info(f"向{dest_ip}更新服务配置成功！")
-                return True, "success"
-            logger.error(f"向{dest_ip}更新服务配置失败！")
-            return False, "failed"
-        except requests.exceptions.ConnectionError:
-            logger.error(
-                f"向{dest_ip}更新服务配置失败! Agent ConnectionError")
-            return False, "failed"
-
-    def _add_agent_service(self, dest_ip, services_data):
-        """
-        向Agent上添加服务信息
-        :param dest_ip: 目标ip
-        :param services_data: 服务数据
-        :return:
-        """
-        json_content = list()
-        json_dict = dict()
-        dest_url = \
-            f"{AGREE}://{dest_ip}:{self.monitor_port}/update/service/add"
-        for sd in services_data:
-            service_temp_data = dict()
-            service_temp_data["service_port"] = sd.get("port")
-            if sd.get("service_name") in EXPORTERS:
-                service_temp_data["exporter_port"] = self.get_service_port(
-                    "{}Exporter".format(sd.get("service_name")))
-            else:
-                service_temp_data["exporter_port"] = sd.get("metrics", 0)
-            if sd.get("service_name") in METRICS.keys():
-                service_temp_data["exporter_metric"] = METRICS.get(
-                    sd.get("service_name"), 0)
-            else:
-                service_temp_data["exporter_metric"] = "metrics"
-            service_temp_data["username"] = sd.get("username", '')
-            service_temp_data["password"] = sd.get("password", '')
-            service_temp_data["name"] = sd.get("service_name")
-            service_temp_data["only_process"] = sd.get("only_process")
-            service_temp_data["process_key_word"] = sd.get(
-                "process_key_word")
-            json_content.append(service_temp_data)
-        json_dict["services"] = json.dumps(json_content)
-        return self.request_to_agent(dest_ip, dest_url, json_dict)
-
-    def _delete_agent_service(self, dest_ip, services_data):
-        """
-        请求监控agent，删除部分服务
-        :param dest_ip: 目标ip
-        :param services_data: 服务数据
-        :return:
-        """
-        json_content = list()
-        json_dict = dict()
-        dest_url = \
-            f"{AGREE}://{dest_ip}:{self.monitor_port}/update/service/delete"
-        for sd in services_data:
-            json_content.append(sd.get("service_name"))
-        json_dict["services"] = json.dumps(json_content)
-        return self.request_to_agent(dest_ip, dest_url, json_dict)
-
-    def update_agent_service(self, dest_ip, action, services_data):
-        """
-        接收omp传来的参数，解析后发送到monitor_agent
-        :param action: 更新动作 add or delete
-        :param services_data: 要更新的服务信息
-        :param dest_ip:
-        :return:
-        """
-        if action not in ("add", "delete"):
-            return False, "not support action!"
-        if action == "add":
-            return self._add_agent_service(dest_ip, services_data)
-        else:
-            return self._delete_agent_service(dest_ip, services_data)
-
-    def add2self_exporter(self, service_data):
-        """
-        添加有exporter的组件信息到各自的exporter监控
-        :param service_data: 服务信息
-        :return:
-        """
-        with open(self.prometheus_conf_path, "r") as fr:
-            fr_content = fr.read()
-        job_name_str = "{}Exporter".format(service_data.get("service_name"))
-        if job_name_str not in fr_content:  # TODO 采用读写yaml文件的方式
-            new_job_chunk = \
-                "" \
-                "\n  - job_name: {}Exporter" \
-                "\n    metrics_path: /metrics/monitor/{}" \
-                "\n    scheme: http" \
-                "\n    file_sd_configs:" \
-                "\n    - refresh_interval: 30s" \
-                "\n      files:" \
-                "\n      - targets/{}Exporter_all.json".format(
-                    service_data.get("service_name"),
-                    service_data.get("service_name"),
-                    service_data.get("service_name"))
-            fw_content = fr_content + new_job_chunk
-            with open(self.prometheus_conf_path, "w") as fw:
-                fw.write(fw_content)
-        self_exporter_target_file = os.path.join(
-            self.prometheus_targets_path,
-            "{}Exporter_all.json".format(service_data["service_name"]))
-        self_target_list = list()
-        self_target_ele = {
-            "labels": {
-                "instance": "{}".format(service_data["ip"]),
-                "env": "{}".format(service_data["env"])
-            },
-            "targets": [
-                "{}:{}".format(service_data["ip"], self.monitor_port)
-            ]
-        }
-        self_target_list.append(self_target_ele)
-
-        if os.path.exists(self_exporter_target_file):
-            with open(self_exporter_target_file, "r") as f:
-                content = f.read()
-                if content:
-                    old_self_target_list = json.loads(content)
-                    self_target_list.extend(old_self_target_list)
-        self_target_list = self.json_distinct(self_target_list)
-
-        with open(self_exporter_target_file, "w") as f2:
-            json.dump(self_target_list, f2, ensure_ascii=False, indent=4)
-
-    def add_service(self, services_data):
-        """
-        添加服务到自监控
-        :param services_data: 要增加的服务信息
-        :return:
-        """
-        if not services_data:
-            return False, "services_data can not be null"
-
-        for sd in services_data:
-            if not sd:
-                continue
-            self.add2self_exporter(sd)
-            self.update_agent_service(sd.get("ip"), "add", [sd])
-            self.add_rules("status", sd.get("env"))
-        # 重载prometheus
-        reload_prometheus_cmd = "curl -X POST http://localhost:19011/-/reload"
-        os.system(reload_prometheus_cmd)
-
-    def delete_from_self_exporter(self, service_data):
-        """
-        从自有的exporter中删除对应的服务信息
-        :param service_data:
-        :return:
-        """
-        self_exporter_target_file = os.path.join(
-            self.prometheus_targets_path,
-            "{}Exporter_all.json".format(service_data["service_name"]))
-        if not service_data:
-            return False, "service_data can not be null"
-        self_target_list = list()
-        if os.path.exists(self_exporter_target_file):
-            with open(self_exporter_target_file, 'r') as f:
-                content = f.read()
-                if content:
-                    self_target_list = json.loads(content)
-        else:
-            logger.error("{}不存在！".format(self_exporter_target_file))
-            return False, "service_data can not be null"
-        try:
-            instance = service_data['ip']
-            env = service_data['env']
-            for service in self_target_list:
-                if (instance == service["labels"]["instance"]) and (
-                        env == service["labels"]["env"]):
-                    self_target_list.remove(service)
-        except KeyError as func_e:
-            logger.error(func_e)
-
-        with open(self_exporter_target_file, 'w') as f2:
-            json.dump(self_target_list, f2, ensure_ascii=False, indent=4)
-
-    def delete_service(self, services_data):
-        """
-        从自监控删除指定的服务
-        :param services_data: 服务数据
-        :return:
-        """
-        if not services_data:
-            return False, "services_data can not be null"
-
-        for sd in services_data:
-            if not sd:
-                continue
-            self.delete_from_self_exporter(sd)
-            self.update_agent_service(sd.get('ip'), 'delete', [sd])
+        return True, "success"
