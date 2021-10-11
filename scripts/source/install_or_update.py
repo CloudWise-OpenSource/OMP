@@ -83,35 +83,45 @@ def update_omp_platform(pack_path, update_file_folder):
     # 备份服务端文件
     omp_server_old = os.path.join(OMP_HOME, 'omp_server')
     omp_server_bak = os.path.join(update_file_folder, 'omp_server')
-    cmd("test -d {0} || cp -rf {1} {2}".format(omp_server_bak,
-                                               omp_server_old, update_file_folder))
+    cmd("test -d {0} || cp -rf {1} {2}".format(
+        omp_server_bak,
+        omp_server_old, update_file_folder))
     # 备份scripts脚本目录
     omp_scripts_old = os.path.join(OMP_HOME, 'scripts')
     omp_scripts_bak = os.path.join(update_file_folder, 'scripts')
-    cmd("test -d {0} || cp -rf {1} {2}".format(omp_scripts_bak,
-                                               omp_scripts_old, update_file_folder))
+    cmd("test -d {0} || cp -rf {1} {2}".format(
+        omp_scripts_bak,
+        omp_scripts_old, update_file_folder))
     # 备份前端文件目录
     omp_web_old = os.path.join(OMP_HOME, 'omp_web')
     omp_web_bak = os.path.join(update_file_folder, 'omp_web')
-    cmd("test -d {0} || cp -rf {1} {2}".format(omp_web_bak,
-                                               omp_web_old, update_file_folder))
+    cmd("test -d {0} || cp -rf {1} {2}".format(
+        omp_web_bak,
+        omp_web_old, update_file_folder))
     # 备份package_hub
     package_hub_old = os.path.join(OMP_HOME, 'package_hub')
     package_hub_bak = os.path.join(update_file_folder, 'package_hub')
-    cmd("test -d {0} || cp -rf {1} {2}".format(package_hub_bak,
-                                               package_hub_old, update_file_folder))
+    cmd("test -d {0} || cp -rf {1} {2}".format(
+        package_hub_bak,
+        package_hub_old, update_file_folder))
     # 更新服务端文件
     _new_server = os.path.join(update_file_folder, "omp/omp_server")
-    cmd("rm -rf {0} && cp -rf {1} {2}".format(omp_server_old,
-                                              _new_server, omp_server_old))
+    cmd("rm -rf {0} && cp -rf {1} {2}".format(
+        omp_server_old,
+        _new_server, omp_server_old))
     _new_web = os.path.join(update_file_folder, "omp/omp_web")
-    cmd("rm -rf {0} && cp -rf {1} {2}".format(omp_web_old, _new_web, omp_web_old))
+    cmd("rm -rf {0} && cp -rf {1} {2}".format(
+        omp_web_old, _new_web, omp_web_old))
     _new_scripts = os.path.join(update_file_folder, "omp/scripts")
-    cmd("rm -rf {0} && cp -rf {1} {2}".format(omp_scripts_old,
-                                              _new_scripts, omp_scripts_old))
+    cmd("rm -rf {0} && cp -rf {1} {2}".format(
+        omp_scripts_old,
+        _new_scripts, omp_scripts_old))
     _new_package_hub = os.path.join(update_file_folder, "omp/package_hub")
-    cmd("rm -rf {0} && cp -rf {1} {2}".format(package_hub_old,
-                                              _new_package_hub, package_hub_old))
+    cmd("rm -rf {0} && cp -rf {1} {2}".format(
+        package_hub_old,
+        _new_package_hub, package_hub_old))
+    cmd("cp -rf {}/omp_monitor_agent* {}/".format(
+        package_hub_bak, _new_package_hub))
 
 
 def update_config(update_file_folder):
@@ -129,7 +139,8 @@ def update_config(update_file_folder):
                                                config_old, config_bak))
 
     # 提取原有配置
-    with open(os.path.join(config_old, "omp.yaml"), "r", encoding="utf8") as fp:
+    with open(os.path.join(config_old, "omp.yaml"), "r",
+              encoding="utf8") as fp:
         content_old = fp.read()
     my_yaml = YAML()
     old_config_dic = my_yaml.load(content_old)
@@ -142,7 +153,8 @@ def update_config(update_file_folder):
 
     # 合并并重写配置
     new_config_dic.update(old_config_dic)
-    with open(os.path.join(config_old, "omp.yaml"), "w", encoding="utf8") as fp:
+    with open(os.path.join(config_old, "omp.yaml"), "w",
+              encoding="utf8") as fp:
         my_yaml.dump(new_config_dic, fp)
 
     _local_ip = new_config_dic.get("local_ip")
