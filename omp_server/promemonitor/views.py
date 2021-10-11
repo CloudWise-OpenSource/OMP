@@ -104,7 +104,7 @@ class AlertViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
         partial = kwargs.pop('partial', True)
         instances = []
         for item in request.data.get('data'):
-            instance = get_object_or_404(MonitorUrl, id=int(item['id']))
+            instance = get_object_or_404(Alert, id=int(item['id']))
             serializer = super().get_serializer(instance, data=item, partial=partial)
             serializer.is_valid(raise_exception=True)
             serializer.save()
@@ -143,3 +143,21 @@ class MonitorAgentRestartView(GenericViewSet, CreateModelMixin):
     serializer_class = MonitorAgentRestartSerializer
     # 操作信息描述
     post_description = "重启监控Agent"
+
+
+class InstanceNameListView(GenericViewSet, ListModelMixin):
+    """
+    返回主机和服务实例名列表
+    """
+    # 操作信息描述
+    post_description = "返回主机和服务实例名列表"
+
+    def list(self, request, *args, **kwargs):
+        instance_name_list = list()
+        host_list = list(Host.objects.all().values_list(
+            'instance_name', flat=True))
+        print(host_list)
+        service_list = []  # TODO 待应用模型完善
+        instance_name_list.extend(host_list)
+        instance_name_list.extend(service_list)
+        return Response(instance_name_list)
