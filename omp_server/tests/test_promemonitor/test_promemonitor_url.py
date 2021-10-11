@@ -135,6 +135,17 @@ class PromemonitorTest(AutoLoginTest):
         self.assertEqual(resp.get("message"), "success")
 
     def test_partial_update_promeurl(self):
+        # monitor_url字非法,批量 -> 无法修改
+        resp = self.patch(self.multiple_update, {"data": [{
+            "id": "3",
+            "monitor_url": "😊"
+        }]}).json()
+        self.assertDictEqual(resp, {
+            "code": 1,
+            "message": "监控地址url地址存在非法字符",
+            "data": None
+        })
+
         # 修改url, -> 创建成功
         resp = self.patch(self.multiple_update, {"data": [{
             "id": "3",
