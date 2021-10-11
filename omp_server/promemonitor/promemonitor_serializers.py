@@ -4,8 +4,11 @@ import logging
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer, ListSerializer, Serializer
 from rest_framework.exceptions import ValidationError
-from db_models.models import MonitorUrl, Alert, Maintain
+
+from db_models.models import Host, MonitorUrl, Alert, Maintain
+from promemonitor.tasks import monitor_agent_restart
 from utils.exceptions import OperateError
+from utils.public_serializer import HostIdsSerializer
 from promemonitor.alertmanager import Alertmanager
 from promemonitor.alert_util import AlertAnalysis
 
@@ -289,3 +292,19 @@ class ReceiveAlertSerializer(Serializer):
             alert_obj_list.append(alert)
         Alert.objects.bulk_create(alert_obj_list)
         return validated_data
+
+
+class MonitorAgentRestartSerializer(HostIdsSerializer):
+    """ 监控Agent重启序列化类 """
+
+    def update(self, instance, validated_data):
+        pass
+
+    def create(self, validated_data):
+        """ 主机Agent重启 """
+        for item in validated_data.get("host_ids", []):
+            monitor_agent_restart.delay(item)
+        # 下发任务后批量更新重启主机状态
+        Host.objects.filter(
+            id__in=validated_data.get("host_ids", [])
+        ).update(monitor_agent=1)

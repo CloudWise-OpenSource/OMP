@@ -1,16 +1,26 @@
 # Create your views here.
-import logging
-
-from promemonitor.promemonitor_serializers import MonitorUrlSerializer, AlertSerializer, MaintainSerializer, \
-    ReceiveAlertSerializer
-from db_models.models import MonitorUrl, Alert, Maintain
+"""
+监控相关视图
+"""
 from utils.pagination import PageNumberPager
+import logging
 
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import (ListModelMixin, CreateModelMixin)
+from promemonitor import grafana_url
+import json
+from db_models.models import (
+    Host, MonitorUrl,
+    Alert, Maintain
+)
+from promemonitor.promemonitor_serializers import (
+    MonitorUrlSerializer, AlertSerializer,
+    MaintainSerializer, MonitorAgentRestartSerializer,
+    ReceiveAlertSerializer
+)
 
 logger = logging.getLogger('server')
 
@@ -50,6 +60,25 @@ class MonitorUrlViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
             serializer.save()
             instances.append(serializer.data)
         return Response(instances)
+
+
+class GrafanaUrlViewSet(ListModelMixin, GenericViewSet):
+    """
+        list:
+        查询异常清单列表
+    """
+    queryset = MonitorUrl.objects.all()
+
+    def list(self, request, *args, **kwargs):
+        params = request.query_params.dict()
+        asc = params.pop('asc', False)
+        asc = True if asc == '0' else False
+        ordering = params.pop('ordering', 'date')
+        current = grafana_url.explain_prometheus(params)
+        prometheus_info = sorted(
+            current, key=lambda e: e.__getitem__(ordering), reverse=asc)
+        prometheus_json = json.dumps(prometheus_info, ensure_ascii=False)
+        return Response(prometheus_json)
 
 
 class AlertViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
@@ -103,3 +132,14 @@ class ReceiveAlertViewSet(GenericViewSet, CreateModelMixin):
     serializer_class = ReceiveAlertSerializer
     # 操作信息描述
     post_description = "接收alertmanager告警信息"
+
+
+class MonitorAgentRestartView(GenericViewSet, CreateModelMixin):
+    """
+        create:
+        主机重启Agent接口
+    """
+    queryset = Host.objects.filter(is_deleted=False)
+    serializer_class = MonitorAgentRestartSerializer
+    # 操作信息描述
+    post_description = "重启监控Agent"

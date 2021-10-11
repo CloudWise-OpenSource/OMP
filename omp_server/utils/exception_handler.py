@@ -64,7 +64,9 @@ def res_is_not_none(exc, context, response):
         # 截取结尾的分号
         if error_message.endswith("; "):
             error_message = error_message[:-2]
-        response.data["message"] = error_message.strip()
+        if not error_message.strip():
+            error_message = str(exc)
+        response.data["message"] = error_message
         response.data["data"] = None
     elif response.status_code == 401:
         response.data["message"] = "未认证"

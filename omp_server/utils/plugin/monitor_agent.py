@@ -14,6 +14,7 @@ import os
 import logging
 from concurrent.futures import ThreadPoolExecutor
 
+from db_models.models import Host
 from omp_server.settings import PROJECT_DIR
 from utils.plugin.salt_client import SaltClient
 
@@ -71,7 +72,8 @@ class MonitorAgentManager(object):
         error_msg = ""
         for el in result_list:
             if not el[1]:
-                error_msg += f"{el[0]}: (execute_flag: {el[1]}; execute_msg: {el[2]});"
+                error_msg += \
+                    f"{el[0]}: (execute_flag: {el[1]}; execute_msg: {el[2]});"
         if error_msg:
             return False, error_msg
         return True, "success!"
@@ -109,8 +111,18 @@ class MonitorAgentManager(object):
         logger.info(
             f"Install omp_monitor_agent cmd, "
             f"cmd_flag: {cmd_flag}; cmd_res: {cmd_res}")
+        # 安装成功后更新数据库的状态
         if not cmd_flag:
+            Host.objects.filter(ip=obj.ip).update(
+                monitor_agent=4,
+                monitor_agent_error=str(cmd_res) if len(
+                    str(cmd_res)) < 200 else str(cmd_res)[:200]
+            )
             return cmd_flag, cmd_res
+        Host.objects.filter(ip=obj.ip).update(
+            monitor_agent=0,
+            monitor_agent_error=None
+        )
         return True, "success"
 
     def install(self):
@@ -139,7 +151,8 @@ class MonitorAgentManager(object):
                     f"cd {obj.agent_dir} && rm -rf {self.name}",
             timeout=120)
         logger.info(
-            f"Uninstall monitor_agent, cmd_flag: {cmd_flag}; cmd_res: {cmd_res}")
+            f"Uninstall monitor_agent, "
+            f"cmd_flag: {cmd_flag}; cmd_res: {cmd_res}")
         if not cmd_flag:
             return cmd_flag, cmd_res
         return True, "success"

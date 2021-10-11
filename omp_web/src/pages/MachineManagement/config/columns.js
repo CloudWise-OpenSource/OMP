@@ -1,5 +1,5 @@
 import { nonEmptyProcessing, renderDisc } from "@/utils/utils";
-import { DownOutlined, DesktopOutlined } from "@ant-design/icons";
+import { DownOutlined, DesktopOutlined, SettingOutlined } from "@ant-design/icons";
 import { Dropdown, Menu, Drawer, Tooltip, Spin, Timeline } from "antd";
 import moment from "moment";
 import styles from "../index.module.less";
@@ -372,6 +372,7 @@ const getColumnsConfig = (
       sorter: (a, b) => a.ip - b.ip,
       sortDirections: ["descend", "ascend"],
       align: "center",
+      //width: 140,
       render: (text, record) => {
         let str = nonEmptyProcessing(text);
         if (str == "-") {
@@ -393,14 +394,23 @@ const getColumnsConfig = (
         }
       },
       //ellipsis: true,
-      //fixed: "left"
+      fixed: "left"
     },
     {
       title: "实例名称",
       key: "instance_name",
       dataIndex: "instance_name",
       align: "center",
-      render: nonEmptyProcessing,
+      //render: nonEmptyProcessing,
+      //width: 120,
+      ellipsis: true,
+      render: (text) => {
+        return (
+          <Tooltip title={text}>
+            <span>{text ? text : "-"}</span>
+          </Tooltip>
+        );
+      },
       // ellipsis: true,
       // render: (text, record) => {
       //   let str = nonEmptyProcessing(text)
@@ -466,7 +476,7 @@ const getColumnsConfig = (
     },
     {
       title: "数据分区使用率",
-      width: 120,
+      width: 130,
       key: "data_disk_usag",
       dataIndex: "data_disk_usag",
       align: "center",
@@ -483,6 +493,7 @@ const getColumnsConfig = (
       key: "is_maintenance",
       dataIndex: "is_maintenance",
       //ellipsis: true,
+      //width: 80,
       align: "center",
       //ellipsis: true,
       render: (text) => {
@@ -534,11 +545,12 @@ const getColumnsConfig = (
     },
     {
       title: "操作",
-      width: 120,
+      //width: 100,
+      width: 140,
       key: "",
       dataIndex: "",
       align: "center",
-      // /fixed: "right",
+      fixed: "right",
       render: function renderFunc(text, record, index) {
         return (
           <div

@@ -50,6 +50,7 @@ class MonitorAgentTest(BaseTest):
 
     @mock.patch.object(SaltClient, "cp_file", return_value=(True, "success"))
     @mock.patch.object(SaltClient, "cmd", return_value=(True, "success"))
+    @mock.patch.object(SaltClient, "__init__", return_value=None)
     def test_package_do_not_exist(self, *args, **kwargs):
         """
         测试monitor agent安装包不存在场景
@@ -64,6 +65,7 @@ class MonitorAgentTest(BaseTest):
 
     @mock.patch.object(SaltClient, "cp_file", return_value=(False, "success"))
     @mock.patch.object(SaltClient, "cmd", return_value=(True, "success"))
+    @mock.patch.object(SaltClient, "__init__", return_value=None)
     def test_install_failed_send_package(self, *args, **kwargs):
         """
         测试成功安装monitor agent场景
@@ -76,6 +78,7 @@ class MonitorAgentTest(BaseTest):
 
     @mock.patch.object(SaltClient, "cp_file", return_value=(True, "success"))
     @mock.patch.object(SaltClient, "cmd", return_value=(False, "success"))
+    @mock.patch.object(SaltClient, "__init__", return_value=None)
     def test_install_failed_cmd(self, *args, **kwargs):
         """
         测试成功安装monitor agent场景
@@ -87,6 +90,7 @@ class MonitorAgentTest(BaseTest):
 
     @mock.patch.object(SaltClient, "cp_file", return_value=(True, "success"))
     @mock.patch.object(SaltClient, "cmd", return_value=(True, "success"))
+    @mock.patch.object(SaltClient, "__init__", return_value=None)
     def test_install_success(self, *args, **kwargs):
         """
         测试成功安装monitor agent场景
@@ -98,6 +102,7 @@ class MonitorAgentTest(BaseTest):
         self.assertEqual(flag, True)
 
     @mock.patch.object(SaltClient, "cmd", return_value=(False, "success"))
+    @mock.patch.object(SaltClient, "__init__", return_value=None)
     def test_uninstall_failed(self, *args, **kwargs):
         """
         测试卸载失败场景
@@ -110,6 +115,7 @@ class MonitorAgentTest(BaseTest):
         self.assertEqual(manager.uninstall()[0], False)
 
     @mock.patch.object(SaltClient, "cmd", return_value=(True, "success"))
+    @mock.patch.object(SaltClient, "__init__", return_value=None)
     def test_uninstall_success(self, *args, **kwargs):
         """
         测试卸载失败场景

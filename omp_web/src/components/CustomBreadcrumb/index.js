@@ -29,7 +29,10 @@ const breadcrumbNameMap = {
   "system-settings": "系统管理",
   "user-management": "用户管理",
   "monitoring-settings": "监控设置",
-  "system-management": "系统管理"
+  "system-management": "系统管理",
+  "alarm-log": "告警记录",
+  "exception-list":"异常清单",
+  "application-monitoring":"应用监控"
 };
 
 // 基于面包屑组件的一层封装，用于匹配当前路由地址，动态展示页面路径

@@ -21,12 +21,17 @@ function install_omp() {
     echo "OMP配置更新失败"
     exit 1
   fi
-  bash $OMP_SCRIPT start
+  bash $OMP_SCRIPT all start
 }
 
 # 监控端安装逻辑
 function install_monitor_server() {
-  echo ""
+  update_grafana_path="${PROJECT_FOLDER}/scripts/source/update_grafana.py"
+  $PYTHON3 $update_grafana_path $1
+  if [[ $? -ne 0 ]]; then
+    echo "Grafana配置更新失败"
+    exit 1
+  fi
 }
 
 if [[ $# -eq 0 ]]; then

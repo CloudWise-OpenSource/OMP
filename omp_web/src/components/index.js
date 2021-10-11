@@ -12,6 +12,7 @@ import OmpButton from "./OmpButton"
 import OmpMessageModal from "./OmpMessageModal"
 import OmpProgress from "./OmpProgress";
 import OmpIframe from "./OmpIframe"
+import OmpSelect from "./OmpSelect"
 
 export {
     OmpContentNav,
@@ -27,5 +28,6 @@ export {
     OmpButton,
     OmpMessageModal,
     OmpProgress,
-    OmpIframe
+    OmpIframe,
+    OmpSelect
 }

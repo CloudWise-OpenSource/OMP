@@ -22,9 +22,11 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "omp_server.settings")
 django.setup()
 
 from db_models.models import UserProfile
-from db_models.models import MonitorUrl
+from db_models.models import MonitorUrl, GrafanaMainPage
 from utils.parse_config import MONITOR_PORT
 from db_models.models import Env
+import requests
+import json
 
 
 def create_default_user():
@@ -50,15 +52,15 @@ def create_default_monitor_url():
     """
     if MonitorUrl.objects.all().count() != 0:
         return
-    MonitorList = []
+    monitor_list = []
     local_ip = "127.0.0.1:"
-    MonitorList.append(
+    monitor_list.append(
         MonitorUrl(id="1", name="prometheus", monitor_url=local_ip + str(MONITOR_PORT.get("prometheus", "19011"))))
-    MonitorList.append(
+    monitor_list.append(
         MonitorUrl(id="2", name="alertmanager", monitor_url=local_ip + str(MONITOR_PORT.get("alertmanager", "19013"))))
-    MonitorList.append(MonitorUrl(
+    monitor_list.append(MonitorUrl(
         id="3", name="grafana", monitor_url=local_ip + str(MONITOR_PORT.get("grafana", "19014"))))
-    MonitorUrl.objects.bulk_create(MonitorList)
+    MonitorUrl.objects.bulk_create(monitor_list)
 
 
 def create_default_env():
@@ -70,6 +72,40 @@ def create_default_env():
     if Env.objects.filter(name=env_name).count() != 0:
         return
     Env(name=env_name).save()
+
+
+def synch_grafana_info():
+    """如果存在则不再添加,修改会追加一条数据"""
+    monitor_ip = MonitorUrl.objects.filter(name="grafana")
+    monitor_url = monitor_ip[0].monitor_url if len(
+        monitor_ip) else "127.0.0.1:19014"
+
+    token = "Bearer eyJrIjoiWE9tWEhsZ1p6WG41YVd1Mlh1ODF1Qlo2RzNiQkFMR3oiLCJuIjoiYWRtaW4iLCJpZCI6MX0="
+    url = """http://{0}/proxy/v1/grafana/api/search?query=&
+          starred=false&skipRecent=false&
+          skipStarred=false&folderIds=0&layout=folders""".format(monitor_url)
+    payload = {}
+    headers = {
+        'Authorization': token
+    }
+    response = requests.request("GET", url, headers=headers, data=payload)
+    r = json.loads(response.text)
+
+    url_type = {"service": "fu", "node": "zhu", "log": "applogs"}
+    url_dict = {}
+    for url in r:
+        url_name = url.get("uri").rsplit("/", 1)[1].split("-", 1)[0]
+        url_dict[url_name.lower()] = url.get("url")
+
+    for key, value in url_type.items():
+        url_dict.update({key: url_dict.pop(value)})
+
+    if GrafanaMainPage.objects.all().count() != len(url_dict):
+        dbname = [i.instance_name for i in GrafanaMainPage.objects.all()]
+        difference = list(set(url_dict.keys()).difference(set(dbname)))
+        grafana_obj = [GrafanaMainPage(
+            instance_name=i, instance_url=url_dict.get(i)) for i in difference]
+        GrafanaMainPage.objects.bulk_create(grafana_obj)
 
 
 def main():
