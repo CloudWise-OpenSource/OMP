@@ -2,6 +2,9 @@
 """
 监控相关视图
 """
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import OrderingFilter
+
 from utils.pagination import PageNumberPager
 import logging
 
@@ -9,7 +12,8 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
-from rest_framework.mixins import (ListModelMixin, CreateModelMixin)
+from rest_framework.mixins import (
+    ListModelMixin, CreateModelMixin, UpdateModelMixin)
 from promemonitor import grafana_url
 import json
 from db_models.models import (
@@ -81,35 +85,40 @@ class GrafanaUrlViewSet(ListModelMixin, GenericViewSet):
         return Response(prometheus_json)
 
 
-class AlertViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
+class AlertViewSet(ListModelMixin, UpdateModelMixin, GenericViewSet):
     """
     告警记录视图类
     """
     serializer_class = AlertSerializer
     queryset = Alert.objects.all()
+    # 分页，过滤，排序
     pagination_class = PageNumberPager
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    # filter_class = AlertFilter
+    ordering_fields = ("alert_host_ip", "alert_host_instance_name",
+                       "alert_service_instance_name", "alert_time")
 
-    def get_serializer(self, *args, **kwargs):
-        serializer_class = self.get_serializer_class()
-        kwargs.setdefault('context', self.get_serializer_context())
-        if self.request:
-            if isinstance(self.request.data.get('data'), list):
-                return serializer_class(many=True, *args, **kwargs)
-            return serializer_class(*args, **kwargs)
-        else:
-            return serializer_class(*args, **kwargs)
-
-    @action(methods=['patch'], detail=False)
-    def multiple_update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', True)
-        instances = []
-        for item in request.data.get('data'):
-            instance = get_object_or_404(Alert, id=int(item['id']))
-            serializer = super().get_serializer(instance, data=item, partial=partial)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            instances.append(serializer.data)
-        return Response(instances)
+    # def get_serializer(self, *args, **kwargs):
+    #     serializer_class = self.get_serializer_class()
+    #     kwargs.setdefault('context', self.get_serializer_context())
+    #     if self.request:
+    #         if isinstance(self.request.data.get('data'), list):
+    #             return serializer_class(many=True, *args, **kwargs)
+    #         return serializer_class(*args, **kwargs)
+    #     else:
+    #         return serializer_class(*args, **kwargs)
+    #
+    # @action(methods=['patch'], detail=False)
+    # def multiple_update(self, request, *args, **kwargs):
+    #     partial = kwargs.pop('partial', True)
+    #     instances = []
+    #     for item in request.data.get('data'):
+    #         instance = get_object_or_404(Alert, id=int(item['id']))
+    #         serializer = super().get_serializer(instance, data=item, partial=partial)
+    #         serializer.is_valid(raise_exception=True)
+    #         serializer.save()
+    #         instances.append(serializer.data)
+    #     return Response(instances)
 
 
 class MaintainViewSet(GenericViewSet, CreateModelMixin, ListModelMixin):
