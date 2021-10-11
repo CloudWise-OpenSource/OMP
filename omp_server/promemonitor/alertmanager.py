@@ -144,7 +144,7 @@ class Alertmanager:
             delete_setting_result = self.delete_setting(maintain_id)
             if not delete_setting_result:
                 return False
-            Maintain.objects.delete(maintain)
+            Maintain.objects.filter(maintain_id=maintain_id).delete()
         return True
 
     def revoke_maintain_by_env_name(self, env_name):
