@@ -10,6 +10,9 @@ from promemonitor.tasks import monitor_agent_restart
 from utils.exceptions import OperateError
 from utils.public_serializer import HostIdsSerializer
 from promemonitor.alertmanager import Alertmanager
+from utils.validator import (
+    NoEmojiValidator, NoChineseValidator
+)
 from promemonitor.alert_util import AlertAnalysis
 
 logger = logging.getLogger('server')
@@ -70,6 +73,10 @@ class MonitorUrlSerializer(ModelSerializer):
     monitor_url = serializers.CharField(
         required=True,
         error_messages={"invalid": "监控地址格式不正确"},
+        validators=[
+            NoEmojiValidator(message="url地址存在非法字符"),
+            NoChineseValidator(message="url地址存在非法字符"),
+        ],
         help_text="监控地址")
 
     class Meta:
@@ -85,6 +92,11 @@ class MonitorUrlSerializer(ModelSerializer):
         if queryset.filter(name=name).exists():
             raise ValidationError("name已经存在")
         return name
+
+    def validate_monitor_url(self, monitor_url):
+        if len(monitor_url.split(" ")) > 1:
+            raise ValidationError("url地址存在非法字符")
+        return monitor_url
 
 
 class AlertSerializer(ModelSerializer):
