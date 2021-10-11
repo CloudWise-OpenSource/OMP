@@ -184,8 +184,18 @@ class MaintainSerializer(ModelSerializer):
 
 
 class ReceiveAlertSerializer(Serializer):
-    origin_alert = serializers.CharField(
-        help_text="alertmanager 原生告警",
+    receiver = serializers.CharField(
+        help_text="接收者",
+        required=True,
+        error_messages={"required": "不可为空"},
+    )
+    status = serializers.CharField(
+        help_text="状态",
+        required=True,
+        error_messages={"required": "不可为空"},
+    )
+    alerts = serializers.ListField(
+        help_text="告警内容",
         required=True,
         error_messages={"required": "不可为空"},
     )
