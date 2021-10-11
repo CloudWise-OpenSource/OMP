@@ -9,7 +9,6 @@ class GetInstanceNameListTest(AutoLoginTest):
     def setUp(self):
         super(GetInstanceNameListTest, self).setUp()
         self.instance_name_list_url = reverse("instanceNameList-list")
-        # 正确主机数据
 
     def test_get_instance_name_list(self):
         """ 测试获取主机和应用实例名 """

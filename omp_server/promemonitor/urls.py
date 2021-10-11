@@ -10,7 +10,7 @@ from promemonitor.views import (
 
 router = DefaultRouter()
 router.register(r'monitorurl', MonitorUrlViewSet)
-router.register(r'alerts', AlertViewSet)
+router.register(r'alerts', AlertViewSet, basename='alerts')
 router.register(r'restartMonitorAgent',
                 MonitorAgentRestartView, basename="restartMonitorAgent")
 router.register("global_maintain", MaintainViewSet, basename='global_maintain')
