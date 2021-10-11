@@ -22,6 +22,7 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(os.path.dirname(CURRENT_DIR))
 GRAFANA_DASHBOARD_JSON = os.path.join(
     PROJECT_DIR, "package_hub/grafana_dashboard_json")
+AGREE = "http"
 
 
 class Grafana(object):
@@ -40,17 +41,17 @@ class Grafana(object):
         self.prometheus_ip = prometheus_ip
         self.prometheus_port = prometheus_port
         self.login_url = \
-            f"http://{self.ip}:{self.port}/proxy/v1/grafana/login"
+            f"{AGREE}://{self.ip}:{self.port}/proxy/v1/grafana/login"
         self.create_user_url = \
-            f"http://{self.ip}:{self.port}/api/admin/users"
+            f"{AGREE}://{self.ip}:{self.port}/api/admin/users"
         self.data_source_url = \
-            f"http://{self.ip}:{self.port}/api/datasources"
+            f"{AGREE}://{self.ip}:{self.port}/api/datasources"
         self.dashboard_url = \
-            f"http://{self.ip}:{self.port}/api/dashboards/db"
+            f"{AGREE}://{self.ip}:{self.port}/api/dashboards/db"
         self.dashboard_id_url = \
-            f"http://{self.ip}:{self.port}/api/dashboards/uid/XrwAXz_Mz"
+            f"{AGREE}://{self.ip}:{self.port}/api/dashboards/uid/XrwAXz_Mz"
         self.profile_url = \
-            f"http://{self.ip}:{self.port}/api/user/preferences"
+            f"{AGREE}://{self.ip}:{self.port}/api/user/preferences"
         self.content_type = {'Content-Type': 'application/json'}
         self.basic_auth = ("admin", "admin")
         self.omp_auth = ("omp", "Common@123")
@@ -147,14 +148,14 @@ class Grafana(object):
         prometheus_content = {
             "name": "Prometheus",
             "type": "prometheus",
-            "url": f"http://{self.prometheus_ip}:{self.prometheus_port}",
+            "url": f"{AGREE}://{self.prometheus_ip}:{self.prometheus_port}",
             "access": "proxy",
             "basicAuth": False
         }
         loki_content = {
             "name": "Loki",
             "type": "loki",
-            "url": f"http://{self.loki_ip}:{self.loki_port}",
+            "url": f"{AGREE}://{self.loki_ip}:{self.loki_port}",
             "access": "proxy",
             "basicAuth": False
         }
@@ -207,8 +208,8 @@ class Grafana(object):
             if not item.endswith(".json"):
                 continue
             file_path = os.path.join(GRAFANA_DASHBOARD_JSON, item)
-            with open(file_path, "r") as fp:
-                _flag, _msg = self.update_one_dashboard(fp.read())
+            with open(file_path, "r") as fp_obj:
+                _flag, _msg = self.update_one_dashboard(fp_obj.read())
             if not _flag:
                 return _flag, _msg
 
