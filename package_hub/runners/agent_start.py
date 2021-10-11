@@ -53,16 +53,17 @@ def get_agent_detail(target):
                 host_name=res.get("hostname")
             )
             logger.info(f"更新{target}状态成功!")
-        else:
-            Host(
-                ip=target,
-                memory=res.get("memory", {}).get("memory_total", 0),
-                cpu=res.get("cpu", 0),
-                disk=res.get("disk", {}),
-                host_agent=0,
-                host_name=res.get("hostname")
-            ).save()
-            logger.info(f"插入{target}状态成功!")
+        # TODO 暂时屏蔽自动入库逻辑，待设计完善后再进行补充
+        # else:
+        #     Host(
+        #         ip=target,
+        #         memory=res.get("memory", {}).get("memory_total", 0),
+        #         cpu=res.get("cpu", 0),
+        #         disk=res.get("disk", {}),
+        #         host_agent=0,
+        #         host_name=res.get("hostname")
+        #     ).save()
+        #     logger.info(f"插入{target}状态成功!")
     except Exception as e:
         logger.error(f"{target}状态更新失败: {str(e)}")
 

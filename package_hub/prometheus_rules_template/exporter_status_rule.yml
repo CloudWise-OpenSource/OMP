@@ -1,0 +1,12 @@
+groups:
+- name: Exporter Alert
+  rules:
+  - alert: exporter alert
+    annotations:
+      consignee: ${EMAIL_ADDRESS}
+      description: 主机 {{ $labels.instance }} 中的 {{ $labels.app }}_exporter 已经down掉超过一分钟.
+      summary: exporter status(instance {{ $labels.instance }})
+    expr: exporter_status{env="${ENV}"} == 0
+    for: 1m
+    labels:
+      severity: critical

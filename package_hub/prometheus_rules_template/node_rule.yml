@@ -1,0 +1,113 @@
+groups:
+- name: node alert
+  rules:
+  - alert: instance down
+    annotations:
+      consignee: ${EMAIL_ADDRESS}
+      description: 实例 {{ $labels.instance }} monitor_agent进程丢失或主机发生宕机已超过1分钟
+      summary: instance down alert({{ $labels.instance }})
+    expr: sum(up{job="nodeExporter", env="${ENV}"}) by (instance) < 1
+    for: 1m
+    labels:
+      job: nodeExporter
+      severity: critical
+  - alert: host cpu_used alert
+    annotations:
+      consignee: ${EMAIL_ADDRESS}
+      description: 主机 {{ $labels.instance }} CPU 使用率为 {{ $value | humanize }}%, 大于阈值
+        90
+      summary: cpu_used (instance {{ $labels.instance }})
+    expr: (100 - sum(avg without (cpu)(irate(node_cpu_seconds_total{mode='idle', env="${ENV}"}[2m])))
+      by (instance) * 100) >= 90
+    for: 1m
+    labels:
+      job: nodeExporter
+      severity: critical
+  - alert: host cpu_used alert
+    annotations:
+      consignee: ${EMAIL_ADDRESS}
+      description: 主机 {{ $labels.instance }} CPU 使用率为 {{ $value | humanize }}%, 大于阈值
+        80
+      summary: cpu_used (instance {{ $labels.instance }})
+    expr: (100 - sum(avg without (cpu)(irate(node_cpu_seconds_total{mode='idle', env="${ENV}"}[2m])))
+      by (instance) * 100) >= 80
+    for: 1m
+    labels:
+      job: nodeExporter
+      severity: warning
+  - alert: host memory_used alert
+    annotations:
+      consignee: ${EMAIL_ADDRESS}
+      description: 主机 {{ $labels.instance }} 内存使用率高于 90%，当前值为{{ $value | humanize
+        }}%
+      summary: memory_used (instance {{ $labels.instance }})
+    expr: (1 - (node_memory_MemAvailable_bytes{env="${ENV}"} / (node_memory_MemTotal_bytes{env="${ENV}"})))
+      * 100 >= 90
+    for: 1m
+    labels:
+      job: nodeExporter
+      severity: critical
+  - alert: host memory_used alert
+    annotations:
+      consignee: ${EMAIL_ADDRESS}
+      description: 主机 {{ $labels.instance }} 内存使用率高于 80%，当前值为{{ $value | humanize
+        }}%
+      summary: memory_used (instance {{ $labels.instance }})
+    expr: (1 - (node_memory_MemAvailable_bytes{env="${ENV}"} / (node_memory_MemTotal_bytes{env="${ENV}"})))
+      * 100 >= 80
+    for: 1m
+    labels:
+      job: nodeExporter
+      severity: warning
+  - alert: host disk_root_used alert
+    annotations:
+      consignee: ${EMAIL_ADDRESS}
+      description: 主机 {{ $labels.instance }} 根分区使用率为 {{ $value | humanize }}%, 大于
+        阈值 90%
+      summary: disk_root_used (instance {{ $labels.instance }})
+    expr: max((node_filesystem_size_bytes{env="${ENV}",mountpoint="/"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="/"})
+      *100/(node_filesystem_avail_bytes{env="${ENV}",mountpoint="/"}+(node_filesystem_size_bytes{env="${ENV}",mountpoint="/"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="/"})))by(instance)
+      >= 90
+    for: 1m
+    labels:
+      job: nodeExporter
+      severity: critical
+  - alert: host disk_root_used alert
+    annotations:
+      consignee: ${EMAIL_ADDRESS}
+      description: 主机 {{ $labels.instance }} 根分区使用率为 {{ $value | humanize }}%, 大于
+        阈值 80%
+      summary: disk_root_used (instance {{ $labels.instance }})
+    expr: max((node_filesystem_size_bytes{env="${ENV}",mountpoint="/"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="/"})
+      *100/(node_filesystem_avail_bytes{env="${ENV}",mountpoint="/"}+(node_filesystem_size_bytes{env="${ENV}",mountpoint="/"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="/"})))by(instance)
+      >= 80
+    for: 1m
+    labels:
+      job: nodeExporter
+      severity: warning
+  - alert: host disk_data_used alert
+    annotations:
+      consignee: ${EMAIL_ADDRESS}
+      description: 主机 {{ $labels.instance }} 数据分区使用率为 {{ $value | humanize }}%, 大于
+        阈值 90%
+      summary: disk_data_used (instance {{ $labels.instance }})
+    expr: max((node_filesystem_size_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"})
+      *100/(node_filesystem_avail_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"}+(node_filesystem_size_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"})))by(instance)
+      >= 90
+    for: 1m
+    labels:
+      job: nodeExporter
+      severity: critical
+  - alert: host disk_data_used alert
+    annotations:
+      consignee: ${EMAIL_ADDRESS}
+      description: 主机 {{ $labels.instance }} 数据分区使用率为 {{ $value | humanize }}%, 大于
+        阈值 80%
+      summary: disk_data_used (instance {{ $labels.instance }})
+    expr: max((node_filesystem_size_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"})
+      *100/(node_filesystem_avail_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"}+(node_filesystem_size_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"})))by(instance)
+      >= 80
+    for: 1m
+    labels:
+      job: nodeExporter
+      severity: warning
