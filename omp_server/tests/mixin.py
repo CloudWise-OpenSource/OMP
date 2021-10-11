@@ -27,6 +27,7 @@ class HostsResourceMixin:
         # 创建主机
         aes_crypto = AESCryptor()
         host_obj_ls = []
+        agent_status_ls = list(map(lambda x: x[0], Host.AGENT_STATUS_CHOICES))
         for index in range(number):
             index += 1
             host_obj = Host.objects.create(
@@ -38,6 +39,10 @@ class HostsResourceMixin:
                 data_folder="/data",
                 operate_system="CentOS",
                 env=env,
+                service_num=random.randint(0, 100),
+                alert_num=random.randint(0, 100),
+                host_agent=random.choice(agent_status_ls),
+                monitor_agent=random.choice(agent_status_ls),
             )
             host_obj_ls.append(host_obj)
         return host_obj_ls

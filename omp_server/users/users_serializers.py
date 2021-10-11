@@ -135,7 +135,7 @@ class UserUpdatePasswordSerializer(Serializer):
         }
         user = authenticate(**credentials)
         if not user:
-            raise ValidationError({"old_password": "原密码不正确"})
+            raise ValidationError({"old_password": "当前密码不正确"})
         attrs["user_obj"] = user
         return attrs
 

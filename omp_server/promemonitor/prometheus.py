@@ -13,6 +13,7 @@ class Prometheus:
     """
     定义prometheus的一些参数以及动作
     """
+    STATUS = ("normal", "warning", "critical")
 
     def __init__(self):
         self.ip, self.port = self.get_prometheus_config()
