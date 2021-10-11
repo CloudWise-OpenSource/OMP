@@ -1,4 +1,5 @@
 import random
+from datetime import datetime
 from unittest import mock
 
 from django.http.response import FileResponse
@@ -8,12 +9,15 @@ from tests.base import AutoLoginTest
 from tests.mixin import (
     HostsResourceMixin, HostBatchRequestMixin
 )
+from hosts.views import HostListView
 from hosts.tasks import (
     deploy_agent, host_agent_restart
 )
+from hosts.hosts_serializers import HostSerializer
 from db_models.models import Host
 from utils.plugin.ssh import SSH
 from utils.plugin.crypto import AESCryptor
+from promemonitor.prometheus import Prometheus
 from promemonitor.alertmanager import Alertmanager
 
 
@@ -378,7 +382,31 @@ class ListHostTest(AutoLoginTest, HostsResourceMixin):
         self.create_host_url = reverse("hosts-list")
         self.list_host_url = reverse("hosts-list")
 
-    def test_hosts_list(self):
+    @staticmethod
+    def mock_prometheus_info(host_obj_ls):
+        """ 模拟 prometheus 返回数据 """
+        for host in host_obj_ls:
+            host.update({
+                "cpu_usage": random.choice(
+                    [None, random.randint(0, 100)]),
+                "mem_usage": random.choice(
+                    [None, random.randint(0, 100)]),
+                "root_disk_usage": random.choice(
+                    [None, random.randint(0, 100)]),
+                "data_disk_status": random.choice(
+                    [None, random.randint(0, 100)]),
+                "cpu_status": random.choice(
+                    [None, random.choice(Prometheus.STATUS)]),
+                "mem_status": random.choice(
+                    [None, random.choice(Prometheus.STATUS)]),
+                "data_disk_usage": random.choice(
+                    [None, random.choice(Prometheus.STATUS)]),
+                "root_disk_status": random.choice(
+                    [None, random.choice(Prometheus.STATUS)]),
+            })
+        return host_obj_ls
+
+    def test_hosts_list_filter(self):
         """ 测试主机列表 """
         host_obj_ls = self.get_hosts(50)
 
@@ -389,13 +417,9 @@ class ListHostTest(AutoLoginTest, HostsResourceMixin):
         self.assertTrue(resp.get("data") is not None)
         # 数据总量为所有主机数
         self.assertEqual(resp.get("data").get("count"), len(host_obj_ls))
-        # 默认按照创建时间排序，第一条记录应为最后一个添加的主机
-        first_host = resp.get("data").get("results")[0]
-        last_host = host_obj_ls[-1]
-        self.assertEqual(first_host.get("ip"), last_host.ip)
 
         # IP 过滤主机 -> 模糊展示匹配项
-        target_host_obj = host_obj_ls[5]
+        target_host_obj = host_obj_ls[random.randint(10, 49)]
         resp = self.get(self.list_host_url, {
             "ip": target_host_obj.ip
         }).json()
@@ -403,17 +427,69 @@ class ListHostTest(AutoLoginTest, HostsResourceMixin):
         self.assertEqual(resp.get("message"), "success")
         self.assertTrue(resp.get("data") is not None)
         self.assertEqual(resp.get("data").get("count"), 1)
+        host_obj = resp.get("data").get("results")[0]
+        self.assertEqual(host_obj.get("ip"), target_host_obj.ip)
 
-        # 指定字段排序 -> 返回排序后的列表
-        resp = self.get(self.list_host_url, {
-            "ordering": "ip"
-        }).json()
-        # 按照 IP 排序，第一条记录应为第一个添加的主机
-        first_host = resp.get("data").get("results")[0]
-        last_host = host_obj_ls[0]
+        # 删除主机
+        self.destroy_hosts()
+
+    def test_hosts_list_order(self):
+        """ 测试主机列表排序 """
+        self.get_hosts(50)
+
+        # 不传递排序字段 -> 默认按照主机创建时间排序
+        resp = self.get(self.list_host_url).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
-        self.assertEqual(first_host.get("ip"), last_host.ip)
+        res_ls = resp.get("data").get("results")
+        sorted_res_ls = res_ls[:]
+        random.shuffle(sorted_res_ls)
+        sorted_res_ls = sorted(
+            sorted_res_ls,
+            key=lambda x: datetime.strptime(
+                x.get("created"), "%Y-%m-%dT%H:%M:%S.%f"),
+            reverse=True)
+        self.assertEqual(res_ls, sorted_res_ls)
+
+        # 指定字段排序 -> 返回排序后的列表
+        reverse_flag = random.choice(("", "-"))
+        order_field = random.choice(HostListView.ordering_fields)
+        resp = self.get(self.list_host_url, {
+            "ordering": f"{reverse_flag}{order_field}"
+        }).json()
+        self.assertEqual(resp.get("code"), 0)
+        self.assertEqual(resp.get("message"), "success")
+        res_ls = list(map(lambda x: x.get(order_field),
+                          resp.get("data").get("results")))
+        sorted_res_ls = res_ls[:]
+        random.shuffle(sorted_res_ls)
+        sorted_res_ls = sorted(
+            sorted_res_ls,
+            reverse=True if reverse_flag else False)
+        self.assertEqual(res_ls, sorted_res_ls)
+
+        # 指定动态排序字段 -> 返回值为None的不参与排序
+        reverse_flag = random.choice(("", "-"))
+        order_field = random.choice(HostListView.dynamic_fields)
+        host_obj_ls = HostSerializer(Host.objects.all(), many=True).data
+        with mock.patch.object(Prometheus, "get_host_info") as mock_prometheus_info:
+            mock_prometheus_info.return_value = self.mock_prometheus_info(
+                host_obj_ls)
+            resp = self.get(self.list_host_url, {
+                "ordering": f"{reverse_flag}{order_field}"
+            }).json()
+            # 返回值为 None 的数据不参与排序，排在末尾位置
+            res_ls = list(map(lambda x: x.get(order_field),
+                              resp.get("data").get("results")))
+            none_number = res_ls.count(None)
+            self.assertTrue(not any(res_ls[-none_number:]))
+            res_ls = list(filter(lambda x: x is not None, res_ls))
+            sorted_res_ls = res_ls[:]
+            random.shuffle(sorted_res_ls)
+            sorted_res_ls = sorted(
+                sorted_res_ls,
+                reverse=True if reverse_flag else False)
+            self.assertEqual(res_ls, sorted_res_ls)
 
         # 删除主机
         self.destroy_hosts()
@@ -895,6 +971,23 @@ class HostBatchValidateTest(AutoLoginTest, HostsResourceMixin, HostBatchRequestM
         self.assertTrue(isinstance(resp, FileResponse))
         self.assertTrue(resp.streaming)
         self.assertTrue(resp.streaming_content is not None)
+
+    @mock.patch.object(SSH, "check", return_value=(True, ""))
+    @mock.patch.object(SSH, "is_sudo", return_value=(True, "is sudo"))
+    @mock.patch.object(SSH, "cmd", return_value=(True, ""))
+    @mock.patch.object(deploy_agent, "delay", return_value=None)
+    def test_error_format(self, deploy_agent_mock, cmd_mock, is_sudo, ssh_mock):
+        """ 测试错误格式 """
+
+        # 格式错误 -> 添加失败
+        data = self.get_host_batch_request(10)
+        data["host_list"].append(12345)
+        resp = self.post(self.batch_validate_url, data).json()
+        self.assertDictEqual(resp, {
+            "code": 1,
+            "message": "数据格式错误",
+            "data": None
+        })
 
     @mock.patch.object(SSH, "check", return_value=(True, ""))
     @mock.patch.object(SSH, "is_sudo", return_value=(True, "is sudo"))

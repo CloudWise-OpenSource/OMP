@@ -232,7 +232,7 @@ class UserUpdatePasswordTest(AutoLoginTest):
         }).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "原密码不正确",
+            "message": "当前密码不正确",
             "data": None
         })
 

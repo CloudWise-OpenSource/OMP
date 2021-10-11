@@ -81,13 +81,18 @@ class HostListView(GenericViewSet, ListModelMixin, CreateModelMixin):
             reverse_flag = True
             query_field = query_field[1:]
         # 若排序字段在类视图 dynamic_fields 中，则对根据动态数据进行排序
+        none_ls = list(filter(lambda x: x.get(
+            query_field) is None, serializer_data))
+        exists_ls = list(filter(lambda x: x.get(query_field)
+                                is not None, serializer_data))
         if query_field in self.dynamic_fields:
-            serializer_data = sorted(
-                serializer_data,
+            exists_ls = sorted(
+                exists_ls,
                 key=lambda x: x.get(query_field),
                 reverse=reverse_flag)
+        exists_ls.extend(none_ls)
 
-        return self.get_paginated_response(serializer_data)
+        return self.get_paginated_response(exists_ls)
 
 
 class HostDetailView(GenericViewSet, UpdateModelMixin):
@@ -196,7 +201,9 @@ class HostBatchValidateView(GenericViewSet, ListModelMixin, CreateModelMixin):
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid()
+        if not serializer.is_valid():
+            logger.error(f"host batch validate failed:{request.data}")
+            raise ParseError("数据格式错误")
         return Response(serializer.validated_data.get("result_dict"))
 
 

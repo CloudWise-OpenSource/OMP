@@ -339,7 +339,7 @@ class HostOperateLogSerializer(ModelSerializer):
 class HostBatchValidateSerializer(Serializer):
     """ 主机数据批量验证序列化类 """
 
-    host_list = serializers.ListSerializer(
+    host_list = serializers.ListField(
         child=serializers.DictField(),
         help_text="主机数据列表",
         required=True, allow_empty=False,
@@ -359,7 +359,7 @@ class HostBatchValidateSerializer(Serializer):
             return "correct", host_data
         err_ls = []
         for k, v in host_serializer.errors.items():
-            err_ls.append("; ".join(v))
+            err_ls.extend(v)
         host_data["validate_error"] = "; ".join(err_ls)
         return "error", host_data
 
@@ -408,7 +408,7 @@ class HostBatchValidateSerializer(Serializer):
 class HostBatchImportSerializer(Serializer):
     """ 主机数据批量创建序列化类 """
 
-    host_list = serializers.ListSerializer(
+    host_list = serializers.ListField(
         child=serializers.DictField(),
         help_text="主机数据列表",
         required=True, allow_empty=False,
