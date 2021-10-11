@@ -2,6 +2,9 @@
 """
 监控相关视图
 """
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import OrderingFilter
+
 from utils.pagination import PageNumberPager
 import logging
 
@@ -9,7 +12,8 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
-from rest_framework.mixins import (ListModelMixin, CreateModelMixin)
+from rest_framework.mixins import (
+    ListModelMixin, CreateModelMixin)
 from promemonitor import grafana_url
 import json
 from db_models.models import (
@@ -86,30 +90,13 @@ class AlertViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
     告警记录视图类
     """
     serializer_class = AlertSerializer
-    queryset = Alert.objects.all()
+    queryset = Alert.objects.all().order_by('id')
+    # 分页，过滤，排序
     pagination_class = PageNumberPager
-
-    def get_serializer(self, *args, **kwargs):
-        serializer_class = self.get_serializer_class()
-        kwargs.setdefault('context', self.get_serializer_context())
-        if self.request:
-            if isinstance(self.request.data.get('data'), list):
-                return serializer_class(many=True, *args, **kwargs)
-            return serializer_class(*args, **kwargs)
-        else:
-            return serializer_class(*args, **kwargs)
-
-    @action(methods=['patch'], detail=False)
-    def multiple_update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', True)
-        instances = []
-        for item in request.data.get('data'):
-            instance = get_object_or_404(MonitorUrl, id=int(item['id']))
-            serializer = super().get_serializer(instance, data=item, partial=partial)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            instances.append(serializer.data)
-        return Response(instances)
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    # filter_class = AlertFilter
+    ordering_fields = ("alert_host_ip", "alert_host_instance_name",
+                       "alert_service_instance_name", "alert_time")
 
 
 class MaintainViewSet(GenericViewSet, CreateModelMixin, ListModelMixin):
@@ -143,3 +130,21 @@ class MonitorAgentRestartView(GenericViewSet, CreateModelMixin):
     serializer_class = MonitorAgentRestartSerializer
     # 操作信息描述
     post_description = "重启监控Agent"
+
+
+class InstanceNameListView(GenericViewSet, ListModelMixin):
+    """
+    返回主机和服务实例名列表
+    """
+    # 操作信息描述
+    post_description = "返回主机和服务实例名列表"
+
+    def list(self, request, *args, **kwargs):
+        instance_name_list = list()
+        host_list = list(Host.objects.all().values_list(
+            'instance_name', flat=True))
+        print(host_list)
+        service_list = []  # TODO 待应用模型完善
+        instance_name_list.extend(host_list)
+        instance_name_list.extend(service_list)
+        return Response(instance_name_list)
