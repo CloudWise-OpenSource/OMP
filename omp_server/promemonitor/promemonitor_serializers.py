@@ -308,3 +308,4 @@ class MonitorAgentRestartSerializer(HostIdsSerializer):
         Host.objects.filter(
             id__in=validated_data.get("host_ids", [])
         ).update(monitor_agent=1)
+        return validated_data
