@@ -1,4 +1,5 @@
 import datetime
+import json
 import logging
 
 from rest_framework import serializers
@@ -121,7 +122,6 @@ class AlertSerializer(ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        print('vd:', validated_data)
         Alert.objects.filter(id__in=validated_data.get('ids')).update(
             is_read=validated_data.get('is_read'))
         return validated_data
@@ -194,7 +194,7 @@ class ReceiveAlertSerializer(Serializer):
         pass
 
     def create(self, validated_data):
-        alerts = validated_data.get('origin_alert').get('alerts')
+        alerts = json.loads(validated_data.get('origin_alert')).get('alerts')
         alert_obj_list = []
         for ele in alerts:
             alert_analysis = AlertAnalysis(ele)

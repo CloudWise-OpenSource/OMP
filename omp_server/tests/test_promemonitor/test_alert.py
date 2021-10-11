@@ -19,17 +19,17 @@ class MockResponse:
         return json.loads(self.text)
 
 
-class GetInstanceNameListTest(AutoLoginTest):
-    """ 获取主机和应用实例名测试类 """
+class AlertTest(AutoLoginTest):
+    """ 告警测试类 """
 
     def setUp(self):
-        super(GetInstanceNameListTest, self).setUp()
+        super(AlertTest, self).setUp()
         self.alerts_url = reverse("alerts-list")
         # 正确请求数据
         self.correct_request_data = {'is_read': 1}
 
     def test_get_alerts(self):
-        """ 测试获取主机和应用实例名 """
+        """ 测试获取告警记录 """
         resp = self.get(self.alerts_url).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
