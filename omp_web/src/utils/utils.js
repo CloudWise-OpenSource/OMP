@@ -1884,6 +1884,12 @@ export const isLowercaseChar = (str) => {
   return reg.test(str)  
 }
 
+// 校验大写
+export const isUppercaseChar = (str) => {
+  const reg = /^[A-Z]+$/
+  return reg.test(str)
+}
+
 // 校验字母
 export const isLetterChar = (str) => { 
   const reg = /^[a-zA-Z]+$/

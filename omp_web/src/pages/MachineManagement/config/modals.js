@@ -26,6 +26,7 @@ import {
   DownloadOutlined,
   CloudUploadOutlined,
   CheckCircleFilled,
+  CloseCircleFilled,
 } from "@ant-design/icons";
 import {
   MessageTip,
@@ -36,6 +37,7 @@ import {
   isExpression,
   isLetterChar,
   isSpace,
+  handleResponse,
 } from "@/utils/utils";
 import { fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
@@ -801,6 +803,10 @@ class UploadExcelComponent extends React.Component {
       multiple: false,
       accept: ".xlsx",
       maxCount: 1,
+      onRemove() {
+        _this.props.onRemove()
+        return true
+      },
       onChange(info) {
         const { status } = info.file;
         if (status === "done") {
@@ -808,7 +814,7 @@ class UploadExcelComponent extends React.Component {
           message.success(`${info.file.name} 文件解析成功`);
         } else if (status === "error") {
           message.error(
-            `${info.file.name} 文件解析失败, 请确保文件格式内容符合规范重新上传`
+            `${info.file.name} 文件解析失败, 请确保文件内容格式符合规范后重新上传`
           );
         }
       },
@@ -900,16 +906,330 @@ class UploadExcelComponent extends React.Component {
 }
 
 /* 批量导入主机 */
-export const BatchImportMachineModal = ({
-  loading,
-  setLoading,
-  batchImport,
-  setBatchImport,
-}) => {
+export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshData }) => {
   const [dataSource, setDataSource] = useState([]);
   const [columns, setColumns] = useState([]);
 
+  // 校验后的表格的colums和dataSource也是不确定的
+  // 因为不单是在表格展示中需要区分校验成功与否，在这里定义多个数据源用以区分是否成功
+  const [tableCorrectData, setTableCorrectData] = useState([]);
+  const [tableErrorData, setTableErrorData] = useState([]);
+  const [tableColumns, setTableColumns] = useState([]);
+
   const [stepNum, setStepNum] = useState(0);
+
+  const [loading, setLoading] = useState(false);
+
+  // 失败的columns
+  const errorColumns = [
+    {
+      title: "实例名称",
+      key: "instance_name",
+      dataIndex: "instance_name",
+      align: "center",
+      //render: nonEmptyProcessing,
+      width: 140,
+      ellipsis: true,
+      fixed: "left",
+      render: (text) => {
+        return (
+          <Tooltip title={text}>
+            <span>{text ? text : "-"}</span>
+          </Tooltip>
+        );
+      },
+    },
+    {
+      title: "IP地址",
+      key: "ip",
+      dataIndex: "ip",
+      // sorter: (a, b) => a.ip - b.ip,
+      // sortDirections: ["descend", "ascend"],
+      align: "center",
+      width: 140,
+      render: (text) => {
+        return (
+          <Tooltip title={text}>
+            <span>{text ? text : "-"}</span>
+          </Tooltip>
+        );
+      },
+      ellipsis: true,
+      //fixed: "left"
+    },
+    {
+      title: "端口",
+      key: "port",
+      dataIndex: "port",
+      // sorter: (a, b) => a.ip - b.ip,
+      // sortDirections: ["descend", "ascend"],
+      align: "center",
+      width: 80,
+      render: (text) => {
+        return (
+          <Tooltip title={text}>
+            <span>{text ? text : "-"}</span>
+          </Tooltip>
+        );
+      },
+      //ellipsis: true,
+    },
+    {
+      title: "数据分区",
+      key: "data_folder",
+      dataIndex: "data_folder",
+      // sorter: (a, b) => a.ip - b.ip,
+      // sortDirections: ["descend", "ascend"],
+      align: "center",
+      width: 180,
+      render: (text) => {
+        return (
+          <Tooltip title={text}>
+            <span>{text ? text : "-"}</span>
+          </Tooltip>
+        );
+      },
+      ellipsis: true,
+    },
+    {
+      title: "失败原因",
+      key: "validate_error",
+      dataIndex: "validate_error",
+      fixed: "right",
+      // sorter: (a, b) => a.ip - b.ip,
+      // sortDirections: ["descend", "ascend"],
+      align: "center",
+      width: 240,
+      render: (text) => {
+        return (
+          <Tooltip title={text}>
+            <span>{text ? text : "-"}</span>
+          </Tooltip>
+        );
+      },
+      ellipsis: true,
+    },
+  ];
+
+  // 成功的columns
+  const correctColumns = [
+    {
+      title: "实例名称",
+      key: "instance_name",
+      dataIndex: "instance_name",
+      align: "center",
+      //render: nonEmptyProcessing,
+      width: 140,
+      ellipsis: true,
+      fixed: "left",
+      render: (text) => {
+        return (
+          <Tooltip title={text}>
+            <span>{text ? text : "-"}</span>
+          </Tooltip>
+        );
+      },
+    },
+    {
+      title: "IP地址",
+      key: "ip",
+      dataIndex: "ip",
+      align: "center",
+      width: 140,
+      render: (text) => {
+        return (
+          <Tooltip title={text}>
+            <span>{text ? text : "-"}</span>
+          </Tooltip>
+        );
+      },
+      ellipsis: true,
+    },
+    {
+      title: "端口",
+      key: "port",
+      dataIndex: "port",
+      align: "center",
+      width: 80,
+      render: (text) => {
+        return (
+          <Tooltip title={text}>
+            <span>{text ? text : "-"}</span>
+          </Tooltip>
+        );
+      },
+    },
+    {
+      title: "数据分区",
+      key: "data_folder",
+      dataIndex: "data_folder",
+      align: "center",
+      width: 180,
+      render: (text) => {
+        return (
+          <Tooltip title={text}>
+            <span>{text ? text : "-"}</span>
+          </Tooltip>
+        );
+      },
+      ellipsis: true,
+    },
+    {
+      title: "用户名",
+      key: "username",
+      dataIndex: "username",
+      align: "center",
+      width: 120,
+      render: (text) => {
+        return (
+          <Tooltip title={text}>
+            <span>{text ? text : "-"}</span>
+          </Tooltip>
+        );
+      },
+      ellipsis: true,
+    },
+    {
+      title: "密码",
+      key: "password",
+      dataIndex: "password",
+      align: "center",
+      width: 130,
+      render: (text) => {
+        return (
+          <Tooltip title={text}>
+            <span>{text ? text : "-"}</span>
+          </Tooltip>
+        );
+      },
+      ellipsis: true,
+    },
+    {
+      title: "系统",
+      key: "operate_system",
+      dataIndex: "operate_system",
+      align: "center",
+      width: 120,
+      fixed: "right",
+      render: (text) => {
+        return (
+          <Tooltip title={text}>
+            <span>{text ? text : "-"}</span>
+          </Tooltip>
+        );
+      },
+      ellipsis: true,
+    },
+  ];
+
+  // 校验数据接口
+  const fetchBatchValidate = () => {
+    if(dataSource.length == 0){
+      message.warning("解析结果中无有效数据，请确保文件内容格式符合规范后重新上传")
+      return
+    }
+    setLoading(true);
+    setTableCorrectData([]);
+    setTableErrorData([]);
+    let queryBody = dataSource.map((item) => {
+      let result = {};
+      for (const key in item) {
+        switch (key) {
+          case "IP[必填]":
+            result.ip = item[key];
+            break;
+          case "实例名[必填]":
+            result.instance_name = item[key];
+            break;
+          case "密码[必填]":
+            result.password = item[key];
+            break;
+          case "操作系统[必填]":
+            result.operate_system = item[key];
+            break;
+          case "数据分区[必填]":
+            result.data_folder = item[key];
+            break;
+          case "用户名[必填]":
+            result.username = item[key];
+            break;
+          case "端口[必填]":
+            result.port = item[key];
+            break;
+          default:
+            break;
+        }
+      }
+      return result;
+    });
+    // console.log(queryBody)
+    // 校验数据
+    fetchPost(apiRequest.machineManagement.batchValidate, {
+      body: {
+        host_list: queryBody,
+      },
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          if (res.code == 0) {
+            if (res.data && (res.data.error?.length)>0) {
+              setTableErrorData(
+                res.data.error?.map((item, idx) => {
+                  return {
+                    key: idx,
+                    ...item,
+                  };
+                })
+              );
+              setTableColumns(errorColumns);
+            } else {
+              setTableCorrectData(
+                res.data.correct?.map((item, idx) => {
+                  return {
+                    key: idx,
+                    ...item,
+                  };
+                })
+              );
+              setTableColumns(correctColumns);
+            }
+            setStepNum(1);
+          }
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setLoading(false);
+      });
+  };
+
+   // 主机创建操作
+   const fetchBatchImport = () => {
+     let queryBody = tableCorrectData.map(item=>{
+       delete item.key
+       return {
+        ...item
+       }
+     })
+    setLoading(true);
+    fetchPost(apiRequest.machineManagement.batchImport, {
+      body: {
+        host_list: queryBody,
+      },
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          if (res.code == 0) {
+            setStepNum(2);
+          }
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setLoading(false);
+      });
+  };
+
   return (
     <Modal
       title={
@@ -936,9 +1256,13 @@ export const BatchImportMachineModal = ({
         setBatchImport(false);
       }}
       afterClose={() => {
+        setDataSource([]);
+        setTableCorrectData([]);
+        setTableErrorData([]);
+        setTableColumns([]);
         setStepNum(0);
-        setDataSource([])
-        setColumns([])
+        setColumns([]);
+        refreshData()
       }}
       destroyOnClose
     >
@@ -964,7 +1288,7 @@ export const BatchImportMachineModal = ({
                 style={{ fontSize: 13 }}
                 onClick={() => {
                   let a = document.createElement("a");
-                  a.href = `/api/hosts/batchValidate/`;
+                  a.href = apiRequest.machineManagement.downTemplate;
                   document.body.appendChild(a);
                   a.click();
                   document.body.removeChild(a);
@@ -979,6 +1303,13 @@ export const BatchImportMachineModal = ({
             <div style={{ flex: 10, paddingLeft: 20 }}>
               {batchImport && (
                 <UploadExcelComponent
+                  onRemove={()=>{
+                    setDataSource([]);
+                    setColumns([]);
+                    setTableCorrectData([]);
+                    setTableErrorData([]);
+                    setTableColumns([]);
+                  }}
                   uploadSuccess={({ results, header }) => {
                     //console.log(results, header);
                     let dataS = results
@@ -1003,9 +1334,7 @@ export const BatchImportMachineModal = ({
                       }
                       return true;
                     });
-                    // if(dataS.length == 0){
-                    //   message.warning("文件解析有效数据为空，请确保文件格式内容符合规范重新上传")
-                    // }
+
                     setDataSource(dataS);
                     setColumns(column);
                   }}
@@ -1021,7 +1350,8 @@ export const BatchImportMachineModal = ({
                 }}
               >
                 <Button
-                  onClick={() => setStepNum(1)}
+                  loading={loading}
+                  onClick={() => fetchBatchValidate()}
                   type="primary"
                   disabled={columns.length == 0}
                 >
@@ -1033,33 +1363,60 @@ export const BatchImportMachineModal = ({
         </div>
         {stepNum == 1 && (
           <>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                paddingBottom:10,
-              }}
-            >
-              <p
-                style={{ display: "flex", alignItems: "center", fontSize: 20 }}
+            {tableErrorData.length > 0 ? (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  paddingBottom: 10,
+                  flexDirection: "column",
+                }}
               >
-                <CheckCircleFilled
-                  style={{ color: "#52c41a", fontSize: 30, marginRight: 10 }}
-                />
-                数据校验成功 !
-              </p>
-            </div>
+                <p
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    fontSize: 20,
+                    color: "#f73136"
+                  }}
+                >
+                  <CloseCircleFilled
+                    style={{ color: "#f73136", fontSize: 30, marginRight: 10 }}
+                  />
+                  数据校验失败 !
+                </p>
+                <p style={{ fontSize: 13 }}>请核对并修改信息后，再重新提交</p>
+              </div>
+            ) : (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  paddingBottom: 10,
+                }}
+              >
+                <p
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    fontSize: 20,
+                  }}
+                >
+                  <CheckCircleFilled
+                    style={{ color: "#52c41a", fontSize: 30, marginRight: 10 }}
+                  />
+                  数据校验成功 !
+                </p>
+              </div>
+            )}
+
             <OmpTable
               bordered
-              columns={columns.map((item) => ({
-                title: item,
-                dataIndex: item,
-                key: item,
-                //width: 195,
-                align: "center",
-              }))}
-              dataSource={dataSource}
+              scroll={{ x: 700 }}
+              columns={tableColumns}
+              dataSource={tableErrorData.length > 0 ? tableErrorData : tableCorrectData}
               //size="small"
               //pageSize
               pagination={{
@@ -1074,11 +1431,14 @@ export const BatchImportMachineModal = ({
                 marginTop: 40,
               }}
             >
-              <Button style={{ marginRight: 16 }} onClick={() => {
-                setStepNum(0);
-                // setDataSource([])
-                // setColumns([])
-              }}>
+              <Button
+                style={{ marginRight: 16 }}
+                onClick={() => {
+                  setStepNum(0);
+                  // setDataSource([])
+                  // setColumns([])
+                }}
+              >
                 上一步
               </Button>
               <Button
@@ -1086,8 +1446,9 @@ export const BatchImportMachineModal = ({
                 type="primary"
                 htmlType="submit"
                 onClick={() => {
-                  setStepNum(2);
+                  fetchBatchImport()
                 }}
+                disabled={tableErrorData.length > 0}
               >
                 创建
               </Button>
@@ -1101,8 +1462,8 @@ export const BatchImportMachineModal = ({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                paddingBottom:20,
-                paddingTop:30
+                paddingBottom: 20,
+                paddingTop: 30,
               }}
             >
               <p
@@ -1114,7 +1475,7 @@ export const BatchImportMachineModal = ({
                 主机创建完成 !
               </p>
             </div>
-            <p style={{ textAlign: "center" }}>本次共创建 8 台主机</p>
+            <p style={{ textAlign: "center" }}>本次共创建 {tableCorrectData.length} 台主机</p>
             <div
               style={{
                 display: "inline-block",
