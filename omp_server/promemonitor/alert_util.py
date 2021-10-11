@@ -158,8 +158,8 @@ class AlertAnalysis:
             kwargs["monitor"] = get_monitor_url(kwargs["alert_service_name"])
             kwargs["monitor_log"] = get_log_url(kwargs["alert_service_name"])
         else:
-            kwargs["monitor"] = 'settings.monitor_jump_url'  # TODO
-            kwargs["monitor_log"] = ""
+            kwargs["monitor"] = get_monitor_url(kwargs["alert_service_name"])
+            kwargs["monitor_log"] = get_log_url(kwargs["alert_service_name"])
         return kwargs
 
     def analysis_annotations(self):
@@ -195,20 +195,23 @@ class AlertAnalysis:
             "alertname": 告警指标： # 推送使用，其他无用,
         }
         """
-        if not self.is_alert:
-            return {}
+        # if not self.is_alert:
+        #     return {}
         alert_info = self.analysis_labels()
+        print(alert_info)
         if alert_info["alert_type"] == "host":
             host = Host.objects.filter(
                 ip=alert_info["alert_host_ip"]).first()
             if not host:
                 return {}
             alert_info["env_id"] = host.env_id
+            alert_info["alert_host_instance_name"] = host.instance_name
         else:
-            return {}
+            return {}  # TODO 待应用开发完成
         alert_info.update(**self.analysis_annotations())
-        if env_id and int(env_id) != alert_info["env_id"]:
-            return {}
+        # if env_id and int(env_id) != alert_info["env_id"]:
+        #     return {}  # TODO 等待env开发完成
+        print(alert_info)
         return alert_info
 
     def analysis_alert(self):
