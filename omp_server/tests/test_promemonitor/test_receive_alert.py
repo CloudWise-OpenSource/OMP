@@ -52,7 +52,7 @@ class ReceiveAlertTest(AutoLoginTest):
                 }
             ]
         }
-        self.correct_request_data = {'origin_alert': self.origin_alert_str}
+        # self.correct_request_data = {'origin_alert': self.origin_alert_str}
 
     request_post_response = {
         "code": 0,
@@ -68,7 +68,7 @@ class ReceiveAlertTest(AutoLoginTest):
         mock_post.return_value = MockResponse(self.request_post_response)
         self.alerts_url = reverse("receive_alert-list")
 
-        resp = self.post(self.alerts_url, self.correct_request_data).json()
+        resp = self.post(self.alerts_url, self.origin_alert_str).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
         self.assertIsNotNone(resp.get('data'))
