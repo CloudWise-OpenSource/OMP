@@ -1,18 +1,7 @@
-import {
-  OmpContentWrapper,
-} from "@/components";
-import {
-  Button,
-  Input,
-  Form,
-  message,
-  Tabs,
-  Spin,
-} from "antd";
+import { OmpContentWrapper } from "@/components";
+import { Button, Input, Form, message, Tabs, Spin } from "antd";
 import { useState, useEffect, useRef } from "react";
-import {
-  handleResponse,
-} from "@/utils/utils";
+import { handleResponse, isLowercaseChar } from "@/utils/utils";
 import { fetchGet, fetchPatch } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 //import updata from "@/store_global/globalStore";
@@ -36,27 +25,27 @@ const MonitoringSettings = () => {
             switch (item.name) {
               case "prometheus":
                 form.setFieldsValue({
-                    prometheus: item.monitor_url
-                  })
+                  prometheus: item.monitor_url,
+                });
                 return;
               case "alertmanager":
                 form.setFieldsValue({
-                    alertmanager: item.monitor_url
-                  })
+                  alertmanager: item.monitor_url,
+                });
                 return;
               case "grafana":
                 form.setFieldsValue({
-                    grafana: item.monitor_url
-                  })
+                  grafana: item.monitor_url,
+                });
                 return;
               default:
                 return;
             }
           });
-          let dir = {}
-          res.data.map(item=>{
-              dir[item.name] = item.id
-          })
+          let dir = {};
+          res.data.map((item) => {
+            dir[item.name] = item.id;
+          });
           setDataSource(dir);
         });
       })
@@ -66,18 +55,18 @@ const MonitoringSettings = () => {
       });
   }
 
-  const multipleUpdate = (data)=>{
-   //  console.log(data)
-    const arr = Object.keys(data).map(key=>{
-        return {
-            id:dataSource[key],
-            monitor_url:data[key]
-        }
-    })
+  const multipleUpdate = (data) => {
+    //  console.log(data)
+    const arr = Object.keys(data).map((key) => {
+      return {
+        id: dataSource[key],
+        monitor_url: data[key],
+      };
+    });
     setLoading(true);
     fetchPatch(apiRequest.MonitoringSettings.multiple_update, {
       body: {
-        data:arr
+        data: arr,
       },
     })
       .then((res) => {
@@ -87,7 +76,7 @@ const MonitoringSettings = () => {
           }
           if (res.data.code == 0) {
             message.success("更新监控平台配置成功");
-            fetchData()
+            fetchData();
           }
         }
       })
@@ -95,11 +84,25 @@ const MonitoringSettings = () => {
       .finally(() => {
         setLoading(false);
       });
-  }
+  };
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  // 定义监控地址校验函数
+  const validateMonitorAddress = (rule, value, callback, title) => {
+    if (value) {
+      var reg = /[^a-zA-Z0-9\-\_\.\~\!\*\'\(\)\;\:\@\&\=\+\$\,\/\?\#\[\]]/g;
+      if (!reg.test(value)) {
+        return Promise.resolve("success");
+      } else {
+        return Promise.reject(`${title}地址存在非法字符`);
+      }
+    } else {
+      return Promise.resolve("success");
+    }
+  };
 
   return (
     <OmpContentWrapper>
@@ -120,6 +123,11 @@ const MonitoringSettings = () => {
                   name="prometheus"
                   rules={[
                     { required: true, message: "请输入 Prometheus 地址" },
+                    {
+                      validator: (rule, value, callback)=>{
+                        return validateMonitorAddress(rule, value, callback, "Prometheus")
+                      },
+                    },
                   ]}
                 >
                   <Input
@@ -131,7 +139,14 @@ const MonitoringSettings = () => {
                 <Form.Item
                   label="Grafana地址"
                   name="grafana"
-                  rules={[{ required: true, message: "请输入 Grafana 地址" }]}
+                  rules={[
+                    { required: true, message: "请输入 Grafana 地址" },
+                    {
+                      validator: (rule, value, callback)=>{
+                        return validateMonitorAddress(rule, value, callback, "Grafana")
+                      },
+                    },
+                  ]}
                 >
                   <Input
                     addonBefore="Http://"
@@ -144,6 +159,11 @@ const MonitoringSettings = () => {
                   name="alertmanager"
                   rules={[
                     { required: true, message: "请输入 Alert Manager 地址" },
+                    {
+                      validator: (rule, value, callback)=>{
+                        return validateMonitorAddress(rule, value, callback, "Alert Manager")
+                      },
+                    },
                   ]}
                 >
                   <Input

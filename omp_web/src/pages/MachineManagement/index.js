@@ -747,10 +747,15 @@ const MachineManagement = () => {
         </div>
       </OmpMessageModal>
       <BatchImportMachineModal
-        loading={loading}
-        setLoading={setLoading}
         batchImport={batchImport}
         setBatchImport={setBatchImport}
+        refreshData={()=>{
+          fetchData(
+            { current: pagination.current, pageSize: pagination.pageSize },
+            { ip: selectValue },
+            pagination.ordering
+          );
+        }}
       ></BatchImportMachineModal>
     </OmpContentWrapper>
   );

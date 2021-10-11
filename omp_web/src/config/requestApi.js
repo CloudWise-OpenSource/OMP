@@ -18,32 +18,37 @@ export const apiRequest = {
     service: "/api/v1/home/service",
     database: "/api/v1/home/database",
     component: "/api/v1/home/component",
-    external: "/api/v1/home/external"
+    external: "/api/v1/home/external",
   },
   machineManagement: {
     // 主机管理
     hosts: "/api/hosts/hosts/",
-    ipList:"/api/hosts/ips/",
+    ipList: "/api/hosts/ips/",
     // 主机名和ip地址校验接口
-    checkHost:"/api/hosts/fields/",
-    operateLog:"/api/hosts/operateLog/",
+    checkHost: "/api/hosts/fields/",
+    operateLog: "/api/hosts/operateLog/",
     // 重启主机agent
-    restartHostAgent:"/api/hosts/restartHostAgent/",
+    restartHostAgent: "/api/hosts/restartHostAgent/",
     // 重启监控agent
-    restartMonitorAgent:"/api/promemonitor/restartMonitorAgent/",
+    restartMonitorAgent: "/api/promemonitor/restartMonitorAgent/",
     // 主机进入退出维护模式
-    hostsMaintain:"/api/hosts/maintain/"
+    hostsMaintain: "/api/hosts/maintain/",
+
+    // 主机批量导入模版下载地址
+    downTemplate: "/api/hosts/batchValidate/",
+    // 主机批量导入文件解析后的校验接口(post)
+    batchValidate: "/api/hosts/batchValidate/",
+    // 主机批量导入创建主机
+    batchImport: "/api/hosts/batchImport/",
   },
   MonitoringSettings: {
     // 配置初始查询监控
-    monitorurl:"/api/promemonitor/monitorurl/",
+    monitorurl: "/api/promemonitor/monitorurl/",
     // 修改配置监控
-    multiple_update:"/api/promemonitor/monitorurl/multiple_update/"
+    multiple_update: "/api/promemonitor/monitorurl/multiple_update/",
   },
 
-
-
-// ========================================================
+  // ========================================================
   productsManagement: {
     // 产品管理-服务管理
     all: "/api/v1/services/all", // 全部服务
@@ -52,10 +57,10 @@ export const apiRequest = {
     addExternal: "/api/v1/scheduler/external/services",
     //delExternal: "/api/v1/services/external/del", // 第三方服务添加
     delExternal: "/api/v1/scheduler/external/services",
-    operation:"/api/v1/services/operation",
+    operation: "/api/v1/services/operation",
 
-    serviceAdd_Delete:"/api/v1/ruban/service", // 服务的删除新增功能
-    queryProduct:"/api/v1/ruban/product"//自研服务添加的select数据
+    serviceAdd_Delete: "/api/v1/ruban/service", // 服务的删除新增功能
+    queryProduct: "/api/v1/ruban/product", //自研服务添加的select数据
   },
   log: {
     // 日志管理
@@ -77,13 +82,13 @@ export const apiRequest = {
     hostThreshold: "/api/v1/monitor/hostThreshold", // 阈值设置-主机指标
     serviceThreshold: "/api/v1/monitor/serviceThreshold", // 阈值设置-服务指标
 
-    selfHealingSetting: "/api/v1/self-healing/setting",//自愈设置
+    selfHealingSetting: "/api/v1/self-healing/setting", //自愈设置
 
     // 维护模式查询/修改
     modeInfoChange: "/api/v1/maintenance/mode",
 
     // 告警推送/变更
-    alertSend:"/api/v1/alert-send/setting"
+    alertSend: "/api/v1/alert-send/setting",
   },
   productSettings: {
     // 产品设置
@@ -100,13 +105,13 @@ export const apiRequest = {
 
     //环境纳管
     //三个文件
-    v2Upload: "/api/v2/file/upload",//文件上传
-    v2Check: "/api/v2/file/check",//文件检查
-    v2Write: "/api/v1/scheduler/file/write",//文件写入
+    v2Upload: "/api/v2/file/upload", //文件上传
+    v2Check: "/api/v2/file/check", //文件检查
+    v2Write: "/api/v1/scheduler/file/write", //文件写入
     //xlsx
-    v1UploadExcel: "/api/v1/file/uploadExcel",//xlsx上传
-    v1CheckExcel: "/api/v1/file/checkExcel",//xlsx检查
-    v1WriteExcel: "/api/v1/scheduler/file/writeExcel",//xlsx写入
+    v1UploadExcel: "/api/v1/file/uploadExcel", //xlsx上传
+    v1CheckExcel: "/api/v1/file/checkExcel", //xlsx检查
+    v1WriteExcel: "/api/v1/scheduler/file/writeExcel", //xlsx写入
   },
   operationManagement: {
     alertList: "/api/v1/monitor/alertRealtime", // 异常清单
