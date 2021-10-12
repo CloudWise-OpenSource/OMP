@@ -108,7 +108,7 @@ const AlarmLog = () => {
 
   const updateAlertRead = () => {
     setLoading(true);
-    fetchPost( apiRequest.Alert.listAlert, {
+    fetchPost( apiRequest.Alert.updateAlert, {
       body: {
         ids:Object.keys(checkedList)
         .map((k) => checkedList[k])
@@ -176,7 +176,7 @@ const AlarmLog = () => {
                 fetchData={(value)=>{
                   fetchData(
                     { current: pagination.current, pageSize: pagination.pageSize  },
-                    { ...pagination.searchParams, ip: value },
+                    { ...pagination.searchParams, alert_host_ip: value },
                     pagination.ordering
                   );
                 }}
