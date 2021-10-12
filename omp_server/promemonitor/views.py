@@ -5,6 +5,7 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
 
+from promemonitor.promemonitor_filters import AlertFilter, MyTimeFilter
 from utils.pagination import PageNumberPager
 import logging
 
@@ -93,8 +94,12 @@ class ListAlertViewSet(ListModelMixin, GenericViewSet):
     queryset = Alert.objects.all().order_by('id')
     # 分页，过滤，排序
     pagination_class = PageNumberPager
-    filter_backends = (DjangoFilterBackend, OrderingFilter)
-    # filter_class = AlertFilter
+    filter_backends = (
+        DjangoFilterBackend,
+        OrderingFilter,
+        MyTimeFilter,
+    )
+    filter_class = AlertFilter
     ordering_fields = ("alert_host_ip", "alert_host_instance_name",
                        "alert_service_instance_name", "alert_time")
 
@@ -152,7 +157,6 @@ class InstanceNameListView(GenericViewSet, ListModelMixin):
         instance_name_dict = dict()
         host_list = list(Host.objects.all().values_list(
             'instance_name', flat=True))
-        print(host_list)
         service_list = []  # TODO 待应用模型完善
         instance_name_dict.update({"alert_host_instance_name": host_list})
         instance_name_dict.update(
