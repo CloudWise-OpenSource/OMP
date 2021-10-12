@@ -256,14 +256,14 @@ class HostMaintenanceSerializer(HostIdsSerializer):
         required=True,
         error_messages={"required": "必须包含[is_maintenance]字段"})
 
-    def write_host_log(self, host_queryset, status):
+    def write_host_log(self, host_queryset, status, result):
         """ 写入主机日志 """
         log_ls = []
         for host in host_queryset:
             log_ls.append(HostOperateLog(
                 username=self.context["request"].user.username,
                 description=f"{status}[维护模式]",
-                result="failed",
+                result=result,
                 host=host))
         HostOperateLog.objects.bulk_create(log_ls)
 
@@ -299,14 +299,14 @@ class HostMaintenanceSerializer(HostIdsSerializer):
         if not res_ls:
             logger.error(f"host {en_status} maintain failed: {host_ids}")
             # 操作失败记录写入
-            self.write_host_log(host_queryset, status)
+            self.write_host_log(host_queryset, status, "failed")
             raise OperateError(f"主机'{status}'维护模式失败")
 
         # 操作成功
         host_queryset.update(is_maintenance=is_maintenance)
         logger.info(f"host {en_status} maintain success: {host_ids}")
         # 操作成功记录写入
-        self.write_host_log(host_queryset, status)
+        self.write_host_log(host_queryset, status, "success")
         return validated_data
 
     def update(self, instance, validated_data):

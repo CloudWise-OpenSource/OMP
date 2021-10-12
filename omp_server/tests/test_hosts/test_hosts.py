@@ -14,7 +14,9 @@ from hosts.tasks import (
     deploy_agent, host_agent_restart
 )
 from hosts.hosts_serializers import HostSerializer
-from db_models.models import Host
+from db_models.models import (
+    Host, HostOperateLog, GrafanaMainPage
+)
 from utils.plugin.ssh import SSH
 from utils.plugin.crypto import AESCryptor
 from promemonitor.prometheus import Prometheus
@@ -381,6 +383,17 @@ class ListHostTest(AutoLoginTest, HostsResourceMixin):
         super(ListHostTest, self).setUp()
         self.create_host_url = reverse("hosts-list")
         self.list_host_url = reverse("hosts-list")
+        grafana_list = [
+            GrafanaMainPage(id="1", instance_name="node",
+                            instance_url="/proxy/v1/grafana/d/9CWBz0bik/zhu-ji-xin-xi-mian-ban"),
+            GrafanaMainPage(id="2", instance_name="service",
+                            instance_url="/proxy/v1/grafana/d/9CSxoPAGz/fu-wu-zhuang-tai-xin-xi-mian-ban"),
+            GrafanaMainPage(id="3", instance_name="log",
+                            instance_url="/proxy/v1/grafana/d/liz0yRCZz/applogs"),
+            GrafanaMainPage(id="4", instance_name="mysql",
+                            instance_url="/proxy/v1/grafana/d/MQWgroiiz/mysql-xin-xi-mian-ban")
+        ]
+        GrafanaMainPage.objects.bulk_create(grafana_list)
 
     @staticmethod
     def mock_prometheus_info(host_obj_ls):
@@ -516,7 +529,7 @@ class UpdateHostTest(AutoLoginTest, HostsResourceMixin):
         }).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "Not found.",
+            "message": "未找到",
             "data": None
         })
 
@@ -586,7 +599,7 @@ class UpdateHostTest(AutoLoginTest, HostsResourceMixin):
         }).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "Not found.",
+            "message": "未找到",
             "data": None
         })
 
@@ -803,13 +816,13 @@ class HostMaintainTest(AutoLoginTest, HostsResourceMixin):
         """ 正确字段校验 """
 
         host_obj_ls = self.get_hosts(20)
-        host_obj_id_ls = list(map(lambda x: x.id, host_obj_ls))
+        random_host_ls = random.sample(host_obj_ls, 5)
+        random_host_id_ls = list(map(lambda x: x.id, random_host_ls))
 
-        # 正确字段，开启维护模式 -> 操作成功
-        random_host_ls = random.sample(host_obj_id_ls, 5)
+        # 开启维护模式 -> 开启成功，记录操作
         data = {
             "is_maintenance": True,
-            "host_ids": random_host_ls
+            "host_ids": random_host_id_ls
         }
         resp = self.post(self.host_maintain_url, data).json()
         self.assertDictEqual(resp, {
@@ -819,14 +832,22 @@ class HostMaintainTest(AutoLoginTest, HostsResourceMixin):
         })
         # host_ids中主机，is_maintenance 状态均为 True
         is_maintenance_ls = Host.objects.filter(
-            id__in=random_host_ls
+            id__in=random_host_id_ls
         ).values_list("is_maintenance", flat=True)
         self.assertTrue(all(is_maintenance_ls))
+        # 主机操作日志含有操作记录
+        operate_log_ls = HostOperateLog.objects.filter(
+            host__in=random_host_ls,
+            description="开启[维护模式]")
+        self.assertEqual(len(random_host_id_ls), len(operate_log_ls))
+        self.assertEqual(
+            len(operate_log_ls),
+            len(operate_log_ls.filter(result="success")))
 
         # 关闭维护模式
         data = {
             "is_maintenance": False,
-            "host_ids": random_host_ls
+            "host_ids": random_host_id_ls
         }
         resp = self.post(self.host_maintain_url, data).json()
         self.assertDictEqual(resp, {
@@ -836,9 +857,17 @@ class HostMaintainTest(AutoLoginTest, HostsResourceMixin):
         })
         # host_ids中主机，is_maintenance 状态均为 False
         is_maintenance_ls = Host.objects.filter(
-            id__in=random_host_ls
+            id__in=random_host_id_ls
         ).values_list("is_maintenance", flat=True)
         self.assertTrue(not any(is_maintenance_ls))
+        # 主机操作日志含有操作记录
+        operate_log_ls = HostOperateLog.objects.filter(
+            host__in=random_host_ls,
+            description="关闭[维护模式]")
+        self.assertEqual(len(random_host_id_ls), len(operate_log_ls))
+        self.assertEqual(
+            len(operate_log_ls),
+            len(operate_log_ls.filter(result="success")))
 
         self.destroy_hosts()
 
@@ -848,45 +877,61 @@ class HostMaintainTest(AutoLoginTest, HostsResourceMixin):
         """ alert manage 返回值异常 """
 
         host_obj_ls = self.get_hosts(20)
-        host_obj_id_ls = list(map(lambda x: x.id, host_obj_ls))
+        random_host_ls = random.sample(host_obj_ls, 5)
+        random_host_id_ls = list(map(lambda x: x.id, random_host_ls))
 
-        # 正确字段，开启维护模式 -> 操作成功
-        random_host_ls = random.sample(host_obj_id_ls, 5)
+        # 开始维护模式 -> 开启失败，记录操作
         resp = self.post(self.host_maintain_url, {
             "is_maintenance": True,
-            "host_ids": random_host_ls
+            "host_ids": random_host_id_ls
         }).json()
         self.assertDictEqual(resp, {
             "code": 1,
             "message": "主机'开启'维护模式失败",
             "data": None
         })
-        # host_ids中主机，is_maintenance 状态均为 True
+        # host_ids中主机，is_maintenance 状态均为 False
         is_maintenance_ls = Host.objects.filter(
-            id__in=random_host_ls
+            id__in=random_host_id_ls
         ).values_list("is_maintenance", flat=True)
         self.assertTrue(not any(is_maintenance_ls))
+        # 主机操作日志含有操作记录
+        operate_log_ls = HostOperateLog.objects.filter(
+            host__in=random_host_ls,
+            description="开启[维护模式]")
+        self.assertEqual(len(random_host_id_ls), len(operate_log_ls))
+        self.assertEqual(
+            len(operate_log_ls),
+            len(operate_log_ls.filter(result="failed")))
 
-        # 修改数据库
+        # 关闭维护模式 -> 关闭失败，记录操作
+        random_host_ls = random.sample(host_obj_ls, 5)
+        random_host_id_ls = list(map(lambda x: x.id, random_host_ls))
         Host.objects.filter(
-            id__in=random_host_ls
+            id__in=random_host_id_ls
         ).update(is_maintenance=True)
-
-        # 关闭维护模式
         resp = self.post(self.host_maintain_url, {
             "is_maintenance": False,
-            "host_ids": random_host_ls
+            "host_ids": random_host_id_ls
         }).json()
         self.assertDictEqual(resp, {
             "code": 1,
             "message": "主机'关闭'维护模式失败",
             "data": None
         })
-        # host_ids中主机，is_maintenance 状态均为 False
+        # host_ids中主机，is_maintenance 状态均为 True
         is_maintenance_ls = Host.objects.filter(
-            id__in=random_host_ls
+            id__in=random_host_id_ls
         ).values_list("is_maintenance", flat=True)
         self.assertTrue(all(is_maintenance_ls))
+        # 主机操作日志含有操作记录
+        operate_log_ls = HostOperateLog.objects.filter(
+            host__in=random_host_ls,
+            description="关闭[维护模式]")
+        self.assertEqual(len(random_host_id_ls), len(operate_log_ls))
+        self.assertEqual(
+            len(operate_log_ls),
+            len(operate_log_ls.filter(result="failed")))
 
         self.destroy_hosts()
 

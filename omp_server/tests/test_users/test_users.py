@@ -91,7 +91,7 @@ class UsersTest(AutoLoginTest):
         resp = self.get(reverse("users-detail", [99])).json()
         self.assertDictEqual(resp, {
             'code': 1,
-            'message': 'Not found.',
+            'message': '未找到',
             'data': None
         })
 
@@ -127,7 +127,7 @@ class UsersTest(AutoLoginTest):
         }).json()
         self.assertDictEqual(resp, {
             'code': 1,
-            'message': 'Not found.',
+            'message': '未找到',
             'data': None
         })
 
@@ -177,7 +177,7 @@ class UsersTest(AutoLoginTest):
         }).json()
         self.assertDictEqual(resp, {
             'code': 1,
-            'message': 'Not found.',
+            'message': '未找到',
             'data': None
         })
 
@@ -209,7 +209,7 @@ class UsersTest(AutoLoginTest):
         resp = self.delete(reverse("users-detail", [99])).json()
         self.assertDictEqual(resp, {
             'code': 1,
-            'message': 'Not found.',
+            'message': '未找到',
             'data': None
         })
 
