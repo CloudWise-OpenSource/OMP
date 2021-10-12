@@ -1,8 +1,8 @@
 import React, { useEffect } from "react";
-const OmpIframe = ({ isShowIframe, setIsShowIsframe, iframeSrc }) => {
+const OmpIframe = ({ showIframe, setShowIframe, iframeSrc }) => {
   useEffect(() => {
-    let h = document.getElementsByClassName("cw-page-content")[0].clientHeight;
-    document.getElementById("omp_iframe").style.height = h + 105 + "px";
+    let h = document.getElementById("root").clientHeight;
+    document.getElementById("omp_iframe").style.height = h + 125 + "px";
     document.getElementById("omp_iframe_container").style.height =
       h + "px";
   }, []);
@@ -18,11 +18,12 @@ const OmpIframe = ({ isShowIframe, setIsShowIsframe, iframeSrc }) => {
           style={{
             width:`calc(100% + 70px)`,
             position: "absolute",
-            top: isShowIframe.isLog?-55:-106,
-            left: -66,
+            //top: showIframe?.isLog?-55:-106,
+            //left: -66,
           }}
           //ref="iframe"
-          src={`${href.substring(0, href.length - 1)}${isShowIframe.src}`}
+          //src={`http://10.0.7.146:19014/proxy/v1/grafana/d/9CWBz0bik/zhu-ji-xin-xi-mian-ban?orgId=1&from=now-5m&to=now`}
+          src={showIframe.src}
           width="100%"
           // scrolling="no"
           name="omp_iframe"

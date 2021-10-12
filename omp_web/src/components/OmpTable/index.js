@@ -20,7 +20,7 @@ const OmpTable = ({ checkedState, columns ,...residualParam }) => {
         return {
           ...item,
           filterIcon: () => {
-            return <OmpTableFilter />
+            return <OmpTableFilter dataIndex={item.dataIndex} filterMenuList={item.filterMenuList} queryRequest={item.queryRequest} />
           },
           filters: [{ text: "mock", value: "mock" }],
           filterDropdown: () => {
@@ -34,8 +34,10 @@ const OmpTable = ({ checkedState, columns ,...residualParam }) => {
   })
 
   const [checkedList, setCheckedList] = checkedState ? checkedState : [];
-  // 视口宽度
+  // 视口高度
   const viewHeight = useSelector((state) => state.layouts.viewSize.height);
+  // 视口宽度
+  const viewWith = useSelector((state) => state.layouts.viewSize.width);
 
   useLayoutEffect(() => {
     //console.log(viewHeight);
@@ -66,8 +68,10 @@ const OmpTable = ({ checkedState, columns ,...residualParam }) => {
       console.log(error);
     }
   }, []);
+
   return (
       <Table
+        scroll={viewWith > 1500 ? null : { x: 1400 }}
         {...residualParam}
         columns={extensionsColumns}
         //size="small"

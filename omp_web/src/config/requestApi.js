@@ -3,7 +3,7 @@ export const apiRequest = {
     //环境数据查询
     //queryEnvList: "/api/v1/env"
     // 查询全局维护模式
-    queryMaintainState: "/api/promemonitor/global_maintain/",
+    queryMaintainState: "/api/promemonitor/globalMaintain/",
   },
   auth: {
     // 用户认证
@@ -47,7 +47,14 @@ export const apiRequest = {
     // 修改配置监控
     multiple_update: "/api/promemonitor/monitorurl/multiple_update/",
   },
-
+  Alert: {
+    // 告警记录页面查询
+    listAlert: "/api/promemonitor/listAlert/",
+    // 告警记录已读
+    updateAlert: "/api/promemonitor/updateAlert/",
+    // 告警记录筛选实例名称
+    instanceNameList: "/api/promemonitor/instanceNameList/"
+  },
   // ========================================================
   productsManagement: {
     // 产品管理-服务管理

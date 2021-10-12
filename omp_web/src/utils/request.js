@@ -1,4 +1,5 @@
 import axios from "axios";
+import { logout } from "./utils"
 
 const getBaseUrl = (env) => {
   let base;
@@ -34,8 +35,14 @@ class NewAxios {
       (err) => {
         if (err.response) {
           // 响应错误码处理
+          console.log(err.response)
           switch (err.response.status) {
-            case "403":
+           
+            case 403:
+              // todo: handler server forbidden error
+              break;
+            case 401:
+              logout()
               // todo: handler server forbidden error
               break;
             // todo: handler other status code

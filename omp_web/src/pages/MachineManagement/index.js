@@ -1,5 +1,11 @@
-import { OmpContentWrapper, OmpTable, OmpMessageModal, OmpSelect } from "@/components";
-import { Button, Select, message, Menu, Dropdown, Modal } from "antd";
+import {
+  OmpContentWrapper,
+  OmpTable,
+  OmpMessageModal,
+  OmpSelect,
+  OmpDrawer,
+} from "@/components";
+import { Button, message, Menu, Dropdown } from "antd";
 import { useState, useEffect, useRef } from "react";
 import { handleResponse, _idxInit, refreshTime } from "@/utils/utils";
 import { fetchGet, fetchPost, fetchPatch } from "@/utils/request";
@@ -12,11 +18,7 @@ import {
 } from "./config/modals";
 import { useDispatch } from "react-redux";
 import getColumnsConfig, { DetailHost } from "./config/columns";
-import {
-  DownOutlined,
-  ExclamationCircleOutlined,
-  ImportOutlined,
-} from "@ant-design/icons";
+import { DownOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 
 const MachineManagement = () => {
   const dispatch = useDispatch();
@@ -49,7 +51,7 @@ const MachineManagement = () => {
     searchParams: {},
   });
 
-  const [isShowIframe, setIsShowIsframe] = useState({
+  const [isShowDrawer, setIsShowDrawer] = useState({
     isOpen: false,
     src: "",
     record: {},
@@ -84,6 +86,9 @@ const MachineManagement = () => {
   // 关闭维护（单次）
   const [closeMaintainOneModal, setCloseMaintainOneModal] = useState(false);
 
+  const [showIframe, setShowIframe] = useState({});
+
+  // 列表查询
   function fetchData(
     pageParams = { current: 1, pageSize: 10 },
     searchParams,
@@ -217,7 +222,7 @@ const MachineManagement = () => {
   };
 
   // 重启监控agent
-  const fetchRestartMonitorAgent = ()=>{
+  const fetchRestartMonitorAgent = () => {
     setLoading(true);
     fetchPost(apiRequest.machineManagement.restartMonitorAgent, {
       body: {
@@ -248,7 +253,7 @@ const MachineManagement = () => {
           pagination.ordering
         );
       });
-  }
+  };
 
   // 重启主机agent
   const fetchRestartHostAgent = () => {
@@ -385,14 +390,24 @@ const MachineManagement = () => {
                 key="openMaintain"
                 style={{ textAlign: "center" }}
                 onClick={() => setOpenMaintainModal(true)}
-                disabled={Object.keys(checkedList).length == 0}
+                disabled={
+                  Object.keys(checkedList)
+                    .map((k) => checkedList[k])
+                    .flat(1)
+                    .map((item) => item.id).length == 0
+                }
               >
                 开启维护模式
               </Menu.Item>
               <Menu.Item
                 key="closeMaintain"
                 style={{ textAlign: "center" }}
-                disabled={Object.keys(checkedList).length == 0}
+                disabled={
+                  Object.keys(checkedList)
+                    .map((k) => checkedList[k])
+                    .flat(1)
+                    .map((item) => item.id).length == 0
+                }
                 onClick={() => {
                   setCloseMaintainModal(true);
                 }}
@@ -402,7 +417,12 @@ const MachineManagement = () => {
               <Menu.Item
                 key="reStartHost"
                 style={{ textAlign: "center" }}
-                disabled={Object.keys(checkedList).length == 0}
+                disabled={
+                  Object.keys(checkedList)
+                    .map((k) => checkedList[k])
+                    .flat(1)
+                    .map((item) => item.id).length == 0
+                }
                 onClick={() => {
                   setRestartHostAgentModal(true);
                 }}
@@ -412,7 +432,12 @@ const MachineManagement = () => {
               <Menu.Item
                 key="reStartMonitor"
                 style={{ textAlign: "center" }}
-                disabled={Object.keys(checkedList).length == 0}
+                disabled={
+                  Object.keys(checkedList)
+                    .map((k) => checkedList[k])
+                    .flat(1)
+                    .map((item) => item.id).length == 0
+                }
                 onClick={() => {
                   setRestartMonterAgentModal(true);
                 }}
@@ -438,13 +463,20 @@ const MachineManagement = () => {
             selectValue={selectValue}
             listSource={ipListSource}
             setSelectValue={setSelectValue}
-            fetchData={fetchData}
+            fetchData={(value) => {
+              fetchData(
+                { current: pagination.current, pageSize: pagination.pageSize },
+                { ip: value },
+                pagination.ordering
+              );
+            }}
             pagination={pagination}
           />
           <Button
             style={{ marginLeft: 10 }}
             onClick={() => {
               dispatch(refreshTime());
+              setCheckedList({});
               fetchData(
                 { current: pagination.current, pageSize: pagination.pageSize },
                 { ip: selectValue },
@@ -465,7 +497,7 @@ const MachineManagement = () => {
       >
         <OmpTable
           loading={loading}
-          scroll={{x:1400}}
+          //scroll={{ x: 1900 }}
           onChange={(e, filters, sorter) => {
             let ordering = sorter.order
               ? `${sorter.order == "descend" ? "" : "-"}${sorter.columnKey}`
@@ -475,12 +507,13 @@ const MachineManagement = () => {
             }, 200);
           }}
           columns={getColumnsConfig(
-            setIsShowIsframe,
+            setIsShowDrawer,
             setRow,
             setUpdateMoadlVisible,
             fetchHistoryData,
             setCloseMaintainOneModal,
-            setOpenMaintainOneModal
+            setOpenMaintainOneModal,
+            setShowIframe
           )}
           dataSource={dataSource}
           pagination={{
@@ -547,12 +580,13 @@ const MachineManagement = () => {
         />
       )}
       <DetailHost
-        isShowIframe={isShowIframe}
-        setIsShowIsframe={setIsShowIsframe}
+        isShowDrawer={isShowDrawer}
+        setIsShowDrawer={setIsShowDrawer}
         loading={historyLoading}
         data={historyData}
       />
-      {/* 消息，重启主机agent */}
+      <OmpDrawer showIframe={showIframe} setShowIframe={setShowIframe} />
+
       <OmpMessageModal
         visibleHandle={[restartHostAgentModal, setRestartHostAgentModal]}
         title={
@@ -749,7 +783,7 @@ const MachineManagement = () => {
       <BatchImportMachineModal
         batchImport={batchImport}
         setBatchImport={setBatchImport}
-        refreshData={()=>{
+        refreshData={() => {
           fetchData(
             { current: pagination.current, pageSize: pagination.pageSize },
             { ip: selectValue },

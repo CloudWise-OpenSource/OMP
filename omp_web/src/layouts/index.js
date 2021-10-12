@@ -1,4 +1,4 @@
-import { Layout, Menu, Dropdown, message, Form, Input, Button } from "antd";
+import { Layout, Menu, Dropdown, message, Form, Input } from "antd";
 import {
   MenuUnfoldOutlined,
   MenuFoldOutlined,
@@ -13,11 +13,11 @@ import styles from "./index.module.less";
 import routerConfig from "@/config/router.config";
 import { useHistory, useLocation } from "react-router-dom";
 import { CustomBreadcrumb, OmpModal } from "@/components";
-import { fetchGet, fetchPost, fetchPut } from "@/utils/request";
+import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import { handleResponse, _idxInit, logout, isPassword } from "@/utils/utils";
-import { useSelector, useDispatch } from "react-redux";
-import { getSetViewSizeAction, getChangeEnvInfoAction } from "./store/actionsCreators";
+import { useDispatch } from "react-redux";
+import { getSetViewSizeAction } from "./store/actionsCreators";
 import { getMaintenanceChangeAction } from "@/pages/SystemManagement/store/actionsCreators";
 
 const { Header, Content, Footer, Sider } = Layout;
@@ -152,6 +152,7 @@ const OmpLayout = (props) => {
     window.__history__ = history;
     fetchGet(apiRequest.auth.users)
       .then((res) => {
+        console.log("====")
         if (res && res.data.code == 1 && res.data.message == "未认证") {
           //message.warning("登录失效,请重新登录")
           //history.replace("/login");

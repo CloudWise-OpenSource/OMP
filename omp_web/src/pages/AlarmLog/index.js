@@ -3,6 +3,7 @@ import {
   OmpTable,
   OmpMessageModal,
   OmpSelect,
+  OmpDatePicker
 } from "@/components";
 import { Button, Select, message, Menu, Dropdown, Modal, Input } from "antd";
 import { useState, useEffect, useRef } from "react";
@@ -42,11 +43,11 @@ const AlarmLog = () => {
 
   function fetchData(
     pageParams = { current: 1, pageSize: 10 },
-    searchParams,
+    searchParams = {},
     ordering
   ) {
     setLoading(true);
-    fetchGet(apiRequest.machineManagement.hosts, {
+    fetchGet( apiRequest.Alert.listAlert, {
       params: {
         page: pageParams.current,
         size: pageParams.pageSize,
@@ -57,57 +58,22 @@ const AlarmLog = () => {
       .then((res) => {
         handleResponse(res, (res) => {
           setDataSource(res.data.results);
-          setDataSource([
-            {
-              type: "host",
-              ip: "10.0.3.72",
-              instance_name: "hosts1",
-              severity: "critical",
-              description: "实例 10.0.3.72 已宕机超过1分钟",
-              date: "2021-09-27 07:08:05",
-              monitor_url:
-                "http://127.0.0.1:19013/proxy/v1/grafana/d/9CWBz0bik/zhu-ji-xin-xi-mian-ban?var-node=10.0.3.72",
-              log_url: null,
-            },
-            {
-              type: "host",
-              ip: "10.0.3.73",
-              instance_name: null,
-              severity: "critical",
-              description: "实例 10.0.3.71 已宕机超过1分钟",
-              date: "2021-09-27 07:07:24",
-              monitor_url:
-                "http://127.0.0.1:19013/proxy/v1/grafana/d/9CWBz0bik/zhu-ji-xin-xi-mian-ban?var-node=10.0.3.73",
-              log_url: null,
-            },
-            {
-              type: "service",
-              ip: "10.0.7.164",
-              instance_name: "dolaLogMonitorServer",
-              severity: "critical",
-              description:
-                "主机 10.0.7.164 中的 服务 dolaLogMonitorServer 已经down掉超过一分钟.",
-              date: "2021-06-26 07:23:42",
-              monitor_url:
-                "http://127.0.0.1:19013/proxy/v1/grafana/d/9CSxoPAGz/fu-wu-zhuang-tai-xin-xi-mian-ban?var-ip=10.0.7.164&var-app=dolaLogMonitorServer",
-              log_url:
-                "http://127.0.0.1:19013/proxy/v1/grafana/d/liz0yRCZz/applogs?var-app=dolaLogMonitorServer",
-            },
-          ]);
-          // setPagination({
-          //   ...pagination,
-          //   total: res.data.count,
-          //   pageSize: pageParams.pageSize,
-          //   current: pageParams.current,
-          //   ordering: ordering,
-          //   searchParams: searchParams,
-          // });
+         
+          setPagination({
+            ...pagination,
+            total: res.data.count,
+            pageSize: pageParams.pageSize,
+            current: pageParams.current,
+            ordering: ordering,
+            searchParams: searchParams,
+          });
         });
       })
       .catch((e) => console.log(e))
       .finally(() => {
         setLoading(false);
         fetchIPlist();
+        fetchNameList()
       });
   }
 
@@ -125,23 +91,73 @@ const AlarmLog = () => {
       });
   };
 
+  const fetchNameList = ()=> {
+    setSearchLoading(true);
+    fetchGet(apiRequest.Alert.instanceNameList)
+      .then((res) => {
+        handleResponse(res, (res) => {
+          //setIpListSource(res.data);
+          console.log(res)
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setSearchLoading(false);
+      });
+  }
+
+  const updateAlertRead = () => {
+    setLoading(true);
+    fetchPost( apiRequest.Alert.listAlert, {
+      body: {
+        ids:Object.keys(checkedList)
+        .map((k) => checkedList[k])
+        .flat(1)
+        .map((item) => item.id),
+        is_read:1
+      },
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          message.success("已读成功")
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setCheckedList({})
+        setLoading(false);
+        fetchData(
+          { current: pagination.current, pageSize: pagination.pageSize },
+          { ...pagination.searchParams },
+          pagination.ordering
+        );
+      });
+  }
+
   useEffect(() => {
     fetchData(pagination);
   }, []);
 
+    console.log(Object.keys(checkedList).length == 0)
+
   return (
     <OmpContentWrapper>
-      <div style={{ display: "flex" }}>
+      <div style={{ display: "flex", justifyContent:"space-between" }}>
         <Button
           type="primary"
+          disabled={Object.keys(checkedList)
+            .map((k) => checkedList[k])
+            .flat(1)
+            .map((item) => item.id).length == 0}
           onClick={() => {
-            setAddMoadlVisible(true);
+            updateAlertRead()
           }}
         >
           批量已读
         </Button>
-
-        <div style={{ display: "flex", marginLeft: "auto" }}>
+        <div style={{display:"flex"}}>
+        <OmpDatePicker/>
+        <div style={{ display: "flex", marginLeft: "10px" }}>
           <Input.Group compact style={{ display: "flex"}}> 
             <Select
               value={labelControl}
@@ -157,7 +173,13 @@ const AlarmLog = () => {
                 selectValue={selectValue}
                 listSource={ipListSource}
                 setSelectValue={setSelectValue}
-                fetchData={fetchData}
+                fetchData={(value)=>{
+                  fetchData(
+                    { current: pagination.current, pageSize: pagination.pageSize  },
+                    { ...pagination.searchParams, ip: value },
+                    pagination.ordering
+                  );
+                }}
                 pagination={pagination}
               />
             )}
@@ -170,16 +192,17 @@ const AlarmLog = () => {
             style={{ marginLeft: 10 }}
             onClick={() => {
               //   dispatch(refreshTime());
-              console.log(pagination, "hosts/hosts/?page=1&size=10");
               fetchData(
                 { current: pagination.current, pageSize: pagination.pageSize },
-                { ip: selectValue },
+                { ...pagination.searchParams },
                 pagination.ordering
               );
             }}
           >
             刷新
           </Button>
+        </div>
+
         </div>
       </div>
       <div
@@ -191,7 +214,7 @@ const AlarmLog = () => {
       >
         <OmpTable
           loading={loading}
-          scroll={{ x: 1400 }}
+          //scroll={{ x: 1400 }}
           onChange={(e, filters, sorter) => {
             let ordering = sorter.order
               ? `${sorter.order == "descend" ? "" : "-"}${sorter.columnKey}`
@@ -200,7 +223,14 @@ const AlarmLog = () => {
               fetchData(e, pagination.searchParams, ordering);
             }, 200);
           }}
-          columns={getColumnsConfig()}
+          columns={getColumnsConfig((params)=>{
+            console.log(pagination.searchParams)
+            fetchData(
+              { current: pagination.current, pageSize: pagination.pageSize },
+              { ...pagination.searchParams, ...params },
+              pagination.ordering
+            );
+          })}
           dataSource={dataSource}
           pagination={{
             showSizeChanger: true,
@@ -234,7 +264,7 @@ const AlarmLog = () => {
             ),
             ...pagination,
           }}
-          rowKey={(record) => record.ip}
+          rowKey={(record) => record.id}
           checkedState={[checkedList, setCheckedList]}
         />
       </div>

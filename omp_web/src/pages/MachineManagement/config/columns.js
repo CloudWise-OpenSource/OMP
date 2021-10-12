@@ -1,5 +1,5 @@
-import { nonEmptyProcessing, renderDisc } from "@/utils/utils";
-import { DownOutlined, DesktopOutlined, SettingOutlined } from "@ant-design/icons";
+import { nonEmptyProcessing, renderDisc, colorConfig } from "@/utils/utils";
+import { DownOutlined, DesktopOutlined } from "@ant-design/icons";
 import { Dropdown, Menu, Drawer, Tooltip, Spin, Timeline } from "antd";
 import moment from "moment";
 import styles from "../index.module.less";
@@ -7,8 +7,8 @@ import { useSelector } from "react-redux";
 import { useRef } from "react";
 
 export const DetailHost = ({
-  isShowIframe,
-  setIsShowIsframe,
+  isShowDrawer,
+  setIsShowDrawer,
   loading,
   data,
 }) => {
@@ -22,7 +22,7 @@ export const DetailHost = ({
           <DesktopOutlined style={{ position: "relative", top: 3, left: -5 }} />
           主机详细信息面板
           <span style={{ paddingLeft: 30, fontWeight: 400, fontSize: 15 }}>
-            IP: {isShowIframe.record.ip}
+            IP: {isShowDrawer.record.ip}
           </span>
         </div>
       }
@@ -34,12 +34,12 @@ export const DetailHost = ({
         paddingTop: "60px",
       }}
       onClose={() => {
-        setIsShowIsframe({
-          ...isShowIframe,
+        setIsShowDrawer({
+          ...isShowDrawer,
           isOpen: false,
         });
       }}
-      visible={isShowIframe.isOpen}
+      visible={isShowDrawer.isOpen}
       bodyStyle={{
         padding: 10,
         //paddingLeft:10,
@@ -72,7 +72,7 @@ export const DetailHost = ({
             }}
           >
             <div style={{ flex: 1 }}>实例名称</div>
-            <div style={{ flex: 1 }}>{isShowIframe.record.instance_name}</div>
+            <div style={{ flex: 1 }}>{isShowDrawer.record.instance_name}</div>
           </div>
           <div
             style={{
@@ -83,7 +83,9 @@ export const DetailHost = ({
             }}
           >
             <div style={{ flex: 1 }}>HOSTNAME</div>
-            <div style={{ flex: 1 }}>{nonEmptyProcessing(isShowIframe.record.host_name)}</div>
+            <div style={{ flex: 1 }}>
+              {nonEmptyProcessing(isShowDrawer.record.host_name)}
+            </div>
           </div>
           <div
             style={{
@@ -94,7 +96,7 @@ export const DetailHost = ({
             }}
           >
             <div style={{ flex: 1 }}>IP地址</div>
-            <div style={{ flex: 1 }}>{isShowIframe.record.ip}</div>
+            <div style={{ flex: 1 }}>{isShowDrawer.record.ip}</div>
           </div>
           <div
             style={{
@@ -105,7 +107,7 @@ export const DetailHost = ({
             }}
           >
             <div style={{ flex: 1 }}>SSH端口</div>
-            <div style={{ flex: 1 }}>{isShowIframe.record.port}</div>
+            <div style={{ flex: 1 }}>{isShowDrawer.record.port}</div>
           </div>
           <div
             style={{
@@ -116,7 +118,7 @@ export const DetailHost = ({
             }}
           >
             <div style={{ flex: 1 }}>用户名</div>
-            <div style={{ flex: 1 }}>{isShowIframe.record.username}</div>
+            <div style={{ flex: 1 }}>{isShowDrawer.record.username}</div>
           </div>
           <div
             style={{
@@ -127,7 +129,7 @@ export const DetailHost = ({
             }}
           >
             <div style={{ flex: 1 }}>系统</div>
-            <div style={{ flex: 1 }}>{isShowIframe.record.operate_system}</div>
+            <div style={{ flex: 1 }}>{isShowDrawer.record.operate_system}</div>
           </div>
           <div
             style={{
@@ -139,7 +141,7 @@ export const DetailHost = ({
           >
             <div style={{ flex: 1 }}>CPU</div>
             <div style={{ flex: 1 }}>
-              {nonEmptyProcessing(isShowIframe.record.cpu)} c
+              {nonEmptyProcessing(isShowDrawer.record.cpu)} c
             </div>
           </div>
           <div
@@ -152,7 +154,7 @@ export const DetailHost = ({
           >
             <div style={{ flex: 1 }}>内存</div>
             <div style={{ flex: 1 }}>
-              {nonEmptyProcessing(isShowIframe.record.memory)} G
+              {nonEmptyProcessing(isShowDrawer.record.memory)} G
             </div>
           </div>
           <div
@@ -165,8 +167,8 @@ export const DetailHost = ({
           >
             <div style={{ flex: 1 }}>硬盘</div>
             <div style={{ flex: 1 }}>
-              {isShowIframe.record.disk
-                ? Object.keys(isShowIframe.record.disk).map((item) => (
+              {isShowDrawer.record.disk
+                ? Object.keys(isShowDrawer.record.disk).map((item) => (
                     <div
                       key={item}
                       style={{
@@ -176,7 +178,7 @@ export const DetailHost = ({
                     >
                       <span style={{ width: "65%" }}>{item}</span>
                       <span style={{ width: "35%" }}>
-                        {isShowIframe.record.disk[item]} G
+                        {isShowDrawer.record.disk[item]} G
                       </span>
                     </div>
                   ))
@@ -193,7 +195,7 @@ export const DetailHost = ({
           >
             <div style={{ flex: 1 }}>创建时间</div>
             <div style={{ flex: 1 }}>
-              {moment(isShowIframe.record.created).format(
+              {moment(isShowDrawer.record.created).format(
                 "YYYY-MM-DD HH:mm:ss"
               )}
             </div>
@@ -208,7 +210,7 @@ export const DetailHost = ({
           >
             <div style={{ flex: 1 }}>维护模式</div>
             <div style={{ flex: 1 }}>
-              {isShowIframe.record.is_maintenance ? "是" : "否"}
+              {isShowDrawer.record.is_maintenance ? "是" : "否"}
             </div>
           </div>
         </div>
@@ -237,13 +239,13 @@ export const DetailHost = ({
             <div style={{ display: "flex", paddingTop: 15, paddingBottom: 15 }}>
               <div style={{ flex: 1 }}>主机Agent</div>
               <div style={{ flex: 1 }}>
-                {renderStatus(isShowIframe.record.host_agent)}
+                {renderStatus(isShowDrawer.record.host_agent)}
               </div>
             </div>
             <div style={{ display: "flex", paddingTop: 15, paddingBottom: 15 }}>
               <div style={{ flex: 1 }}>监控Agent</div>
               <div style={{ flex: 1 }}>
-                {renderStatus(isShowIframe.record.monitor_agent)}
+                {renderStatus(isShowDrawer.record.monitor_agent)}
               </div>
             </div>
           </div>
@@ -263,7 +265,7 @@ export const DetailHost = ({
             <div style={{ display: "flex", paddingTop: 15, paddingBottom: 15 }}>
               <div style={{ flex: 1 }}>部署组件</div>
               <div style={{ flex: 1 }}>
-                {isShowIframe.record.service_num} 个
+                {isShowDrawer.record.service_num} 个
               </div>
             </div>
           </div>
@@ -328,12 +330,12 @@ const renderMenu = (
       </Menu.Item>
       {record.is_maintenance ? (
         <Menu.Item key="close" onClick={() => setCloseMaintainModal(true)}>
-        <span style={{ fontSize: 12 }}>关闭维护模式</span>
-      </Menu.Item>
+          <span style={{ fontSize: 12 }}>关闭维护模式</span>
+        </Menu.Item>
       ) : (
         <Menu.Item key="open" onClick={() => setOpenMaintainModal(true)}>
-        <span style={{ fontSize: 12 }}>开启维护模式</span>
-      </Menu.Item>
+          <span style={{ fontSize: 12 }}>开启维护模式</span>
+        </Menu.Item>
       )}
     </Menu>
   );
@@ -357,12 +359,13 @@ const renderStatus = (text) => {
 };
 
 const getColumnsConfig = (
-  setIsShowIsframe,
+  setIsShowDrawer,
   setRow,
   setUpdateMoadlVisible,
   fetchHistoryData,
   setCloseMaintainModal,
-  setOpenMaintainModal
+  setOpenMaintainModal,
+  setShowIframe
 ) => {
   return [
     {
@@ -382,7 +385,7 @@ const getColumnsConfig = (
             <a
               onClick={() => {
                 fetchHistoryData(record.id);
-                setIsShowIsframe({
+                setIsShowDrawer({
                   isOpen: true,
                   record: record,
                 });
@@ -394,7 +397,7 @@ const getColumnsConfig = (
         }
       },
       //ellipsis: true,
-      fixed: "left"
+      fixed: "left",
     },
     {
       title: "实例名称",
@@ -440,9 +443,13 @@ const getColumnsConfig = (
       sortDirections: ["descend", "ascend"],
       //ellipsis: true,
       //width:100,
-      render: (text) => {
+      render: (text, record) => {
         let str = nonEmptyProcessing(text);
-        return str == "-" ? "-" : `${str}%`;
+        return str == "-" ? (
+          "-"
+        ) : (
+          <span style={{ color: colorConfig[record.cpu_status] }}>{str}%</span>
+        );
       },
     },
     {
@@ -454,9 +461,13 @@ const getColumnsConfig = (
       align: "center",
       //ellipsis: true,
       //width:100,
-      render: (text) => {
+      render: (text, record) => {
         let str = nonEmptyProcessing(text);
-        return str == "-" ? "-" : `${str}%`;
+        return str == "-" ? (
+          "-"
+        ) : (
+          <span style={{ color: colorConfig[record.cpu_status] }}>{str}%</span>
+        );
       },
     },
     {
@@ -468,9 +479,13 @@ const getColumnsConfig = (
       //ellipsis: true,
       sorter: (a, b) => a.root_disk_usage - b.root_disk_usage,
       sortDirections: ["descend", "ascend"],
-      render: (text) => {
+      render: (text, record) => {
         let str = nonEmptyProcessing(text);
-        return str == "-" ? "-" : `${str}%`;
+        return str == "-" ? (
+          "-"
+        ) : (
+          <span style={{ color: colorConfig[record.cpu_status] }}>{str}%</span>
+        );
       },
       // width:120
     },
@@ -483,9 +498,13 @@ const getColumnsConfig = (
       //ellipsis: true,
       sorter: (a, b) => a.data_disk_usag - b.data_disk_usag,
       sortDirections: ["descend", "ascend"],
-      render: (text) => {
+      render: (text, record) => {
         let str = nonEmptyProcessing(text);
-        return str == "-" ? "-" : `${str}%`;
+        return str == "-" ? (
+          "-"
+        ) : (
+          <span style={{ color: colorConfig[record.cpu_status] }}>{str}%</span>
+        );
       },
     },
     {
@@ -546,20 +565,27 @@ const getColumnsConfig = (
     {
       title: "操作",
       //width: 100,
-      width: 140,
+      width: 100,
       key: "",
       dataIndex: "",
       align: "center",
       fixed: "right",
       render: function renderFunc(text, record, index) {
         return (
-          <div
-            onClick={() => {
-              setRow(record);
-            }}
-            style={{ display: "flex", justifyContent: "space-around" }}
-          >
-            <a>监控</a>
+          <div style={{ display: "flex", justifyContent: "space-around" }}>
+            <a
+              onClick={() => {
+                setRow(record);
+                setShowIframe({
+                  isOpen: true,
+                  src: record.monitor_url,
+                  record: record,
+                  isLog: false,
+                });
+              }}
+            >
+              监控
+            </a>
             <Dropdown
               arrow
               overlay={renderMenu(
