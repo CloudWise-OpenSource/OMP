@@ -17,23 +17,23 @@ class Alertmanager:
     """
 
     def __init__(self):
-        self.ip, self.port = self.get_alertmanager_config()
+        self.basic_url = self.get_alertmanager_config()
         self.headers = {'Content-Type': 'application/json'}
-        self.add_url = f'http://{self.ip}:{self.port}/api/v1/silences'
-        self.delete_url = f'http://{self.ip}:{self.port}/api/v1/silence'
+        self.add_url = f'http://{self.basic_url}/api/v1/silences'
+        self.delete_url = f'http://{self.basic_url}/api/v1/silence'
 
     @staticmethod
     def get_alertmanager_config():
         alertmanager_url_config = MonitorUrl.objects.filter(
             name='alertmanager').first()
         if not alertmanager_url_config:
-            return '127.0.0.1', MONITOR_PORT.get('alertmanager', 19013)  # 默认值
+            # 默认值
+            return f'127.0.0.1:{MONITOR_PORT.get("alertmanager", 19011)}'
 
-        ip = alertmanager_url_config.monitor_url.split(':')[0]
-        port = alertmanager_url_config.monitor_url.split(':')[1]
-        if ip and port:
-            return ip, port
-        return '127.0.0.1', MONITOR_PORT.get('alertmanager', 19013)  # 默认值
+        monitor_url = alertmanager_url_config.monitor_url
+        if monitor_url:
+            return monitor_url
+        return f'127.0.0.1:{MONITOR_PORT.get("alertmanager", 19011)}'  # 默认值
 
     @staticmethod
     def format_time(_time):

@@ -24,7 +24,7 @@ class ReceiveAlertTest(AutoLoginTest):
 
     def setUp(self):
         super(ReceiveAlertTest, self).setUp()
-        self.alerts_url = reverse("alerts-list")
+        self.receive_alert_url = reverse("receiveAlert-list")
         # 正确请求数据
         self.origin_alert_str = {
             "receiver": "cloudwise",
@@ -66,9 +66,8 @@ class ReceiveAlertTest(AutoLoginTest):
         接收并解析alertmanager告警
         """
         mock_post.return_value = MockResponse(self.request_post_response)
-        self.alerts_url = reverse("receive_alert-list")
 
-        resp = self.post(self.alerts_url, self.origin_alert_str).json()
+        resp = self.post(self.receive_alert_url, self.origin_alert_str).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
         self.assertIsNotNone(resp.get('data'))

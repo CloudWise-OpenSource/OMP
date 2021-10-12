@@ -28,7 +28,7 @@ def get_monitor_url(ele):
         monitor_url = explain_url(ele)[0].get('monitor')
     except TypeError:
         logger.error('get monitor url failed')
-        monitor_url = ''
+        monitor_url = '-'
     return monitor_url
 
 
@@ -37,7 +37,7 @@ def get_log_url(ele):
         monitor_log_url = explain_url(ele)[0].get('monitor_log')
     except TypeError:
         logger.error('get monitor log url failed')
-        monitor_log_url = ''
+        monitor_log_url = '-'
     return monitor_log_url
 
 

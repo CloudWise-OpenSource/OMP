@@ -80,12 +80,6 @@ class TestAlertmanager(TestCase):
         TestCase.assertIsNotNone(maintain_ids, '添加维护失败')
         return maintain_ids
 
-    # def test_delete_maintain(self):
-    #     alertmanager = Alertmanager()
-    #     maintain_ids = self.test_set_maintain_by_env_name()
-    #     delete_result = alertmanager.delete_setting(maintain_ids[0])
-    #     self.assertTrue(delete_result, '删除维护失败')
-
     @mock.patch.object(requests, 'post', return_value='')
     def test_revoke_alertmanager_maintain_by_host_list(self, mock_post):
         mock_post.return_value = self.return_revoke_alertmanager_maintain_response()
@@ -102,5 +96,4 @@ class TestAlertmanager(TestCase):
         TestCase.assertIsNotNone(revoke_result, '删除维护失败')
 
     def tearDown(self):
-        # MonitorUrl.objects.delete(name='alertmanager')
-        pass
+        MonitorUrl.objects.filter(name='alertmanager').delete()

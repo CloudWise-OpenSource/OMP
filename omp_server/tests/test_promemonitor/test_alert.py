@@ -24,13 +24,14 @@ class AlertTest(AutoLoginTest):
 
     def setUp(self):
         super(AlertTest, self).setUp()
-        self.alerts_url = reverse("alerts-list")
+        self.list_alert_url = reverse("listAlert-list")
+        self.update_alert_url = reverse("updateAlert-list")
         # 正确请求数据
         self.correct_request_data = {'is_read': 1}
 
     def test_get_alerts(self):
         """ 测试获取告警记录 """
-        resp = self.get(self.alerts_url).json()
+        resp = self.get(self.list_alert_url).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
 
@@ -52,9 +53,9 @@ class AlertTest(AutoLoginTest):
         修改已读/未读
         """
         mock_post.return_value = MockResponse(self.request_post_response)
-        self.alerts_url = reverse("alerts-list")
 
-        resp = self.post(self.alerts_url, self.correct_request_data).json()
+        resp = self.post(self.update_alert_url,
+                         self.correct_request_data).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
         self.assertIsNotNone(resp.get('data'))

@@ -3,19 +3,20 @@
 """
 from rest_framework.routers import DefaultRouter
 from promemonitor.views import (
-    MonitorUrlViewSet, AlertViewSet,
+    MonitorUrlViewSet, ListAlertViewSet, UpdateAlertViewSet,
     MaintainViewSet, ReceiveAlertViewSet,
     MonitorAgentRestartView, GrafanaUrlViewSet, InstanceNameListView
 )
 
 router = DefaultRouter()
 router.register(r'monitorurl', MonitorUrlViewSet)
-router.register(r'alerts', AlertViewSet, basename='alerts')
+router.register(r'listAlert', ListAlertViewSet, basename='listAlert')
+router.register(r'updateAlert', UpdateAlertViewSet, basename='updateAlert')
 router.register(r'restartMonitorAgent',
                 MonitorAgentRestartView, basename="restartMonitorAgent")
-router.register("global_maintain", MaintainViewSet, basename='global_maintain')
-router.register(r'receive_alert', ReceiveAlertViewSet,
-                basename='receive_alert')
+router.register("globalMaintain", MaintainViewSet, basename='globalMaintain')
+router.register(r'receiveAlert', ReceiveAlertViewSet,
+                basename='receiveAlert')
 router.register(r'grafanaurl', GrafanaUrlViewSet, basename="grafanaurl")
 router.register(r'instanceNameList', InstanceNameListView,
                 basename='instanceNameList')

@@ -99,7 +99,14 @@ class MonitorUrlSerializer(ModelSerializer):
         return monitor_url
 
 
-class AlertSerializer(ModelSerializer):
+class ListAlertSerializer(ModelSerializer):
+
+    class Meta:
+        model = Alert
+        fields = "__all__"
+
+
+class UpdateAlertSerializer(Serializer):
     """
     告警记录序列化
     """
@@ -125,9 +132,8 @@ class AlertSerializer(ModelSerializer):
             is_read=validated_data.get('is_read'))
         return validated_data
 
-    class Meta:
-        model = Alert
-        fields = ("ids", "is_read", )
+    def update(self, instance, validated_data):
+        pass
 
 
 class MaintainSerializer(ModelSerializer):
