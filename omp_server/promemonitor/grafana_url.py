@@ -68,7 +68,8 @@ def explain_filter(prometheus_json, params):
         value = j.get(fil_filed[0])
         if value and fil_filed[1].lower() in value.lower():
             fil_info.append(j)
-    # fil_info = filter(lambda x: fil_filed[1].lower() in x.get(fil_filed[0]).lower(), prometheus_json)
+    # fil_info = filter(lambda x: fil_filed[1].lower()
+    # in x.get(fil_filed[0]).lower(), prometheus_json)
     return explain_filter(fil_info, params)
 
 

@@ -11,11 +11,14 @@
 """
 
 import os
+import time
+import random
 import logging
 from concurrent.futures import ThreadPoolExecutor
 
 from db_models.models import Host
 from omp_server.settings import PROJECT_DIR
+from promemonitor.prometheus_utils import PrometheusUtils
 from utils.plugin.salt_client import SaltClient
 
 logger = logging.getLogger("server")
@@ -130,10 +133,45 @@ class MonitorAgentManager(object):
         安装monitor agent
         :return:
         """
-        return self.execute(
+        flag, msg = self.execute(
             host_obj_lst=self.host_objs,
             thread_name_prefix="install_",
             func=self._install)
+        if not flag:
+            return flag, msg
+        # 更新监控Server端配置，暂时靠sleep解决文件并发操作
+        time.sleep(random.randint(1, 5))
+        _pro_obj = PrometheusUtils()
+        _pro_obj.add_node(self.parse_hosts_data())
+        return True, "success!"
+
+    def parse_hosts_data(self):
+        """
+        解析主机信息
+        :return:
+        """
+        hosts_data = list()
+        for item in self.host_objs:
+            # TODO 支持手动添加服务器，暂不支持无SSH
+            _ip = item.ip
+            _env = item.env.name
+            _data_folder = item.data_folder
+            # {"/": 90, "/data": 100}
+            _disk_info = item.disk
+            if not _disk_info:
+                _disk_info = Host.objects.get(id=item.id).disk
+            data_path = ""
+            if _disk_info and isinstance(_disk_info, dict):
+                for key, _ in _disk_info.items():
+                    if _data_folder.startswith(key):
+                        data_path = key
+                        break
+            hosts_data.append({
+                "ip": _ip,
+                "env": _env,
+                "data_path": data_path
+            })
+        return hosts_data
 
     def _uninstall(self, obj):
         """

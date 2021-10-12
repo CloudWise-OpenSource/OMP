@@ -57,8 +57,9 @@ class PrometheusUtils(object):
         self.prometheus_targets_path = os.path.join(
             PROJECT_DIR, "component/prometheus/conf/targets")
         self.prometheus_node_rule_tpl = os.path.join(
-            PROJECT_DIR, "package_hub/prometheus_rules_template/node_rule.yml")
-        self.prometheus_node_rule_tpl = os.path.join(
+            PROJECT_DIR,
+            "package_hub/prometheus_rules_template/node_rule.yml")
+        self.prometheus_node_data_rule_tpl = os.path.join(
             PROJECT_DIR,
             "package_hub/prometheus_rules_template/node_data_rule.yml")
         self.prometheus_service_status_rule_tpl = os.path.join(
@@ -336,10 +337,13 @@ class PrometheusUtils(object):
                     "env": item["env"]}
             }
             node_target_list.append(node_target_ele)
+            # 更新主机node rule
+            self.add_rules("node", item["env"])
             # 更新exporter的告警规则
             self.add_rules("exporter", item["env"])
             # 更新数据分区的告警规则
-            self.update_node_data_rule(item["data_path"], item["env"])
+            if item["data_path"]:
+                self.update_node_data_rule(item["data_path"], item["env"])
         # 增加主机的target配置文件(prometheus/conf/targets)
         if os.path.exists(self.node_exporter_targets_file):
             with open(self.node_exporter_targets_file, "r") as f:
