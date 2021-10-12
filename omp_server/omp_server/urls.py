@@ -27,6 +27,7 @@ from users.urls import router as users_router
 from users.views import JwtAPIView
 
 from hosts.urls import router as hosts_router
+from app_store.urls import router as app_store_router
 from promemonitor.urls import router as promemonitor_router
 
 urlpatterns_inside = [
@@ -34,6 +35,7 @@ urlpatterns_inside = [
     path("users/", include(users_router.urls), name="users"),
     path("hosts/", include(hosts_router.urls), name="hosts"),
     path("promemonitor/", include(promemonitor_router.urls), name="promemonitor"),
+    path("appStore/", include(app_store_router.urls), name="appStore"),
 ]
 
 urlpatterns = [
