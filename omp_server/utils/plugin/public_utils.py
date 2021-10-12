@@ -14,6 +14,25 @@ import os
 import socket
 import hashlib
 import ipaddress
+import subprocess
+
+
+def local_cmd(command):
+    """
+    执行本地shell命令
+    :param command: 执行命令
+    :return: (stdout, stderr, ret_code)
+    """
+    p = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=True
+    )
+    stdout, stderr = p.communicate()
+    _out, _err, _code = \
+        stdout.decode("utf8"), stderr.decode("utf8"), p.returncode
+    return _out, _err, _code
 
 
 def get_file_md5(file_path):
