@@ -67,15 +67,16 @@ class GrafanaUrlTest(AutoLoginTest):
     def setUp(self):
         super(GrafanaUrlTest, self).setUp()
         self.list_grafanaurl_url = reverse("grafanaurl-list")
-        grafana_list = [GrafanaMainPage(id="1", instance_name="node",
-                                        instance_url="/proxy/v1/grafana/d/9CWBz0bik/zhu-ji-xin-xi-mian-ban"),
-                        GrafanaMainPage(id="2", instance_name="service",
-                                        instance_url="/proxy/v1/grafana/d/9CSxoPAGz/fu-wu-zhuang-tai-xin-xi-mian-ban"),
-                        GrafanaMainPage(id="3", instance_name="log",
-                                        instance_url="/proxy/v1/grafana/d/liz0yRCZz/applogs"),
-                        GrafanaMainPage(id="4", instance_name="mysql",
-                                        instance_url="/proxy/v1/grafana/d/MQWgroiiz/mysql-xin-xi-mian-ban")
-                        ]
+        grafana_list = [
+            GrafanaMainPage(id="1", instance_name="node",
+                            instance_url="/proxy/v1/grafana/d/9CWBz0bik/zhu-ji-xin-xi-mian-ban"),
+            GrafanaMainPage(id="2", instance_name="service",
+                            instance_url="/proxy/v1/grafana/d/9CSxoPAGz/fu-wu-zhuang-tai-xin-xi-mian-ban"),
+            GrafanaMainPage(id="3", instance_name="log",
+                            instance_url="/proxy/v1/grafana/d/liz0yRCZz/applogs"),
+            GrafanaMainPage(id="4", instance_name="mysql",
+                            instance_url="/proxy/v1/grafana/d/MQWgroiiz/mysql-xin-xi-mian-ban")
+        ]
         GrafanaMainPage.objects.bulk_create(grafana_list)
 
     @mock.patch.object(CurlPrometheus, "curl_prometheus", return_value=correct_prometheus_data)

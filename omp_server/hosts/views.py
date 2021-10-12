@@ -13,7 +13,7 @@ from rest_framework.mixins import (
 )
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
-from rest_framework.exceptions import ParseError
+from rest_framework.exceptions import ValidationError
 
 from django_filters.rest_framework.backends import DjangoFilterBackend
 
@@ -29,6 +29,7 @@ from hosts.hosts_serializers import (
     HostBatchImportSerializer
 )
 from promemonitor.prometheus import Prometheus
+from promemonitor.grafana_url import explain_url
 
 logger = logging.getLogger("server")
 
@@ -70,6 +71,9 @@ class HostListView(GenericViewSet, ListModelMixin, CreateModelMixin):
             import base64
             host_info["password"] = base64.b64encode(password.encode())
 
+        # 获取监控及日志的url
+        serializer_data = explain_url(serializer_data)
+
         # 实时获取主机动态
         prometheus_obj = Prometheus()
         serializer_data = prometheus_obj.get_host_info(serializer_data)
@@ -81,10 +85,12 @@ class HostListView(GenericViewSet, ListModelMixin, CreateModelMixin):
             reverse_flag = True
             query_field = query_field[1:]
         # 若排序字段在类视图 dynamic_fields 中，则对根据动态数据进行排序
-        none_ls = list(filter(lambda x: x.get(
-            query_field) is None, serializer_data))
-        exists_ls = list(filter(lambda x: x.get(query_field)
-                                is not None, serializer_data))
+        none_ls = list(filter(
+            lambda x: x.get(query_field) is None,
+            serializer_data))
+        exists_ls = list(filter(
+            lambda x: x.get(query_field) is not None,
+            serializer_data))
         if query_field in self.dynamic_fields:
             exists_ls = sorted(
                 exists_ls,
@@ -203,7 +209,7 @@ class HostBatchValidateView(GenericViewSet, ListModelMixin, CreateModelMixin):
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             logger.error(f"host batch validate failed:{request.data}")
-            raise ParseError("数据格式错误")
+            raise ValidationError("数据格式错误")
         return Response(serializer.validated_data.get("result_dict"))
 
 
@@ -221,7 +227,7 @@ class HostBatchImportView(GenericViewSet, CreateModelMixin):
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
             logger.error(f"host batch import failed:{request.data}")
-            raise ParseError("数据格式错误")
+            raise ValidationError("数据格式错误")
 
         # 主机、操作记录数据入库
         default_env = Env.objects.filter(id=1).first()
