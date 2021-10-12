@@ -9,7 +9,7 @@ class GlobalMaintainTest(AutoLoginTest):
 
     def setUp(self):
         super(GlobalMaintainTest, self).setUp()
-        self.global_maintain_url = reverse("global_maintain-list")
+        self.global_maintain_url = reverse("globalMaintain-list")
         # 正确数据
         self.correct_maintain_data = {
             "matcher_name": "env_name",

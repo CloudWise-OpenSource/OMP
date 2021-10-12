@@ -24,11 +24,21 @@ def get_service_type(ip, service_name):
 
 
 def get_monitor_url(ele):
-    return explain_url(ele)[0].get('monitor')
+    try:
+        monitor_url = explain_url(ele)[0].get('monitor')
+    except TypeError:
+        logger.error('get monitor url failed')
+        monitor_url = '-'
+    return monitor_url
 
 
 def get_log_url(ele):
-    return explain_url(ele)[0].get('monitor_log')
+    try:
+        monitor_log_url = explain_url(ele)[0].get('monitor_log')
+    except TypeError:
+        logger.error('get monitor log url failed')
+        monitor_log_url = '-'
+    return monitor_log_url
 
 
 def utc_to_local(utc_time_str, utc_format='%Y-%m-%dT%H:%M:%SZ'):

@@ -16,21 +16,20 @@ class Prometheus:
     STATUS = ("normal", "warning", "critical")
 
     def __init__(self):
-        self.ip, self.port = self.get_prometheus_config()
-        self.basic_api_url = f'http://{self.ip}:{self.port}/api/v1/query?query='
+        self.basic_url = self.get_prometheus_config()
+        self.prometheus_api_query_url = f'http://{self.basic_url}/api/v1/query?query='
 
     @staticmethod
     def get_prometheus_config():
         prometheus_url_config = MonitorUrl.objects.filter(
             name='prometheus').first()
         if not prometheus_url_config:
-            return '127.0.0.1', MONITOR_PORT.get('prometheus', 19011)  # 默认值
+            return f'127.0.0.1:{MONITOR_PORT.get("prometheus", 19011)}'  # 默认值
 
-        ip = prometheus_url_config.monitor_url.split(':')[0]
-        port = prometheus_url_config.monitor_url.split(':')[1]
-        if ip and port:
-            return ip, port
-        return '127.0.0.1', MONITOR_PORT.get('prometheus', 19011)  # 默认值
+        monitor_url = prometheus_url_config.monitor_url
+        if monitor_url:
+            return monitor_url
+        return f'127.0.0.1:{MONITOR_PORT.get("prometheus", 19011)}'  # 默认值
 
     @staticmethod
     def get_host_threshold():
@@ -60,7 +59,7 @@ class Prometheus:
         获取指定主机cpu使用率
         """
         headers = {'Content-Type': 'application/json'}
-        query_url = f'{self.basic_api_url}(1 - avg(rate(node_cpu_seconds_total' \
+        query_url = f'{self.prometheus_api_query_url}(1 - avg(rate(node_cpu_seconds_total' \
                     f'{{mode="idle"}}[2m])) by (instance))*100'
         # print(query_url)
         try:
@@ -97,7 +96,7 @@ class Prometheus:
         获取指定主机内存使用率
         """
         headers = {'Content-Type': 'application/json'}
-        query_url = f'{self.basic_api_url}(1 - (node_memory_MemAvailable_bytes / ' \
+        query_url = f'{self.prometheus_api_query_url}(1 - (node_memory_MemAvailable_bytes / ' \
                     f'(node_memory_MemTotal_bytes)))* 100'
         # print(query_url)
 
@@ -134,7 +133,7 @@ class Prometheus:
         获取指定主机磁盘根分区使用率
         """
         headers = {'Content-Type': 'application/json'}
-        query_url = f'{self.basic_api_url}(node_filesystem_size_bytes{{mountpoint="/"}} - ' \
+        query_url = f'{self.prometheus_api_query_url}(node_filesystem_size_bytes{{mountpoint="/"}} - ' \
                     f'node_filesystem_free_bytes{{mountpoint="/",fstype!="rootfs"}}) / ' \
                     f'(node_filesystem_avail_bytes{{mountpoint="/"}}-node_filesystem_free_bytes{{mountpoint="/"}} - ' \
                     f'(-node_filesystem_size_bytes{{mountpoint="/"}}))*100'
@@ -178,7 +177,7 @@ class Prometheus:
         for index, host in enumerate(host_list.copy()):
             host_ip = host.get('ip')
             host_data_disk = host.get('data_folder')
-            query_url = f'{self.basic_api_url}' \
+            query_url = f'{self.prometheus_api_query_url}' \
                         f'(node_filesystem_size_bytes{{mountpoint="{host_data_disk}",instance="{host_ip}"}} - ' \
                         f'node_filesystem_free_bytes{{mountpoint="{host_data_disk}",instance="{host_ip}"}}) / ' \
                         f'(node_filesystem_avail_bytes{{mountpoint="{host_data_disk}",instance="{host_ip}"}} - ' \

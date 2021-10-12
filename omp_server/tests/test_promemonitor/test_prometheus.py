@@ -63,5 +63,4 @@ class TestPrometheus(TestCase):
                              self.return_host_info_data())
 
     def tearDown(self):
-        # MonitorUrl.objects.filter(name='prometheus').delete()
-        pass
+        MonitorUrl.objects.filter(name='prometheus').delete()

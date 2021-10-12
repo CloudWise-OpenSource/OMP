@@ -21,7 +21,7 @@ from db_models.models import (
     Alert, Maintain
 )
 from promemonitor.promemonitor_serializers import (
-    MonitorUrlSerializer, AlertSerializer,
+    MonitorUrlSerializer, ListAlertSerializer, UpdateAlertSerializer,
     MaintainSerializer, MonitorAgentRestartSerializer,
     ReceiveAlertSerializer
 )
@@ -85,11 +85,11 @@ class GrafanaUrlViewSet(ListModelMixin, GenericViewSet):
         return Response(prometheus_json)
 
 
-class AlertViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
+class ListAlertViewSet(ListModelMixin, GenericViewSet):
     """
-    告警记录视图类
+    获取告警记录列表视图类
     """
-    serializer_class = AlertSerializer
+    serializer_class = ListAlertSerializer
     queryset = Alert.objects.all().order_by('id')
     # 分页，过滤，排序
     pagination_class = PageNumberPager
@@ -97,6 +97,15 @@ class AlertViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
     # filter_class = AlertFilter
     ordering_fields = ("alert_host_ip", "alert_host_instance_name",
                        "alert_service_instance_name", "alert_time")
+
+
+class UpdateAlertViewSet(CreateModelMixin, GenericViewSet):
+    """
+    更新告警记录视图类
+    """
+    serializer_class = UpdateAlertSerializer
+    queryset = Alert.objects.all().order_by('id')
+    post_description = "更新告警记录（已读/未读）"
 
 
 class MaintainViewSet(GenericViewSet, CreateModelMixin, ListModelMixin):
