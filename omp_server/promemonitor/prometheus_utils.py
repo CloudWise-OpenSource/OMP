@@ -339,7 +339,8 @@ class PrometheusUtils(object):
             # 更新exporter的告警规则
             self.add_rules("exporter", item["env"])
             # 更新数据分区的告警规则
-            self.update_node_data_rule(item["data_path"], item["env"])
+            if item["data_path"]:
+                self.update_node_data_rule(item["data_path"], item["env"])
         # 增加主机的target配置文件(prometheus/conf/targets)
         if os.path.exists(self.node_exporter_targets_file):
             with open(self.node_exporter_targets_file, "r") as f:
