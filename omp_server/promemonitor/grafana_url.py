@@ -92,11 +92,11 @@ def explain_url(explain_info):
                 instance_info['monitor_url'] = grafana_url + \
                     monitor_url + f"?var-instance={service_ip}"
             instance_info['monitor_url'] = grafana_url + url_dict.get(
-                'service') + f"?var-ip={service_ip}&var-app={service_name}"
+                'service', 'noservice') + f"?var-ip={service_ip}&var-app={service_name}"
             instance_info['log_url'] = grafana_url + \
-                url_dict.get('log') + f"?var-app={service_name}"
+                url_dict.get('log', 'nolog') + f"?var-app={service_name}"
         else:
             instance_info['monitor_url'] = grafana_url + \
-                url_dict.get('node') + f"?var-node={service_ip}"
+                url_dict.get('node', 'nohosts') + f"?var-node={service_ip}"
             instance_info['log_url'] = None
     return explain_info
