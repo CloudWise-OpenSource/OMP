@@ -4,11 +4,8 @@ import {
   Button,
   Input,
   Select,
-  Badge,
   Form,
   message,
-  Menu,
-  Dropdown,
   InputNumber,
   Row,
   Col,
@@ -16,7 +13,6 @@ import {
   Modal,
   Steps,
   Upload,
-  Result,
 } from "antd";
 import {
   PlusSquareOutlined,
@@ -32,7 +28,6 @@ import {
   MessageTip,
   isChineseChar,
   isNumberChar,
-  isLowercaseChar,
   isValidIpChar,
   isExpression,
   isLetterChar,

@@ -2,7 +2,7 @@ import { Dropdown, Menu } from "antd";
 import { FilterFilled } from "@ant-design/icons";
 import { useState } from "react";
 
-const OmpTableFilter = () => {
+const OmpTableFilter = ({dataIndex, filterMenuList, queryRequest }) => {
   // 表格的筛选控制器
   const [filterControl, setFilterControl] = useState("");
 
@@ -14,6 +14,7 @@ const OmpTableFilter = () => {
       visible={dropDownIsOpen}
       onVisibleChange={(e) => {
         if (filterControl) {
+          queryRequest({[dataIndex]:null})
           setFilterControl("");
         } else {
           setDropDownIsOpen(e);
@@ -24,40 +25,18 @@ const OmpTableFilter = () => {
           selectedKeys={[filterControl]}
           onClick={(e) => {
             setFilterControl(e.key);
-            console.log(e);
+            // console.log(e);
+            queryRequest({[dataIndex]:e.key})
             setDropDownIsOpen(false);
           }}
         >
-          <Menu.Item key={133}>
-            <a
-              target="_blank"
-              rel="noopener noreferrer"
-              key={1}
-              href="https://www.antgroup.com"
-            >
-              1st menu item
-            </a>
-          </Menu.Item>
-          <Menu.Item key={311232}>
-            <a
-              target="_blank"
-              rel="noopener noreferrer"
-              key={2}
-              href="https://www.aliyun.com"
-            >
-              2nd menu item
-            </a>
-          </Menu.Item>
-          <Menu.Item key={1233}>
-            <a
-              target="_blank"
-              rel="noopener noreferrer"
-              key={3}
-              href="https://www.luohanacademy.com"
-            >
-              3rd menu item
-            </a>
-          </Menu.Item>
+          {filterMenuList?.map(item=>{
+            return (
+              <Menu.Item key={item.value}>
+                {item.text}
+              </Menu.Item>
+            )
+          })}
         </Menu>
       }
       placement="bottomCenter"

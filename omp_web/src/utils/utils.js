@@ -1808,7 +1808,7 @@ export const handleResponse = (res, succCallback, failedCallback) => {
 };
 
 export const colorConfig = {
-  normal: "#87d068",
+  normal: "#76ca68",
   warning: "#ffbf00",
   critical: "#f04134",
 };

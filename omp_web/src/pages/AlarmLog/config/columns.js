@@ -1,54 +1,73 @@
 import { nonEmptyProcessing, colorConfig } from "@/utils/utils";
 import { Tooltip, Badge, Menu, Dropdown } from "antd";
 import { FilterFilled } from "@ant-design/icons";
-import OmpTableFilter from "@/components/OmpTable/components/OmpTableFilter"
+import OmpTableFilter from "@/components/OmpTable/components/OmpTableFilter";
+import moment from "moment";
 
-const getColumnsConfig = () => {
+const getColumnsConfig = (queryRequest) => {
   return [
     {
       title: "实例名称",
-      key: "instance_name",
-      dataIndex: "instance_name",
+      key: "alert_host_instance_name",
+      dataIndex: "alert_host_instance_name",
       align: "center",
-      //width: 180,
+      width: 200,
       ellipsis: true,
       fixed: "left",
-      render: (text) => {
-        return (
-          <Tooltip title={text}>
-            <Badge dot offset={[5, 2]}>
-              {text ? text : "-"}
-            </Badge>
-          </Tooltip>
-        );
+      sorter: (a, b) => a.alert_host_instance_name - b.alert_host_instance_name,
+      sortDirections: ["descend", "ascend"],
+      render: (text, record) => {
+        if (record.alert_type == "service") {
+          return (
+            <Tooltip title={text}>
+              <Badge dot={record.is_read === 0} offset={[5, 2]}>
+                {record.alert_service_instance_name
+                  ? record.alert_service_instance_name
+                  : "-"}
+              </Badge>
+            </Tooltip>
+          );
+        } else if (record.alert_type == "host") {
+          return (
+            <Tooltip title={text}>
+              <Badge dot={record.is_read === 0} offset={[5, 2]}>
+                {record.alert_host_instance_name
+                  ? record.alert_host_instance_name
+                  : "-"}
+              </Badge>
+            </Tooltip>
+          );
+        }
       },
     },
     {
       title: "IP地址",
-      key: "ip",
-      dataIndex: "ip",
-      //width:180,
-      sorter: (a, b) => a.ip - b.ip,
+      key: "alert_host_ip",
+      dataIndex: "alert_host_ip",
+      ellipsis: true,
+      sorter: (a, b) => a.alert_host_ip - b.alert_host_ip,
       sortDirections: ["descend", "ascend"],
       align: "center",
     },
     {
       title: "级别",
-      key: "severity",
-      dataIndex: "severity",
+      key: "alert_level",
+      dataIndex: "alert_level",
       align: "center",
+      width: 120,
       // sorter: (a, b) => a.severity - b.severity,
       // sortDirections: ["descend", "ascend"],
       //ellipsis: true,
       //width:120,
-      usefilter:true,
-      // filterIcon: () => {
-      //   return <OmpTableFilter />
-      // },
-      // filters: [{ text: "mock", value: "mock" }],
-      // filterDropdown: () => {
-      //   return <span key="mock_"></span>;
-      // },
+      usefilter: true,
+      queryRequest:queryRequest,
+      filterMenuList: [{
+        value:"critical",
+        text:"严重"
+      },{
+        value:"warning",
+        text:"警告"
+      }],
       render: (text) => {
         switch (text) {
           case "critical":
@@ -61,30 +80,37 @@ const getColumnsConfig = () => {
       },
     },
     {
-      title: "监控类型",
-      key: "mem_usage",
-      dataIndex: "mem_usage",
-      sorter: (a, b) => a.mem_usage - b.mem_usage,
-      sortDirections: ["descend", "ascend"],
+      title: "告警类型",
+      key: "alert_type",
+      dataIndex: "alert_type",
+      usefilter: true,
+      queryRequest:queryRequest,
+      filterMenuList: [{
+        value:"service",
+        text:"服务"
+      },{
+        value:"host",
+        text:"主机"
+      }],
       align: "center",
       //ellipsis: true,
-      //width:150,
+      width: 150,
       render: (text) => {
-        let str = nonEmptyProcessing(text);
-        return str == "-" ? "-" : `${str}%`;
+        if (text == "host") {
+          return "主机";
+        } else if (text == "service") {
+          return "服务";
+        }
       },
     },
     {
       title: "告警描述",
-      key: "description",
-      dataIndex: "description",
+      key: "alert_describe",
+      dataIndex: "alert_describe",
       align: "center",
       width: 420,
       ellipsis: true,
-      sorter: (a, b) => a.description - b.description,
-      sortDirections: ["descend", "ascend"],
       render: (text) => {
-        let str = nonEmptyProcessing(text);
         return (
           <Tooltip title={text}>
             <span>{text ? text : "-"}</span>
@@ -95,20 +121,20 @@ const getColumnsConfig = () => {
     {
       title: "告警时间",
       //width:180,
-      key: "date",
-      dataIndex: "date",
+      key: "alert_time",
+      dataIndex: "alert_time",
       align: "center",
       //ellipsis: true,
-      sorter: (a, b) => a.date - b.date,
+      sorter: (a, b) => a.alert_time - b.alert_time,
       sortDirections: ["descend", "ascend"],
       render: (text) => {
-        let str = nonEmptyProcessing(text);
-        return str == "-" ? "-" : `${str}`;
+        let str = moment(text).format("YYYY-MM-DD HH:mm:ss");
+        return str;
       },
     },
     {
       title: "操作",
-      width: 140,
+      width: 100,
       key: "",
       dataIndex: "",
       fixed: "right",

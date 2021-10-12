@@ -21,11 +21,7 @@ const OmpSelect = ({
         searchValueRef.current = "";
         setSelectValue();
         setSearchValue();
-        fetchData(
-          { current: pagination.current, pageSize: pagination.pageSize },
-          {},
-          pagination.ordering
-        );
+        fetchData();
       }}
       showSearch
       placeholder="搜索"
@@ -35,11 +31,7 @@ const OmpSelect = ({
         if (e.code == "Enter") {
           //console.log("点击了",searchValueRef.current )
           setSelectValue(searchValueRef.current);
-          fetchData(
-            { current: 1, pageSize: 10 },
-            { ip: searchValueRef.current },
-            pagination.ordering
-          );
+          fetchData(searchValueRef.current);
         }
       }}
       searchValue={searchValue}
@@ -47,25 +39,11 @@ const OmpSelect = ({
         if (e == searchValue || !searchValue) {
           //console.log(1)
           setSelectValue(e);
-          fetchData(
-            {
-              current: pagination.current,
-              pageSize: pagination.pageSize,
-            },
-            { ip: e },
-            pagination.ordering
-          );
+          fetchData(e);
         } else {
           //console.log(2)
           setSelectValue(searchValue);
-          fetchData(
-            {
-              current: pagination.current,
-              pageSize: pagination.pageSize,
-            },
-            { ip: searchValueRef.current },
-            pagination.ordering
-          );
+          fetchData(searchValueRef.current);
         }
         searchValueRef.current = "";
       }}
@@ -78,14 +56,7 @@ const OmpSelect = ({
         //console.log(searchValueRef.current,"searchValueRef.current")
         if (searchValueRef.current) {
           setSelectValue(searchValueRef.current);
-          fetchData(
-            {
-              current: pagination.current,
-              pageSize: pagination.pageSize,
-            },
-            { ip: searchValueRef.current },
-            pagination.ordering
-          );
+          fetchData(searchValueRef.current);
         }
       }}
     >
