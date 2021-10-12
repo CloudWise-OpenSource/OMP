@@ -152,16 +152,20 @@ class MonitorAgentManager(object):
         """
         hosts_data = list()
         for item in self.host_objs:
+            # TODO 支持手动添加服务器，暂不支持无SSH
             _ip = item.ip
             _env = item.env.name
             _data_folder = item.data_folder
             # {"/": 90, "/data": 100}
             _disk_info = item.disk
+            if not _disk_info:
+                _disk_info = Host.objects.get(id=item.id).disk
             data_path = ""
-            for key, _ in _disk_info.items():
-                if _data_folder.startswith(key):
-                    data_path = key
-                    break
+            if _disk_info and isinstance(_disk_info, dict):
+                for key, _ in _disk_info.items():
+                    if _data_folder.startswith(key):
+                        data_path = key
+                        break
             hosts_data.append({
                 "ip": _ip,
                 "env": _env,
