@@ -5,3 +5,11 @@
 # IDE: PyCharm
 # Version: 1.0
 # Introduction:
+
+
+from rest_framework.routers import DefaultRouter
+
+from app_store.views import LabelListView
+
+router = DefaultRouter()
+router.register("labels", LabelListView, basename="labels")

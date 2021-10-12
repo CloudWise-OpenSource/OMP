@@ -240,9 +240,11 @@ class Maintain(models.Model):
 class Labels(models.Model):
     """ 应用&产品标签表 """
 
+    LABEL_TYPE_COMPONENT = 0
+    LABEL_TYPE_APPLICATION = 1
     LABELS_CHOICES = (
-        (0, "服务"),
-        (1, "应用")
+        (LABEL_TYPE_COMPONENT, "组件"),
+        (LABEL_TYPE_APPLICATION, "应用")
     )
     label_name = models.CharField(
         "标签名称", max_length=16,
@@ -260,10 +262,13 @@ class Labels(models.Model):
 class UploadPackageHistory(TimeStampMixin):
     """ 上传安装包记录表，存储产品包及服务包 """
 
+    PACKAGE_STATUS_SUCCESS = 0
+    PACKAGE_STATUS_FAILED = 1
+    PACKAGE_STATUS_PARSING = 2
     PACKAGE_STATUS_CHOICES = (
-        (0, "成功"),
-        (1, "失败"),
-        (2, "解析中")
+        (PACKAGE_STATUS_SUCCESS, "成功"),
+        (PACKAGE_STATUS_FAILED, "失败"),
+        (PACKAGE_STATUS_PARSING, "解析中")
     )
     operation_uuid = models.CharField(
         "唯一操作uuid", max_length=64,
@@ -298,7 +303,7 @@ class UploadPackageHistory(TimeStampMixin):
 
 
 class ProductHub(TimeStampMixin):
-    """ 存储产品级别的数据 """
+    """ 存储产品级别模型类 (应用) """
     # 使用is_release标识此条数据是否已发布，是否可用
     is_release = models.BooleanField(
         "是否发布", default=False, help_text="是否发布")
@@ -338,11 +343,12 @@ class ProductHub(TimeStampMixin):
 
 
 class ApplicationHub(TimeStampMixin):
-    """ 存储组件及服务级别的数据 """
-
+    """ 服务级别模型类 (组件) """
+    APP_TYPE_COMPONENT = 0
+    APP_TYPE_SERVICE = 1
     APP_TYPE_CHOICES = (
-        (0, "组件"),
-        (1, "服务")
+        (APP_TYPE_COMPONENT, "组件"),
+        (APP_TYPE_SERVICE, "服务")
     )
     is_release = models.BooleanField(
         "是否发布", default=False, help_text="是否发布")
