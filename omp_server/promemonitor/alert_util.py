@@ -5,6 +5,7 @@ import traceback
 import pytz
 from omp_server.settings import TIME_ZONE
 from db_models.models import Host
+from promemonitor.grafana_url import explain_url
 
 logger = logging.getLogger('server')
 
@@ -23,11 +24,11 @@ def get_service_type(ip, service_name):
 
 
 def get_monitor_url(ele):
-    return ele  # TODO
+    return explain_url(ele)[0].get('monitor')
 
 
 def get_log_url(ele):
-    return ele  # TODO
+    return explain_url(ele)[0].get('monitor_log')
 
 
 def utc_to_local(utc_time_str, utc_format='%Y-%m-%dT%H:%M:%SZ'):
@@ -155,11 +156,35 @@ class AlertAnalysis:
         kwargs["fingerprint"] = self.fingerprint
         kwargs.update(alert_time=self.get_alert_time())
         if kwargs["alert_type"] == "service":
-            kwargs["monitor"] = get_monitor_url(kwargs["alert_service_name"])
-            kwargs["monitor_log"] = get_log_url(kwargs["alert_service_name"])
+            kwargs["monitor"] = get_monitor_url(
+                [{
+                    "ip": kwargs.get("alert_host_ip"),
+                    "type": "service",
+                    "instance_name": kwargs.get("alert_service_name")
+                }]
+            )
+            kwargs["monitor_log"] = get_log_url(
+                [{
+                    "ip": kwargs.get("alert_host_ip"),
+                    "type": "service",
+                    "instance_name": kwargs.get("alert_service_name")
+                }]
+            )
         else:
-            kwargs["monitor"] = get_monitor_url(kwargs["alert_service_name"])
-            kwargs["monitor_log"] = get_log_url(kwargs["alert_service_name"])
+            kwargs["monitor"] = get_monitor_url(
+                [{
+                    "ip": kwargs.get("alert_host_ip"),
+                    "type": "host",
+                    "instance_name": "node"
+                }]
+            )
+            kwargs["monitor_log"] = get_log_url(
+                [{
+                    "ip": kwargs.get("alert_host_ip"),
+                    "type": "host",
+                    "instance_name": "node"
+                }]
+            )
         return kwargs
 
     def analysis_annotations(self):

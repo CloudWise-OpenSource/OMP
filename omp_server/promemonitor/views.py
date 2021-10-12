@@ -140,11 +140,12 @@ class InstanceNameListView(GenericViewSet, ListModelMixin):
     post_description = "返回主机和服务实例名列表"
 
     def list(self, request, *args, **kwargs):
-        instance_name_list = list()
+        instance_name_dict = dict()
         host_list = list(Host.objects.all().values_list(
             'instance_name', flat=True))
         print(host_list)
         service_list = []  # TODO 待应用模型完善
-        instance_name_list.extend(host_list)
-        instance_name_list.extend(service_list)
-        return Response(instance_name_list)
+        instance_name_dict.update({"alert_host_instance_name": host_list})
+        instance_name_dict.update(
+            {"alert_service_instance_name": service_list})
+        return Response(instance_name_dict)
