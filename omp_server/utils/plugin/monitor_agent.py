@@ -163,6 +163,8 @@ class MonitorAgentManager(object):
             data_path = ""
             if _disk_info and isinstance(_disk_info, dict):
                 for key, _ in _disk_info.items():
+                    if key == "/":
+                        continue
                     if _data_folder.startswith(key):
                         data_path = key
                         break
