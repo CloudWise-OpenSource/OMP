@@ -26,6 +26,8 @@ function install_omp() {
 
 # 监控端安装逻辑
 function install_monitor_server() {
+  bash $OMP_SCRIPT grafana start
+  sleep 10
   update_grafana_path="${PROJECT_FOLDER}/scripts/source/update_grafana.py"
   $PYTHON3 $update_grafana_path $1
   if [[ $? -ne 0 ]]; then
