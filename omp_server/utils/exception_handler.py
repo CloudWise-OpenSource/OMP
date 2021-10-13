@@ -31,7 +31,7 @@ class ExceptionResponse:
             response_status_code = response.status_code
         message = "后端程序错误"
         error_response = Response(
-            status=response_status_code,
+            status=200,
             data={
                 "code": 1,
                 "data": None
