@@ -8,36 +8,24 @@ const getColumnsConfig = (queryRequest) => {
   return [
     {
       title: "实例名称",
-      key: "alert_host_instance_name",
-      dataIndex: "alert_host_instance_name",
+      key: "alert_instance_name",
+      dataIndex: "alert_instance_name",
       align: "center",
       width: 200,
       ellipsis: true,
       fixed: "left",
-      sorter: (a, b) => a.alert_host_instance_name - b.alert_host_instance_name,
+      sorter: (a, b) => a.alert_instance_name - b.alert_instance_name,
       sortDirections: ["descend", "ascend"],
       render: (text, record) => {
-        if (record.alert_type == "service") {
           return (
             <Tooltip title={text}>
               <Badge dot={record.is_read === 0} offset={[5, 2]}>
-                {record.alert_service_instance_name
-                  ? record.alert_service_instance_name
+                {record.alert_instance_name
+                  ? record.alert_instance_name
                   : "-"}
               </Badge>
             </Tooltip>
           );
-        } else if (record.alert_type == "host") {
-          return (
-            <Tooltip title={text}>
-              <Badge dot={record.is_read === 0} offset={[5, 2]}>
-                {record.alert_host_instance_name
-                  ? record.alert_host_instance_name
-                  : "-"}
-              </Badge>
-            </Tooltip>
-          );
-        }
       },
     },
     {

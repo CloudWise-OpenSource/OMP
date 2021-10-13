@@ -572,13 +572,18 @@ const getColumnsConfig = (
       fixed: "right",
       render: function renderFunc(text, record, index) {
         return (
-          <div style={{ display: "flex", justifyContent: "space-around" }}>
+          <div
+            onClick={() => {
+              setRow(record);
+            }}
+            style={{ display: "flex", justifyContent: "space-around" }}
+          >
             <a
               onClick={() => {
-                setRow(record);
                 setShowIframe({
                   isOpen: true,
                   src: record.monitor_url,
+                  // src: "http://10.0.7.146:19001/proxy/v1/grafana/d/9CWBz0bik/zhu-ji-xin-xi-mian-ban?var-node=10.0.7.146",
                   record: record,
                   isLog: false,
                 });

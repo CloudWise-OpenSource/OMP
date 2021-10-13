@@ -74,7 +74,7 @@ const OmpLayout = (props) => {
   };
 
   const onPathChange = (e) => {
-    console.log(e);
+    //console.log(e);
     if (e.key === history.location.pathname) {
       return;
     }

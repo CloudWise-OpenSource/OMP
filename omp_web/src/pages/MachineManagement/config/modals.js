@@ -454,7 +454,7 @@ export const UpDateMachineModal = ({
         operate_system: row.operate_system,
         username: row.username,
         ip: row.ip,
-        password: window.atob(row.password),
+        password:row.password && window.atob(row.password),
       }}
     >
       <MessageTip
