@@ -35,6 +35,8 @@ tengine:
   runserver_port: 19002
 # 登录token过期时间，天
 token_expiration: 1
+#grafana认证字段，无需修改
+grafana_api_key: test
 # 监控使用相关端口配置
 monitor_port:
   # server各个端口
