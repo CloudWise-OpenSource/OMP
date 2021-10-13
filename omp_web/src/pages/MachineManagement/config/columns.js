@@ -492,11 +492,11 @@ const getColumnsConfig = (
     {
       title: "数据分区使用率",
       width: 130,
-      key: "data_disk_usag",
-      dataIndex: "data_disk_usag",
+      key: "data_disk_usage",
+      dataIndex: "data_disk_usage",
       align: "center",
       //ellipsis: true,
-      sorter: (a, b) => a.data_disk_usag - b.data_disk_usag,
+      sorter: (a, b) => a.data_disk_usage - b.data_disk_usage,
       sortDirections: ["descend", "ascend"],
       render: (text, record) => {
         let str = nonEmptyProcessing(text);
@@ -578,19 +578,24 @@ const getColumnsConfig = (
             }}
             style={{ display: "flex", justifyContent: "space-around" }}
           >
-            <a
-              onClick={() => {
-                setShowIframe({
-                  isOpen: true,
-                  src: record.monitor_url,
-                  // src: "http://10.0.7.146:19001/proxy/v1/grafana/d/9CWBz0bik/zhu-ji-xin-xi-mian-ban?var-node=10.0.7.146",
-                  record: record,
-                  isLog: false,
-                });
-              }}
-            >
-              监控
-            </a>
+            {record.monitor_url ? (
+              <a
+                onClick={() => {
+                  setShowIframe({
+                    isOpen: true,
+                    src: record.monitor_url,
+                    // src: "http://10.0.7.146:19001/proxy/v1/grafana/d/9CWBz0bik/zhu-ji-xin-xi-mian-ban?var-node=10.0.7.146",
+                    record: record,
+                    isLog: false,
+                  });
+                }}
+              >
+                监控
+              </a>
+            ) : (
+              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
+            )}
+
             <Dropdown
               arrow
               overlay={renderMenu(

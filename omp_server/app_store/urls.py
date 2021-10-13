@@ -10,9 +10,10 @@
 from rest_framework.routers import DefaultRouter
 
 from app_store.views import (
-    LabelListView, ComponentListView
+    LabelListView, ComponentListView, ServiceListView
 )
 
 router = DefaultRouter()
 router.register("labels", LabelListView, basename="labels")
 router.register("components", ComponentListView, basename="components")
+router.register("services", ServiceListView, basename="services")

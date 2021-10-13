@@ -4,20 +4,18 @@ import {
   OmpMessageModal,
   OmpSelect,
   OmpDatePicker,
+  OmpDrawer,
 } from "@/components";
 import { Button, Select, message, Menu, Dropdown, Modal, Input } from "antd";
 import { useState, useEffect, useRef } from "react";
 import { handleResponse, _idxInit, refreshTime } from "@/utils/utils";
 import { fetchGet, fetchPost, fetchPatch } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-//import updata from "@/store_global/globalStore";
-import { useDispatch } from "react-redux";
 import getColumnsConfig from "./config/columns";
 import { SearchOutlined } from "@ant-design/icons";
+import moment from "moment";
 
 const AlarmLog = () => {
-  //console.log(location.state, "location.state");
-
   const [loading, setLoading] = useState(false);
 
   const [searchLoading, setSearchLoading] = useState(false);
@@ -44,6 +42,8 @@ const AlarmLog = () => {
   // 筛选label
   const [labelControl, setLabelControl] = useState("ip");
 
+  const [showIframe, setShowIframe] = useState({});
+
   function fetchData(
     pageParams = { current: 1, pageSize: 10 },
     searchParams = {},
@@ -56,9 +56,6 @@ const AlarmLog = () => {
         size: pageParams.pageSize,
         ordering: ordering ? ordering : null,
         ...searchParams,
-        //alert_instance_name:"mysql",
-        // start_alert_time:"2021-06-24 16:20:01",
-        // end_alert_time:"2021-06-24 16:20:03"
       },
     })
       .then((res) => {
@@ -111,14 +108,11 @@ const AlarmLog = () => {
   //     });
   // };
 
-  const updateAlertRead = () => {
+  const updateAlertRead = (ids = []) => {
     setLoading(true);
     fetchPost(apiRequest.Alert.updateAlert, {
       body: {
-        ids: Object.keys(checkedList)
-          .map((k) => checkedList[k])
-          .flat(1)
-          .map((item) => item.id),
+        ids: ids,
         is_read: 1,
       },
     })
@@ -155,19 +149,74 @@ const AlarmLog = () => {
               .map((item) => item.id).length == 0
           }
           onClick={() => {
-            updateAlertRead();
+            let ids = Object.keys(checkedList)
+            .map((k) => checkedList[k])
+            .flat(1)
+            .map((item) => item.id)
+            updateAlertRead(ids);
           }}
         >
           批量已读
         </Button>
         <div style={{ display: "flex" }}>
-          <OmpDatePicker />
+          <OmpDatePicker
+            onChange={(e) => {
+              if (!e) {
+                fetchData(
+                  {
+                    current: 1,
+                    pageSize: 10,
+                  },
+                  {
+                    ...pagination.searchParams,
+                    start_alert_time: null,
+                    end_alert_time: null,
+                  },
+                  pagination.ordering
+                );
+              }else{
+                let result = e.filter((item) => item);
+                if (result.length == 2) {
+                  fetchData(
+                    {
+                      current: 1,
+                      pageSize: 10,
+                    },
+                    {
+                      ...pagination.searchParams,
+                      start_alert_time: moment(e[0]).format(
+                        "YYYY-MM-DD HH:mm:ss"
+                      ),
+                      end_alert_time: moment(e[1]).format("YYYY-MM-DD HH:mm:ss"),
+                    },
+                    pagination.ordering
+                  );
+                }
+              }
+            }}
+          />
           <div style={{ display: "flex", marginLeft: "10px" }}>
             <Input.Group compact style={{ display: "flex" }}>
               <Select
                 value={labelControl}
                 style={{ width: 100 }}
-                onChange={(e) => setLabelControl(e)}
+                onChange={(e) => {
+                  setLabelControl(e);
+                  fetchData(
+                    {
+                      current: 1,
+                      pageSize: 10,
+                    },
+                    {
+                      ...pagination.searchParams,
+                      alert_host_ip: null,
+                      alert_instance_name: null,
+                    },
+                    pagination.ordering
+                  );
+                  setInstanceSelectValue();
+                  setSelectValue();
+                }}
               >
                 <Select.Option value="ip"> IP地址</Select.Option>
                 <Select.Option value="instance_name">实例名称</Select.Option>
@@ -294,7 +343,8 @@ const AlarmLog = () => {
               { ...pagination.searchParams, ...params },
               pagination.ordering
             );
-          })}
+          },setShowIframe,
+            updateAlertRead)}
           dataSource={dataSource}
           pagination={{
             showSizeChanger: true,
@@ -332,6 +382,7 @@ const AlarmLog = () => {
           checkedState={[checkedList, setCheckedList]}
         />
       </div>
+      <OmpDrawer showIframe={showIframe} setShowIframe={setShowIframe} />
     </OmpContentWrapper>
   );
 };

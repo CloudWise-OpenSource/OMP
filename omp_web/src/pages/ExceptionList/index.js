@@ -47,10 +47,10 @@ const ExceptionList = () => {
     ordering
   ) {
     setLoading(true);
-    fetchGet( apiRequest.Alert.listAlert, {
+    fetchGet( apiRequest.ExceptionList.exceptionList, {
       params: {
-        page: pageParams.current,
-        size: pageParams.pageSize,
+        // page: pageParams.current,
+        // size: pageParams.pageSize,
         ordering: ordering ? ordering : null,
         ...searchParams,
       },
