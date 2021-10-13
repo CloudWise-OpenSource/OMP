@@ -240,7 +240,7 @@ class AlertAnalysis:
             if not host:
                 return {}
             alert_info["env_id"] = host.env_id
-            alert_info["alert_host_instance_name"] = host.instance_name
+            alert_info["alert_instance_name"] = host.instance_name
         else:
             return {}  # TODO 待应用开发完成
         alert_info.update(**self.analysis_annotations())

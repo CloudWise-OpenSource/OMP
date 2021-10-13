@@ -1,14 +1,5 @@
-import {
-  OmpContentWrapper,
-  OmpTable,
-  OmpModal,
-} from "@/components";
-import {
-  Button,
-  Input,
-  Form,
-  message,
-} from "antd";
+import { OmpContentWrapper, OmpTable, OmpModal } from "@/components";
+import { Button, Input, Form, message } from "antd";
 import { useState, useEffect, useRef } from "react";
 import {
   handleResponse,
@@ -17,13 +8,14 @@ import {
   MessageTip,
   nonEmptyProcessing,
   logout,
-  isPassword 
+  isPassword,
 } from "@/utils/utils";
 import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 //import updata from "@/store_global/globalStore";
 import { useDispatch } from "react-redux";
 import moment from "moment";
+import { SearchOutlined } from "@ant-design/icons";
 
 const UserManagement = () => {
   const dispatch = useDispatch();
@@ -49,8 +41,8 @@ const UserManagement = () => {
     searchParams: {},
   });
 
-    //修改密码弹框
-    const [showModal, setShowModal] = useState(false);
+  //修改密码弹框
+  const [showModal, setShowModal] = useState(false);
 
   const columns = [
     {
@@ -58,7 +50,7 @@ const UserManagement = () => {
       key: "_idx",
       dataIndex: "_idx",
       //sorter: (a, b) => a.username - b.username,
-        // sortDirections: ["descend", "ascend"],
+      // sortDirections: ["descend", "ascend"],
       align: "center",
       render: nonEmptyProcessing,
     },
@@ -67,7 +59,7 @@ const UserManagement = () => {
       key: "username",
       dataIndex: "username",
       //sorter: (a, b) => a.username - b.username,
-        // sortDirections: ["descend", "ascend"],
+      // sortDirections: ["descend", "ascend"],
       align: "center",
       render: nonEmptyProcessing,
     },
@@ -78,11 +70,11 @@ const UserManagement = () => {
       //sorter: (a, b) => a.is_superuser - b.is_superuser,
       //sortDirections: ["descend", "ascend"],
       align: "center",
-      render: (text)=>{
-        if(text){
-            return "普通管理员"
-        }else{
-            return "超级管理员"
+      render: (text) => {
+        if (text) {
+          return "普通管理员";
+        } else {
+          return "超级管理员";
         }
       },
     },
@@ -91,11 +83,11 @@ const UserManagement = () => {
       key: "is_active",
       dataIndex: "is_active",
       align: "center",
-      render: (text)=>{
-        if(text){
-            return "正常"
-        }else{
-            return "停用"
+      render: (text) => {
+        if (text) {
+          return "正常";
+        } else {
+          return "停用";
         }
       },
     },
@@ -104,7 +96,7 @@ const UserManagement = () => {
       key: "date_joined",
       dataIndex: "date_joined",
       align: "center",
-     // width: 300,
+      // width: 300,
       render: (text) => {
         if (text) {
           return moment(text).format("YYYY-MM-DD HH:mm:ss");
@@ -166,15 +158,17 @@ const UserManagement = () => {
     })
       .then((res) => {
         handleResponse(res, (res) => {
-        if(!searchParams){
-            setUserListSource(res.data.results.map(item=>item.username))
-        }
-          setDataSource( res.data.results.map((item,idx)=>{
-            return {
-              ...item,
-              _idx: (idx + 1) +  (pageParams.current - 1)*pageParams.pageSize
-            }
-          }));
+          if (!searchParams) {
+            setUserListSource(res.data.results.map((item) => item.username));
+          }
+          setDataSource(
+            res.data.results.map((item, idx) => {
+              return {
+                ...item,
+                _idx: idx + 1 + (pageParams.current - 1) * pageParams.pageSize,
+              };
+            })
+          );
           setPagination({
             ...pagination,
             total: res.data.count,
@@ -197,23 +191,23 @@ const UserManagement = () => {
       body: {
         username: row.username,
         old_password: data.old_password,
-        new_password: data.new_password2
+        new_password: data.new_password2,
       },
     })
       .then((res) => {
         handleResponse(res, (res) => {
-          if(res.code == 0){
-            if(localStorage.getItem("username") == row.username){
-                message.success("修改密码成功, 请重新登录")
-                setTimeout(()=>{
-                    logout();
-                },1000)
-            }else{
-                message.success("修改密码成功")
+          if (res.code == 0) {
+            if (localStorage.getItem("username") == row.username) {
+              message.success("修改密码成功, 请重新登录");
+              setTimeout(() => {
+                logout();
+              }, 1000);
+            } else {
+              message.success("修改密码成功");
             }
             setShowModal(false);
           }
-        })
+        });
       })
       .catch((e) => console.log(e))
       .finally(() => {
@@ -226,8 +220,8 @@ const UserManagement = () => {
   }, []);
 
   //console.log(checkedList)
-    // 防止在校验进入死循环
-    const flag = useRef(null)
+  // 防止在校验进入死循环
+  const flag = useRef(null);
 
   return (
     <OmpContentWrapper>
@@ -236,7 +230,7 @@ const UserManagement = () => {
           <span style={{ width: 60, display: "flex", alignItems: "center" }}>
             用户名:
           </span>
-          <Input.Search placeholder="请输入用户名"
+          {/* <Input.Search placeholder="请输入用户名"
           allowClear
           onSearch={(e)=>{
               setSelectValue(e)
@@ -247,7 +241,58 @@ const UserManagement = () => {
                 pagination.ordering
               );
           }} 
-          style={{ width: 200 }} />
+          style={{ width: 200 }} /> */}
+          <Input
+            placeholder="请输入用户名"
+            style={{ width: 200 }}
+            allowClear
+            value={selectValue}
+            onChange={(e) => {
+              setSelectValue(e.target.value);
+              if (!e.target.value) {
+                fetchData(
+                  {
+                    current: 1,
+                    pageSize: 10,
+                  },
+                  {
+                    ...pagination.searchParams,
+                    username: null,
+                  }
+                );
+              }
+            }}
+            onBlur={() => {
+              fetchData(
+                {
+                  current: 1,
+                  pageSize: 10,
+                },
+                {
+                  ...pagination.searchParams,
+                  username: selectValue,
+                }
+              );
+            }}
+            onPressEnter={() => {
+              fetchData(
+                {
+                  current: 1,
+                  pageSize: 10,
+                },
+                {
+                  ...pagination.searchParams,
+                  username: selectValue,
+                },
+                pagination.ordering
+              );
+            }}
+            suffix={
+              !selectValue && (
+                <SearchOutlined style={{ fontSize: 12, color: "#b6b6b6" }} />
+              )
+            }
+          />
           <Button
             style={{ marginLeft: 10 }}
             onClick={() => {
@@ -310,15 +355,15 @@ const UserManagement = () => {
         />
       </div>
       <OmpModal
-       loading={loading}
+        loading={loading}
         onFinish={onPassWordChange}
         visibleHandle={[showModal, setShowModal]}
         title="修改密码"
-        beForeOk = {()=>{
-          flag.current = true
+        beForeOk={() => {
+          flag.current = true;
         }}
-        afterClose = {()=>{
-          flag.current = null
+        afterClose={() => {
+          flag.current = null;
         }}
       >
         <Form.Item
@@ -333,12 +378,12 @@ const UserManagement = () => {
             {
               validator: (rule, value, callback) => {
                 if (value) {
-                  if(!isPassword(value)){
-                    if(value.length < 8) {
+                  if (!isPassword(value)) {
+                    if (value.length < 8) {
                       return Promise.reject("密码长度为8到16位");
                     }
                     return Promise.resolve("success");
-                  }else{
+                  } else {
                     return Promise.reject(
                       `密码只支持数字、字母以及常用英文符号`
                     );
@@ -363,17 +408,17 @@ const UserManagement = () => {
               message: "请输入新密码",
             },
             {
-              validator: (rule, value, callback,passwordModalForm) => {
+              validator: (rule, value, callback, passwordModalForm) => {
                 if (value) {
-                  if(!flag.current){
-                    passwordModalForm.validateFields(["new_password2"])
+                  if (!flag.current) {
+                    passwordModalForm.validateFields(["new_password2"]);
                   }
-                  if(!isPassword(value)){
-                    if(value.length < 8) {
+                  if (!isPassword(value)) {
+                    if (value.length < 8) {
                       return Promise.reject("密码长度为8到16位");
                     }
                     return Promise.resolve("success");
-                  }else{
+                  } else {
                     return Promise.reject(
                       `密码只支持数字、字母以及常用英文符号`
                     );
@@ -400,19 +445,20 @@ const UserManagement = () => {
             {
               validator: (rule, value, callback, passwordModalForm) => {
                 if (value) {
-                  if(!isPassword(value)){
-                    if(value.length < 8) {
+                  if (!isPassword(value)) {
+                    if (value.length < 8) {
                       return Promise.reject("密码长度为8到16位");
                     }
                     if (
-                      passwordModalForm.getFieldValue().new_password1 === value ||
+                      passwordModalForm.getFieldValue().new_password1 ===
+                        value ||
                       !value
                     ) {
                       return Promise.resolve("success");
                     } else {
                       return Promise.reject("两次密码输入不一致");
                     }
-                  }else{
+                  } else {
                     return Promise.reject(
                       `密码只支持数字、字母以及常用英文符号`
                     );

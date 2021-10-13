@@ -26,6 +26,25 @@ class LoginTest(BaseTest):
     def test_login(self):
         """ 测试用户登录 """
 
+        # 不提供用户名、密码 -> 登录失败
+        resp = self.post(self.login_url, {}).json()
+        self.assertDictEqual(resp, {
+            "code": 1,
+            "message": "Unable to log in with provided credentials.",
+            "data": None,
+        })
+
+        # 用户名、密码为空 -> 登录失败
+        resp = self.post(self.login_url, {
+            "username": "      ",
+            "password": self.default_user.password,
+        }).json()
+        self.assertDictEqual(resp, {
+            "code": 1,
+            "message": "Unable to log in with provided credentials.",
+            "data": None,
+        })
+
         # 用户名错误 -> 登录失败
         resp = self.post(self.login_url, {
             "username": "wrong_user",
@@ -33,7 +52,7 @@ class LoginTest(BaseTest):
         }).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "Unable to log in with provided credentials. ",
+            "message": "Unable to log in with provided credentials.",
             "data": None,
         })
 
@@ -44,7 +63,7 @@ class LoginTest(BaseTest):
         }).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "Unable to log in with provided credentials. ",
+            "message": "Unable to log in with provided credentials.",
             "data": None,
         })
 
@@ -55,7 +74,7 @@ class LoginTest(BaseTest):
         }).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "Unable to log in with provided credentials. ",
+            "message": "Unable to log in with provided credentials.",
             "data": None,
         })
 

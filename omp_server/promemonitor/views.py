@@ -5,6 +5,7 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
 
+from promemonitor.promemonitor_filters import AlertFilter, MyTimeFilter
 from utils.pagination import PageNumberPager
 import logging
 
@@ -25,6 +26,7 @@ from promemonitor.promemonitor_serializers import (
     MaintainSerializer, MonitorAgentRestartSerializer,
     ReceiveAlertSerializer
 )
+from utils.exceptions import OperateError
 
 logger = logging.getLogger('server')
 
@@ -79,6 +81,8 @@ class GrafanaUrlViewSet(ListModelMixin, GenericViewSet):
         asc = True if asc == '0' else False
         ordering = params.pop('ordering', 'date')
         current = grafana_url.explain_prometheus(params)
+        if not current:
+            raise OperateError("prometheus获取数据失败，请检查prometheus状态")
         prometheus_info = sorted(
             current, key=lambda e: e.__getitem__(ordering), reverse=asc)
         prometheus_json = json.dumps(prometheus_info, ensure_ascii=False)
@@ -93,10 +97,13 @@ class ListAlertViewSet(ListModelMixin, GenericViewSet):
     queryset = Alert.objects.all().order_by('id')
     # 分页，过滤，排序
     pagination_class = PageNumberPager
-    filter_backends = (DjangoFilterBackend, OrderingFilter)
-    # filter_class = AlertFilter
-    ordering_fields = ("alert_host_ip", "alert_host_instance_name",
-                       "alert_service_instance_name", "alert_time")
+    filter_backends = (
+        DjangoFilterBackend,
+        OrderingFilter,
+        MyTimeFilter,
+    )
+    filter_class = AlertFilter
+    ordering_fields = ("alert_host_ip", "alert_instance_name", "alert_time")
 
 
 class UpdateAlertViewSet(CreateModelMixin, GenericViewSet):
@@ -128,12 +135,15 @@ class ReceiveAlertViewSet(GenericViewSet, CreateModelMixin):
     serializer_class = ReceiveAlertSerializer
     # 操作信息描述
     post_description = "接收alertmanager告警信息"
+    # 关闭权限、认证设置
+    authentication_classes = ()
+    permission_classes = ()
 
 
 class MonitorAgentRestartView(GenericViewSet, CreateModelMixin):
     """
         create:
-        主机重启Agent接口
+        重启监控Agent接口
     """
     queryset = Host.objects.filter(is_deleted=False)
     serializer_class = MonitorAgentRestartSerializer
@@ -149,12 +159,10 @@ class InstanceNameListView(GenericViewSet, ListModelMixin):
     post_description = "返回主机和服务实例名列表"
 
     def list(self, request, *args, **kwargs):
-        instance_name_dict = dict()
-        host_list = list(Host.objects.all().values_list(
+        alert_instance_name_list = list()
+        host_instance_name_list = list(Host.objects.all().values_list(
             'instance_name', flat=True))
-        print(host_list)
-        service_list = []  # TODO 待应用模型完善
-        instance_name_dict.update({"alert_host_instance_name": host_list})
-        instance_name_dict.update(
-            {"alert_service_instance_name": service_list})
-        return Response(instance_name_dict)
+        service_instance_name_list = []  # TODO 待应用模型完善
+        alert_instance_name_list.append(host_instance_name_list)
+        alert_instance_name_list.append(service_instance_name_list)
+        return Response(alert_instance_name_list)

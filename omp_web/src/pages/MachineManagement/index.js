@@ -465,12 +465,11 @@ const MachineManagement = () => {
             setSelectValue={setSelectValue}
             fetchData={(value) => {
               fetchData(
-                { current: pagination.current, pageSize: pagination.pageSize },
+                { current: 1, pageSize: 10 },
                 { ip: value },
                 pagination.ordering
               );
             }}
-            pagination={pagination}
           />
           <Button
             style={{ marginLeft: 10 }}

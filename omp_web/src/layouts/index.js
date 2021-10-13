@@ -74,7 +74,7 @@ const OmpLayout = (props) => {
   };
 
   const onPathChange = (e) => {
-    console.log(e);
+    //console.log(e);
     if (e.key === history.location.pathname) {
       return;
     }
@@ -176,15 +176,18 @@ const OmpLayout = (props) => {
 
     // 防止在校验进入死循环
   const flag = useRef(null)
-      
+
   // 查询全局维护模式状态
   const queryMaintainState = ()=>{
     fetchGet(apiRequest.environment.queryMaintainState)
     .then((res) => {
-      if (res.data) {
-        reduxDispatch(getMaintenanceChangeAction(res.data.data.length !== 0));
-      }
-    })
+      handleResponse(res, (res) => {
+        //console.log(res)
+        if (res.data) {
+          reduxDispatch(getMaintenanceChangeAction(res.data.length !== 0));
+        }
+      })}
+    )
     .catch((e) => {
       console.log(e);
     })

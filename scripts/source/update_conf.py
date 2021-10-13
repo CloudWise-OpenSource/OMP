@@ -465,7 +465,7 @@ def update_alertmanager():
     RECEIVER = MONITOR_PORT.get('test', 'commonuser')
     EMAIL_SEND_INTERVAL = MONITOR_PORT.get('test', '30m')
     WEBHOOK_URL = MONITOR_PORT.get(
-        'test', 'http://127.0.0.1:19001/api/promemonitor/receive_alert/')
+        'test', 'http://127.0.0.1:19001/api/promemonitor/receiveAlert/')
 
     alertmanager_yml_file = os.path.join(
         alertmanager_path, 'conf', 'alertmanager.yml')

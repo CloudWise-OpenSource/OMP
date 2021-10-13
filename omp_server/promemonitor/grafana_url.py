@@ -21,6 +21,7 @@ class CurlPrometheus(object):
             return json.loads(response.text)
         except Exception as e:
             logger.error("prometheus请求alerts失败：" + str(e))
+            return {"status": "-1"}
 
 
 def explain_prometheus(params):
@@ -77,10 +78,12 @@ def explain_url(explain_info):
     """
     封装dict添加grafana的url
     """
-    monitor_ip = MonitorUrl.objects.filter(name="grafana")
-    grafana_ins = monitor_ip[0].monitor_url if len(
-        monitor_ip) else "127.0.0.1:19013"
-    grafana_url = f"http://{grafana_ins}"
+    # monitor_ip = MonitorUrl.objects.filter(name="grafana")
+    # grafana_ins = monitor_ip[0].monitor_url if len(
+    #     monitor_ip) else "127.0.0.1:19013"
+    # grafana_url = f"http://{grafana_ins}"
+    # 去掉跳转grafana中携带的ip、port
+    grafana_url = ""
     url_dict = {}
     for i in GrafanaMainPage.objects.all():
         url_dict[i.instance_name] = i.instance_url
@@ -91,13 +94,13 @@ def explain_url(explain_info):
             monitor_url = url_dict.get(service_name)
             if monitor_url:
                 instance_info['monitor_url'] = grafana_url + \
-                    monitor_url + f"?var-instance={service_ip}"
+                                               monitor_url + f"?var-instance={service_ip}"
             instance_info['monitor_url'] = grafana_url + url_dict.get(
                 'service', 'noservice') + f"?var-ip={service_ip}&var-app={service_name}"
             instance_info['log_url'] = grafana_url + \
-                url_dict.get('log', 'nolog') + f"?var-app={service_name}"
+                                       url_dict.get('log', 'nolog') + f"?var-app={service_name}"
         else:
             instance_info['monitor_url'] = grafana_url + \
-                url_dict.get('node', 'nohosts') + f"?var-node={service_ip}"
+                                           url_dict.get('node', 'nohosts') + f"?var-node={service_ip}"
             instance_info['log_url'] = None
     return explain_info
