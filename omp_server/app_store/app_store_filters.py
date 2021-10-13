@@ -4,7 +4,9 @@
 import django_filters
 from django_filters.rest_framework import FilterSet
 
-from db_models.models import (Labels, ApplicationHub)
+from db_models.models import (
+    Labels, ApplicationHub, ProductHub
+)
 
 
 class LabelFilter(FilterSet):
@@ -18,12 +20,24 @@ class LabelFilter(FilterSet):
 
 
 class ComponentFilter(FilterSet):
-    """ 组件过滤类 """
+    """ 基础组件过滤类 """
     app_name = django_filters.CharFilter(
-        help_text="应用名称，模糊匹配", field_name="app_name", lookup_expr="icontains")
-    app_type = django_filters.CharFilter(
-        help_text="应用类型名称", field_name="app_labels__label_name", lookup_expr="exact")
+        help_text="基础组件名称，模糊匹配", field_name="app_name", lookup_expr="icontains")
+    type = django_filters.CharFilter(
+        help_text="类型名称", field_name="app_labels__label_name", lookup_expr="exact")
 
     class Meta:
         model = ApplicationHub
-        fields = ("app_name",)
+        fields = ("app_name", "type")
+
+
+class ServiceFilter(FilterSet):
+    """ 应用服务过滤器类 """
+    pro_name = django_filters.CharFilter(
+        help_text="应用服务名称，模糊匹配", field_name="pro_name", lookup_expr="icontains")
+    type = django_filters.CharFilter(
+        help_text="类型名称", field_name="pro_labels__label_name", lookup_expr="exact")
+
+    class Meta:
+        model = ProductHub
+        fields = ("pro_name", "type")
