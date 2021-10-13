@@ -17,6 +17,7 @@ import json
 
 import requests
 from ruamel import yaml
+from ruamel.yaml import YAML
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(os.path.dirname(CURRENT_DIR))
@@ -42,6 +43,8 @@ class Grafana(object):
         self.prometheus_port = prometheus_port
         self.login_url = \
             f"{AGREE}://{self.ip}:{self.port}/proxy/v1/grafana/login"
+        self.login_key = \
+            f"{AGREE}://{self.ip}:{self.port}/proxy/v1/grafana/api/auth/keys"
         self.create_user_url = \
             f"{AGREE}://{self.ip}:{self.port}/api/admin/users"
         self.data_source_url = \
@@ -243,6 +246,32 @@ class Grafana(object):
         )
         return True, "success"
 
+    def grafana_auth(self):
+        """
+         请求grafana获取api_keys
+        """
+        # name 必须是唯一值
+        data = {"name": "jonA", "role": "Admin", "secondsToLive": None}
+        basic_auth = ("admin", "admin")
+
+        res = self.post(
+            url=self.login_key,
+            data=data,
+            auth=basic_auth
+        )
+        api_key = None
+        if res[0]:
+            api_key = res[1].get("key")
+        if api_key:
+            config_path = os.path.join(PROJECT_DIR, "config/omp.yaml")
+            with open(config_path, "r", encoding="utf8") as fp:
+                content = fp.read()
+            my_yaml = yaml.YAML()
+            code = my_yaml.load(content)
+            code["grafana_api_key"] = api_key
+            with open(config_path, "w", encoding="utf8") as fp:
+                my_yaml.dump(code, fp)
+
     def run(self):
         """
         更新入口
@@ -252,6 +281,7 @@ class Grafana(object):
         self.create_data_source()
         self.update_dashboard()
         self.update_user_profile()
+        self.grafana_auth()
 
 
 if __name__ == '__main__':
