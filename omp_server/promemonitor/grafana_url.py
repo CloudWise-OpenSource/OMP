@@ -21,6 +21,7 @@ class CurlPrometheus(object):
             return json.loads(response.text)
         except Exception as e:
             logger.error("prometheus请求alerts失败：" + str(e))
+            return {"status": "-1"}
 
 
 def explain_prometheus(params):
@@ -93,13 +94,13 @@ def explain_url(explain_info):
             monitor_url = url_dict.get(service_name)
             if monitor_url:
                 instance_info['monitor_url'] = grafana_url + \
-                    monitor_url + f"?var-instance={service_ip}"
+                                               monitor_url + f"?var-instance={service_ip}"
             instance_info['monitor_url'] = grafana_url + url_dict.get(
                 'service', 'noservice') + f"?var-ip={service_ip}&var-app={service_name}"
             instance_info['log_url'] = grafana_url + \
-                url_dict.get('log', 'nolog') + f"?var-app={service_name}"
+                                       url_dict.get('log', 'nolog') + f"?var-app={service_name}"
         else:
             instance_info['monitor_url'] = grafana_url + \
-                url_dict.get('node', 'nohosts') + f"?var-node={service_ip}"
+                                           url_dict.get('node', 'nohosts') + f"?var-node={service_ip}"
             instance_info['log_url'] = None
     return explain_info
