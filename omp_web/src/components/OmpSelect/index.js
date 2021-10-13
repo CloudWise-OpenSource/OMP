@@ -1,5 +1,5 @@
 import { Select } from "antd";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 const OmpSelect = ({
   searchLoading,
@@ -13,6 +13,13 @@ const OmpSelect = ({
   //select 的onblur函数拿不到最新的search value,使用useref存(是最新的，但是因为失去焦点时会自动触发清空search，还是得使用ref存)
   const searchValueRef = useRef(null);
   
+  useEffect(()=>{
+    if(!selectValue){
+      searchValueRef.current = "";
+      setSearchValue();
+    }
+  },[selectValue])
+
   return (
     <Select
       allowClear

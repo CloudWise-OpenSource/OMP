@@ -4,7 +4,7 @@ import { FilterFilled } from "@ant-design/icons";
 import OmpTableFilter from "@/components/OmpTable/components/OmpTableFilter";
 import moment from "moment";
 
-const getColumnsConfig = (queryRequest) => {
+const getColumnsConfig = (queryRequest, setShowIframe, updateAlertRead ) => {
   return [
     {
       title: "实例名称",
@@ -17,15 +17,13 @@ const getColumnsConfig = (queryRequest) => {
       sorter: (a, b) => a.alert_instance_name - b.alert_instance_name,
       sortDirections: ["descend", "ascend"],
       render: (text, record) => {
-          return (
-            <Tooltip title={text}>
-              <Badge dot={record.is_read === 0} offset={[5, 2]}>
-                {record.alert_instance_name
-                  ? record.alert_instance_name
-                  : "-"}
-              </Badge>
-            </Tooltip>
-          );
+        return (
+          <Tooltip title={text}>
+            <Badge dot={record.is_read === 0} offset={[5, 2]}>
+              {record.alert_instance_name ? record.alert_instance_name : "-"}
+            </Badge>
+          </Tooltip>
+        );
       },
     },
     {
@@ -48,14 +46,17 @@ const getColumnsConfig = (queryRequest) => {
       //ellipsis: true,
       //width:120,
       usefilter: true,
-      queryRequest:queryRequest,
-      filterMenuList: [{
-        value:"critical",
-        text:"严重"
-      },{
-        value:"warning",
-        text:"警告"
-      }],
+      queryRequest: queryRequest,
+      filterMenuList: [
+        {
+          value: "critical",
+          text: "严重",
+        },
+        {
+          value: "warning",
+          text: "警告",
+        },
+      ],
       render: (text) => {
         switch (text) {
           case "critical":
@@ -72,14 +73,17 @@ const getColumnsConfig = (queryRequest) => {
       key: "alert_type",
       dataIndex: "alert_type",
       usefilter: true,
-      queryRequest:queryRequest,
-      filterMenuList: [{
-        value:"service",
-        text:"服务"
-      },{
-        value:"host",
-        text:"主机"
-      }],
+      queryRequest: queryRequest,
+      filterMenuList: [
+        {
+          value: "service",
+          text: "服务",
+        },
+        {
+          value: "host",
+          text: "主机",
+        },
+      ],
       align: "center",
       //ellipsis: true,
       width: 150,
@@ -130,8 +134,47 @@ const getColumnsConfig = (queryRequest) => {
       render: function renderFunc(text, record, index) {
         return (
           <div style={{ display: "flex", justifyContent: "space-around" }}>
-            <a>监控</a>
-            <a>日志</a>
+            {record.monitor_path ? (
+              <a
+                onClick={() => {
+                  record.is_read == 0 && updateAlertRead([record.id])
+                  setShowIframe({
+                    isOpen: true,
+                    src: record.monitor_path,
+                    record: {
+                      ...record,
+                      ip: record.alert_host_ip,
+                    },
+                    isLog: false,
+                  });
+                }}
+              >
+                监控
+              </a>
+            ) : (
+              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
+            )}
+
+            {record.monitor_log ? (
+              <a
+                onClick={() => {
+                  record.is_read == 0 && updateAlertRead([record.id])
+                  setShowIframe({
+                    isOpen: true,
+                    src: record.monitor_log,
+                    record: {
+                      ...record,
+                      ip: record.alert_host_ip,
+                    },
+                    isLog: false,
+                  });
+                }}
+              >
+                日志
+              </a>
+            ) : (
+              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>日志</span>
+            )}
           </div>
         );
       },

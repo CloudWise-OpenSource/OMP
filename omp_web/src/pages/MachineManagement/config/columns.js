@@ -578,19 +578,24 @@ const getColumnsConfig = (
             }}
             style={{ display: "flex", justifyContent: "space-around" }}
           >
-            <a
-              onClick={() => {
-                setShowIframe({
-                  isOpen: true,
-                  src: record.monitor_url,
-                  // src: "http://10.0.7.146:19001/proxy/v1/grafana/d/9CWBz0bik/zhu-ji-xin-xi-mian-ban?var-node=10.0.7.146",
-                  record: record,
-                  isLog: false,
-                });
-              }}
-            >
-              监控
-            </a>
+            {record.monitor_url ? (
+              <a
+                onClick={() => {
+                  setShowIframe({
+                    isOpen: true,
+                    src: record.monitor_url,
+                    // src: "http://10.0.7.146:19001/proxy/v1/grafana/d/9CWBz0bik/zhu-ji-xin-xi-mian-ban?var-node=10.0.7.146",
+                    record: record,
+                    isLog: false,
+                  });
+                }}
+              >
+                监控
+              </a>
+            ) : (
+              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
+            )}
+
             <Dropdown
               arrow
               overlay={renderMenu(
