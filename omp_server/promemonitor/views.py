@@ -132,12 +132,15 @@ class ReceiveAlertViewSet(GenericViewSet, CreateModelMixin):
     serializer_class = ReceiveAlertSerializer
     # 操作信息描述
     post_description = "接收alertmanager告警信息"
+    # 关闭权限、认证设置
+    authentication_classes = ()
+    permission_classes = ()
 
 
 class MonitorAgentRestartView(GenericViewSet, CreateModelMixin):
     """
         create:
-        主机重启Agent接口
+        重启监控Agent接口
     """
     queryset = Host.objects.filter(is_deleted=False)
     serializer_class = MonitorAgentRestartSerializer
