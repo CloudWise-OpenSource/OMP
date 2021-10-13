@@ -2,7 +2,7 @@
 用户视图相关函数
 """
 import datetime
-from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import (
@@ -81,25 +81,26 @@ class JwtAPIView(JSONWebTokenAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
 
-        if serializer.is_valid():
-            user = serializer.object.get("user") or request.user
-            token = serializer.object.get("token")
-            response_data = api_settings.JWT_RESPONSE_PAYLOAD_HANDLER(
-                token, user, request)
-            response = Response(response_data)
-            if api_settings.JWT_AUTH_COOKIE:
-                # remember 取值 True，则 cookie 过期时间为 7 天
-                expiration_time = api_settings.JWT_EXPIRATION_DELTA
-                if serializer.validated_data.get("remember"):
-                    expiration_time = datetime.timedelta(days=7)
-                expiration = (datetime.datetime.utcnow() + expiration_time)
-                response.set_cookie(
-                    api_settings.JWT_AUTH_COOKIE,
-                    token,
-                    expires=expiration,
-                )
-            return response
-        return Response(serializer.errors, status=status.HTTP_200_OK)
+        if not serializer.is_valid():
+            raise ValidationError(
+                "Unable to log in with provided credentials.")
+        user = serializer.object.get("user") or request.user
+        token = serializer.object.get("token")
+        response_data = api_settings.JWT_RESPONSE_PAYLOAD_HANDLER(
+            token, user, request)
+        response = Response(response_data)
+        if api_settings.JWT_AUTH_COOKIE:
+            # remember 取值 True，则 cookie 过期时间为 7 天
+            expiration_time = api_settings.JWT_EXPIRATION_DELTA
+            if serializer.validated_data.get("remember"):
+                expiration_time = datetime.timedelta(days=7)
+            expiration = (datetime.datetime.utcnow() + expiration_time)
+            response.set_cookie(
+                api_settings.JWT_AUTH_COOKIE,
+                token,
+                expires=expiration,
+            )
+        return response
 
 
 class UserUpdatePasswordView(GenericViewSet, CreateModelMixin):
