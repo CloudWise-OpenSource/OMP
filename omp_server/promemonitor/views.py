@@ -100,8 +100,7 @@ class ListAlertViewSet(ListModelMixin, GenericViewSet):
         MyTimeFilter,
     )
     filter_class = AlertFilter
-    ordering_fields = ("alert_host_ip", "alert_host_instance_name",
-                       "alert_service_instance_name", "alert_time")
+    ordering_fields = ("alert_host_ip", "alert_instance_name", "alert_time")
 
 
 class UpdateAlertViewSet(CreateModelMixin, GenericViewSet):
@@ -154,11 +153,10 @@ class InstanceNameListView(GenericViewSet, ListModelMixin):
     post_description = "返回主机和服务实例名列表"
 
     def list(self, request, *args, **kwargs):
-        instance_name_dict = dict()
-        host_list = list(Host.objects.all().values_list(
+        alert_instance_name_list = list()
+        host_instance_name_list = list(Host.objects.all().values_list(
             'instance_name', flat=True))
-        service_list = []  # TODO 待应用模型完善
-        instance_name_dict.update({"alert_host_instance_name": host_list})
-        instance_name_dict.update(
-            {"alert_service_instance_name": service_list})
-        return Response(instance_name_dict)
+        service_instance_name_list = []  # TODO 待应用模型完善
+        alert_instance_name_list.append(host_instance_name_list)
+        alert_instance_name_list.append(service_instance_name_list)
+        return Response(alert_instance_name_list)
