@@ -92,6 +92,7 @@ class Prometheus:
             return host_list
         except Exception as e:
             logger.error(e)
+            logger.error('获取主机CPU使用率失败！')
             return host_list
 
     def get_host_mem_usage(self, host_list):
@@ -132,6 +133,7 @@ class Prometheus:
             return host_list
         except Exception as e:
             logger.error(e)
+            logger.error('获取主机内存使用率失败！')
             return host_list
 
     def get_host_root_disk_usage(self, host_list):
@@ -175,6 +177,7 @@ class Prometheus:
             return host_list
         except Exception as e:
             logger.error(e)
+            logger.error('获取主机磁盘根分区使用率失败！')
             return host_list
 
     def get_host_data_disk_usage(self, host_list):
@@ -223,6 +226,7 @@ class Prometheus:
                 continue
             except Exception as e:
                 logger.error(e)
+                logger.error('获取主机磁盘数据分区使用率失败！')
                 continue
         return host_list
 
