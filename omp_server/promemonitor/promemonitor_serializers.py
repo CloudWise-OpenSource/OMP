@@ -220,10 +220,8 @@ class ReceiveAlertSerializer(Serializer):
                 is_read=0,
                 alert_type=alert_info.get('alert_type'),
                 alert_host_ip=alert_info.get('alert_host_ip'),
-                alert_host_instance_name=alert_info.get(
-                    'alert_host_instance_name'),
                 alert_service_name=alert_info.get('alert_service_name'),
-                alert_service_instance_name='',  # TODO 暂时拿不到值
+                alert_instance_name=alert_info.get('alert_instance_name'),
                 alert_service_type='',  # TODO 暂时拿不到值
                 alert_level=alert_info.get('alert_level'),
                 alert_describe=alert_info.get('alert_describe'),
