@@ -2,13 +2,14 @@
 应用商店相关视图
 """
 from rest_framework.viewsets import GenericViewSet
-from rest_framework.mixins import ListModelMixin
+from rest_framework.mixins import ListModelMixin, CreateModelMixin
 from rest_framework.response import Response
 
 from django_filters.rest_framework.backends import DjangoFilterBackend
 
-from db_models.models import Labels
+from db_models.models import Labels, UploadPackageHistory
 from app_store.app_store_filters import LabelFilter
+from app_store.app_store_serializers import UploadPackageSerializer
 
 
 class LabelListView(GenericViewSet, ListModelMixin):
@@ -43,3 +44,15 @@ class ServiceListView(GenericViewSet, ListModelMixin):
         查询所有服务
     """
     pass
+
+
+class UploadPackageView(GenericViewSet, CreateModelMixin):
+    """
+    create
+    上传安装包
+    """
+    queryset = UploadPackageHistory.objects.all()
+    serializer_class = UploadPackageSerializer
+
+    # 操作信息描述
+    post_description = "上传安装包"

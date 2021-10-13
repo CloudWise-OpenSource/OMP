@@ -10,6 +10,8 @@
 from rest_framework.routers import DefaultRouter
 
 from app_store.views import LabelListView
+from app_store.views import UploadPackageView
 
 router = DefaultRouter()
 router.register("labels", LabelListView, basename="labels")
+router.register("upload", UploadPackageView, basename="upload")
