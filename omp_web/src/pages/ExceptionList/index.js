@@ -43,48 +43,11 @@ const ExceptionList = () => {
 
   function fetchData(
     pageParams = { current: 1, pageSize: 10 },
-    searchParams,
+    searchParams = {},
     ordering
   ) {
-    setDataSource([
-      {
-        type: "host",
-        ip: "10.0.3.72",
-        instance_name: "hosts1",
-        severity: "critical",
-        description: "实例 10.0.3.72 已宕机超过1分钟",
-        date: "2021-09-27 07:08:05",
-        monitor_url:
-          "http://127.0.0.1:19013/proxy/v1/grafana/d/9CWBz0bik/zhu-ji-xin-xi-mian-ban?var-node=10.0.3.72",
-        log_url: null,
-      },
-      {
-        type: "host",
-        ip: "10.0.3.73",
-        instance_name: null,
-        severity: "critical",
-        description: "实例 10.0.3.71 已宕机超过1分钟",
-        date: "2021-09-27 07:07:24",
-        monitor_url:
-          "http://127.0.0.1:19013/proxy/v1/grafana/d/9CWBz0bik/zhu-ji-xin-xi-mian-ban?var-node=10.0.3.73",
-        log_url: null,
-      },
-      {
-        type: "service",
-        ip: "10.0.7.164",
-        instance_name: "dolaLogMonitorServer",
-        severity: "critical",
-        description:
-          "主机 10.0.7.164 中的 服务 dolaLogMonitorServer 已经down掉超过一分钟.",
-        date: "2021-06-26 07:23:42",
-        monitor_url:
-          "http://127.0.0.1:19013/proxy/v1/grafana/d/9CSxoPAGz/fu-wu-zhuang-tai-xin-xi-mian-ban?var-ip=10.0.7.164&var-app=dolaLogMonitorServer",
-        log_url:
-          "http://127.0.0.1:19013/proxy/v1/grafana/d/liz0yRCZz/applogs?var-app=dolaLogMonitorServer",
-      },
-    ]);
     setLoading(true);
-    fetchGet("/api/promemonitor/listAlert/", {
+    fetchGet( apiRequest.Alert.listAlert, {
       params: {
         page: pageParams.current,
         size: pageParams.pageSize,
@@ -110,6 +73,7 @@ const ExceptionList = () => {
       .finally(() => {
         setLoading(false);
         fetchIPlist();
+        fetchNameList()
       });
   }
 
@@ -127,6 +91,49 @@ const ExceptionList = () => {
       });
   };
 
+  const fetchNameList = ()=> {
+    setSearchLoading(true);
+    fetchGet(apiRequest.Alert.instanceNameList)
+      .then((res) => {
+        handleResponse(res, (res) => {
+          //setIpListSource(res.data);
+          console.log(res)
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setSearchLoading(false);
+      });
+  }
+
+  const updateAlertRead = () => {
+    setLoading(true);
+    fetchPost( apiRequest.Alert.updateAlert, {
+      body: {
+        ids:Object.keys(checkedList)
+        .map((k) => checkedList[k])
+        .flat(1)
+        .map((item) => item.id),
+        is_read:1
+      },
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          message.success("已读成功")
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setCheckedList({})
+        setLoading(false);
+        fetchData(
+          { current: pagination.current, pageSize: pagination.pageSize },
+          { ...pagination.searchParams },
+          pagination.ordering
+        );
+      });
+  }
+
   useEffect(() => {
     fetchData(pagination);
   }, []);
@@ -134,16 +141,9 @@ const ExceptionList = () => {
   return (
     <OmpContentWrapper>
       <div style={{ display: "flex", justifyContent:"space-between" }}>
-        <Button
-          type="primary"
-          onClick={() => {
-            setAddMoadlVisible(true);
-          }}
-        >
-          批量已读
-        </Button>
+      <div />
         <div style={{display:"flex"}}>
-        <OmpDatePicker/>
+  
         <div style={{ display: "flex", marginLeft: "10px" }}>
           <Input.Group compact style={{ display: "flex"}}> 
             <Select
@@ -160,7 +160,13 @@ const ExceptionList = () => {
                 selectValue={selectValue}
                 listSource={ipListSource}
                 setSelectValue={setSelectValue}
-                fetchData={fetchData}
+                fetchData={(value)=>{
+                  fetchData(
+                    { current: pagination.current, pageSize: pagination.pageSize  },
+                    { ...pagination.searchParams, alert_host_ip: value },
+                    pagination.ordering
+                  );
+                }}
                 pagination={pagination}
               />
             )}
@@ -175,7 +181,7 @@ const ExceptionList = () => {
               //   dispatch(refreshTime());
               fetchData(
                 { current: pagination.current, pageSize: pagination.pageSize },
-                { ip: selectValue },
+                { ...pagination.searchParams },
                 pagination.ordering
               );
             }}
@@ -195,7 +201,7 @@ const ExceptionList = () => {
       >
         <OmpTable
           loading={loading}
-          scroll={{ x: 1400 }}
+          //scroll={{ x: 1400 }}
           onChange={(e, filters, sorter) => {
             let ordering = sorter.order
               ? `${sorter.order == "descend" ? "" : "-"}${sorter.columnKey}`
@@ -204,7 +210,14 @@ const ExceptionList = () => {
               fetchData(e, pagination.searchParams, ordering);
             }, 200);
           }}
-          columns={getColumnsConfig()}
+          columns={getColumnsConfig((params)=>{
+            // console.log(pagination.searchParams)
+            fetchData(
+              { current: 1, pageSize: 10 },
+              { ...pagination.searchParams, ...params },
+              pagination.ordering
+            );
+          })}
           dataSource={dataSource}
           pagination={{
             showSizeChanger: true,
@@ -238,7 +251,7 @@ const ExceptionList = () => {
             ),
             ...pagination,
           }}
-          rowKey={(record) => record.ip}
+          rowKey={(record) => record.id}
           checkedState={[checkedList, setCheckedList]}
         />
       </div>
