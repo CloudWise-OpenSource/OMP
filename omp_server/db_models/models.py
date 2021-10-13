@@ -182,12 +182,10 @@ class Alert(models.Model):
         "告警类型", max_length=32, default="", help_text="告警类型，主机host，服务service")
     alert_host_ip = models.CharField(
         "告警主机ip", max_length=64, default="", help_text="告警来源主机ip")
-    alert_host_instance_name = models.CharField(
-        "告警主机实例名称", max_length=256, default="", help_text="告警主机实例名称")
     alert_service_name = models.CharField(
         "告警服务名称", max_length=128, default="", help_text="服务类告警中的服务名称")
-    alert_service_instance_name = models.CharField(
-        "告警服务实例名称", max_length=128, default="", help_text="告警服务实例名称")
+    alert_instance_name = models.CharField(
+        "告警实例名称", max_length=128, default="", help_text="告警实例名称")
     alert_service_type = models.CharField(
         "告警服务类型", max_length=128, default="", help_text="服务所属类型")
     alert_level = models.CharField(

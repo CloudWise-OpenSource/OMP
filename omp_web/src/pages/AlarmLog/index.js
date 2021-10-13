@@ -3,7 +3,7 @@ import {
   OmpTable,
   OmpMessageModal,
   OmpSelect,
-  OmpDatePicker
+  OmpDatePicker,
 } from "@/components";
 import { Button, Select, message, Menu, Dropdown, Modal, Input } from "antd";
 import { useState, useEffect, useRef } from "react";
@@ -13,6 +13,7 @@ import { apiRequest } from "@/config/requestApi";
 //import updata from "@/store_global/globalStore";
 import { useDispatch } from "react-redux";
 import getColumnsConfig from "./config/columns";
+import { SearchOutlined } from "@ant-design/icons";
 
 const AlarmLog = () => {
   //console.log(location.state, "location.state");
@@ -29,6 +30,8 @@ const AlarmLog = () => {
   const [ipListSource, setIpListSource] = useState([]);
 
   const [selectValue, setSelectValue] = useState();
+
+  const [instanceSelectValue, setInstanceSelectValue] = useState();
 
   const [pagination, setPagination] = useState({
     current: 1,
@@ -47,18 +50,20 @@ const AlarmLog = () => {
     ordering
   ) {
     setLoading(true);
-    fetchGet( apiRequest.Alert.listAlert, {
+    fetchGet(apiRequest.Alert.listAlert, {
       params: {
         page: pageParams.current,
         size: pageParams.pageSize,
         ordering: ordering ? ordering : null,
         ...searchParams,
+        //alert_instance_name:"mysql",
+        // start_alert_time:"2021-06-24 16:20:01",
+        // end_alert_time:"2021-06-24 16:20:03"
       },
     })
       .then((res) => {
         handleResponse(res, (res) => {
           setDataSource(res.data.results);
-         
           setPagination({
             ...pagination,
             total: res.data.count,
@@ -73,7 +78,7 @@ const AlarmLog = () => {
       .finally(() => {
         setLoading(false);
         fetchIPlist();
-        fetchNameList()
+        //fetchNameList();
       });
   }
 
@@ -91,40 +96,40 @@ const AlarmLog = () => {
       });
   };
 
-  const fetchNameList = ()=> {
-    setSearchLoading(true);
-    fetchGet(apiRequest.Alert.instanceNameList)
-      .then((res) => {
-        handleResponse(res, (res) => {
-          //setIpListSource(res.data);
-          console.log(res)
-        });
-      })
-      .catch((e) => console.log(e))
-      .finally(() => {
-        setSearchLoading(false);
-      });
-  }
+  // const fetchNameList = () => {
+  //   setSearchLoading(true);
+  //   fetchGet(apiRequest.Alert.instanceNameList)
+  //     .then((res) => {
+  //       handleResponse(res, (res) => {
+  //         //setIpListSource(res.data);
+  //         console.log(res);
+  //       });
+  //     })
+  //     .catch((e) => console.log(e))
+  //     .finally(() => {
+  //       setSearchLoading(false);
+  //     });
+  // };
 
   const updateAlertRead = () => {
     setLoading(true);
-    fetchPost( apiRequest.Alert.updateAlert, {
+    fetchPost(apiRequest.Alert.updateAlert, {
       body: {
-        ids:Object.keys(checkedList)
-        .map((k) => checkedList[k])
-        .flat(1)
-        .map((item) => item.id),
-        is_read:1
+        ids: Object.keys(checkedList)
+          .map((k) => checkedList[k])
+          .flat(1)
+          .map((item) => item.id),
+        is_read: 1,
       },
     })
       .then((res) => {
         handleResponse(res, (res) => {
-          message.success("已读成功")
+          message.success("已读成功");
         });
       })
       .catch((e) => console.log(e))
       .finally(() => {
-        setCheckedList({})
+        setCheckedList({});
         setLoading(false);
         fetchData(
           { current: pagination.current, pageSize: pagination.pageSize },
@@ -132,77 +137,136 @@ const AlarmLog = () => {
           pagination.ordering
         );
       });
-  }
+  };
 
   useEffect(() => {
     fetchData(pagination);
   }, []);
 
-    console.log(Object.keys(checkedList).length == 0)
-
   return (
     <OmpContentWrapper>
-      <div style={{ display: "flex", justifyContent:"space-between" }}>
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
         <Button
           type="primary"
-          disabled={Object.keys(checkedList)
-            .map((k) => checkedList[k])
-            .flat(1)
-            .map((item) => item.id).length == 0}
+          disabled={
+            Object.keys(checkedList)
+              .map((k) => checkedList[k])
+              .flat(1)
+              .map((item) => item.id).length == 0
+          }
           onClick={() => {
-            updateAlertRead()
+            updateAlertRead();
           }}
         >
           批量已读
         </Button>
-        <div style={{display:"flex"}}>
-        <OmpDatePicker/>
-        <div style={{ display: "flex", marginLeft: "10px" }}>
-          <Input.Group compact style={{ display: "flex"}}> 
-            <Select
-              value={labelControl}
-              style={{ width: 100 }}
-              onChange={(e) => setLabelControl(e)}
+        <div style={{ display: "flex" }}>
+          <OmpDatePicker />
+          <div style={{ display: "flex", marginLeft: "10px" }}>
+            <Input.Group compact style={{ display: "flex" }}>
+              <Select
+                value={labelControl}
+                style={{ width: 100 }}
+                onChange={(e) => setLabelControl(e)}
+              >
+                <Select.Option value="ip"> IP地址</Select.Option>
+                <Select.Option value="instance_name">实例名称</Select.Option>
+              </Select>
+              {labelControl === "ip" && (
+                <OmpSelect
+                  searchLoading={searchLoading}
+                  selectValue={selectValue}
+                  listSource={ipListSource}
+                  setSelectValue={setSelectValue}
+                  fetchData={(value) => {
+                    fetchData(
+                      {
+                        current: 1,
+                        pageSize: 10,
+                      },
+                      { ...pagination.searchParams, alert_host_ip: value },
+                      pagination.ordering
+                    );
+                  }}
+                  pagination={pagination}
+                />
+              )}
+              {labelControl === "instance_name" && (
+                <Input
+                  placeholder="输入实例名称"
+                  style={{ width: 200 }}
+                  allowClear
+                  value={instanceSelectValue}
+                  onChange={(e) => {
+                    setInstanceSelectValue(e.target.value);
+                    if (!e.target.value) {
+                      fetchData(
+                        {
+                          current: 1,
+                          pageSize: 10,
+                        },
+                        {
+                          ...pagination.searchParams,
+                          alert_instance_name: null,
+                        },
+                        pagination.ordering
+                      );
+                    }
+                  }}
+                  onBlur={() => {
+                    fetchData(
+                      {
+                        current: 1,
+                        pageSize: 10,
+                      },
+                      {
+                        ...pagination.searchParams,
+                        alert_instance_name: instanceSelectValue,
+                      },
+                      pagination.ordering
+                    );
+                  }}
+                  onPressEnter={() => {
+                    fetchData(
+                      {
+                        current: 1,
+                        pageSize: 10,
+                      },
+                      {
+                        ...pagination.searchParams,
+                        alert_instance_name: instanceSelectValue,
+                      },
+                      pagination.ordering
+                    );
+                  }}
+                  suffix={
+                    !instanceSelectValue && (
+                      <SearchOutlined
+                        style={{ fontSize: 12, color: "#b6b6b6" }}
+                      />
+                    )
+                  }
+                />
+              )}
+            </Input.Group>
+
+            <Button
+              style={{ marginLeft: 10 }}
+              onClick={() => {
+                //   dispatch(refreshTime());
+                fetchData(
+                  {
+                    current: pagination.current,
+                    pageSize: pagination.pageSize,
+                  },
+                  { ...pagination.searchParams },
+                  pagination.ordering
+                );
+              }}
             >
-              <Select.Option value="ip"> IP地址</Select.Option>
-              <Select.Option value="instance_name">实例名称</Select.Option>
-            </Select>
-            {labelControl === "ip" && (
-              <OmpSelect
-                searchLoading={searchLoading}
-                selectValue={selectValue}
-                listSource={ipListSource}
-                setSelectValue={setSelectValue}
-                fetchData={(value)=>{
-                  fetchData(
-                    { current: pagination.current, pageSize: pagination.pageSize  },
-                    { ...pagination.searchParams, alert_host_ip: value },
-                    pagination.ordering
-                  );
-                }}
-                pagination={pagination}
-              />
-            )}
-             {labelControl === "instance_name" && (
-              <Input placeholder="输入实例名称" style={{ width: 200 }}/>
-            )}
-          </Input.Group>
-
-          <Button
-            style={{ marginLeft: 10 }}
-            onClick={() => {
-              //   dispatch(refreshTime());
-              fetchData(
-                { current: pagination.current, pageSize: pagination.pageSize },
-                { ...pagination.searchParams },
-                pagination.ordering
-              );
-            }}
-          >
-            刷新
-          </Button>
-        </div>
-
+              刷新
+            </Button>
+          </div>
         </div>
       </div>
       <div
@@ -223,8 +287,8 @@ const AlarmLog = () => {
               fetchData(e, pagination.searchParams, ordering);
             }, 200);
           }}
-          columns={getColumnsConfig((params)=>{
-            console.log(pagination.searchParams)
+          columns={getColumnsConfig((params) => {
+            // console.log(pagination.searchParams)
             fetchData(
               { current: pagination.current, pageSize: pagination.pageSize },
               { ...pagination.searchParams, ...params },

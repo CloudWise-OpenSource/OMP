@@ -7,7 +7,6 @@ const OmpSelect = ({
   listSource,
   setSelectValue,
   fetchData,
-  pagination,
 }) => {
   const [searchValue, setSearchValue] = useState("");
 

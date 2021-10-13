@@ -11,13 +11,11 @@ from rest_framework.filters import BaseFilterBackend
 
 
 class AlertFilter(FilterSet):
-    """ 主机过滤类 """
+    """ Alert过滤类 """
     alert_host_ip = django_filters.CharFilter(
         help_text="ALERT_HOST_IP，模糊匹配", field_name="alert_host_ip", lookup_expr="icontains")
-    alert_host_instance_name = django_filters.CharFilter(
-        help_text="ALERT_HOST_INSTANCE_NAME，模糊匹配", field_name="alert_host_instance_name", lookup_expr="icontains")
-    alert_service_instance_name = django_filters.CharFilter(
-        help_text="ALERT_SERVICE_INSTANCE_NAME，模糊匹配", field_name="alert_service_instance_name", lookup_expr="icontains")
+    alert_instance_name = django_filters.CharFilter(
+        help_text="ALERT_INSTANCE_NAME，模糊匹配", field_name="alert_instance_name", lookup_expr="icontains")
     alert_level = django_filters.CharFilter(
         help_text="ALERT_LEVEL，模糊匹配", field_name="alert_level", lookup_expr="icontains")
     alert_type = django_filters.CharFilter(
@@ -26,7 +24,7 @@ class AlertFilter(FilterSet):
     class Meta:
         model = Alert
         fields = (
-            "alert_host_ip", "alert_host_instance_name", "alert_service_instance_name",
+            "alert_host_ip", "alert_instance_name", "alert_instance_name",
             "alert_level", "alert_type"
         )
 
@@ -39,8 +37,8 @@ class MyTimeFilter(BaseFilterBackend):
         if (not start_alert_time) or (not end_alert_time):
             return queryset.all()
         try:
-            time.strptime(start_alert_time, "%Y-%m-%d")
-            time.strptime(end_alert_time, "%Y-%m-%d")
+            time.strptime(start_alert_time, "%Y-%m-%d %H:%M:%S")
+            time.strptime(end_alert_time, "%Y-%m-%d %H:%M:%S")
         except ValueError:
             return queryset.all()
         return queryset.filter(alert_time__range=(start_alert_time, end_alert_time))
