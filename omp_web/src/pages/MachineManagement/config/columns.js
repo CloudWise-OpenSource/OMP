@@ -492,11 +492,11 @@ const getColumnsConfig = (
     {
       title: "数据分区使用率",
       width: 130,
-      key: "data_disk_usag",
-      dataIndex: "data_disk_usag",
+      key: "data_disk_usage",
+      dataIndex: "data_disk_usage",
       align: "center",
       //ellipsis: true,
-      sorter: (a, b) => a.data_disk_usag - b.data_disk_usag,
+      sorter: (a, b) => a.data_disk_usage - b.data_disk_usage,
       sortDirections: ["descend", "ascend"],
       render: (text, record) => {
         let str = nonEmptyProcessing(text);

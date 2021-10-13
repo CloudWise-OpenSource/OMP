@@ -53,7 +53,11 @@ export const apiRequest = {
     // 告警记录已读
     updateAlert: "/api/promemonitor/updateAlert/",
     // 告警记录筛选实例名称
-    instanceNameList: "/api/promemonitor/instanceNameList/"
+    instanceNameList: "/api/promemonitor/instanceNameList/",
+  },
+  ExceptionList: {
+    // 异常清单列表查询
+    exceptionList: "/api/promemonitor/grafanaurl/",
   },
   // ========================================================
   productsManagement: {
