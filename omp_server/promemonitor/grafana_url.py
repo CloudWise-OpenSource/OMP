@@ -77,10 +77,12 @@ def explain_url(explain_info):
     """
     封装dict添加grafana的url
     """
-    monitor_ip = MonitorUrl.objects.filter(name="grafana")
-    grafana_ins = monitor_ip[0].monitor_url if len(
-        monitor_ip) else "127.0.0.1:19013"
-    grafana_url = f"http://{grafana_ins}"
+    # monitor_ip = MonitorUrl.objects.filter(name="grafana")
+    # grafana_ins = monitor_ip[0].monitor_url if len(
+    #     monitor_ip) else "127.0.0.1:19013"
+    # grafana_url = f"http://{grafana_ins}"
+    # 去掉跳转grafana中携带的ip、port
+    grafana_url = ""
     url_dict = {}
     for i in GrafanaMainPage.objects.all():
         url_dict[i.instance_name] = i.instance_url
