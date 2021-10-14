@@ -85,7 +85,7 @@ class GrafanaUrlViewSet(ListModelMixin, GenericViewSet):
         asc = True if asc == '0' else False
         ordering = params.pop('ordering', 'date')
         current = grafana_url.explain_prometheus(params)
-        if not current:
+        if current == "error":
             raise OperateError("prometheus获取数据失败，请检查prometheus状态")
         prometheus_info = sorted(
             current, key=lambda e: e.__getitem__(ordering), reverse=asc)

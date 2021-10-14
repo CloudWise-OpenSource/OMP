@@ -55,6 +55,7 @@ def explain_prometheus(params):
         return prometheus_json
     else:
         logger.error("prometheus请求alerts失败：" + str(r))
+        return "error"
 
 
 def explain_filter(prometheus_json, params):
