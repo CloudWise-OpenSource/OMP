@@ -37,6 +37,9 @@ def _validation_error_message(exc, response):
         err_message_ls = []
         for k, v in data.items():
             if isinstance(v, list):
+                ip_err = "Enter a valid IPv4 or IPv6 address."
+                if ip_err in v:
+                    v[v.index(ip_err)] = "IP格式不合法"
                 err_message_ls.append("; ".join(v))
             else:
                 err_message_ls.append(v)

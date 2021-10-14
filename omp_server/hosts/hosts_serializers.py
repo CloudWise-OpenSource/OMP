@@ -49,12 +49,19 @@ class HostSerializer(ModelSerializer):
     ip = serializers.IPAddressField(
         help_text="IP地址",
         required=True,
-        error_messages={"required": "必须包含[ip]字段"})
+        error_messages={
+            "invalid": "vumvumvum",
+            "required": "必须包含[ip]字段",
+        })
     port = serializers.IntegerField(
         help_text="端口",
         required=True,
         min_value=1, max_value=65535,
-        error_messages={"required": "必须包含[port]字段"})
+        error_messages={
+            "required": "必须包含[port]字段",
+            "max_value": "端口超出指定范围",
+            "min_value": "端口超出指定范围",
+        })
     username = serializers.CharField(
         help_text="用户名",
         required=True, max_length=16,
@@ -128,6 +135,13 @@ class HostSerializer(ModelSerializer):
             if dir_name != "" and dir_name.startswith("-"):
                 raise ValidationError("数据分区目录不能以'-'开头")
         return data_folder
+
+    def validate_operate_system(self, operate_system):
+        """ 校验操作系统是否合法 """
+        operate_ls = ("CentOS", "RedHat")
+        if operate_system not in operate_ls:
+            raise ValidationError(f"操作系统支持{'/'.join(operate_ls)}")
+        return operate_system
 
     def validate(self, attrs):
         """ 主机信息验证 """
@@ -357,9 +371,13 @@ class HostBatchValidateSerializer(Serializer):
         host_serializer = HostSerializer(data=host_data)
         if host_serializer.is_valid():
             return "correct", host_data
+        print(host_serializer.errors)
         err_ls = []
         for k, v in host_serializer.errors.items():
             err_ls.extend(v)
+        ip_err = "Enter a valid IPv4 or IPv6 address."
+        if ip_err in err_ls:
+            err_ls[err_ls.index(ip_err)] = "IP格式不合法"
         host_data["validate_error"] = "; ".join(err_ls)
         return "error", host_data
 
