@@ -14,8 +14,10 @@ import { apiRequest } from "@/config/requestApi";
 import getColumnsConfig from "./config/columns";
 import { SearchOutlined } from "@ant-design/icons";
 import moment from "moment";
+import { useHistory } from "react-router-dom";
 
 const AlarmLog = () => {
+  const history = useHistory();
   const [loading, setLoading] = useState(false);
 
   const [searchLoading, setSearchLoading] = useState(false);
@@ -344,7 +346,8 @@ const AlarmLog = () => {
               pagination.ordering
             );
           },setShowIframe,
-            updateAlertRead)}
+            updateAlertRead,
+            history)}
           dataSource={dataSource}
           pagination={{
             showSizeChanger: true,

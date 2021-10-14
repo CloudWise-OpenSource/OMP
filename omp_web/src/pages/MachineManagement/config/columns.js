@@ -1,10 +1,16 @@
-import { nonEmptyProcessing, renderDisc, colorConfig } from "@/utils/utils";
+import { nonEmptyProcessing, renderDisc } from "@/utils/utils";
 import { DownOutlined, DesktopOutlined } from "@ant-design/icons";
 import { Dropdown, Menu, Drawer, Tooltip, Spin, Timeline } from "antd";
 import moment from "moment";
 import styles from "../index.module.less";
 import { useSelector } from "react-redux";
 import { useRef } from "react";
+
+const colorConfig = {
+  normal: null,
+  warning: "#ffbf00",
+  critical: "#f04134",
+};
 
 export const DetailHost = ({
   isShowDrawer,

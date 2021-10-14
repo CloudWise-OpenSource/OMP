@@ -4,7 +4,7 @@ import { FilterFilled } from "@ant-design/icons";
 import OmpTableFilter from "@/components/OmpTable/components/OmpTableFilter";
 import moment from "moment";
 
-const getColumnsConfig = (queryRequest, setShowIframe, updateAlertRead ) => {
+const getColumnsConfig = (queryRequest, setShowIframe, updateAlertRead, history ) => {
   return [
     {
       title: "实例名称",
@@ -34,6 +34,18 @@ const getColumnsConfig = (queryRequest, setShowIframe, updateAlertRead ) => {
       sorter: (a, b) => a.alert_host_ip - b.alert_host_ip,
       sortDirections: ["descend", "ascend"],
       align: "center",
+      render: (text, record) => {
+        return (
+          <a onClick={()=>{
+            text && history.push({
+              pathname: "/resource-management/machine-management",
+              state: {
+                ip:text
+              },
+            });
+          }}>{text}</a>
+        );
+      },
     },
     {
       title: "级别",
