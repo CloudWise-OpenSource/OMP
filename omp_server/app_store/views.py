@@ -20,6 +20,26 @@ from app_store.app_store_serializers import (
 )
 
 
+class AppStoreListView(GenericViewSet, ListModelMixin):
+    """ 应用商店 list 视图类 """
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        name_field = kwargs.get("name_field")
+        # 根据名称进行去重
+        result_ls, name_set = [], set()
+        for obj in queryset:
+            name = getattr(obj, name_field)
+            if name not in name_set:
+                name_set.add(name)
+                result_ls.append(obj)
+
+        serializer = self.get_serializer(
+            self.paginate_queryset(result_ls), many=True)
+
+        return self.get_paginated_response(serializer.data)
+
+
 class LabelListView(GenericViewSet, ListModelMixin):
     """
         list:
@@ -38,7 +58,7 @@ class LabelListView(GenericViewSet, ListModelMixin):
         return Response(list(queryset))
 
 
-class ComponentListView(GenericViewSet, ListModelMixin):
+class ComponentListView(AppStoreListView):
     """
         list:
         查询所有基础组件列表
@@ -56,22 +76,11 @@ class ComponentListView(GenericViewSet, ListModelMixin):
     get_description = "查询所有基础组件列表"
 
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-
-        # 根据名称进行去重，同名取最新
-        result_ls, name_set = [], set()
-        for component_info in queryset:
-            if component_info.app_name not in name_set:
-                name_set.add(component_info.app_name)
-                result_ls.append(component_info)
-
-        serializer = self.get_serializer(
-            self.paginate_queryset(result_ls), many=True)
-
-        return self.get_paginated_response(serializer.data)
+        return super(ComponentListView, self).list(
+            request, name_field="app_name", *args, **kwargs)
 
 
-class ServiceListView(GenericViewSet, ListModelMixin):
+class ServiceListView(AppStoreListView):
     """
         list:
         查询所有应用服务列表
@@ -87,19 +96,8 @@ class ServiceListView(GenericViewSet, ListModelMixin):
     get_description = "查询所有应用服务列表"
 
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-
-        # 根据名称进行去重，同名取最新
-        result_ls, name_set = [], set()
-        for service_info in queryset:
-            if service_info.pro_name not in name_set:
-                name_set.add(service_info.pro_name)
-                result_ls.append(service_info)
-
-        serializer = self.get_serializer(
-            self.paginate_queryset(result_ls), many=True)
-
-        return self.get_paginated_response(serializer.data)
+        return super(ServiceListView, self).list(
+            request, name_field="pro_name", *args, **kwargs)
 
 
 class UploadPackageView(GenericViewSet, CreateModelMixin):
