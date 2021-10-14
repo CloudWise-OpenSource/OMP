@@ -19,14 +19,14 @@ from hosts.tasks import (
     deploy_agent, host_agent_restart
 )
 
-from utils.validator import (
-    ReValidator, NoEmojiValidator, NoChineseValidator
-)
 from utils.plugin.ssh import SSH
 from utils.plugin.crypto import AESCryptor
-from utils.exceptions import OperateError
+from utils.common.validators import (
+    ReValidator, NoEmojiValidator, NoChineseValidator
+)
+from utils.common.exceptions import OperateError
+from utils.common.serializers import HostIdsSerializer
 from utils.parse_config import THREAD_POOL_MAX_WORKERS
-from utils.public_serializer import HostIdsSerializer
 from promemonitor.alertmanager import Alertmanager
 
 logger = logging.getLogger("server")

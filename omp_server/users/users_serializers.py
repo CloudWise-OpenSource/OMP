@@ -20,7 +20,7 @@ from rest_framework.serializers import (
 from rest_framework_jwt.serializers import JSONWebTokenSerializer
 
 from db_models.models import (UserProfile, OperateLog)
-from utils.validator import UserPasswordValidator
+from utils.common.validators import UserPasswordValidator
 
 
 class UserSerializer(ModelSerializer):

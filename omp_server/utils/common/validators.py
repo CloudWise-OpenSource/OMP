@@ -1,5 +1,5 @@
 """
-验证器
+公共验证器
 """
 import re
 import emoji
