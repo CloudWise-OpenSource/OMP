@@ -97,7 +97,7 @@ class ListAlertViewSet(ListModelMixin, GenericViewSet):
     获取告警记录列表视图类
     """
     serializer_class = ListAlertSerializer
-    queryset = Alert.objects.all().order_by("-crate_time")   # 分页，过滤，排序
+    queryset = Alert.objects.all().order_by("-create_time")   # 分页，过滤，排序
     pagination_class = PageNumberPager
     filter_backends = (
         DjangoFilterBackend,
