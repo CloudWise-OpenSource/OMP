@@ -4,55 +4,63 @@ import { FilterFilled } from "@ant-design/icons";
 import OmpTableFilter from "@/components/OmpTable/components/OmpTableFilter";
 import moment from "moment";
 
-const getColumnsConfig = (queryRequest) => {
+const getColumnsConfig = (
+  queryRequest,
+  setShowIframe,
+  //updateAlertRead,
+  history
+) => {
   return [
     {
       title: "实例名称",
-      key: "alert_host_instance_name",
-      dataIndex: "alert_host_instance_name",
+      key: "instance_name",
+      dataIndex: "instance_name",
       align: "center",
       width: 200,
       ellipsis: true,
       fixed: "left",
-      sorter: (a, b) => a.alert_host_instance_name - b.alert_host_instance_name,
+      sorter: (a, b) => a.instance_name - b.instance_name,
       sortDirections: ["descend", "ascend"],
       render: (text, record) => {
-        if (record.alert_type == "service") {
-          return (
-            <Tooltip title={text}>
-              <Badge dot={record.is_read === 0} offset={[5, 2]}>
-                {record.alert_service_instance_name
-                  ? record.alert_service_instance_name
-                  : "-"}
-              </Badge>
-            </Tooltip>
-          );
-        } else if (record.alert_type == "host") {
-          return (
-            <Tooltip title={text}>
-              <Badge dot={record.is_read === 0} offset={[5, 2]}>
-                {record.alert_host_instance_name
-                  ? record.alert_host_instance_name
-                  : "-"}
-              </Badge>
-            </Tooltip>
-          );
-        }
+        return (
+          <Tooltip title={text}>
+            <Badge dot={record.is_read === 0} offset={[5, 2]}>
+              {record.instance_name ? record.instance_name : "-"}
+            </Badge>
+          </Tooltip>
+        );
       },
     },
     {
       title: "IP地址",
-      key: "alert_host_ip",
-      dataIndex: "alert_host_ip",
+      key: "ip",
+      dataIndex: "ip",
       ellipsis: true,
-      sorter: (a, b) => a.alert_host_ip - b.alert_host_ip,
+      sorter: (a, b) => a.ip - b.ip,
       sortDirections: ["descend", "ascend"],
       align: "center",
+      render: (text, record) => {
+        return (
+          <a
+            onClick={() => {
+              text &&
+                history.push({
+                  pathname: "/resource-management/machine-management",
+                  state: {
+                    ip: text,
+                  },
+                });
+            }}
+          >
+            {text}
+          </a>
+        );
+      },
     },
     {
       title: "级别",
-      key: "alert_level",
-      dataIndex: "alert_level",
+      key: "severity",
+      dataIndex: "severity",
       align: "center",
       width: 120,
       // sorter: (a, b) => a.severity - b.severity,
@@ -60,19 +68,24 @@ const getColumnsConfig = (queryRequest) => {
       //ellipsis: true,
       //width:120,
       usefilter: true,
-      queryRequest:queryRequest,
-      filterMenuList: [{
-        value:"critical",
-        text:"严重"
-      },{
-        value:"warning",
-        text:"警告"
-      }],
+      queryRequest: queryRequest,
+      filterMenuList: [
+        {
+          value: "critical",
+          text: "严重",
+        },
+        {
+          value: "warning",
+          text: "警告",
+        },
+      ],
       render: (text) => {
         switch (text) {
           case "critical":
             return <span style={{ color: colorConfig[text] }}>严重</span>;
           case "warning":
+            return <span style={{ color: colorConfig[text] }}>警告</span>;
+          case "info":
             return <span style={{ color: colorConfig[text] }}>警告</span>;
           default:
             return "-";
@@ -81,17 +94,20 @@ const getColumnsConfig = (queryRequest) => {
     },
     {
       title: "告警类型",
-      key: "alert_type",
-      dataIndex: "alert_type",
+      key: "type",
+      dataIndex: "type",
       usefilter: true,
-      queryRequest:queryRequest,
-      filterMenuList: [{
-        value:"service",
-        text:"服务"
-      },{
-        value:"host",
-        text:"主机"
-      }],
+      queryRequest: queryRequest,
+      filterMenuList: [
+        {
+          value: "service",
+          text: "服务",
+        },
+        {
+          value: "host",
+          text: "主机",
+        },
+      ],
       align: "center",
       //ellipsis: true,
       width: 150,
@@ -105,8 +121,8 @@ const getColumnsConfig = (queryRequest) => {
     },
     {
       title: "告警描述",
-      key: "alert_describe",
-      dataIndex: "alert_describe",
+      key: "description",
+      dataIndex: "description",
       align: "center",
       width: 420,
       ellipsis: true,
@@ -121,11 +137,11 @@ const getColumnsConfig = (queryRequest) => {
     {
       title: "告警时间",
       //width:180,
-      key: "alert_time",
-      dataIndex: "alert_time",
+      key: "date",
+      dataIndex: "date",
       align: "center",
       //ellipsis: true,
-      sorter: (a, b) => a.alert_time - b.alert_time,
+      sorter: (a, b) => a.date - b.date,
       sortDirections: ["descend", "ascend"],
       render: (text) => {
         let str = moment(text).format("YYYY-MM-DD HH:mm:ss");
@@ -142,8 +158,49 @@ const getColumnsConfig = (queryRequest) => {
       render: function renderFunc(text, record, index) {
         return (
           <div style={{ display: "flex", justifyContent: "space-around" }}>
-            <a>监控</a>
-            <a>日志</a>
+            {record.monitor_url ? (
+              <a
+                onClick={() => {
+                  //record.is_read == 0 && updateAlertRead([record.id]);
+                  setShowIframe({
+                    isOpen: true,
+                    src: record.monitor_url,
+                    record: {
+                      ...record,
+                      ip: record.ip,
+                    },
+                    isLog: false,
+                  });
+                }}
+              >
+                监控
+              </a>
+            ) : (
+              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
+            )}
+
+            {record.type == "host" ? (
+              ""
+            ) : record.log_url ? (
+              <a
+                onClick={() => {
+                  //record.is_read == 0 && updateAlertRead([record.id]);
+                  setShowIframe({
+                    isOpen: true,
+                    src: record.log_url,
+                    record: {
+                      ...record,
+                      ip: record.ip,
+                    },
+                    isLog: false,
+                  });
+                }}
+              >
+                日志
+              </a>
+            ) : (
+              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>日志</span>
+            )}
           </div>
         );
       },
