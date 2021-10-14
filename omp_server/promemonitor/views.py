@@ -123,7 +123,7 @@ class MaintainViewSet(GenericViewSet, CreateModelMixin, ListModelMixin):
     全局进入 / 退出维护模式
     """
     queryset = Maintain.objects.filter(
-        matcher_name='env_name', matcher_value='default')
+        matcher_name='env', matcher_value='default')
     serializer_class = MaintainSerializer
     # 操作信息描述
     post_description = "更新全局维护状态"
