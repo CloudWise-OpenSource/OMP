@@ -89,8 +89,8 @@ class GrafanaUrlViewSet(ListModelMixin, GenericViewSet):
             raise OperateError("prometheus获取数据失败，请检查prometheus状态")
         prometheus_info = sorted(
             current, key=lambda e: e.__getitem__(ordering), reverse=asc)
-        prometheus_json = json.dumps(prometheus_info, ensure_ascii=False)
-        return Response(prometheus_json)
+        #prometheus_json = json.dumps(prometheus_info, ensure_ascii=False)
+        return Response(prometheus_info)
 
 
 class ListAlertViewSet(ListModelMixin, GenericViewSet):
