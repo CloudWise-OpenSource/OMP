@@ -454,7 +454,7 @@ const getColumnsConfig = (
         return str == "-" ? (
           "-"
         ) : (
-          <span style={{ color: colorConfig[record.cpu_status] }}>{str}%</span>
+          <span style={{ color: colorConfig[record.cpu_status], fontWeight:500 }}>{str}%</span>
         );
       },
     },
@@ -472,7 +472,7 @@ const getColumnsConfig = (
         return str == "-" ? (
           "-"
         ) : (
-          <span style={{ color: colorConfig[record.cpu_status] }}>{str}%</span>
+          <span style={{ color: colorConfig[record.mem_status], fontWeight:500 }}>{str}%</span>
         );
       },
     },
@@ -490,7 +490,7 @@ const getColumnsConfig = (
         return str == "-" ? (
           "-"
         ) : (
-          <span style={{ color: colorConfig[record.cpu_status] }}>{str}%</span>
+          <span style={{ color: colorConfig[record.root_disk_status], fontWeight:500 }}>{str}%</span>
         );
       },
       // width:120
@@ -509,7 +509,7 @@ const getColumnsConfig = (
         return str == "-" ? (
           "-"
         ) : (
-          <span style={{ color: colorConfig[record.cpu_status] }}>{str}%</span>
+          <span style={{ color: colorConfig[record.data_disk_status], fontWeight:500 }}>{str}%</span>
         );
       },
     },
@@ -577,6 +577,21 @@ const getColumnsConfig = (
       align: "center",
       fixed: "right",
       render: function renderFunc(text, record, index) {
+        if (record?.host_agent == 3 || record?.monitor_agent == 3) {
+          return (
+            <div
+              onClick={() => {
+                setRow(record);
+              }}
+              style={{ display: "flex", justifyContent: "space-around" }}
+            >
+              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
+              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>
+                更多 <DownOutlined style={{ position: "relative", top: 1 }} />
+              </span>
+            </div>
+          );
+        }
         return (
           <div
             onClick={() => {
