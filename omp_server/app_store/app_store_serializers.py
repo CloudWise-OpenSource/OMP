@@ -9,7 +9,7 @@ from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import Serializer
-from utils.exceptions import OperateError
+from utils.common.exceptions import OperateError
 
 from db_models.models import (
     ApplicationHub, ProductHub
@@ -87,12 +87,13 @@ class UploadPackageSerializer(Serializer):
     def create(self, validated_data):
         request_file = validated_data.get("file")
         if not request_file:
-            raise OperateError(f"上传文件为空")
-        destination_dir = os.path.join(settings.PROJECT_DIR, 'package_hub/back_end_verified')
+            raise OperateError("上传文件为空")
+        destination_dir = os.path.join(
+            settings.PROJECT_DIR, 'package_hub/back_end_verified')
         with open(os.path.join(destination_dir, request_file.name), 'wb+') as f:
             for chunk in request_file.chunks():
                 try:
                     f.write(chunk)
-                except Exception as e:
-                    raise OperateError(f"文件写入过程失败")
+                except Exception:
+                    raise OperateError("文件写入过程失败")
         return validated_data

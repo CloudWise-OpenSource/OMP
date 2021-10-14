@@ -18,8 +18,8 @@ from rest_framework.exceptions import ValidationError
 from django_filters.rest_framework.backends import DjangoFilterBackend
 
 from db_models.models import (Env, Host, HostOperateLog)
-from utils.pagination import PageNumberPager
 from utils.plugin.crypto import AESCryptor
+from utils.common.paginations import PageNumberPager
 from hosts.tasks import deploy_agent
 from hosts.hosts_filters import (HostFilter, HostOperateFilter)
 from hosts.hosts_serializers import (

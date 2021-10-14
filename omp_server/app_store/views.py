@@ -11,7 +11,7 @@ from app_store.app_store_serializers import UploadPackageSerializer
 from db_models.models import (
     Labels, ApplicationHub, ProductHub, UploadPackageHistory
 )
-from utils.pagination import PageNumberPager
+from utils.common.paginations import PageNumberPager
 from app_store.app_store_filters import (
     LabelFilter, ComponentFilter, ServiceFilter
 )
