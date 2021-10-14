@@ -4,7 +4,12 @@ import { FilterFilled } from "@ant-design/icons";
 import OmpTableFilter from "@/components/OmpTable/components/OmpTableFilter";
 import moment from "moment";
 
-const getColumnsConfig = (queryRequest, setShowIframe, updateAlertRead, history ) => {
+const getColumnsConfig = (
+  queryRequest,
+  setShowIframe,
+  updateAlertRead,
+  history
+) => {
   return [
     {
       title: "实例名称",
@@ -36,14 +41,19 @@ const getColumnsConfig = (queryRequest, setShowIframe, updateAlertRead, history 
       align: "center",
       render: (text, record) => {
         return (
-          <a onClick={()=>{
-            text && history.push({
-              pathname: "/resource-management/machine-management",
-              state: {
-                ip:text
-              },
-            });
-          }}>{text}</a>
+          <a
+            onClick={() => {
+              text &&
+                history.push({
+                  pathname: "/resource-management/machine-management",
+                  state: {
+                    ip: text,
+                  },
+                });
+            }}
+          >
+            {text}
+          </a>
         );
       },
     },
@@ -149,7 +159,7 @@ const getColumnsConfig = (queryRequest, setShowIframe, updateAlertRead, history 
             {record.monitor_path ? (
               <a
                 onClick={() => {
-                  record.is_read == 0 && updateAlertRead([record.id])
+                  record.is_read == 0 && updateAlertRead([record.id]);
                   setShowIframe({
                     isOpen: true,
                     src: record.monitor_path,
@@ -167,10 +177,12 @@ const getColumnsConfig = (queryRequest, setShowIframe, updateAlertRead, history 
               <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
             )}
 
-            {record.monitor_log ? (
+            {record.alert_type == "host" ? (
+              ""
+            ) : record.monitor_log ? (
               <a
                 onClick={() => {
-                  record.is_read == 0 && updateAlertRead([record.id])
+                  record.is_read == 0 && updateAlertRead([record.id]);
                   setShowIframe({
                     isOpen: true,
                     src: record.monitor_log,
