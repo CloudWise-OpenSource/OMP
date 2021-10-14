@@ -19,8 +19,11 @@ import {
 import { useDispatch } from "react-redux";
 import getColumnsConfig, { DetailHost } from "./config/columns";
 import { DownOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
+import { useHistory, useLocation } from "react-router-dom";
 
 const MachineManagement = () => {
+  const location = useLocation();
+
   const dispatch = useDispatch();
 
   const [loading, setLoading] = useState(false);
@@ -41,7 +44,7 @@ const MachineManagement = () => {
   //table表格数据
   const [dataSource, setDataSource] = useState([]);
   const [ipListSource, setIpListSource] = useState([]);
-  const [selectValue, setSelectValue] = useState();
+  const [selectValue, setSelectValue] = useState(location.state?.ip);
 
   const [pagination, setPagination] = useState({
     current: 1,
@@ -118,6 +121,7 @@ const MachineManagement = () => {
       })
       .catch((e) => console.log(e))
       .finally(() => {
+        location.state = {}
         setLoading(false);
         fetchIPlist();
       });
@@ -357,7 +361,10 @@ const MachineManagement = () => {
   };
 
   useEffect(() => {
-    fetchData(pagination);
+    fetchData(
+      { current: pagination.current, pageSize: pagination.pageSize },
+      { ip: location.state?.ip },
+    );
   }, []);
 
   return (
@@ -463,6 +470,9 @@ const MachineManagement = () => {
             selectValue={selectValue}
             listSource={ipListSource}
             setSelectValue={setSelectValue}
+            // onFocus={()=>{
+            //   location.state = {}
+            // }}
             fetchData={(value) => {
               fetchData(
                 { current: 1, pageSize: 10 },
@@ -474,6 +484,7 @@ const MachineManagement = () => {
           <Button
             style={{ marginLeft: 10 }}
             onClick={() => {
+              //location.state = {}
               dispatch(refreshTime());
               setCheckedList({});
               fetchData(

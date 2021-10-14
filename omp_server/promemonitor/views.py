@@ -2,31 +2,35 @@
 """
 监控相关视图
 """
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import OrderingFilter
-
-from promemonitor.promemonitor_filters import AlertFilter, MyTimeFilter
-from utils.pagination import PageNumberPager
 import logging
+import json
 
-from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
+
+from rest_framework.filters import OrderingFilter
+from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import (
-    ListModelMixin, CreateModelMixin)
-from promemonitor import grafana_url
-import json
+    ListModelMixin, CreateModelMixin
+)
+
+from utils.common.paginations import PageNumberPager
+
 from db_models.models import (
     Host, MonitorUrl,
     Alert, Maintain
 )
+
+from promemonitor import grafana_url
+from promemonitor.promemonitor_filters import AlertFilter, MyTimeFilter
 from promemonitor.promemonitor_serializers import (
     MonitorUrlSerializer, ListAlertSerializer, UpdateAlertSerializer,
     MaintainSerializer, MonitorAgentRestartSerializer,
     ReceiveAlertSerializer
 )
-from utils.exceptions import OperateError
+from utils.common.exceptions import OperateError
 
 logger = logging.getLogger('server')
 
@@ -135,12 +139,15 @@ class ReceiveAlertViewSet(GenericViewSet, CreateModelMixin):
     serializer_class = ReceiveAlertSerializer
     # 操作信息描述
     post_description = "接收alertmanager告警信息"
+    # 关闭权限、认证设置
+    authentication_classes = ()
+    permission_classes = ()
 
 
 class MonitorAgentRestartView(GenericViewSet, CreateModelMixin):
     """
         create:
-        主机重启Agent接口
+        重启监控Agent接口
     """
     queryset = Host.objects.filter(is_deleted=False)
     serializer_class = MonitorAgentRestartSerializer

@@ -1,5 +1,5 @@
 """
-    异常相关
+    公共异常
     注意 common_exception_handler 的优先级按照以下顺序进行：
         1. GeneralError 异常实例
         2. FORMAT_ERRORS 字典，自定义格式化函数处理的错误

@@ -1,5 +1,5 @@
 """
-通用分页器
+公共分页器
 """
 
 from rest_framework.pagination import (

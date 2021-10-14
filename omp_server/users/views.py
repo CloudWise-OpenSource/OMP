@@ -15,13 +15,13 @@ from rest_framework_jwt.settings import api_settings
 
 from django_filters.rest_framework.backends import DjangoFilterBackend
 
-from utils.pagination import PageNumberPager
 from db_models.models import (UserProfile, OperateLog)
+from users.users_filters import UserFilter
+from utils.common.paginations import PageNumberPager
 from users.users_serializers import (
     UserSerializer, JwtSerializer,
     OperateLogSerializer, UserUpdatePasswordSerializer
 )
-from users.users_filters import UserFilter
 
 
 class UsersView(ListModelMixin, RetrieveModelMixin, CreateModelMixin,

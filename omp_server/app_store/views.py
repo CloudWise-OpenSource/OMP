@@ -2,15 +2,16 @@
 应用商店相关视图
 """
 from rest_framework.viewsets import GenericViewSet
-from rest_framework.mixins import ListModelMixin
+from rest_framework.mixins import ListModelMixin, CreateModelMixin
 from rest_framework.response import Response
 
 from django_filters.rest_framework.backends import DjangoFilterBackend
+from app_store.app_store_serializers import UploadPackageSerializer
 
 from db_models.models import (
-    Labels, ApplicationHub, ProductHub
+    Labels, ApplicationHub, ProductHub, UploadPackageHistory
 )
-from utils.pagination import PageNumberPager
+from utils.common.paginations import PageNumberPager
 from app_store.app_store_filters import (
     LabelFilter, ComponentFilter, ServiceFilter
 )
@@ -99,3 +100,15 @@ class ServiceListView(GenericViewSet, ListModelMixin):
             self.paginate_queryset(result_ls), many=True)
 
         return self.get_paginated_response(serializer.data)
+
+
+class UploadPackageView(GenericViewSet, CreateModelMixin):
+    """
+    create:
+    上传安装包
+    """
+    queryset = UploadPackageHistory.objects.all()
+    serializer_class = UploadPackageSerializer
+
+    # 操作信息描述
+    post_description = "上传安装包"

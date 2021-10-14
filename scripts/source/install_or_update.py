@@ -121,7 +121,7 @@ def update_omp_platform(pack_path, update_file_folder):
         package_hub_old,
         _new_package_hub, package_hub_old))
     cmd("cp -rf {}/omp_monitor_agent* {}/".format(
-        package_hub_bak, _new_package_hub))
+        package_hub_bak, package_hub_old))
 
 
 def update_config(update_file_folder):
