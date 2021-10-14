@@ -525,6 +525,10 @@ const MachineManagement = () => {
             setOpenMaintainOneModal,
             setShowIframe
           )}
+          notSelectable={(record)=>({
+            // 部署中的不能选中
+            disabled:(record?.host_agent == 3) || (record?.monitor_agent == 3)
+          })}
           dataSource={dataSource}
           pagination={{
             showSizeChanger: true,
