@@ -7,6 +7,7 @@ const OmpSelect = ({
   listSource,
   setSelectValue,
   fetchData,
+  ...props
 }) => {
   const [searchValue, setSearchValue] = useState("");
 
@@ -22,6 +23,7 @@ const OmpSelect = ({
 
   return (
     <Select
+      {...props}
       allowClear
       onClear={() => {
         searchValueRef.current = "";
