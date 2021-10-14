@@ -30,7 +30,7 @@ from promemonitor.promemonitor_serializers import (
     MaintainSerializer, MonitorAgentRestartSerializer,
     ReceiveAlertSerializer
 )
-from utils.exceptions import OperateError
+from utils.common.exceptions import OperateError
 
 logger = logging.getLogger('server')
 
