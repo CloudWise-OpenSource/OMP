@@ -1,5 +1,4 @@
 from db_models.models import GrafanaMainPage, MonitorUrl, Host
-from promemonitor.alert_util import utc_to_local
 import requests
 import json
 import logging
@@ -23,6 +22,29 @@ class CurlPrometheus(object):
         except Exception as e:
             logger.error("prometheus请求alerts失败：" + str(e))
             return {"status": "-1"}
+
+def utc_local(utc_time_str, utc_format='%Y-%m-%dT%H:%M:%SZ'):
+    """
+    时区转换，如果转换报错，那么使用当前时间作为返回值
+    :type utc_time_str str
+    :param utc_time_str: utc时间字符串
+    :type utc_format str
+    :param utc_format: utc时间格式
+    :return:
+    """
+    try:
+        utc_time_str = utc_time_str.split(
+            ".")[0] + utc_time_str.split(".")[-1][-1]
+        local_tz = pytz.timezone(TIME_ZONE)
+        local_format = "%Y-%m-%d %H:%M:%S"
+        utc_dt = datetime.datetime.strptime(utc_time_str, utc_format)
+        local_dt = utc_dt.replace(tzinfo=pytz.utc).astimezone(local_tz)
+        time_str = local_dt.strftime(local_format)
+        return time_str
+    except Exception as e:
+        logger.error(f"在转化时间格式时报错: {str(e)}\n详情为: {traceback.format_exc()}")
+        return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
 
 
 def explain_prometheus(params):
@@ -48,7 +70,7 @@ def explain_prometheus(params):
             tmp_dict['description'] = annotation.get('description')
             lab_date = lab.get('activeAt') if lab.get(
                 'activeAt') else lab.get('startsAt')
-            tmp_dict['date'] = utc_to_local(lab_date)
+            tmp_dict['date'] = utc_local(lab_date)
             prometheus_info.append(tmp_dict)
         prometheus_json = explain_url(prometheus_info)
         if params:
