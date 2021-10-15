@@ -3,7 +3,6 @@
 监控相关视图
 """
 import logging
-import json
 
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -89,7 +88,7 @@ class GrafanaUrlViewSet(ListModelMixin, GenericViewSet):
             raise OperateError("prometheus获取数据失败，请检查prometheus状态")
         prometheus_info = sorted(
             current, key=lambda e: e.__getitem__(ordering), reverse=asc)
-        #prometheus_json = json.dumps(prometheus_info, ensure_ascii=False)
+        # prometheus_json = json.dumps(prometheus_info, ensure_ascii=False)
         return Response(prometheus_info)
 
 
@@ -98,8 +97,7 @@ class ListAlertViewSet(ListModelMixin, GenericViewSet):
     获取告警记录列表视图类
     """
     serializer_class = ListAlertSerializer
-    queryset = Alert.objects.all().order_by('id')
-    # 分页，过滤，排序
+    queryset = Alert.objects.all().order_by("-create_time")   # 分页，过滤，排序
     pagination_class = PageNumberPager
     filter_backends = (
         DjangoFilterBackend,
@@ -125,7 +123,7 @@ class MaintainViewSet(GenericViewSet, CreateModelMixin, ListModelMixin):
     全局进入 / 退出维护模式
     """
     queryset = Maintain.objects.filter(
-        matcher_name='env_name', matcher_value='default')
+        matcher_name='env', matcher_value='default')
     serializer_class = MaintainSerializer
     # 操作信息描述
     post_description = "更新全局维护状态"

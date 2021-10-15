@@ -147,6 +147,20 @@ const getColumnsConfig = (
       },
     },
     {
+      title: "更新时间",
+      //width:180,
+      key: "create_tim",
+      dataIndex: "create_time",
+      align: "center",
+      //ellipsis: true,
+      sorter: (a, b) => a.create_time - b.create_time,
+      sortDirections: ["descend", "ascend"],
+      render: (text) => {
+        let str = moment(text).format("YYYY-MM-DD HH:mm:ss");
+        return str;
+      },
+    },
+    {
       title: "操作",
       width: 100,
       key: "",
@@ -190,7 +204,7 @@ const getColumnsConfig = (
                       ...record,
                       ip: record.alert_host_ip,
                     },
-                    isLog: false,
+                    isLog: true,
                   });
                 }}
               >

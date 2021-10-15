@@ -7,6 +7,22 @@ from db_models.models import UserProfile
 class UsersTest(AutoLoginTest):
     """ 用户功能测试类 """
 
+    @staticmethod
+    def get_user():
+        """ 获取用户 """
+        user = UserProfile.objects.create_user(
+            username="test_user",
+            password="test_user",
+            email="test_user@cloudwise.com",
+        )
+        return user
+
+    @staticmethod
+    def destroy_user():
+        """ 销毁用户 """
+        UserProfile.objects.filter(
+            username="test_user").delete()
+
     def setUp(self):
         super(UsersTest, self).setUp()
         self.create_user_url = reverse("users-list")
@@ -77,18 +93,10 @@ class UsersTest(AutoLoginTest):
     def test_retrieve_user(self):
         """ 测试查询一个用户 """
 
-        # 创建用户
-        username = "retrieve_user"
-        password = "retrieve_user"
-        email = "retrieve_user@cloudwise.com"
-        user = UserProfile.objects.create_user(
-            username=username,
-            password=password,
-            email=email,
-        )
+        user = self.get_user()
 
         # 查询不存在用户 -> 查询失败
-        resp = self.get(reverse("users-detail", [99])).json()
+        resp = self.get(reverse("users-detail", [9999])).json()
         self.assertDictEqual(resp, {
             'code': 1,
             'message': '未找到',
@@ -101,26 +109,20 @@ class UsersTest(AutoLoginTest):
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
         self.assertTrue(user_info is not None)
-        self.assertEqual(user_info.get("username"), username)
-        self.assertEqual(user_info.get("email"), email)
-        self.assertNotEqual(user_info.get("password"), password)
+        self.assertEqual(user_info.get("username"), user.username)
+        self.assertNotEqual(user_info.get("password"), user.password)
+        self.assertEqual(user_info.get("email"), user.email)
+
+        self.destroy_user()
 
     def test_update_user(self):
         """ 测试更新一个已有用户 """
 
-        # 创建用户
-        username = "update_user"
-        password = "update_user"
-        email = "update_user@cloudwise.com"
-        user = UserProfile.objects.create_user(
-            username=username,
-            password=password,
-            email=email,
-        )
+        user = self.get_user()
 
         # 更新不存在用户 -> 更新失败
-        resp = self.put(reverse("users-detail", [99]), {
-            "username": username,
+        resp = self.put(reverse("users-detail", [9999]), {
+            "username": user.username,
             "password": "update_user_pass",
             "re_password": "update_user_pass",
             "email": "update_user@cloudwise.com",
@@ -133,7 +135,7 @@ class UsersTest(AutoLoginTest):
 
         # 更新已有用户，密码不一致 -> 更新失败
         resp = self.put(reverse("users-detail", [user.id]), {
-            "username": username,
+            "username": user.username,
             "password": "update_user_pass",
             "re_password": "update_user_pass_diff",
             "email": "update_user@cloudwise.com",
@@ -147,7 +149,7 @@ class UsersTest(AutoLoginTest):
         # 更新已有用户，两次密码一致 -> 更新成功
         new_email = "update_user_email@cloudwise.com"
         resp = self.put(reverse("users-detail", [user.id]), {
-            "username": username,
+            "username": user.username,
             "password": "update_user_pass",
             "re_password": "update_user_pass",
             "email": new_email,
@@ -156,21 +158,15 @@ class UsersTest(AutoLoginTest):
         self.assertEqual(resp.get("message"), "success")
         self.assertTrue(resp.get("data", None) is not None)
 
+        self.destroy_user()
+
     def test_partial_update_user(self):
         """ 测试更新一个现有用户的一个或多个字段 """
 
-        # 创建用户
-        username = "partial_update_user"
-        password = "partial_update_user"
-        email = "partial_update_user@cloudwise.com"
-        user = UserProfile.objects.create_user(
-            username=username,
-            password=password,
-            email=email,
-        )
+        user = self.get_user()
 
         # 更新不存在用户 -> 更新失败
-        resp = self.patch(reverse("users-detail", [99]), {
+        resp = self.patch(reverse("users-detail", [9999]), {
             "password": "partial_update_user_pass",
             "re_password": "partial_update_user_pass",
             "email": "partial_update_user_email@cloudwise.com",
@@ -192,26 +188,22 @@ class UsersTest(AutoLoginTest):
         self.assertEqual(resp.get("message"), "success")
         self.assertTrue(resp.get("data", None) is not None)
 
+        self.destroy_user()
+
     def test_delete_user(self):
         """ 测试删除一个现有用户 """
 
-        # 创建用户
-        username = "delete_user"
-        password = "delete_user"
-        email = "delete_user@cloudwise.com"
-        UserProfile.objects.create_user(
-            username=username,
-            password=password,
-            email=email,
-        )
+        self.get_user()
 
         # 删除不存在用户 -> 删除失败
-        resp = self.delete(reverse("users-detail", [99])).json()
+        resp = self.delete(reverse("users-detail", [9999])).json()
         self.assertDictEqual(resp, {
             'code': 1,
             'message': '未找到',
             'data': None
         })
+
+        self.destroy_user()
 
 
 class UserUpdatePasswordTest(AutoLoginTest):

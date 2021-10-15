@@ -12,7 +12,7 @@ from rest_framework.serializers import Serializer
 from utils.common.exceptions import OperateError
 
 from db_models.models import (
-    ApplicationHub, ProductHub
+    ApplicationHub, ProductHub, UploadPackageHistory
 )
 
 logger = logging.getLogger("server")
@@ -96,4 +96,45 @@ class UploadPackageSerializer(Serializer):
                     f.write(chunk)
                 except Exception:
                     raise OperateError("文件写入过程失败")
+        return validated_data
+
+
+class RemovePackageSerializer(Serializer):
+    """ 移除安装包序列化类 """
+
+    uuid = serializers.CharField(
+        help_text="上传安装包uuid",
+        required=True,
+        error_messages={"required": "必须包含[uuid]字段"}
+    )
+
+    package_names = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="安装包名称列表",
+        required=True, allow_empty=False,
+        error_messages={"required": "必须包含[package_names]字段"}
+    )
+
+    def validate(self, attrs):
+        """ 校验安装包名称 """
+        operation_uuid = attrs.get("uuid")
+        package_names = attrs.get("package_names")
+        queryset = UploadPackageHistory.objects.filter(
+            operation_uuid=operation_uuid,
+            package_name__in=package_names,
+        )
+        if not queryset.exists() or \
+                len(queryset) != len(package_names):
+            logger.error(f"remove package error: uuid-{operation_uuid},"
+                         f"package_names-{package_names}")
+            raise ValidationError({"uuid": "该 uuid 未找到有效的操作记录"})
+        attrs["queryset"] = queryset
+        return attrs
+
+    def create(self, validated_data):
+        """ 上传安装包记录表软删除 """
+        queryset = validated_data.pop("queryset", None)
+        if queryset is not None:
+            for upload_package_history in queryset:
+                upload_package_history.delete()
         return validated_data

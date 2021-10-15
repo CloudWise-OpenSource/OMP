@@ -125,7 +125,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "Enter a valid IPv4 or IPv6 address.",
+            "message": "IP格式不合法",
             "data": None
         })
 
@@ -160,7 +160,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "Ensure this value is less than or equal to 65535.",
+            "message": "端口超出指定范围",
             "data": None
         })
 
@@ -420,7 +420,7 @@ class ListHostTest(AutoLoginTest, HostsResourceMixin):
         return host_obj_ls
 
     def test_hosts_list_filter(self):
-        """ 测试主机列表 """
+        """ 测试主机列表过滤 """
         host_obj_ls = self.get_hosts(50)
 
         # 查询主机列表 -> 展示所有主机
@@ -431,18 +431,15 @@ class ListHostTest(AutoLoginTest, HostsResourceMixin):
         # 数据总量为所有主机数
         self.assertEqual(resp.get("data").get("count"), len(host_obj_ls))
 
-        # IP 过滤主机 -> 模糊展示匹配项
-        target_host_obj = host_obj_ls[random.randint(10, 49)]
+        # IP 过滤主机 -> 展示 IP 模糊匹配项
         resp = self.get(self.list_host_url, {
-            "ip": target_host_obj.ip
+            "ip": "127"
         }).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
         self.assertTrue(resp.get("data") is not None)
-        self.assertEqual(resp.get("data").get("count"), 1)
-        host_obj = resp.get("data").get("results")[0]
-        self.assertEqual(host_obj.get("ip"), target_host_obj.ip)
-
+        count_number = Host.objects.filter(ip__contains="127").count()
+        self.assertEqual(resp.get("data").get("count"), count_number)
         # 删除主机
         self.destroy_hosts()
 
@@ -816,7 +813,7 @@ class HostMaintainTest(AutoLoginTest, HostsResourceMixin):
         """ 正确字段校验 """
 
         host_obj_ls = self.get_hosts(20)
-        random_host_ls = random.sample(host_obj_ls, 5)
+        random_host_ls = random.sample(list(host_obj_ls), 5)
         random_host_id_ls = list(map(lambda x: x.id, random_host_ls))
 
         # 开启维护模式 -> 开启成功，记录操作
@@ -877,7 +874,7 @@ class HostMaintainTest(AutoLoginTest, HostsResourceMixin):
         """ alert manage 返回值异常 """
 
         host_obj_ls = self.get_hosts(20)
-        random_host_ls = random.sample(host_obj_ls, 5)
+        random_host_ls = random.sample(list(host_obj_ls), 5)
         random_host_id_ls = list(map(lambda x: x.id, random_host_ls))
 
         # 开始维护模式 -> 开启失败，记录操作
@@ -905,7 +902,7 @@ class HostMaintainTest(AutoLoginTest, HostsResourceMixin):
             len(operate_log_ls.filter(result="failed")))
 
         # 关闭维护模式 -> 关闭失败，记录操作
-        random_host_ls = random.sample(host_obj_ls, 5)
+        random_host_ls = random.sample(list(host_obj_ls), 5)
         random_host_id_ls = list(map(lambda x: x.id, random_host_ls))
         Host.objects.filter(
             id__in=random_host_id_ls

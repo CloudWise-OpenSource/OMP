@@ -257,7 +257,7 @@ class Labels(models.Model):
         verbose_name = verbose_name_plural = "应用产品标签表"
 
 
-class UploadPackageHistory(TimeStampMixin):
+class UploadPackageHistory(TimeStampMixin, DeleteMixin):
     """ 上传安装包记录表，存储产品包及服务包 """
 
     PACKAGE_STATUS_SUCCESS = 0

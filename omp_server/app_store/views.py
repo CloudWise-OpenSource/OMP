@@ -2,11 +2,12 @@
 应用商店相关视图
 """
 from rest_framework.viewsets import GenericViewSet
-from rest_framework.mixins import ListModelMixin, CreateModelMixin
 from rest_framework.response import Response
+from rest_framework.mixins import (
+    ListModelMixin, CreateModelMixin
+)
 
 from django_filters.rest_framework.backends import DjangoFilterBackend
-from app_store.app_store_serializers import UploadPackageSerializer
 
 from db_models.models import (
     Labels, ApplicationHub, ProductHub, UploadPackageHistory
@@ -16,8 +17,29 @@ from app_store.app_store_filters import (
     LabelFilter, ComponentFilter, ServiceFilter
 )
 from app_store.app_store_serializers import (
-    ComponentListSerializer, ServiceListSerializer
+    ComponentListSerializer, ServiceListSerializer,
+    UploadPackageSerializer, RemovePackageSerializer
 )
+
+
+class AppStoreListView(GenericViewSet, ListModelMixin):
+    """ 应用商店 list 视图类 """
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        name_field = kwargs.get("name_field")
+        # 根据名称进行去重
+        result_ls, name_set = [], set()
+        for obj in queryset:
+            name = getattr(obj, name_field)
+            if name not in name_set:
+                name_set.add(name)
+                result_ls.append(obj)
+
+        serializer = self.get_serializer(
+            self.paginate_queryset(result_ls), many=True)
+
+        return self.get_paginated_response(serializer.data)
 
 
 class LabelListView(GenericViewSet, ListModelMixin):
@@ -38,7 +60,7 @@ class LabelListView(GenericViewSet, ListModelMixin):
         return Response(list(queryset))
 
 
-class ComponentListView(GenericViewSet, ListModelMixin):
+class ComponentListView(AppStoreListView):
     """
         list:
         查询所有基础组件列表
@@ -56,22 +78,11 @@ class ComponentListView(GenericViewSet, ListModelMixin):
     get_description = "查询所有基础组件列表"
 
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-
-        # 根据名称进行去重，同名取最新
-        result_ls, name_set = [], set()
-        for component_info in queryset:
-            if component_info.app_name not in name_set:
-                name_set.add(component_info.app_name)
-                result_ls.append(component_info)
-
-        serializer = self.get_serializer(
-            self.paginate_queryset(result_ls), many=True)
-
-        return self.get_paginated_response(serializer.data)
+        return super(ComponentListView, self).list(
+            request, name_field="app_name", *args, **kwargs)
 
 
-class ServiceListView(GenericViewSet, ListModelMixin):
+class ServiceListView(AppStoreListView):
     """
         list:
         查询所有应用服务列表
@@ -87,28 +98,27 @@ class ServiceListView(GenericViewSet, ListModelMixin):
     get_description = "查询所有应用服务列表"
 
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-
-        # 根据名称进行去重，同名取最新
-        result_ls, name_set = [], set()
-        for service_info in queryset:
-            if service_info.pro_name not in name_set:
-                name_set.add(service_info.pro_name)
-                result_ls.append(service_info)
-
-        serializer = self.get_serializer(
-            self.paginate_queryset(result_ls), many=True)
-
-        return self.get_paginated_response(serializer.data)
+        return super(ServiceListView, self).list(
+            request, name_field="pro_name", *args, **kwargs)
 
 
 class UploadPackageView(GenericViewSet, CreateModelMixin):
     """
-    create:
-    上传安装包
+        create:
+        上传安装包
     """
     queryset = UploadPackageHistory.objects.all()
     serializer_class = UploadPackageSerializer
-
     # 操作信息描述
     post_description = "上传安装包"
+
+
+class RemovePackageView(GenericViewSet, CreateModelMixin):
+    """
+        post:
+        批量移除安装包
+    """
+    queryset = UploadPackageHistory.objects.all()
+    serializer_class = RemovePackageSerializer
+    # 操作信息描述
+    post_description = "移除安装包"

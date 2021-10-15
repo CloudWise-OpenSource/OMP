@@ -80,9 +80,7 @@ class JwtAPIView(JSONWebTokenAPIView):
     serializer_class = JwtSerializer
 
     def post(self, request, *args, **kwargs):
-        # django authenticate 缺陷
-        # 验证 username 大小写不敏感, 忽略两边空格
-        # 验证 password 忽略两边空格
+        # django authenticate 缺陷，验证 username 大小写不敏感
         username_ls = list(
             UserProfile.objects.values_list(
                 "username", flat=True))
