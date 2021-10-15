@@ -50,7 +50,7 @@ class HostSerializer(ModelSerializer):
         help_text="IP地址",
         required=True,
         error_messages={
-            "invalid": "vumvumvum",
+            "invalid": "IP格式不合法",
             "required": "必须包含[ip]字段",
         })
     port = serializers.IntegerField(
