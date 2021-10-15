@@ -7,7 +7,6 @@ import datetime
 import traceback
 from omp_server.settings import TIME_ZONE
 
-
 logger = logging.getLogger('server')
 
 
@@ -27,6 +26,7 @@ class CurlPrometheus(object):
         except Exception as e:
             logger.error("prometheus请求alerts失败：" + str(e))
             return {"status": "-1"}
+
 
 def utc_local(utc_time_str, utc_format='%Y-%m-%dT%H:%M:%SZ'):
     """
@@ -51,7 +51,6 @@ def utc_local(utc_time_str, utc_format='%Y-%m-%dT%H:%M:%SZ'):
         return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
-
 def explain_prometheus(params):
     """
       生成前端异常清单所需要的json列表
@@ -60,14 +59,22 @@ def explain_prometheus(params):
     r = CurlPrometheus.curl_prometheus()
     if r.get('status') == 'success':
         prometheus_info = []
-        for lab in r.get('data').get('alerts'):
+        compare_list = []
+        alerts = r.get('data').get('alerts')
+        prometheus_alerts = sorted(
+            alerts, key=lambda e: e.get('labels').__getitem__('severity'), reverse=False)
+        for lab in prometheus_alerts:
             if lab.get('status') == 'resolved':
                 continue
             tmp_dict = {}
             label = lab.get('labels')
+            tmp_list = [label.get('alertname'), label.get('instance'), label.get('job')]
+            if tmp_list in compare_list:
+                continue
+            compare_list.append(tmp_list)
             tmp_dict['type'] = "host" if label.get(
                 'job') == 'nodeExporter' else "service"
-            tmp_dict['ip'] = label.get('instance').split(":")[0]
+            tmp_dict['ip'] = label.get('instance').split(":")[0]           
             tmp_dict['instance_name'] = label.get('app') if label.get(
                 'app') else host_list.get(tmp_dict.get('ip'))
             tmp_dict['severity'] = label.get('severity')
