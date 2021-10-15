@@ -96,7 +96,7 @@ class UsersTest(AutoLoginTest):
         user = self.get_user()
 
         # 查询不存在用户 -> 查询失败
-        resp = self.get(reverse("users-detail", [99])).json()
+        resp = self.get(reverse("users-detail", [9999])).json()
         self.assertDictEqual(resp, {
             'code': 1,
             'message': '未找到',
@@ -121,7 +121,7 @@ class UsersTest(AutoLoginTest):
         user = self.get_user()
 
         # 更新不存在用户 -> 更新失败
-        resp = self.put(reverse("users-detail", [99]), {
+        resp = self.put(reverse("users-detail", [9999]), {
             "username": user.username,
             "password": "update_user_pass",
             "re_password": "update_user_pass",
@@ -166,7 +166,7 @@ class UsersTest(AutoLoginTest):
         user = self.get_user()
 
         # 更新不存在用户 -> 更新失败
-        resp = self.patch(reverse("users-detail", [99]), {
+        resp = self.patch(reverse("users-detail", [9999]), {
             "password": "partial_update_user_pass",
             "re_password": "partial_update_user_pass",
             "email": "partial_update_user_email@cloudwise.com",
@@ -196,7 +196,7 @@ class UsersTest(AutoLoginTest):
         self.get_user()
 
         # 删除不存在用户 -> 删除失败
-        resp = self.delete(reverse("users-detail", [99])).json()
+        resp = self.delete(reverse("users-detail", [9999])).json()
         self.assertDictEqual(resp, {
             'code': 1,
             'message': '未找到',
