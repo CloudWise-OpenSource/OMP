@@ -58,6 +58,7 @@ class HostSerializer(ModelSerializer):
         required=True,
         min_value=1, max_value=65535,
         error_messages={
+            "invalid": "端口格式不合法",
             "required": "必须包含[port]字段",
             "max_value": "端口超出指定范围",
             "min_value": "端口超出指定范围",
