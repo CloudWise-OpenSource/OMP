@@ -1,4 +1,5 @@
 from db_models.models import GrafanaMainPage, MonitorUrl, Host
+from promemonitor.alert_util import utc_to_local
 import requests
 import json
 import logging
@@ -47,7 +48,7 @@ def explain_prometheus(params):
             tmp_dict['description'] = annotation.get('description')
             lab_date = lab.get('activeAt') if lab.get(
                 'activeAt') else lab.get('startsAt')
-            tmp_dict['date'] = lab_date.split(".")[0].replace("T", " ")
+            tmp_dict['date'] = utc_to_local(lab_date)
             prometheus_info.append(tmp_dict)
         prometheus_json = explain_url(prometheus_info)
         if params:
