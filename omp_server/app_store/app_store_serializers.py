@@ -102,7 +102,7 @@ class UploadPackageSerializer(Serializer):
 class RemovePackageSerializer(Serializer):
     """ 移除安装包序列化类 """
 
-    uuid = serializers.UUIDField(
+    uuid = serializers.CharField(
         help_text="上传安装包uuid",
         required=True,
         error_messages={"required": "必须包含[uuid]字段"}
@@ -119,11 +119,22 @@ class RemovePackageSerializer(Serializer):
         """ 校验安装包名称 """
         operation_uuid = attrs.get("uuid")
         package_names = attrs.get("package_names")
-        history_queryset = UploadPackageHistory.objects.filter(
+        queryset = UploadPackageHistory.objects.filter(
             operation_uuid=operation_uuid,
             package_name__in=package_names,
         )
-        if not history_queryset.exists() or \
-                len(history_queryset) != len(package_names):
+        if not queryset.exists() or \
+                len(queryset) != len(package_names):
+            logger.error(f"remove package error: uuid-{operation_uuid},"
+                         f"package_names-{package_names}")
             raise ValidationError({"uuid": "该 uuid 未找到有效的操作记录"})
+        attrs["queryset"] = queryset
         return attrs
+
+    def create(self, validated_data):
+        """ 上传安装包记录表软删除 """
+        queryset = validated_data.pop("queryset", None)
+        if queryset is not None:
+            for upload_package_history in queryset:
+                upload_package_history.delete()
+        return validated_data
