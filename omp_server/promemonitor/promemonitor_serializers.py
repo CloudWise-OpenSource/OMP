@@ -154,7 +154,7 @@ class MaintainSerializer(ModelSerializer):
     )
 
     def validate(self, attrs):
-        """ 校验env_name是否存在 """
+        """ 校验env是否存在 """
         return attrs
 
     def create(self, validated_data):

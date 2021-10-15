@@ -127,10 +127,10 @@ class Alertmanager:
         """
         将指定env的主机设置为维护状态
         """
-        maintain_id = self.add_setting(value=env_name, name='env_name')
+        maintain_id = self.add_setting(value=env_name, name='env')
         if not maintain_id:
             return None
-        Maintain.objects.create(matcher_name='env_name',
+        Maintain.objects.create(matcher_name='env',
                                 matcher_value=env_name, maintain_id=maintain_id)
         return maintain_id
 
@@ -149,7 +149,7 @@ class Alertmanager:
 
     def revoke_maintain_by_env_name(self, env_name):
         maintain = Maintain.objects.filter(
-            matcher_name='env_name', matcher_value=env_name).first()
+            matcher_name='env', matcher_value=env_name).first()
         if not maintain:
             return False
         maintain_id = maintain.maintain_id

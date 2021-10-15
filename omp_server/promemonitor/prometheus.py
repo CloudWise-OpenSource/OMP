@@ -17,7 +17,7 @@ class Prometheus:
 
     def __init__(self):
         self.basic_url = self.get_prometheus_config()
-        self.prometheus_api_query_url = f'http://{self.basic_url}/api/v1/query?query='
+        self.prometheus_api_query_url = f'http://{self.basic_url}/api/v1/query?query='  # NOQA
 
     @staticmethod
     def get_prometheus_config():

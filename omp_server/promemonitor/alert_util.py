@@ -25,19 +25,19 @@ def get_service_type(ip, service_name):
 
 def get_monitor_url(ele):
     try:
-        monitor_url = explain_url(ele)[0].get('monitor')
+        monitor_url = explain_url(ele)[0].get('monitor_url')
     except TypeError:
         logger.error('get monitor url failed')
-        monitor_url = '-'
+        monitor_url = None
     return monitor_url
 
 
 def get_log_url(ele):
     try:
-        monitor_log_url = explain_url(ele)[0].get('monitor_log')
+        monitor_log_url = explain_url(ele)[0].get('log_url')
     except TypeError:
         logger.error('get monitor log url failed')
-        monitor_log_url = '-'
+        monitor_log_url = None
     return monitor_log_url
 
 
