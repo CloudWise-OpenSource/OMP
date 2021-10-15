@@ -9,12 +9,13 @@
 
 from rest_framework.routers import DefaultRouter
 from app_store.views import (
-    LabelListView, ComponentListView, ServiceListView
+    LabelListView, ComponentListView, ServiceListView,
+    UploadPackageView, RemovePackageView
 )
-from app_store.views import UploadPackageView
 
 router = DefaultRouter()
 router.register("labels", LabelListView, basename="labels")
 router.register("components", ComponentListView, basename="components")
 router.register("services", ServiceListView, basename="services")
 router.register("upload", UploadPackageView, basename="upload")
+router.register("remove", RemovePackageView, basename="remove")
