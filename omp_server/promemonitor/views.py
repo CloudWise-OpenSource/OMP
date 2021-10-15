@@ -80,7 +80,7 @@ class GrafanaUrlViewSet(ListModelMixin, GenericViewSet):
 
     def list(self, request, *args, **kwargs):
         params = request.query_params.dict()
-        asc = params.pop('asc', False)
+        asc = params.pop('asc', True)
         asc = True if asc == '0' else False
         ordering = params.pop('ordering', 'date')
         current = grafana_url.explain_prometheus(params)
