@@ -12,7 +12,7 @@ from rest_framework.serializers import Serializer
 from utils.common.exceptions import OperateError
 
 from db_models.models import (
-    ApplicationHub, ProductHub
+    ApplicationHub, ProductHub, UploadPackageHistory
 )
 
 logger = logging.getLogger("server")
@@ -97,3 +97,33 @@ class UploadPackageSerializer(Serializer):
                 except Exception:
                     raise OperateError("文件写入过程失败")
         return validated_data
+
+
+class RemovePackageSerializer(Serializer):
+    """ 移除安装包序列化类 """
+
+    uuid = serializers.UUIDField(
+        help_text="上传安装包uuid",
+        required=True,
+        error_messages={"required": "必须包含[uuid]字段"}
+    )
+
+    package_names = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="安装包名称列表",
+        required=True, allow_empty=False,
+        error_messages={"required": "必须包含[package_names]字段"}
+    )
+
+    def validate(self, attrs):
+        """ 校验安装包名称 """
+        operation_uuid = attrs.get("uuid")
+        package_names = attrs.get("package_names")
+        history_queryset = UploadPackageHistory.objects.filter(
+            operation_uuid=operation_uuid,
+            package_name__in=package_names,
+        )
+        if not history_queryset.exists() or \
+                len(history_queryset) != len(package_names):
+            raise ValidationError({"uuid": "该 uuid 未找到有效的操作记录"})
+        return attrs

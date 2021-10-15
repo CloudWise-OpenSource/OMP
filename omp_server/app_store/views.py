@@ -2,11 +2,12 @@
 应用商店相关视图
 """
 from rest_framework.viewsets import GenericViewSet
-from rest_framework.mixins import ListModelMixin, CreateModelMixin
 from rest_framework.response import Response
+from rest_framework.mixins import (
+    ListModelMixin, CreateModelMixin
+)
 
 from django_filters.rest_framework.backends import DjangoFilterBackend
-from app_store.app_store_serializers import UploadPackageSerializer
 
 from db_models.models import (
     Labels, ApplicationHub, ProductHub, UploadPackageHistory
@@ -16,7 +17,8 @@ from app_store.app_store_filters import (
     LabelFilter, ComponentFilter, ServiceFilter
 )
 from app_store.app_store_serializers import (
-    ComponentListSerializer, ServiceListSerializer
+    ComponentListSerializer, ServiceListSerializer,
+    UploadPackageSerializer, RemovePackageSerializer
 )
 
 
@@ -102,11 +104,21 @@ class ServiceListView(AppStoreListView):
 
 class UploadPackageView(GenericViewSet, CreateModelMixin):
     """
-    create:
-    上传安装包
+        create:
+        上传安装包
     """
     queryset = UploadPackageHistory.objects.all()
     serializer_class = UploadPackageSerializer
-
     # 操作信息描述
     post_description = "上传安装包"
+
+
+class RemovePackageView(GenericViewSet, CreateModelMixin):
+    """
+        post:
+        批量移除安装包
+    """
+    queryset = UploadPackageHistory.objects.all()
+    serializer_class = RemovePackageSerializer
+    # 操作信息描述
+    post_description = "移除安装包"
