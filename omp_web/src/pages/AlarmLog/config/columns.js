@@ -204,7 +204,7 @@ const getColumnsConfig = (
                       ...record,
                       ip: record.alert_host_ip,
                     },
-                    isLog: false,
+                    isLog: true,
                   });
                 }}
               >

@@ -192,7 +192,7 @@ const getColumnsConfig = (
                       ...record,
                       ip: record.ip,
                     },
-                    isLog: false,
+                    isLog: true,
                   });
                 }}
               >
