@@ -10,7 +10,7 @@ from db_models.models import Host
 
 
 class HostIdsSerializer(Serializer):
-    """ 主机Agent重启序列化类 """
+    """ 主机 id 列表序列化类 """
 
     host_ids = serializers.ListField(
         help_text="主机 ID 列表",
