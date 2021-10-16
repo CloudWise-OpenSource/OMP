@@ -148,7 +148,7 @@ class PrometheusUtils(object):
             mountpoint="DATA_PATH"})*100/(node_filesystem_avail_bytes{
             env="ENV",mountpoint="DATA_PATH"}+(node_filesystem_size_bytes{
             env="ENV",mountpoint="DATA_PATH"}-node_filesystem_free_bytes{
-            env="ENV",mountpoint="DATA_PATH"})))by(instance)>= """
+            env="ENV",mountpoint="DATA_PATH"})))by(instance,env)>= """
         return _expr.replace("ENV", env).replace(
             "DATA_PATH", data_path).replace("\n", "").replace(
             " ", ""
