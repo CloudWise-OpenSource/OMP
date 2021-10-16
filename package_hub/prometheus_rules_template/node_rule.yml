@@ -6,7 +6,7 @@ groups:
       consignee: ${EMAIL_ADDRESS}
       description: 实例 {{ $labels.instance }} monitor_agent进程丢失或主机发生宕机已超过1分钟
       summary: instance down alert({{ $labels.instance }})
-    expr: sum(up{job="nodeExporter", env="${ENV}"}) by (instance) < 1
+    expr: sum(up{job="nodeExporter", env="${ENV}"}) by (instance,env) < 1
     for: 1m
     labels:
       job: nodeExporter
@@ -18,7 +18,7 @@ groups:
         90
       summary: cpu_used (instance {{ $labels.instance }})
     expr: (100 - sum(avg without (cpu)(irate(node_cpu_seconds_total{mode='idle', env="${ENV}"}[2m])))
-      by (instance) * 100) >= 90
+      by (instance,env) * 100) >= 90
     for: 1m
     labels:
       job: nodeExporter
@@ -30,7 +30,7 @@ groups:
         80
       summary: cpu_used (instance {{ $labels.instance }})
     expr: (100 - sum(avg without (cpu)(irate(node_cpu_seconds_total{mode='idle', env="${ENV}"}[2m])))
-      by (instance) * 100) >= 80
+      by (instance,env) * 100) >= 80
     for: 1m
     labels:
       job: nodeExporter
@@ -66,7 +66,7 @@ groups:
         阈值 90%
       summary: disk_root_used (instance {{ $labels.instance }})
     expr: max((node_filesystem_size_bytes{env="${ENV}",mountpoint="/"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="/"})
-      *100/(node_filesystem_avail_bytes{env="${ENV}",mountpoint="/"}+(node_filesystem_size_bytes{env="${ENV}",mountpoint="/"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="/"})))by(instance)
+      *100/(node_filesystem_avail_bytes{env="${ENV}",mountpoint="/"}+(node_filesystem_size_bytes{env="${ENV}",mountpoint="/"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="/"})))by(instance,env)
       >= 90
     for: 1m
     labels:
@@ -79,7 +79,7 @@ groups:
         阈值 80%
       summary: disk_root_used (instance {{ $labels.instance }})
     expr: max((node_filesystem_size_bytes{env="${ENV}",mountpoint="/"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="/"})
-      *100/(node_filesystem_avail_bytes{env="${ENV}",mountpoint="/"}+(node_filesystem_size_bytes{env="${ENV}",mountpoint="/"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="/"})))by(instance)
+      *100/(node_filesystem_avail_bytes{env="${ENV}",mountpoint="/"}+(node_filesystem_size_bytes{env="${ENV}",mountpoint="/"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="/"})))by(instance,env)
       >= 80
     for: 1m
     labels:

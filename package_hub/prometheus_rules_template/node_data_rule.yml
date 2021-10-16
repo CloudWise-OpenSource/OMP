@@ -9,7 +9,7 @@ groups:
         阈值 90%
       summary: disk_data_used (instance {{ $labels.instance }})
     expr: max((node_filesystem_size_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"})
-      *100/(node_filesystem_avail_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"}+(node_filesystem_size_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"})))by(instance)
+      *100/(node_filesystem_avail_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"}+(node_filesystem_size_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"})))by(instance,env)
       >= 90
     for: 1m
     labels:
@@ -23,7 +23,7 @@ groups:
         阈值 80%
       summary: disk_data_used (instance {{ $labels.instance }})
     expr: max((node_filesystem_size_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"})
-      *100/(node_filesystem_avail_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"}+(node_filesystem_size_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"})))by(instance)
+      *100/(node_filesystem_avail_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"}+(node_filesystem_size_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"})))by(instance,env)
       >= 80
     for: 1m
     labels:
