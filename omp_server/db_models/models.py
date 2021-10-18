@@ -263,10 +263,16 @@ class UploadPackageHistory(TimeStampMixin, DeleteMixin):
     PACKAGE_STATUS_SUCCESS = 0
     PACKAGE_STATUS_FAILED = 1
     PACKAGE_STATUS_PARSING = 2
+    PACKAGE_STATUS_PUBLISH_SUCCESS = 3
+    PACKAGE_STATUS_PUBLISH_FAILED = 4
+    PACKAGE_STATUS_PUBLISHING = 5
     PACKAGE_STATUS_CHOICES = (
         (PACKAGE_STATUS_SUCCESS, "成功"),
         (PACKAGE_STATUS_FAILED, "失败"),
-        (PACKAGE_STATUS_PARSING, "解析中")
+        (PACKAGE_STATUS_PARSING, "解析中"),
+        (PACKAGE_STATUS_PUBLISH_SUCCESS, "发布成功"),
+        (PACKAGE_STATUS_PUBLISH_FAILED, "发布失败"),
+        (PACKAGE_STATUS_PUBLISHING, "发布中"),
     )
     operation_uuid = models.CharField(
         "唯一操作uuid", max_length=64,

@@ -58,9 +58,11 @@ def get_disk_detail():
     all_partitions = psutil.disk_partitions()
     ret_dic = {}
     for item in all_partitions:
+        # 当过滤到挂载盘中有以下关键字时，跳过此磁盘的检查
         if "docker/overlay" in item.mountpoint or \
                 "docker/container" in item.mountpoint or \
-                "/boot" == item.mountpoint:
+                "/boot" == item.mountpoint or \
+                item.mountpoint.starswith("/run/media"):
             continue
         disk_usage = psutil.disk_usage(item.mountpoint)
         _disk_total = byte_to_gb(int(disk_usage.total))
