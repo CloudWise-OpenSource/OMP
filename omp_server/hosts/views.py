@@ -30,6 +30,7 @@ from hosts.hosts_serializers import (
 )
 from promemonitor.prometheus import Prometheus
 from promemonitor.grafana_url import explain_url
+from utils.common.exceptions import OperateError
 
 logger = logging.getLogger("server")
 
@@ -199,10 +200,14 @@ class HostBatchValidateView(GenericViewSet, ListModelMixin, CreateModelMixin):
         template_path = os.path.join(
             settings.BASE_DIR.parent,
             "package_hub", "template", template_file_name)
-        file = open(template_path, 'rb')
-        response = FileResponse(file)
-        response["Content-Type"] = "application/octet-stream"
-        response["Content-Disposition"] = f"attachment;filename={template_file_name}"
+        try:
+            file = open(template_path, 'rb')
+            response = FileResponse(file)
+            response["Content-Type"] = "application/octet-stream"
+            response["Content-Disposition"] = f"attachment;filename={template_file_name}"
+        except FileNotFoundError:
+            logger.error("import_hosts_template.xlsx file not found")
+            raise OperateError("模板文件缺失")
         return response
 
     def create(self, request, *args, **kwargs):
