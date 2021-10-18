@@ -10,39 +10,45 @@ class AppStoreDetailTest(AutoLoginTest):
 
     def setUp(self):
         super(AppStoreDetailTest, self).setUp()
-        Labels.objects.create(label_type=0, label_name='数据库')
-        Labels.objects.create(label_type=1, label_name='自有组件')
+        label1 = Labels(label_type=0, label_name='数据库')
+        label2 = Labels(label_type=1, label_name='自有组件')
+        label1.save()
+        label2.save()
 
-        UploadPackageHistory.objects.create(
+        uph1 = UploadPackageHistory(
             operation_uuid='12',
             package_name='mysql.tar.gz',
             package_md5='12md5',
             package_path='/data/mysql',
             package_status=0,
         )
-        UploadPackageHistory.objects.create(
+        uph2 = UploadPackageHistory(
             operation_uuid='123',
             package_name='dosm.tar.gz',
             package_md5='123md5',
             package_path='/data/dosm',
             package_status=0,
         )
+        uph1.save()
+        uph2.save()
 
-        ApplicationHub.objects.create(
+        app1 = ApplicationHub(
             is_release=True, app_type=0,
             app_name='mysql',
-            # labels
             app_version='5.1', app_description='mysql描述',
             app_port='3306', app_package=UploadPackageHistory.objects.get(operation_uuid=12)
         )
-        ProductHub.objects.create(
+        app1.save()
+        app1.app_labels.add(*[label1])
+        pro1 = ProductHub.objects.create(
             is_release=True, pro_name='dosm',
             pro_version='5.2',
-            # labels
             pro_description='dosm描述', pro_dependence='',
             pro_services='dosmH5, dosmWeb',
             pro_package=UploadPackageHistory.objects.get(operation_uuid=123)
         )
+        pro1.save()
+        pro1.pro_labels.add(*[label2])
 
     def test_application_detail(self):
         """ 测试应用详情 """
