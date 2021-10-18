@@ -296,6 +296,16 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
             "data": None
         })
 
+        # 不支持的 operate_system -> 创建失败
+        data = self.correct_host_data.copy()
+        data.update({"operate_system": "SUSE"})
+        resp = self.post(self.create_host_url, data).json()
+        self.assertDictEqual(resp, {
+            "code": 1,
+            "message": "操作系统支持CentOS/RedHat",
+            "data": None
+        })
+
     @mock.patch.object(SSH, "check", return_value=(False, "error message"))
     def test_wrong_ssh(self, ssh_mock):
         """ 测试创建主机，SSH 校验未通过"""
