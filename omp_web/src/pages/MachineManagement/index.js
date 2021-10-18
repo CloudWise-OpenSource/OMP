@@ -24,6 +24,8 @@ import { useHistory, useLocation } from "react-router-dom";
 const MachineManagement = () => {
   const location = useLocation();
 
+  const history = useHistory();
+
   const dispatch = useDispatch();
 
   const [loading, setLoading] = useState(false);
@@ -121,7 +123,7 @@ const MachineManagement = () => {
       })
       .catch((e) => console.log(e))
       .finally(() => {
-        location.state = {}
+        location.state = {};
         setLoading(false);
         fetchIPlist();
       });
@@ -363,7 +365,7 @@ const MachineManagement = () => {
   useEffect(() => {
     fetchData(
       { current: pagination.current, pageSize: pagination.pageSize },
-      { ip: location.state?.ip },
+      { ip: location.state?.ip }
     );
   }, []);
 
@@ -523,11 +525,12 @@ const MachineManagement = () => {
             fetchHistoryData,
             setCloseMaintainOneModal,
             setOpenMaintainOneModal,
-            setShowIframe
+            setShowIframe,
+            history
           )}
-          notSelectable={(record)=>({
+          notSelectable={(record) => ({
             // 部署中的不能选中
-            disabled:(record?.host_agent == 3) || (record?.monitor_agent == 3)
+            disabled: record?.host_agent == 3 || record?.monitor_agent == 3,
           })}
           dataSource={dataSource}
           pagination={{

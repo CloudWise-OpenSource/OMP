@@ -371,7 +371,8 @@ const getColumnsConfig = (
   fetchHistoryData,
   setCloseMaintainModal,
   setOpenMaintainModal,
-  setShowIframe
+  setShowIframe,
+  history
 ) => {
   return [
     {
@@ -454,7 +455,11 @@ const getColumnsConfig = (
         return str == "-" ? (
           "-"
         ) : (
-          <span style={{ color: colorConfig[record.cpu_status], fontWeight:500 }}>{str}%</span>
+          <span
+            style={{ color: colorConfig[record.cpu_status], fontWeight: 500 }}
+          >
+            {str}%
+          </span>
         );
       },
     },
@@ -472,7 +477,11 @@ const getColumnsConfig = (
         return str == "-" ? (
           "-"
         ) : (
-          <span style={{ color: colorConfig[record.mem_status], fontWeight:500 }}>{str}%</span>
+          <span
+            style={{ color: colorConfig[record.mem_status], fontWeight: 500 }}
+          >
+            {str}%
+          </span>
         );
       },
     },
@@ -490,7 +499,14 @@ const getColumnsConfig = (
         return str == "-" ? (
           "-"
         ) : (
-          <span style={{ color: colorConfig[record.root_disk_status], fontWeight:500 }}>{str}%</span>
+          <span
+            style={{
+              color: colorConfig[record.root_disk_status],
+              fontWeight: 500,
+            }}
+          >
+            {str}%
+          </span>
         );
       },
       // width:120
@@ -509,7 +525,14 @@ const getColumnsConfig = (
         return str == "-" ? (
           "-"
         ) : (
-          <span style={{ color: colorConfig[record.data_disk_status], fontWeight:500 }}>{str}%</span>
+          <span
+            style={{
+              color: colorConfig[record.data_disk_status],
+              fontWeight: 500,
+            }}
+          >
+            {str}%
+          </span>
         );
       },
     },
@@ -567,6 +590,27 @@ const getColumnsConfig = (
       //ellipsis: true,
       sorter: (a, b) => a.alert_num - b.alert_num,
       sortDirections: ["descend", "ascend"],
+      render: (text, record) => {
+        if (text && text !== 0) {
+          return (
+            <a
+              onClick={() => {
+                text &&
+                  history.push({
+                    pathname: "/application-monitoring/alarm-log",
+                    state: {
+                      ip: record.ip,
+                    },
+                  });
+              }}
+            >
+              {text}
+            </a>
+          );
+        } else {
+          return text
+        }
+      },
     },
     {
       title: "操作",

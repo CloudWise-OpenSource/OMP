@@ -918,6 +918,16 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
   // 失败的columns
   const errorColumns = [
     {
+      title: "行数",
+      key: "row",
+      dataIndex: "row",
+      align: "center",
+      //render: nonEmptyProcessing,
+      width: 60,
+      ellipsis: true,
+      fixed: "left",
+    },
+    {
       title: "实例名称",
       key: "instance_name",
       dataIndex: "instance_name",
@@ -925,7 +935,7 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
       //render: nonEmptyProcessing,
       width: 140,
       ellipsis: true,
-      fixed: "left",
+      //fixed: "left",
       render: (text) => {
         return (
           <Tooltip title={text}>
@@ -1155,7 +1165,10 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
             break;
         }
       }
-      return result;
+      return {
+        ...result,
+        row:item.key
+      };
     });
     // console.log(queryBody)
     // 校验数据
@@ -1318,7 +1331,7 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
                         return true;
                       })
                       .map((item, idx) => {
-                        return { ...item, key: idx };
+                        return { ...item, key: item.__rowNum__ + 1 };
                       });
                     let column = header.filter((item) => {
                       if (

@@ -14,10 +14,13 @@ import { apiRequest } from "@/config/requestApi";
 import getColumnsConfig from "./config/columns";
 import { SearchOutlined } from "@ant-design/icons";
 import moment from "moment";
-import { useHistory } from "react-router-dom";
+import { useHistory, useLocation } from "react-router-dom";
 
 const AlarmLog = () => {
   const history = useHistory();
+
+  const location = useLocation();
+
   const [loading, setLoading] = useState(false);
 
   const [searchLoading, setSearchLoading] = useState(false);
@@ -29,7 +32,7 @@ const AlarmLog = () => {
   const [dataSource, setDataSource] = useState([]);
   const [ipListSource, setIpListSource] = useState([]);
 
-  const [selectValue, setSelectValue] = useState();
+  const [selectValue, setSelectValue] = useState(location.state?.ip);
 
   const [instanceSelectValue, setInstanceSelectValue] = useState();
 
@@ -75,6 +78,7 @@ const AlarmLog = () => {
       })
       .catch((e) => console.log(e))
       .finally(() => {
+        location.state = {};
         setLoading(false);
         fetchIPlist();
         //fetchNameList();
@@ -136,7 +140,7 @@ const AlarmLog = () => {
   };
 
   useEffect(() => {
-    fetchData(pagination);
+    fetchData(pagination,{ alert_host_ip: location.state?.ip });
   }, []);
 
   return (
