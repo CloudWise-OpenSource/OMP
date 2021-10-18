@@ -372,7 +372,6 @@ class HostBatchValidateSerializer(Serializer):
         host_serializer = HostSerializer(data=host_data)
         if host_serializer.is_valid():
             return "correct", host_data
-        print(host_serializer.errors)
         err_ls = []
         for k, v in host_serializer.errors.items():
             err_ls.extend(v)
@@ -419,6 +418,11 @@ class HostBatchValidateSerializer(Serializer):
             for future in as_completed(future_list):
                 flag, host_data = future.result()
                 result_dict[flag].append(host_data)
+
+        # 按照 row 行号对列表进行排序
+        for v in result_dict.values():
+            if len(v) > 0:
+                v.sort(key=lambda x: x.get("row", 999))
         attrs["result_dict"] = result_dict
         logger.info("host batch validate end")
         return attrs

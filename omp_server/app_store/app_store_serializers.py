@@ -135,6 +135,5 @@ class RemovePackageSerializer(Serializer):
         """ 上传安装包记录表软删除 """
         queryset = validated_data.pop("queryset", None)
         if queryset is not None:
-            for upload_package_history in queryset:
-                upload_package_history.delete()
+            queryset.update(is_deleted=True)
         return validated_data

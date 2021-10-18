@@ -1000,7 +1000,8 @@ class HostBatchValidateTest(AutoLoginTest, HostsResourceMixin, HostBatchRequestM
                 "username": "root",
                 "password": "root_password",
                 "data_folder": "/data",
-                "operate_system": random.choice(("CentOS", "RedHat"))
+                "operate_system": random.choice(("CentOS", "RedHat")),
+                # "row": i * 100
             })
         return host_list, repeat_number
 
@@ -1022,7 +1023,7 @@ class HostBatchValidateTest(AutoLoginTest, HostsResourceMixin, HostBatchRequestM
         """ 测试错误格式 """
 
         # 格式错误 -> 添加失败
-        data = self.get_host_batch_request(10)
+        data = self.get_host_batch_request(10, row=True)
         data["host_list"].append(12345)
         resp = self.post(self.batch_validate_url, data).json()
         self.assertDictEqual(resp, {
@@ -1038,9 +1039,9 @@ class HostBatchValidateTest(AutoLoginTest, HostsResourceMixin, HostBatchRequestM
     def test_batch_validate_error_field(self, deploy_agent_mock, cmd_mock, is_sudo, ssh_mock):
         """ 测试批量校验错误字段 """
 
-        # 存在实例名重复 -> 返回值 error 中包含错误信息
         host_number = 10
-        data = self.get_host_batch_request(host_number)
+        # 存在实例名重复 -> 返回值 error 中包含错误信息
+        data = self.get_host_batch_request(host_number, row=True)
         data["host_list"], repeat_number = self.create_repeat_data(
             data.get("host_list"), "instance_name")
         resp = self.post(self.batch_validate_url, data).json()
@@ -1053,8 +1054,7 @@ class HostBatchValidateTest(AutoLoginTest, HostsResourceMixin, HostBatchRequestM
             )
 
         #  存在IP重复 -> 返回值 error 中包含错误信息
-        host_number = 10
-        data = self.get_host_batch_request(host_number)
+        data = self.get_host_batch_request(host_number, row=True)
         data["host_list"], repeat_number = self.create_repeat_data(
             data.get("host_list"), "ip")
         resp = self.post(self.batch_validate_url, data).json()
@@ -1067,8 +1067,7 @@ class HostBatchValidateTest(AutoLoginTest, HostsResourceMixin, HostBatchRequestM
             )
 
         # 存在实例名、IP混合重复 -> 返回值 error 中包含错误信息
-        host_number = 10
-        data = self.get_host_batch_request(host_number)
+        data = self.get_host_batch_request(host_number, row=True)
         data["host_list"], repeat_number = self.create_repeat_data(
             data.get("host_list"), "all")
         resp = self.post(self.batch_validate_url, data).json()
@@ -1080,6 +1079,17 @@ class HostBatchValidateTest(AutoLoginTest, HostsResourceMixin, HostBatchRequestM
                 "实例名、IP在表格中重复"
             )
 
+        # 测试主机数据信息不合法 -> 返回值 error 中包含错误信息
+        data = self.get_host_batch_request(host_number, row=True)
+        error_index = random.randint(0, host_number - 1)
+        data.get("host_list")[error_index]["instance_name"] = "中文实例名"
+        resp = self.post(self.batch_validate_url, data).json()
+        error_ls = resp.get("data").get("error", [])
+        self.assertEqual(len(error_ls), 1)
+        self.assertEqual(
+            error_ls[0].get("validate_error"),
+            "实例名不可含有中文; 实例名格式不合法")
+
     @mock.patch.object(SSH, "check", return_value=(True, ""))
     @mock.patch.object(SSH, "is_sudo", return_value=(True, "is sudo"))
     @mock.patch.object(SSH, "cmd", return_value=(True, ""))
@@ -1089,7 +1099,7 @@ class HostBatchValidateTest(AutoLoginTest, HostsResourceMixin, HostBatchRequestM
 
         # 正确字段 -> 返回值全部包含于 correct ，error 中无数据
         host_number = 10
-        data = self.get_host_batch_request(host_number)
+        data = self.get_host_batch_request(host_number, row=True)
         resp = self.post(self.batch_validate_url, data).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
@@ -1097,6 +1107,11 @@ class HostBatchValidateTest(AutoLoginTest, HostsResourceMixin, HostBatchRequestM
         error_ls = resp.get("data").get("error", [])
         self.assertEqual(len(correct_ls), host_number)
         self.assertEqual(len(error_ls), 0)
+        # 返回结果按照 row 进行排序
+        self.assertEqual(
+            correct_ls,
+            list(sorted(correct_ls, key=lambda x: x.get("row")))
+        )
 
 
 class HostBatchImportTest(AutoLoginTest, HostsResourceMixin, HostBatchRequestMixin):

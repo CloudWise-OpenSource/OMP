@@ -60,11 +60,11 @@ class HostBatchRequestMixin:
     """ 主机批量请求混入类 """
 
     @staticmethod
-    def get_host_batch_request(number):
+    def get_host_batch_request(number, row=False):
         """ 模拟请求信息 """
         host_list = []
         for i in range(number):
-            host_list.append({
+            data = {
                 "instance_name": f"host_new_{i}",
                 "ip": f"10.10.10.{i}",
                 "port": 36000,
@@ -72,7 +72,10 @@ class HostBatchRequestMixin:
                 "password": "root_password",
                 "data_folder": "/data",
                 "operate_system": random.choice(("CentOS", "RedHat"))
-            })
+            }
+            if row:
+                data["row"] = i + 1
+            host_list.append(data)
         return {"host_list": host_list}
 
 
