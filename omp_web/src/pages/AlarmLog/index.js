@@ -297,7 +297,7 @@ const AlarmLog = () => {
                   suffix={
                     !instanceSelectValue && (
                       <SearchOutlined
-                        style={{ fontSize: 12, color: "#b6b6b6" }}
+                        style={{ color: "#b6b6b6" }}
                       />
                     )
                   }
