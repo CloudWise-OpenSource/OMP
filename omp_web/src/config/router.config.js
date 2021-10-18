@@ -1,5 +1,5 @@
 //import ServiceManagement from "@/pages/ProductsManagement/ServiceManagement";
-import WarningRecord from "@/pages/OperationManagement/WarningRecord";
+import AppStore from "@/pages/AppStore";
 //import VersionManagement from "@/pages/ProductsManagement/VersionManagement";
 import MachineManagement from "@/pages/MachineManagement"
 import UserManagement from "@/pages/UserManagement";
@@ -25,12 +25,12 @@ export default [
   {
     menuTitle: "应用管理",
     menuIcon: <AppstoreOutlined />,
-    menuKey: "/operation-management",
+    menuKey: "/application_management",
     children: [
       {
-        title: "服务管理",
-        path: "/operation-management/waring-records",
-        component: WarningRecord ,
+        title: "应用商店",
+        path: "/application_management/app_store",
+        component: AppStore ,
       },
     ],
   },
