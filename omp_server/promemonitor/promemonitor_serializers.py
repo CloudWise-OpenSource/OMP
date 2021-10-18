@@ -1,6 +1,7 @@
 import datetime
 import logging
 
+from django.db.models import F
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer, ListSerializer, Serializer
 from rest_framework.exceptions import ValidationError
@@ -100,7 +101,6 @@ class MonitorUrlSerializer(ModelSerializer):
 
 
 class ListAlertSerializer(ModelSerializer):
-
     class Meta:
         model = Alert
         fields = "__all__"
@@ -235,6 +235,9 @@ class ReceiveAlertSerializer(Serializer):
                 # env='default'  # TODO 此版本默认不赋值
             )
             alert_obj_list.append(alert)
+            if alert_info.get('alert_type') == 'host':
+                Host.objects.filter(ip=alert_info.get('alert_host_ip')).update(
+                    alert_num=F("alert_num") + 1)
         Alert.objects.bulk_create(alert_obj_list)
         return validated_data
 
