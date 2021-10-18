@@ -2,10 +2,9 @@
 应用商店相关视图
 """
 from rest_framework.viewsets import GenericViewSet
+
+from rest_framework.mixins import ListModelMixin, CreateModelMixin, RetrieveModelMixin
 from rest_framework.response import Response
-from rest_framework.mixins import (
-    ListModelMixin, CreateModelMixin
-)
 
 from django_filters.rest_framework.backends import DjangoFilterBackend
 
@@ -19,6 +18,9 @@ from app_store.app_store_filters import (
 from app_store.app_store_serializers import (
     ComponentListSerializer, ServiceListSerializer,
     UploadPackageSerializer, RemovePackageSerializer
+)
+from app_store.app_store_serializers import (
+    ProductDetailSerializer, ApplicationDetailSerializer
 )
 
 
@@ -122,3 +124,19 @@ class RemovePackageView(GenericViewSet, CreateModelMixin):
     serializer_class = RemovePackageSerializer
     # 操作信息描述
     post_description = "移除安装包"
+
+
+class ApplicationDetailView(GenericViewSet, RetrieveModelMixin):
+    queryset = ApplicationHub.objects.all()
+    serializer_class = ApplicationDetailSerializer
+
+    # 操作信息描述
+    get_description = "查询组件详情"
+
+
+class ProductDetailView(GenericViewSet, RetrieveModelMixin):
+    queryset = ProductHub.objects.all()
+    serializer_class = ProductDetailSerializer
+
+    # 操作信息描述
+    get_description = "查询产品详情"

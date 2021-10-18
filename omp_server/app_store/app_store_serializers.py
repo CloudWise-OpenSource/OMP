@@ -137,3 +137,63 @@ class RemovePackageSerializer(Serializer):
         if queryset is not None:
             queryset.update(is_deleted=True)
         return validated_data
+
+
+class ApplicationDetailSerializer(ModelSerializer):
+    """ 组件详情序列化器 """
+    versions = serializers.SerializerMethodField()
+
+    class Meta:
+        """ 元数据 """
+        model = ApplicationHub
+        fields = ("app_name", "versions",)
+
+    def get_versions(self, obj):  # NOQA
+        """ 获取组件版本数据 """
+        application_queryset = ApplicationHub.objects.filter(
+            app_name=obj.app_name)
+        application_list = list()
+        for item in application_queryset:
+            application_list.append({
+                "app_name": item.app_name,
+                "app_version": item.app_version,
+                "app_logo": item.app_logo,
+                "app_description": item.app_description,
+                # "app_labels": item.app_labels,
+                "created": item.created,
+                "app_package_md5": item.app_package.package_md5,
+                "app_operation_user": item.app_package.operation_user,
+                "app_dependence": item.app_dependence,
+                "app_instances_info": {}  # TODO 暂为空
+            })
+        return application_list
+
+
+class ProductDetailSerializer(ModelSerializer):
+    """ 产品详情序列化器 """
+    versions = serializers.SerializerMethodField()
+
+    class Meta:
+        """ 元数据 """
+        model = ProductHub
+        fields = ("pro_name", "versions")
+
+    def get_versions(self, obj):  # NOQA
+        """ 获取组件版本数据 """
+        product_queryset = ProductHub.objects.filter(pro_name=obj.pro_name)
+        product_list = list()
+        for ele in product_queryset:
+            product_list.append({
+                "pro_name": ele.pro_name,
+                "pro_version": ele.pro_version,
+                "pro_logo": ele.pro_logo,
+                "pro_description": ele.pro_description,
+                # "pro_labels": ele.pro_labels,
+                "created": ele.created,
+                "pro_package_md5": ele.pro_package.package_md5,
+                "pro_operation_user": ele.pro_package.operation_user,
+                "pro_dependence": ele.pro_dependence,
+                "pro_services": ele.pro_services,
+                "pro_instances_info": {}  # TODO 暂无
+            })
+        return product_list
