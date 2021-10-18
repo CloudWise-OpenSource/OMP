@@ -34,6 +34,7 @@ const getColumnsConfig = (
     {
       title: "IP地址",
       key: "alert_host_ip",
+      width: 200,
       dataIndex: "alert_host_ip",
       ellipsis: true,
       sorter: (a, b) => a.alert_host_ip - b.alert_host_ip,
@@ -134,7 +135,7 @@ const getColumnsConfig = (
     },
     {
       title: "告警时间",
-      //width:180,
+      width:180,
       key: "alert_time",
       dataIndex: "alert_time",
       align: "center",
@@ -148,7 +149,7 @@ const getColumnsConfig = (
     },
     {
       title: "更新时间",
-      //width:180,
+      width:180,
       key: "create_tim",
       dataIndex: "create_time",
       align: "center",
