@@ -172,7 +172,7 @@ class HostSerializer(ModelSerializer):
             f"test -d {data_folder} || mkdir -p {data_folder}")
         if not success:
             logger.info(f"host create data folder failed: ip-{ip},port-{port},"
-                        f"username-{username},password-{password}"
+                        f"username-{username},password-{password},"
                         f"data_folder-{data_folder}")
             ValidationError({"data_folder": "创建数据分区操作失败"})
 
@@ -324,9 +324,6 @@ class HostMaintenanceSerializer(HostIdsSerializer):
         self.write_host_log(host_queryset, status, "success")
         return validated_data
 
-    def update(self, instance, validated_data):
-        pass
-
 
 class HostAgentRestartSerializer(HostIdsSerializer):
     """ 主机Agent重启序列化类 """
@@ -360,12 +357,6 @@ class HostBatchValidateSerializer(Serializer):
         required=True, allow_empty=False,
         error_messages={"required": "必须包含[host_list]字段"}
     )
-
-    def create(self, validated_data):
-        pass
-
-    def update(self, instance, validated_data):
-        pass
 
     def host_info_validate(self, host_data):
         """ 单个主机信息验证 """
@@ -437,9 +428,3 @@ class HostBatchImportSerializer(Serializer):
         required=True, allow_empty=False,
         error_messages={"required": "必须包含[host_list]字段"}
     )
-
-    def create(self, validated_data):
-        pass
-
-    def update(self, instance, validated_data):
-        pass
