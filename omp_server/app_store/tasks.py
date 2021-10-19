@@ -1,19 +1,3 @@
-import json
-import os
-import sys
-
-import django
-
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_DIR = os.path.dirname(os.path.dirname(CURRENT_DIR))
-PYTHON_PATH = os.path.join(PROJECT_DIR, "component/env/bin/python3")
-MANAGE_PATH = os.path.join(PROJECT_DIR, "omp_server/manage.py")
-sys.path.append(os.path.join(PROJECT_DIR, "omp_server"))
-
-# 加载Django环境
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "omp_server.settings")
-django.setup()
-
 """
 主机相关异步任务
 """
@@ -23,14 +7,13 @@ import random
 import yaml
 import logging
 import json
-import time
 from celery import shared_task
 from app_store.lockredis import *
 from celery.utils.log import get_task_logger
 from utils.plugin import public_utils
 from utils.parse_config import OMP_REDIS_PORT, OMP_REDIS_PASSWORD, OMP_REDIS_HOST
 from db_models.models import UploadPackageHistory, ApplicationHub, ProductHub
-from app_store.upload_task import publish_bak_end
+from app_store.upload_task import CreateDatabase
 
 # 屏蔽celery任务日志中的paramiko日志
 logging.getLogger("paramiko").setLevel(logging.WARNING)
@@ -49,7 +32,6 @@ class PublicAction(object):
         self.md5_obj = UploadPackageHistory.objects.filter(package_md5=md5)
 
     def update_package_status(self, status, msg=None):
-        print(str(self.md5_obj))
         self.md5_obj.update(package_status=status, error_msg=msg)
         logger.info(msg)
 
@@ -212,9 +194,9 @@ def front_end_verified(uuid, operation_user, package_name, md5=None):
         count = ProductHub.objects.filter(pro_version=name, pro_name=version).count()
     else:
         count = ApplicationHub.objects.filter(app_version=name, app_name=version).count()
-    if not count:
+    if count:
         count = "已存在,将覆盖"
-    print(public_action)
+    logger.info(public_action)
     return public_action.update_package_status(0, count)
 
 
@@ -379,27 +361,73 @@ class ExplainYml:
 
 
 @shared_task
-def back_end_verified_init(operation_user):
-    uuid = str(round(time.time() * 1000))
-
-    @deco(RedisLock("back_end_verified", uuid, host=OMP_REDIS_HOST, port=OMP_REDIS_PORT, password=OMP_REDIS_PASSWORD))
-    def back_end_verified(lock=None):
-        """后端校验"""
-        if lock:
-            print(lock)
-            return str(lock, encoding="utf-8")
-        back_verified = os.path.join(package_hub, package_dir.get('back_end_verified'))
-        service_name = os.listdir(back_verified)
-        exec_name = [p for p in service_name if os.path.isfile(os.path.join(back_verified, p)) and 'tar' in p]
-        for j in exec_name:
-            # front_end_verified.delay(uuid, operation_user, j)
-            front_end_verified(uuid, operation_user, j)
-        # publish_bak_end.delay(uuid, len(exec_name))
-        publish_bak_end(uuid, len(exec_name))
-        return uuid
-
-    return back_end_verified()
+def publish_bak_end(uuid, exc_len):
+    exc_task = True
+    while exc_task:
+        valid_uuids = UploadPackageHistory.objects.filter(operation_uuid=uuid,
+                                                          package_parent__isnull=True,
+                                                          ).exclude(package_status=2).count()
+        if valid_uuids != exc_len:
+            time.sleep(5)
+        else:
+            publish_entry(uuid)
+            exc_task = False
+    re = redis.Redis(host=OMP_REDIS_HOST, port=OMP_REDIS_PORT, db=9, password=OMP_REDIS_PASSWORD)
+    re.delete('back_end_verified')
 
 
-c = back_end_verified_init('admin')
-print(c)
+@shared_task
+def publish_entry(uuid):
+    valid_uuids = UploadPackageHistory.objects.filter(is_deleted=False, operation_uuid=uuid,
+                                                      package_parent__isnull=True,
+                                                      package_status=0)
+    valid_uuids.update(package_status=5)
+    valid_uuids = UploadPackageHistory.objects.filter(is_deleted=False, operation_uuid=uuid,
+                                                      package_parent__isnull=True,
+                                                      package_status=5)
+    valid_packages = {}
+    if valid_uuids:
+        for j in valid_uuids:
+            valid_packages[j.package_name] = j
+
+    json_data = os.path.join(project_dir, 'data', f'middle_data-{uuid}.json')
+    with open(json_data, "r", encoding="utf8") as fp:
+        lines = fp.readlines()
+    valid_info = []
+    for line in lines:
+        json_line = json.loads(line)
+        valid_obj = valid_packages.get(json_line.get('package_name'))
+
+        if valid_obj:
+            json_line['package_name'] = valid_obj
+            valid_info.append(json_line)
+        continue
+    tmp_dir = '1'
+    valid_packages_obj = []
+    for line in valid_info:
+        if line.get('kind') == 'product':
+            CreateDatabase(line).create_product()
+        else:
+            CreateDatabase(line).create_component()
+        tmp_dir = line.get('tmp_dir')
+        if len(tmp_dir) <= 28:
+            line['package_name'].update(package_status=4)
+            logger.error('{tmp_dir}路径异常')
+            return None
+        valid_dir = os.path.join(project_dir, 'package_hub', line.get('package_name').package_path)
+        move_out = public_utils.local_cmd(f'rm -rf {valid_dir} && mv {tmp_dir} {valid_dir}')
+        if move_out[2] != 0:
+            line['package_name'].update(package_status=4)
+            logger.error('移动或删除失败')
+            return None
+        valid_packages_obj.append(line['package_name'].id)
+    clear_dir = os.path.dirname(tmp_dir)
+    if len(clear_dir) <= 28:
+        logger.error('{clear_dir}路径异常')
+        return None
+    clear_out = public_utils.local_cmd(f'rm -rf {clear_dir} && mkdir {clear_dir}')
+    if clear_out[2] != 0:
+        valid_uuids.update(package_status=4)
+        logger.error('清理环境失败')
+        return None
+    UploadPackageHistory.objects.filter(id__in=valid_packages_obj).update(package_status=3)
