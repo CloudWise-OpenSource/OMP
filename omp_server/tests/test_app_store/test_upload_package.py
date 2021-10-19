@@ -37,7 +37,7 @@ class UploadPackageTest(AutoLoginTest):
         with open(file_path, "rb") as f:
             resp = self.client.post(
                 self.upload_url,
-                data={"operation_user": "admin", "file": f}
+                data={"operation_user": "admin", "file": f, "md5": "dfasdfafadfadfagagate"}
             ).json()
         self.assertDictEqual(resp, {
             "code": 1,
@@ -49,7 +49,7 @@ class UploadPackageTest(AutoLoginTest):
         with open(file_path, "rb") as f:
             resp = self.client.post(
                 self.upload_url,
-                data={"uuid": "63ece2802559e7a37d01daa686d10c4b", "file": f}
+                data={"uuid": "63ece2802559e7a37d01daa686d10c4b", "file": f, "md5": "dfasdfafadfadfagagate"}
             ).json()
         self.assertDictEqual(resp, {
             "code": 1,
@@ -57,11 +57,23 @@ class UploadPackageTest(AutoLoginTest):
             "data": None
         })
 
+        # 不提供md5
+        with open(file_path, "rb") as f:
+            resp = self.client.post(
+                self.upload_url,
+                data={"operation_user": "admin", "uuid": "63ece2802559e7a37d01daa686d10c4b", "file": f}
+            ).json()
+        self.assertDictEqual(resp, {
+            "code": 1,
+            "message": "必须包含[md5]字段",
+            "data": None
+        })
+
         # 不提供file
         resp = self.post(
             self.upload_url,
             data={"uuid": "63ece2802559e7a37d01daa686d10c4b",
-                  "operation_user": "admin"}
+                  "operation_user": "admin", "md5": "dfasdfafadfadfagagate"}
         ).json()
         self.assertDictEqual(resp, {
             "code": 1,
@@ -75,7 +87,7 @@ class UploadPackageTest(AutoLoginTest):
             resp = self.client.post(
                 self.upload_url,
                 data={"uuid": "63ece2802559e7a37d01daa686d10c4b",
-                      "operation_user": "admin", "file": f}
+                      "operation_user": "admin", "file": f, "md5": "dfasdfafadfadfagagate"}
             ).json()
             self.assertDictEqual(resp, {
                 "code": 1,
