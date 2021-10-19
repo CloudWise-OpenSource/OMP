@@ -1,13 +1,21 @@
 //import ServiceManagement from "@/pages/ProductsManagement/ServiceManagement";
 import AppStore from "@/pages/AppStore";
+import AppStoreDetail from "@/pages/AppStore/config/detail";
 //import VersionManagement from "@/pages/ProductsManagement/VersionManagement";
-import MachineManagement from "@/pages/MachineManagement"
+import MachineManagement from "@/pages/MachineManagement";
 import UserManagement from "@/pages/UserManagement";
-import MonitoringSettings from "@/pages/MonitoringSettings"
-import SystemManagement from "@/pages/SystemManagement"
-import AlarmLog from "@/pages/AlarmLog"
-import ExceptionList from "@/pages/ExceptionList"
-import { DesktopOutlined, ClusterOutlined, ProfileOutlined, SettingOutlined, LineChartOutlined, AppstoreOutlined } from "@ant-design/icons";
+import MonitoringSettings from "@/pages/MonitoringSettings";
+import SystemManagement from "@/pages/SystemManagement";
+import AlarmLog from "@/pages/AlarmLog";
+import ExceptionList from "@/pages/ExceptionList";
+import {
+  DesktopOutlined,
+  ClusterOutlined,
+  ProfileOutlined,
+  SettingOutlined,
+  LineChartOutlined,
+  AppstoreOutlined,
+} from "@ant-design/icons";
 
 export default [
   {
@@ -30,7 +38,19 @@ export default [
       {
         title: "应用商店",
         path: "/application_management/app_store",
-        component: AppStore ,
+        component: AppStore
+      },
+      {
+        title: "应用商店服务详情",
+        path: "/application_management/app_store/app-service-detail/:name",
+        notInMenu: true,
+        component: AppStoreDetail,
+      },
+      {
+        title: "应用商店组件详情",
+        path: "/application_management/app_store/app-component-detail/:name",
+        notInMenu: true,
+        component: AppStoreDetail,
       },
     ],
   },
@@ -42,17 +62,17 @@ export default [
       {
         title: "异常清单",
         path: "/application-monitoring/exception-list",
-        component: ExceptionList ,
+        component: ExceptionList,
       },
       {
         title: "告警记录",
         path: "/application-monitoring/alarm-log",
-        component: AlarmLog ,
+        component: AlarmLog,
       },
       {
         title: "监控设置",
         path: "/application-monitoring/monitoring-settings",
-        component: MonitoringSettings ,
+        component: MonitoringSettings,
       },
     ],
   },

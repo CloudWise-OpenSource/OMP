@@ -59,6 +59,19 @@ export const apiRequest = {
     // 异常清单列表查询
     exceptionList: "/api/promemonitor/grafanaurl/",
   },
+  appStore: {
+    // 组件查询
+    queryComponents: "/api/appStore/components/",
+    // 服务查询
+    queryServices: "/api/appStore/services/",
+    // 服务筛选条件列表
+    queryLabels: "/api/appStore/labels/",
+    // 基础组件详情
+    ProductDetail:"/api/appStore/ProductDetail/",
+    // 应用服务详情
+    ApplicationDetail: "/api/appStore/ApplicationDetail/"
+  },
+
   // ========================================================
   productsManagement: {
     // 产品管理-服务管理
