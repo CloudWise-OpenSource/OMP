@@ -60,7 +60,7 @@ const SystemManagement = () => {
         setLoading(true);
         fetchPost(apiRequest.environment.queryMaintainState, {
           body: {
-            matcher_name:"env_name",
+            matcher_name:"env",
             matcher_value:"default"
           },
         })

@@ -258,16 +258,22 @@ class Labels(models.Model):
         verbose_name = verbose_name_plural = "应用产品标签表"
 
 
-class UploadPackageHistory(TimeStampMixin):
+class UploadPackageHistory(TimeStampMixin, DeleteMixin):
     """ 上传安装包记录表，存储产品包及服务包 """
 
     PACKAGE_STATUS_SUCCESS = 0
     PACKAGE_STATUS_FAILED = 1
     PACKAGE_STATUS_PARSING = 2
+    PACKAGE_STATUS_PUBLISH_SUCCESS = 3
+    PACKAGE_STATUS_PUBLISH_FAILED = 4
+    PACKAGE_STATUS_PUBLISHING = 5
     PACKAGE_STATUS_CHOICES = (
         (PACKAGE_STATUS_SUCCESS, "成功"),
         (PACKAGE_STATUS_FAILED, "失败"),
-        (PACKAGE_STATUS_PARSING, "解析中")
+        (PACKAGE_STATUS_PARSING, "解析中"),
+        (PACKAGE_STATUS_PUBLISH_SUCCESS, "发布成功"),
+        (PACKAGE_STATUS_PUBLISH_FAILED, "发布失败"),
+        (PACKAGE_STATUS_PUBLISHING, "发布中"),
     )
     operation_uuid = models.CharField(
         "唯一操作uuid", max_length=64,

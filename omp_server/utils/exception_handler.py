@@ -12,7 +12,7 @@
 from rest_framework.views import exception_handler
 from rest_framework.response import Response
 
-from utils.exceptions import (
+from utils.common.exceptions import (
     GeneralError,
     FORMAT_ERRORS, ERROR_MESSAGE, CODE_MESSAGE
 )

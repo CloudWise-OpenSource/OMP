@@ -2,6 +2,10 @@ from db_models.models import GrafanaMainPage, MonitorUrl, Host
 import requests
 import json
 import logging
+import pytz
+import datetime
+import traceback
+from omp_server.settings import TIME_ZONE
 
 logger = logging.getLogger('server')
 
@@ -21,6 +25,30 @@ class CurlPrometheus(object):
             return json.loads(response.text)
         except Exception as e:
             logger.error("prometheus请求alerts失败：" + str(e))
+            return {"status": "-1"}
+
+
+def utc_local(utc_time_str, utc_format='%Y-%m-%dT%H:%M:%SZ'):
+    """
+    时区转换，如果转换报错，那么使用当前时间作为返回值
+    :type utc_time_str str
+    :param utc_time_str: utc时间字符串
+    :type utc_format str
+    :param utc_format: utc时间格式
+    :return:
+    """
+    try:
+        utc_time_str = utc_time_str.split(
+            ".")[0] + utc_time_str.split(".")[-1][-1]
+        local_tz = pytz.timezone(TIME_ZONE)
+        local_format = "%Y-%m-%d %H:%M:%S"
+        utc_dt = datetime.datetime.strptime(utc_time_str, utc_format)
+        local_dt = utc_dt.replace(tzinfo=pytz.utc).astimezone(local_tz)
+        time_str = local_dt.strftime(local_format)
+        return time_str
+    except Exception as e:
+        logger.error(f"在转化时间格式时报错: {str(e)}\n详情为: {traceback.format_exc()}")
+        return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
 def explain_prometheus(params):
@@ -31,14 +59,22 @@ def explain_prometheus(params):
     r = CurlPrometheus.curl_prometheus()
     if r.get('status') == 'success':
         prometheus_info = []
-        for lab in r.get('data').get('alerts'):
+        compare_list = []
+        alerts = r.get('data').get('alerts')
+        prometheus_alerts = sorted(
+            alerts, key=lambda e: e.get('labels').__getitem__('severity'), reverse=False)
+        for lab in prometheus_alerts:
             if lab.get('status') == 'resolved':
                 continue
             tmp_dict = {}
             label = lab.get('labels')
+            tmp_list = [label.get('alertname'), label.get('instance'), label.get('job')]
+            if tmp_list in compare_list:
+                continue
+            compare_list.append(tmp_list)
             tmp_dict['type'] = "host" if label.get(
                 'job') == 'nodeExporter' else "service"
-            tmp_dict['ip'] = label.get('instance').split(":")[0]
+            tmp_dict['ip'] = label.get('instance').split(":")[0]           
             tmp_dict['instance_name'] = label.get('app') if label.get(
                 'app') else host_list.get(tmp_dict.get('ip'))
             tmp_dict['severity'] = label.get('severity')
@@ -46,7 +82,7 @@ def explain_prometheus(params):
             tmp_dict['description'] = annotation.get('description')
             lab_date = lab.get('activeAt') if lab.get(
                 'activeAt') else lab.get('startsAt')
-            tmp_dict['date'] = lab_date.split(".")[0].replace("T", " ")
+            tmp_dict['date'] = utc_local(lab_date)
             prometheus_info.append(tmp_dict)
         prometheus_json = explain_url(prometheus_info)
         if params:
@@ -54,6 +90,7 @@ def explain_prometheus(params):
         return prometheus_json
     else:
         logger.error("prometheus请求alerts失败：" + str(r))
+        return "error"
 
 
 def explain_filter(prometheus_json, params):
@@ -93,13 +130,13 @@ def explain_url(explain_info):
             monitor_url = url_dict.get(service_name)
             if monitor_url:
                 instance_info['monitor_url'] = grafana_url + \
-                    monitor_url + f"?var-instance={service_ip}"
+                                               monitor_url + f"?var-instance={service_ip}"
             instance_info['monitor_url'] = grafana_url + url_dict.get(
                 'service', 'noservice') + f"?var-ip={service_ip}&var-app={service_name}"
             instance_info['log_url'] = grafana_url + \
-                url_dict.get('log', 'nolog') + f"?var-app={service_name}"
+                                       url_dict.get('log', 'nolog') + f"?var-app={service_name}"
         else:
             instance_info['monitor_url'] = grafana_url + \
-                url_dict.get('node', 'nohosts') + f"?var-node={service_ip}"
+                                           url_dict.get('node', 'nohosts') + f"?var-node={service_ip}"
             instance_info['log_url'] = None
     return explain_info

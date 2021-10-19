@@ -5,7 +5,7 @@ import {
   DashboardOutlined,
   CaretDownOutlined,
   QuestionCircleOutlined,
-  CaretUpOutlined
+  CaretUpOutlined,
 } from "@ant-design/icons";
 import React, { useState, useEffect, useRef } from "react";
 import img from "@/config/logo/logo.svg";
@@ -98,29 +98,25 @@ const OmpLayout = (props) => {
   };
 
   const onPassWordChange = (data) => {
-    // console.log(userInfo)
-    // logout();
-    // return 
-    console.log(data)
     setLoading(true);
     fetchPost(apiRequest.auth.changePassword, {
       body: {
         username: localStorage.getItem("username"),
         old_password: data.old_password,
-        new_password: data.new_password2
+        new_password: data.new_password2,
       },
     })
       .then((res) => {
         handleResponse(res, (res) => {
-          console.log(res)
-          if(res.code == 0){
-            message.success("修改密码成功, 请重新登录")
+          console.log(res);
+          if (res.code == 0) {
+            message.success("修改密码成功, 请重新登录");
             setShowModal(false);
-            setTimeout(()=>{
-            logout();
-            },1000)
+            setTimeout(() => {
+              logout();
+            }, 1000);
           }
-        })
+        });
       })
       .catch((e) => console.log(e))
       .finally(() => {
@@ -152,7 +148,6 @@ const OmpLayout = (props) => {
     window.__history__ = history;
     fetchGet(apiRequest.auth.users)
       .then((res) => {
-        console.log("====")
         if (res && res.data.code == 1 && res.data.message == "未认证") {
           //message.warning("登录失效,请重新登录")
           //history.replace("/login");
@@ -166,34 +161,37 @@ const OmpLayout = (props) => {
       .finally(() => setLoading(false));
   }, []);
 
-    // 这里做一个视口查询，存入store, 其他组件可以根据视口大小进行自适应
-    reduxDispatch(
-      getSetViewSizeAction({
-        height: document.documentElement.clientHeight,
-        width: document.documentElement.clientWidth,
-      })
-    );
+  // 这里做一个视口查询，存入store, 其他组件可以根据视口大小进行自适应
+  reduxDispatch(
+    getSetViewSizeAction({
+      height: document.documentElement.clientHeight,
+      width: document.documentElement.clientWidth,
+    })
+  );
 
-    // 防止在校验进入死循环
-  const flag = useRef(null)
-      
+  // 防止在校验进入死循环
+  const flag = useRef(null);
+
   // 查询全局维护模式状态
-  const queryMaintainState = ()=>{
+  const queryMaintainState = () => {
     fetchGet(apiRequest.environment.queryMaintainState)
-    .then((res) => {
-      if (res.data) {
-        reduxDispatch(getMaintenanceChangeAction(res.data.data.length !== 0));
-      }
-    })
-    .catch((e) => {
-      console.log(e);
-    })
-    .finally();
-  }
+      .then((res) => {
+        handleResponse(res, (res) => {
+          //console.log(res)
+          if (res.data) {
+            reduxDispatch(getMaintenanceChangeAction(res.data.length !== 0));
+          }
+        });
+      })
+      .catch((e) => {
+        console.log(e);
+      })
+      .finally();
+  };
 
-  useEffect(()=>{
-    queryMaintainState()
-  },[])
+  useEffect(() => {
+    queryMaintainState();
+  }, []);
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
@@ -213,7 +211,7 @@ const OmpLayout = (props) => {
             color: "white",
             justifyContent: "center",
             // /marginBottom:10,
-            backgroundColor:"#171e2b"
+            backgroundColor: "#171e2b",
           }}
         >
           <div className={styles.headerLogo}>
@@ -249,11 +247,11 @@ const OmpLayout = (props) => {
           openKeys={currentOpenedKeys}
           selectedKeys={selectedKeys}
           //theme="red"
-          expandIcon={(e)=>{
-            if(e.isOpen){
-              return <CaretUpOutlined /> 
-            }else{
-              return <CaretDownOutlined />
+          expandIcon={(e) => {
+            if (e.isOpen) {
+              return <CaretUpOutlined />;
+            } else {
+              return <CaretDownOutlined />;
             }
           }}
         >
@@ -284,21 +282,6 @@ const OmpLayout = (props) => {
             justifyContent: "space-between",
           }}
         >
-          {/* {React.createElement(
-            collapsed ? MenuUnfoldOutlined : MenuFoldOutlined,
-            {
-              style: {
-                fontSize: "18px",
-                cursor: "pointer",
-                transition: "color 0.3s",
-                display:"flex",
-                alignItems:"center",
-                position:"relative",
-                top:1
-              },
-              onClick: toggle,
-            }
-          )} */}
           <div style={{ display: "flex" }}>
             {headerLink.map((item, idx) => {
               return (
@@ -381,7 +364,11 @@ const OmpLayout = (props) => {
               padding: 0,
               paddingBottom: 30,
               height: "calc(100% - 10px)",
-              backgroundColor: "#fff",
+              // 应用商店content大背景不是白色，特殊处理
+              backgroundColor:
+                location.pathname == "/application_management/app_store"
+                  ? undefined
+                  : "#fff",
             }}
           >
             {props.children}
@@ -407,11 +394,11 @@ const OmpLayout = (props) => {
         onFinish={onPassWordChange}
         visibleHandle={[showModal, setShowModal]}
         title="修改密码"
-        beForeOk = {()=>{
-          flag.current = true
+        beForeOk={() => {
+          flag.current = true;
         }}
-        afterClose = {()=>{
-          flag.current = null
+        afterClose={() => {
+          flag.current = null;
         }}
       >
         <Form.Item
@@ -426,12 +413,12 @@ const OmpLayout = (props) => {
             {
               validator: (rule, value, callback) => {
                 if (value) {
-                  if(!isPassword(value)){
-                    if(value.length < 8) {
+                  if (!isPassword(value)) {
+                    if (value.length < 8) {
                       return Promise.reject("密码长度为8到16位");
                     }
                     return Promise.resolve("success");
-                  }else{
+                  } else {
                     return Promise.reject(
                       `密码只支持数字、字母以及常用英文符号`
                     );
@@ -456,17 +443,17 @@ const OmpLayout = (props) => {
               message: "请输入新密码",
             },
             {
-              validator: (rule, value, callback,passwordModalForm) => {
+              validator: (rule, value, callback, passwordModalForm) => {
                 if (value) {
-                  if(!flag.current){
-                    passwordModalForm.validateFields(["new_password2"])
+                  if (!flag.current) {
+                    passwordModalForm.validateFields(["new_password2"]);
                   }
-                  if(!isPassword(value)){
-                    if(value.length < 8) {
+                  if (!isPassword(value)) {
+                    if (value.length < 8) {
                       return Promise.reject("密码长度为8到16位");
                     }
                     return Promise.resolve("success");
-                  }else{
+                  } else {
                     return Promise.reject(
                       `密码只支持数字、字母以及常用英文符号`
                     );
@@ -493,19 +480,20 @@ const OmpLayout = (props) => {
             {
               validator: (rule, value, callback, passwordModalForm) => {
                 if (value) {
-                  if(!isPassword(value)){
-                    if(value.length < 8) {
+                  if (!isPassword(value)) {
+                    if (value.length < 8) {
                       return Promise.reject("密码长度为8到16位");
                     }
                     if (
-                      passwordModalForm.getFieldValue().new_password1 === value ||
+                      passwordModalForm.getFieldValue().new_password1 ===
+                        value ||
                       !value
                     ) {
                       return Promise.resolve("success");
                     } else {
                       return Promise.reject("两次密码输入不一致");
                     }
-                  }else{
+                  } else {
                     return Promise.reject(
                       `密码只支持数字、字母以及常用英文符号`
                     );

@@ -1,0 +1,30 @@
+.cardContainer:hover {
+  top: -2px !important;
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.3);
+  color: black !important;
+}
+
+.cardContainer {
+  cursor: pointer;
+  .cardContent {
+    height: 76%;
+    display: flex;
+    padding-top: 10px;
+  }
+  .cardBtn {
+    display: flex;
+    //justify-content: space-around;
+    border-top: solid 1px #b9b9b9;
+    align-items: center;
+    height: 24%;
+    color: #818181;
+    font-size: 13px;
+    & > div {
+      width: 50%;
+      text-align: center;
+    }
+    & > div:hover {
+      color: rgb(46, 124, 238);
+    }
+  }
+}

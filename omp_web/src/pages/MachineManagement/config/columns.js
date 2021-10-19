@@ -1,10 +1,16 @@
-import { nonEmptyProcessing, renderDisc, colorConfig } from "@/utils/utils";
+import { nonEmptyProcessing, renderDisc } from "@/utils/utils";
 import { DownOutlined, DesktopOutlined } from "@ant-design/icons";
 import { Dropdown, Menu, Drawer, Tooltip, Spin, Timeline } from "antd";
 import moment from "moment";
 import styles from "../index.module.less";
 import { useSelector } from "react-redux";
 import { useRef } from "react";
+
+const colorConfig = {
+  normal: null,
+  warning: "#ffbf00",
+  critical: "#f04134",
+};
 
 export const DetailHost = ({
   isShowDrawer,
@@ -365,7 +371,8 @@ const getColumnsConfig = (
   fetchHistoryData,
   setCloseMaintainModal,
   setOpenMaintainModal,
-  setShowIframe
+  setShowIframe,
+  history
 ) => {
   return [
     {
@@ -448,7 +455,11 @@ const getColumnsConfig = (
         return str == "-" ? (
           "-"
         ) : (
-          <span style={{ color: colorConfig[record.cpu_status] }}>{str}%</span>
+          <span
+            style={{ color: colorConfig[record.cpu_status], fontWeight: 500 }}
+          >
+            {str}%
+          </span>
         );
       },
     },
@@ -466,7 +477,11 @@ const getColumnsConfig = (
         return str == "-" ? (
           "-"
         ) : (
-          <span style={{ color: colorConfig[record.cpu_status] }}>{str}%</span>
+          <span
+            style={{ color: colorConfig[record.mem_status], fontWeight: 500 }}
+          >
+            {str}%
+          </span>
         );
       },
     },
@@ -484,7 +499,14 @@ const getColumnsConfig = (
         return str == "-" ? (
           "-"
         ) : (
-          <span style={{ color: colorConfig[record.cpu_status] }}>{str}%</span>
+          <span
+            style={{
+              color: colorConfig[record.root_disk_status],
+              fontWeight: 500,
+            }}
+          >
+            {str}%
+          </span>
         );
       },
       // width:120
@@ -492,18 +514,25 @@ const getColumnsConfig = (
     {
       title: "数据分区使用率",
       width: 130,
-      key: "data_disk_usag",
-      dataIndex: "data_disk_usag",
+      key: "data_disk_usage",
+      dataIndex: "data_disk_usage",
       align: "center",
       //ellipsis: true,
-      sorter: (a, b) => a.data_disk_usag - b.data_disk_usag,
+      sorter: (a, b) => a.data_disk_usage - b.data_disk_usage,
       sortDirections: ["descend", "ascend"],
       render: (text, record) => {
         let str = nonEmptyProcessing(text);
         return str == "-" ? (
           "-"
         ) : (
-          <span style={{ color: colorConfig[record.cpu_status] }}>{str}%</span>
+          <span
+            style={{
+              color: colorConfig[record.data_disk_status],
+              fontWeight: 500,
+            }}
+          >
+            {str}%
+          </span>
         );
       },
     },
@@ -561,6 +590,27 @@ const getColumnsConfig = (
       //ellipsis: true,
       sorter: (a, b) => a.alert_num - b.alert_num,
       sortDirections: ["descend", "ascend"],
+      render: (text, record) => {
+        if (text && text !== 0) {
+          return (
+            <a
+              onClick={() => {
+                text &&
+                  history.push({
+                    pathname: "/application-monitoring/alarm-log",
+                    state: {
+                      ip: record.ip,
+                    },
+                  });
+              }}
+            >
+              {text}
+            </a>
+          );
+        } else {
+          return text
+        }
+      },
     },
     {
       title: "操作",
@@ -571,6 +621,21 @@ const getColumnsConfig = (
       align: "center",
       fixed: "right",
       render: function renderFunc(text, record, index) {
+        if (record?.host_agent == 3 || record?.monitor_agent == 3) {
+          return (
+            <div
+              onClick={() => {
+                setRow(record);
+              }}
+              style={{ display: "flex", justifyContent: "space-around" }}
+            >
+              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
+              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>
+                更多 <DownOutlined style={{ position: "relative", top: 1 }} />
+              </span>
+            </div>
+          );
+        }
         return (
           <div
             onClick={() => {
@@ -578,19 +643,24 @@ const getColumnsConfig = (
             }}
             style={{ display: "flex", justifyContent: "space-around" }}
           >
-            <a
-              onClick={() => {
-                setShowIframe({
-                  isOpen: true,
-                  src: record.monitor_url,
-                  // src: "http://10.0.7.146:19001/proxy/v1/grafana/d/9CWBz0bik/zhu-ji-xin-xi-mian-ban?var-node=10.0.7.146",
-                  record: record,
-                  isLog: false,
-                });
-              }}
-            >
-              监控
-            </a>
+            {record.monitor_url ? (
+              <a
+                onClick={() => {
+                  setShowIframe({
+                    isOpen: true,
+                    src: record.monitor_url,
+                    // src: "http://10.0.7.146:19001/proxy/v1/grafana/d/9CWBz0bik/zhu-ji-xin-xi-mian-ban?var-node=10.0.7.146",
+                    record: record,
+                    isLog: false,
+                  });
+                }}
+              >
+                监控
+              </a>
+            ) : (
+              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
+            )}
+
             <Dropdown
               arrow
               overlay={renderMenu(

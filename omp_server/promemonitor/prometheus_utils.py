@@ -148,7 +148,7 @@ class PrometheusUtils(object):
             mountpoint="DATA_PATH"})*100/(node_filesystem_avail_bytes{
             env="ENV",mountpoint="DATA_PATH"}+(node_filesystem_size_bytes{
             env="ENV",mountpoint="DATA_PATH"}-node_filesystem_free_bytes{
-            env="ENV",mountpoint="DATA_PATH"})))by(instance)>= """
+            env="ENV",mountpoint="DATA_PATH"})))by(instance,env)>= """
         return _expr.replace("ENV", env).replace(
             "DATA_PATH", data_path).replace("\n", "").replace(
             " ", ""
@@ -190,6 +190,7 @@ class PrometheusUtils(object):
         :param env: 主机所属环境
         :return:
         """
+        logger.info(f"Start update_node_data_rule: {data_path}; {env}")
         data_rule_path = os.path.join(
             self.prometheus_rules_path, f"{env}_node_data_rule.yml")
         _critical = self.make_data_node_rule("critical", data_path, env)
@@ -240,6 +241,7 @@ class PrometheusUtils(object):
         :param env: 环境信息
         :return:
         """
+        logger.info(f"Start add rules: {rule_type}; {env}")
         rules_file_placeholder_script = [
             {"ENV": env},
             {"EMAIL_ADDRESS": self.email_address}
@@ -325,6 +327,7 @@ class PrometheusUtils(object):
         :param nodes_data: 新增的主机信息
         :return:
         """
+        logger.info(f"Start add node: {nodes_data}")
         if not nodes_data:
             return False, "nodes_data can not be null"
         node_target_list = list()

@@ -12,7 +12,7 @@ import { useLayoutEffect } from "react";
 import { useSelector } from "react-redux";
 import OmpTableFilter from "./components/OmpTableFilter"
 
-const OmpTable = ({ checkedState, columns ,...residualParam }) => {
+const OmpTable = ({ checkedState, columns, notSelectable, ...residualParam }) => {
   // console.log(residualParam)
   // 当columns传入usefilter时，对该项做处理
   const extensionsColumns = columns.map(item=>{
@@ -91,9 +91,9 @@ const OmpTable = ({ checkedState, columns ,...residualParam }) => {
                 ),
               });
             },
-            getCheckboxProps: (record) => ({
+            getCheckboxProps: notSelectable || ((record) => ({
               disabled: record.is_read === 1,
-            }),
+            })),
             selectedRowKeys: Object.keys(checkedList)
               .map((k) => checkedList[k])
               .flat(1)

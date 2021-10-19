@@ -1,9 +1,9 @@
 import json
 
 from rest_framework.reverse import reverse
-from unittest import mock
 
-from tests.base import AutoLoginTest, BaseTest
+from tests.base import AutoLoginTest
+from db_models.models import Host, Alert
 
 
 class MockResponse:
@@ -31,7 +31,7 @@ class ReceiveAlertTest(AutoLoginTest):
             "status": "firing",
             "alerts": [
                 {
-                    "status": "resolved",
+                    "status": "firing",
                     "labels": {
                         "alertname": "host cpu_used critical alert",
                         "instance": "10.0.7.146",
@@ -52,7 +52,15 @@ class ReceiveAlertTest(AutoLoginTest):
                 }
             ]
         }
-        # self.correct_request_data = {'origin_alert': self.origin_alert_str}
+        Host.objects.create(
+            instance_name="mysql_instance_1",
+            ip="10.0.7.146",
+            port=36000,
+            username="root",
+            password="XoIc56a3HiStUZb3Pu9jXEHj8YvMTRpMYnNFD2YS7MA",
+            data_folder="/data",
+            operate_system="CentOS"
+        )
 
     request_post_response = {
         "code": 0,
@@ -60,14 +68,17 @@ class ReceiveAlertTest(AutoLoginTest):
         "data": {'key': ['...']}
     }
 
-    @mock.patch.object(BaseTest, 'post', return_value='')
-    def test_receive_alerts(self, mock_post):
+    def test_receive_alerts(self):
         """
         接收并解析alertmanager告警
         """
-        mock_post.return_value = MockResponse(self.request_post_response)
+        # mock_post.return_value = MockResponse(self.request_post_response)
 
         resp = self.post(self.receive_alert_url, self.origin_alert_str).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
         self.assertIsNotNone(resp.get('data'))
+
+    def tearDown(self):
+        Alert.objects.filter(alert_host_ip='10.0.7.146').delete()
+        Host.objects.filter(ip='10.0.7.146').delete()

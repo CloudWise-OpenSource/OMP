@@ -1,6 +1,7 @@
 """
 用户视图相关函数
 """
+import re
 import datetime
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
@@ -14,13 +15,13 @@ from rest_framework_jwt.settings import api_settings
 
 from django_filters.rest_framework.backends import DjangoFilterBackend
 
-from utils.pagination import PageNumberPager
 from db_models.models import (UserProfile, OperateLog)
+from users.users_filters import UserFilter
+from utils.common.paginations import PageNumberPager
 from users.users_serializers import (
     UserSerializer, JwtSerializer,
     OperateLogSerializer, UserUpdatePasswordSerializer
 )
-from users.users_filters import UserFilter
 
 
 class UsersView(ListModelMixin, RetrieveModelMixin, CreateModelMixin,
@@ -79,6 +80,15 @@ class JwtAPIView(JSONWebTokenAPIView):
     serializer_class = JwtSerializer
 
     def post(self, request, *args, **kwargs):
+        # django authenticate 缺陷，验证 username 大小写不敏感
+        username_ls = list(
+            UserProfile.objects.values_list(
+                "username", flat=True))
+        if request.data.get("username", "") not in username_ls or \
+                re.search(r"\s", request.data.get("password", "")):
+            raise ValidationError(
+                "Unable to log in with provided credentials.")
+
         serializer = self.get_serializer(data=request.data)
 
         if not serializer.is_valid():

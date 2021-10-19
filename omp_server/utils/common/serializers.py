@@ -1,10 +1,6 @@
-# -*- coding: utf-8 -*-
-# Project: public_serializer
-# Author: jon.liu@yunzhihui.com
-# Create time: 2021-10-09 10:47
-# IDE: PyCharm
-# Version: 1.0
-# Introduction:
+"""
+公共序列化器
+"""
 
 from rest_framework import serializers
 from rest_framework.serializers import Serializer
@@ -14,7 +10,7 @@ from db_models.models import Host
 
 
 class HostIdsSerializer(Serializer):
-    """ 主机Agent重启序列化类 """
+    """ 主机 id 列表序列化类 """
 
     host_ids = serializers.ListField(
         help_text="主机 ID 列表",

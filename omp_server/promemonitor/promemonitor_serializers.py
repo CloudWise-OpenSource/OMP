@@ -1,19 +1,20 @@
 import datetime
 import logging
 
+from django.db.models import F
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer, ListSerializer, Serializer
 from rest_framework.exceptions import ValidationError
 
 from db_models.models import Host, MonitorUrl, Alert, Maintain
 from promemonitor.tasks import monitor_agent_restart
-from utils.exceptions import OperateError
-from utils.public_serializer import HostIdsSerializer
 from promemonitor.alertmanager import Alertmanager
-from utils.validator import (
+from promemonitor.alert_util import AlertAnalysis
+from utils.common.exceptions import OperateError
+from utils.common.serializers import HostIdsSerializer
+from utils.common.validators import (
     NoEmojiValidator, NoChineseValidator
 )
-from promemonitor.alert_util import AlertAnalysis
 
 logger = logging.getLogger('server')
 
@@ -100,7 +101,6 @@ class MonitorUrlSerializer(ModelSerializer):
 
 
 class ListAlertSerializer(ModelSerializer):
-
     class Meta:
         model = Alert
         fields = "__all__"
@@ -154,7 +154,7 @@ class MaintainSerializer(ModelSerializer):
     )
 
     def validate(self, attrs):
-        """ 校验env_name是否存在 """
+        """ 校验env是否存在 """
         return attrs
 
     def create(self, validated_data):
@@ -235,6 +235,9 @@ class ReceiveAlertSerializer(Serializer):
                 # env='default'  # TODO 此版本默认不赋值
             )
             alert_obj_list.append(alert)
+            if alert_info.get('alert_type') == 'host':
+                Host.objects.filter(ip=alert_info.get('alert_host_ip')).update(
+                    alert_num=F("alert_num") + 1)
         Alert.objects.bulk_create(alert_obj_list)
         return validated_data
 

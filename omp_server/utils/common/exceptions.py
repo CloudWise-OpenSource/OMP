@@ -1,5 +1,5 @@
 """
-    异常相关
+    公共异常
     注意 common_exception_handler 的优先级按照以下顺序进行：
         1. GeneralError 异常实例
         2. FORMAT_ERRORS 字典，自定义格式化函数处理的错误
@@ -37,6 +37,9 @@ def _validation_error_message(exc, response):
         err_message_ls = []
         for k, v in data.items():
             if isinstance(v, list):
+                ip_err = "Enter a valid IPv4 or IPv6 address."
+                if ip_err in v:
+                    v[v.index(ip_err)] = "IP格式不合法"
                 err_message_ls.append("; ".join(v))
             else:
                 err_message_ls.append(v)

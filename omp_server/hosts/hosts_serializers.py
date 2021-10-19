@@ -19,14 +19,14 @@ from hosts.tasks import (
     deploy_agent, host_agent_restart
 )
 
-from utils.validator import (
-    ReValidator, NoEmojiValidator, NoChineseValidator
-)
 from utils.plugin.ssh import SSH
 from utils.plugin.crypto import AESCryptor
-from utils.exceptions import OperateError
+from utils.common.validators import (
+    ReValidator, NoEmojiValidator, NoChineseValidator
+)
+from utils.common.exceptions import OperateError
+from utils.common.serializers import HostIdsSerializer
 from utils.parse_config import THREAD_POOL_MAX_WORKERS
-from utils.public_serializer import HostIdsSerializer
 from promemonitor.alertmanager import Alertmanager
 
 logger = logging.getLogger("server")
@@ -49,12 +49,20 @@ class HostSerializer(ModelSerializer):
     ip = serializers.IPAddressField(
         help_text="IP地址",
         required=True,
-        error_messages={"required": "必须包含[ip]字段"})
+        error_messages={
+            "invalid": "IP格式不合法",
+            "required": "必须包含[ip]字段",
+        })
     port = serializers.IntegerField(
         help_text="端口",
         required=True,
         min_value=1, max_value=65535,
-        error_messages={"required": "必须包含[port]字段"})
+        error_messages={
+            "invalid": "端口格式不合法",
+            "required": "必须包含[port]字段",
+            "max_value": "端口超出指定范围",
+            "min_value": "端口超出指定范围",
+        })
     username = serializers.CharField(
         help_text="用户名",
         required=True, max_length=16,
@@ -129,6 +137,13 @@ class HostSerializer(ModelSerializer):
                 raise ValidationError("数据分区目录不能以'-'开头")
         return data_folder
 
+    def validate_operate_system(self, operate_system):
+        """ 校验操作系统是否合法 """
+        operate_ls = ("CentOS", "RedHat")
+        if operate_system not in operate_ls:
+            raise ValidationError(f"操作系统支持{'/'.join(operate_ls)}")
+        return operate_system
+
     def validate(self, attrs):
         """ 主机信息验证 """
         ip = attrs.get("ip")
@@ -157,7 +172,7 @@ class HostSerializer(ModelSerializer):
             f"test -d {data_folder} || mkdir -p {data_folder}")
         if not success:
             logger.info(f"host create data folder failed: ip-{ip},port-{port},"
-                        f"username-{username},password-{password}"
+                        f"username-{username},password-{password},"
                         f"data_folder-{data_folder}")
             ValidationError({"data_folder": "创建数据分区操作失败"})
 
@@ -309,9 +324,6 @@ class HostMaintenanceSerializer(HostIdsSerializer):
         self.write_host_log(host_queryset, status, "success")
         return validated_data
 
-    def update(self, instance, validated_data):
-        pass
-
 
 class HostAgentRestartSerializer(HostIdsSerializer):
     """ 主机Agent重启序列化类 """
@@ -346,12 +358,6 @@ class HostBatchValidateSerializer(Serializer):
         error_messages={"required": "必须包含[host_list]字段"}
     )
 
-    def create(self, validated_data):
-        pass
-
-    def update(self, instance, validated_data):
-        pass
-
     def host_info_validate(self, host_data):
         """ 单个主机信息验证 """
         host_serializer = HostSerializer(data=host_data)
@@ -360,6 +366,9 @@ class HostBatchValidateSerializer(Serializer):
         err_ls = []
         for k, v in host_serializer.errors.items():
             err_ls.extend(v)
+        ip_err = "Enter a valid IPv4 or IPv6 address."
+        if ip_err in err_ls:
+            err_ls[err_ls.index(ip_err)] = "IP格式不合法"
         host_data["validate_error"] = "; ".join(err_ls)
         return "error", host_data
 
@@ -400,6 +409,11 @@ class HostBatchValidateSerializer(Serializer):
             for future in as_completed(future_list):
                 flag, host_data = future.result()
                 result_dict[flag].append(host_data)
+
+        # 按照 row 行号对列表进行排序
+        for v in result_dict.values():
+            if len(v) > 0:
+                v.sort(key=lambda x: x.get("row", 999))
         attrs["result_dict"] = result_dict
         logger.info("host batch validate end")
         return attrs
@@ -414,9 +428,3 @@ class HostBatchImportSerializer(Serializer):
         required=True, allow_empty=False,
         error_messages={"required": "必须包含[host_list]字段"}
     )
-
-    def create(self, validated_data):
-        pass
-
-    def update(self, instance, validated_data):
-        pass

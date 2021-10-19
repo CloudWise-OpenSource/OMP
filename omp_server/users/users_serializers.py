@@ -20,7 +20,7 @@ from rest_framework.serializers import (
 from rest_framework_jwt.serializers import JSONWebTokenSerializer
 
 from db_models.models import (UserProfile, OperateLog)
-from utils.validator import UserPasswordValidator
+from utils.common.validators import UserPasswordValidator
 
 
 class UserSerializer(ModelSerializer):
@@ -98,12 +98,6 @@ class JwtSerializer(JSONWebTokenSerializer):
         validate_dict["remember"] = attrs.get("remember")
         return validate_dict
 
-    def create(self, validated_data):
-        raise RuntimeError("`create()` is not available")
-
-    def update(self, instance, validated_data):
-        raise RuntimeError("`update()` is not available")
-
 
 class UserUpdatePasswordSerializer(Serializer):
     """ 用户更新密码序列化器 """
@@ -146,6 +140,3 @@ class UserUpdatePasswordSerializer(Serializer):
             validated_data.get("new_password"))
         user.save()
         return validated_data
-
-    def update(self, instance, validated_data):
-        pass

@@ -94,7 +94,7 @@ DATABASES = {
         'USER': OMP_MYSQL_USERNAME,
         'PASSWORD': OMP_MYSQL_PASSWORD,
         'HOST': OMP_MYSQL_HOST,
-        'POST': int(OMP_MYSQL_PORT),
+        'PORT': int(OMP_MYSQL_PORT),
         'TEST': {
             'CHARSET': 'utf8',
             'COLLATION': 'utf8_general_ci',
@@ -233,3 +233,6 @@ LOGGING = {
     }
 }
 # DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
+# grafana跳转使用
+X_FRAME_OPTIONS = 'SAMEORIGIN'

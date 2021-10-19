@@ -125,7 +125,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "Enter a valid IPv4 or IPv6 address.",
+            "message": "IP格式不合法",
             "data": None
         })
 
@@ -160,7 +160,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "Ensure this value is less than or equal to 65535.",
+            "message": "端口超出指定范围",
             "data": None
         })
 
@@ -296,6 +296,16 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
             "data": None
         })
 
+        # 不支持的 operate_system -> 创建失败
+        data = self.correct_host_data.copy()
+        data.update({"operate_system": "SUSE"})
+        resp = self.post(self.create_host_url, data).json()
+        self.assertDictEqual(resp, {
+            "code": 1,
+            "message": "操作系统支持CentOS/RedHat",
+            "data": None
+        })
+
     @mock.patch.object(SSH, "check", return_value=(False, "error message"))
     def test_wrong_ssh(self, ssh_mock):
         """ 测试创建主机，SSH 校验未通过"""
@@ -420,7 +430,7 @@ class ListHostTest(AutoLoginTest, HostsResourceMixin):
         return host_obj_ls
 
     def test_hosts_list_filter(self):
-        """ 测试主机列表 """
+        """ 测试主机列表过滤 """
         host_obj_ls = self.get_hosts(50)
 
         # 查询主机列表 -> 展示所有主机
@@ -431,18 +441,15 @@ class ListHostTest(AutoLoginTest, HostsResourceMixin):
         # 数据总量为所有主机数
         self.assertEqual(resp.get("data").get("count"), len(host_obj_ls))
 
-        # IP 过滤主机 -> 模糊展示匹配项
-        target_host_obj = host_obj_ls[random.randint(10, 49)]
+        # IP 过滤主机 -> 展示 IP 模糊匹配项
         resp = self.get(self.list_host_url, {
-            "ip": target_host_obj.ip
+            "ip": "127"
         }).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
         self.assertTrue(resp.get("data") is not None)
-        self.assertEqual(resp.get("data").get("count"), 1)
-        host_obj = resp.get("data").get("results")[0]
-        self.assertEqual(host_obj.get("ip"), target_host_obj.ip)
-
+        count_number = Host.objects.filter(ip__contains="127").count()
+        self.assertEqual(resp.get("data").get("count"), count_number)
         # 删除主机
         self.destroy_hosts()
 
@@ -816,7 +823,7 @@ class HostMaintainTest(AutoLoginTest, HostsResourceMixin):
         """ 正确字段校验 """
 
         host_obj_ls = self.get_hosts(20)
-        random_host_ls = random.sample(host_obj_ls, 5)
+        random_host_ls = random.sample(list(host_obj_ls), 5)
         random_host_id_ls = list(map(lambda x: x.id, random_host_ls))
 
         # 开启维护模式 -> 开启成功，记录操作
@@ -877,7 +884,7 @@ class HostMaintainTest(AutoLoginTest, HostsResourceMixin):
         """ alert manage 返回值异常 """
 
         host_obj_ls = self.get_hosts(20)
-        random_host_ls = random.sample(host_obj_ls, 5)
+        random_host_ls = random.sample(list(host_obj_ls), 5)
         random_host_id_ls = list(map(lambda x: x.id, random_host_ls))
 
         # 开始维护模式 -> 开启失败，记录操作
@@ -905,7 +912,7 @@ class HostMaintainTest(AutoLoginTest, HostsResourceMixin):
             len(operate_log_ls.filter(result="failed")))
 
         # 关闭维护模式 -> 关闭失败，记录操作
-        random_host_ls = random.sample(host_obj_ls, 5)
+        random_host_ls = random.sample(list(host_obj_ls), 5)
         random_host_id_ls = list(map(lambda x: x.id, random_host_ls))
         Host.objects.filter(
             id__in=random_host_id_ls
@@ -1003,7 +1010,8 @@ class HostBatchValidateTest(AutoLoginTest, HostsResourceMixin, HostBatchRequestM
                 "username": "root",
                 "password": "root_password",
                 "data_folder": "/data",
-                "operate_system": random.choice(("CentOS", "RedHat"))
+                "operate_system": random.choice(("CentOS", "RedHat")),
+                # "row": i * 100
             })
         return host_list, repeat_number
 
@@ -1025,7 +1033,7 @@ class HostBatchValidateTest(AutoLoginTest, HostsResourceMixin, HostBatchRequestM
         """ 测试错误格式 """
 
         # 格式错误 -> 添加失败
-        data = self.get_host_batch_request(10)
+        data = self.get_host_batch_request(10, row=True)
         data["host_list"].append(12345)
         resp = self.post(self.batch_validate_url, data).json()
         self.assertDictEqual(resp, {
@@ -1041,9 +1049,9 @@ class HostBatchValidateTest(AutoLoginTest, HostsResourceMixin, HostBatchRequestM
     def test_batch_validate_error_field(self, deploy_agent_mock, cmd_mock, is_sudo, ssh_mock):
         """ 测试批量校验错误字段 """
 
-        # 存在实例名重复 -> 返回值 error 中包含错误信息
         host_number = 10
-        data = self.get_host_batch_request(host_number)
+        # 存在实例名重复 -> 返回值 error 中包含错误信息
+        data = self.get_host_batch_request(host_number, row=True)
         data["host_list"], repeat_number = self.create_repeat_data(
             data.get("host_list"), "instance_name")
         resp = self.post(self.batch_validate_url, data).json()
@@ -1056,8 +1064,7 @@ class HostBatchValidateTest(AutoLoginTest, HostsResourceMixin, HostBatchRequestM
             )
 
         #  存在IP重复 -> 返回值 error 中包含错误信息
-        host_number = 10
-        data = self.get_host_batch_request(host_number)
+        data = self.get_host_batch_request(host_number, row=True)
         data["host_list"], repeat_number = self.create_repeat_data(
             data.get("host_list"), "ip")
         resp = self.post(self.batch_validate_url, data).json()
@@ -1070,8 +1077,7 @@ class HostBatchValidateTest(AutoLoginTest, HostsResourceMixin, HostBatchRequestM
             )
 
         # 存在实例名、IP混合重复 -> 返回值 error 中包含错误信息
-        host_number = 10
-        data = self.get_host_batch_request(host_number)
+        data = self.get_host_batch_request(host_number, row=True)
         data["host_list"], repeat_number = self.create_repeat_data(
             data.get("host_list"), "all")
         resp = self.post(self.batch_validate_url, data).json()
@@ -1083,6 +1089,17 @@ class HostBatchValidateTest(AutoLoginTest, HostsResourceMixin, HostBatchRequestM
                 "实例名、IP在表格中重复"
             )
 
+        # 测试主机数据信息不合法 -> 返回值 error 中包含错误信息
+        data = self.get_host_batch_request(host_number, row=True)
+        error_index = random.randint(0, host_number - 1)
+        data.get("host_list")[error_index]["instance_name"] = "中文实例名"
+        resp = self.post(self.batch_validate_url, data).json()
+        error_ls = resp.get("data").get("error", [])
+        self.assertEqual(len(error_ls), 1)
+        self.assertEqual(
+            error_ls[0].get("validate_error"),
+            "实例名不可含有中文; 实例名格式不合法")
+
     @mock.patch.object(SSH, "check", return_value=(True, ""))
     @mock.patch.object(SSH, "is_sudo", return_value=(True, "is sudo"))
     @mock.patch.object(SSH, "cmd", return_value=(True, ""))
@@ -1092,7 +1109,7 @@ class HostBatchValidateTest(AutoLoginTest, HostsResourceMixin, HostBatchRequestM
 
         # 正确字段 -> 返回值全部包含于 correct ，error 中无数据
         host_number = 10
-        data = self.get_host_batch_request(host_number)
+        data = self.get_host_batch_request(host_number, row=True)
         resp = self.post(self.batch_validate_url, data).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
@@ -1100,6 +1117,11 @@ class HostBatchValidateTest(AutoLoginTest, HostsResourceMixin, HostBatchRequestM
         error_ls = resp.get("data").get("error", [])
         self.assertEqual(len(correct_ls), host_number)
         self.assertEqual(len(error_ls), 0)
+        # 返回结果按照 row 进行排序
+        self.assertEqual(
+            correct_ls,
+            list(sorted(correct_ls, key=lambda x: x.get("row")))
+        )
 
 
 class HostBatchImportTest(AutoLoginTest, HostsResourceMixin, HostBatchRequestMixin):

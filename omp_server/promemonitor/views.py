@@ -2,30 +2,34 @@
 """
 监控相关视图
 """
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import OrderingFilter
-
-from promemonitor.promemonitor_filters import AlertFilter, MyTimeFilter
-from utils.pagination import PageNumberPager
 import logging
 
-from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
+
+from rest_framework.filters import OrderingFilter
+from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import (
-    ListModelMixin, CreateModelMixin)
-from promemonitor import grafana_url
-import json
+    ListModelMixin, CreateModelMixin
+)
+
+from utils.common.paginations import PageNumberPager
+
 from db_models.models import (
     Host, MonitorUrl,
     Alert, Maintain
 )
+
+from promemonitor import grafana_url
+from promemonitor.promemonitor_filters import AlertFilter, MyTimeFilter
 from promemonitor.promemonitor_serializers import (
     MonitorUrlSerializer, ListAlertSerializer, UpdateAlertSerializer,
     MaintainSerializer, MonitorAgentRestartSerializer,
     ReceiveAlertSerializer
 )
+from utils.common.exceptions import OperateError
 
 logger = logging.getLogger('server')
 
@@ -76,14 +80,16 @@ class GrafanaUrlViewSet(ListModelMixin, GenericViewSet):
 
     def list(self, request, *args, **kwargs):
         params = request.query_params.dict()
-        asc = params.pop('asc', False)
+        asc = params.pop('asc', '0')
         asc = True if asc == '0' else False
         ordering = params.pop('ordering', 'date')
         current = grafana_url.explain_prometheus(params)
+        if current == "error":
+            raise OperateError("prometheus获取数据失败，请检查prometheus状态")
         prometheus_info = sorted(
             current, key=lambda e: e.__getitem__(ordering), reverse=asc)
-        prometheus_json = json.dumps(prometheus_info, ensure_ascii=False)
-        return Response(prometheus_json)
+        # prometheus_json = json.dumps(prometheus_info, ensure_ascii=False)
+        return Response(prometheus_info)
 
 
 class ListAlertViewSet(ListModelMixin, GenericViewSet):
@@ -91,8 +97,7 @@ class ListAlertViewSet(ListModelMixin, GenericViewSet):
     获取告警记录列表视图类
     """
     serializer_class = ListAlertSerializer
-    queryset = Alert.objects.all().order_by('id')
-    # 分页，过滤，排序
+    queryset = Alert.objects.all().order_by("-create_time")   # 分页，过滤，排序
     pagination_class = PageNumberPager
     filter_backends = (
         DjangoFilterBackend,
@@ -118,7 +123,7 @@ class MaintainViewSet(GenericViewSet, CreateModelMixin, ListModelMixin):
     全局进入 / 退出维护模式
     """
     queryset = Maintain.objects.filter(
-        matcher_name='env_name', matcher_value='default')
+        matcher_name='env', matcher_value='default')
     serializer_class = MaintainSerializer
     # 操作信息描述
     post_description = "更新全局维护状态"
@@ -132,12 +137,15 @@ class ReceiveAlertViewSet(GenericViewSet, CreateModelMixin):
     serializer_class = ReceiveAlertSerializer
     # 操作信息描述
     post_description = "接收alertmanager告警信息"
+    # 关闭权限、认证设置
+    authentication_classes = ()
+    permission_classes = ()
 
 
 class MonitorAgentRestartView(GenericViewSet, CreateModelMixin):
     """
         create:
-        主机重启Agent接口
+        重启监控Agent接口
     """
     queryset = Host.objects.filter(is_deleted=False)
     serializer_class = MonitorAgentRestartSerializer

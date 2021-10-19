@@ -25,19 +25,19 @@ def get_service_type(ip, service_name):
 
 def get_monitor_url(ele):
     try:
-        monitor_url = explain_url(ele)[0].get('monitor')
+        monitor_url = explain_url(ele)[0].get('monitor_url')
     except TypeError:
         logger.error('get monitor url failed')
-        monitor_url = '-'
+        monitor_url = None
     return monitor_url
 
 
 def get_log_url(ele):
     try:
-        monitor_log_url = explain_url(ele)[0].get('monitor_log')
+        monitor_log_url = explain_url(ele)[0].get('log_url')
     except TypeError:
         logger.error('get monitor log url failed')
-        monitor_log_url = '-'
+        monitor_log_url = None
     return monitor_log_url
 
 
@@ -233,7 +233,6 @@ class AlertAnalysis:
         # if not self.is_alert:
         #     return {}
         alert_info = self.analysis_labels()
-        print(alert_info)
         if alert_info["alert_type"] == "host":
             host = Host.objects.filter(
                 ip=alert_info["alert_host_ip"]).first()
@@ -246,8 +245,4 @@ class AlertAnalysis:
         alert_info.update(**self.analysis_annotations())
         # if env_id and int(env_id) != alert_info["env_id"]:
         #     return {}  # TODO 等待env开发完成
-        print(alert_info)
         return alert_info
-
-    def analysis_alert(self):
-        pass

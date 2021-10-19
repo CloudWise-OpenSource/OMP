@@ -32,7 +32,9 @@ const breadcrumbNameMap = {
   "system-management": "系统管理",
   "alarm-log": "告警记录",
   "exception-list":"异常清单",
-  "application-monitoring":"应用监控"
+  "application-monitoring":"应用监控",
+  "application_management":"应用管理",
+  "app_store":"应用商店"
 };
 
 // 基于面包屑组件的一层封装，用于匹配当前路由地址，动态展示页面路径
@@ -106,7 +108,7 @@ const CustomBreadcrumb = withRouter(({ location }) => {
     setLoading(true);
     fetchPost(apiRequest.environment.queryMaintainState, {
       body: {
-        matcher_name:"env_name",
+        matcher_name:"env",
         matcher_value:"default"
       },
     })

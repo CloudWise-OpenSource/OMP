@@ -17,7 +17,7 @@ class Prometheus:
 
     def __init__(self):
         self.basic_url = self.get_prometheus_config()
-        self.prometheus_api_query_url = f'http://{self.basic_url}/api/v1/query?query='
+        self.prometheus_api_query_url = f'http://{self.basic_url}/api/v1/query?query='  # NOQA
 
     @staticmethod
     def get_prometheus_config():
@@ -90,6 +90,10 @@ class Prometheus:
             logger.error(e)
             logger.error('获取主机CPU使用率失败！')
             return host_list
+        except Exception as e:
+            logger.error(e)
+            logger.error('获取主机CPU使用率失败！')
+            return host_list
 
     def get_host_mem_usage(self, host_list):
         """
@@ -124,6 +128,10 @@ class Prometheus:
                 logger.error('获取主机内存使用率失败！')
                 return host_list
         except requests.ConnectionError as e:
+            logger.error(e)
+            logger.error('获取主机内存使用率失败！')
+            return host_list
+        except Exception as e:
             logger.error(e)
             logger.error('获取主机内存使用率失败！')
             return host_list
@@ -164,6 +172,10 @@ class Prometheus:
                 logger.error('获取主机磁盘根分区使用率失败！')
                 return host_list
         except requests.ConnectionError as e:
+            logger.error(e)
+            logger.error('获取主机磁盘根分区使用率失败！')
+            return host_list
+        except Exception as e:
             logger.error(e)
             logger.error('获取主机磁盘根分区使用率失败！')
             return host_list
@@ -209,6 +221,10 @@ class Prometheus:
                     logger.error('获取主机磁盘数据分区使用率失败！')
                     continue
             except requests.ConnectionError as e:
+                logger.error(e)
+                logger.error('获取主机磁盘数据分区使用率失败！')
+                continue
+            except Exception as e:
                 logger.error(e)
                 logger.error('获取主机磁盘数据分区使用率失败！')
                 continue
