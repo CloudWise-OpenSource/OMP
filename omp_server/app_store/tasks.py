@@ -14,6 +14,7 @@ from utils.plugin import public_utils
 from utils.parse_config import OMP_REDIS_PORT, OMP_REDIS_PASSWORD, OMP_REDIS_HOST
 from db_models.models import UploadPackageHistory, ApplicationHub, ProductHub
 from app_store.upload_task import CreateDatabase
+import time
 
 # 屏蔽celery任务日志中的paramiko日志
 logging.getLogger("paramiko").setLevel(logging.WARNING)
