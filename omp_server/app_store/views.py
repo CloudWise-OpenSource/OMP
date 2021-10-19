@@ -2,8 +2,9 @@
 应用商店相关视图
 """
 from rest_framework.viewsets import GenericViewSet
-
-from rest_framework.mixins import ListModelMixin, CreateModelMixin, RetrieveModelMixin
+from rest_framework.mixins import (
+    ListModelMixin, CreateModelMixin, RetrieveModelMixin
+)
 from rest_framework.response import Response
 
 from django_filters.rest_framework.backends import DjangoFilterBackend
@@ -18,11 +19,12 @@ from app_store.app_store_filters import (
 from app_store.app_store_serializers import (
     ComponentListSerializer, ServiceListSerializer,
     UploadPackageSerializer, RemovePackageSerializer,
-    app_store_Serializer
+    app_store_Serializer, ExecuteLocalPackageScanSerializer
 )
 from app_store.app_store_serializers import (
     ProductDetailSerializer, ApplicationDetailSerializer
 )
+from app_store import tmp_exec_back_task
 
 from utils.common.exceptions import OperateError
 from app_store.tasks import publish_entry
@@ -184,3 +186,27 @@ class PublishViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
             raise OperateError("请传入uuid")
         publish_entry.delay(uuid)
         return Response({"status": "发布任务下发成功"})
+
+class ExecuteLocalPackageScanView(GenericViewSet, CreateModelMixin):
+    """
+        post:
+        扫描服务端执行按钮
+    """
+    serializer_class = ExecuteLocalPackageScanSerializer
+    # 操作信息描述
+    post_description = "扫描本地安装包"
+
+    def create(self, request, *args, **kwargs):
+        """
+            post:
+            扫描服务端执行按钮
+        """
+        _uuid, _package_name_lst = tmp_exec_back_task.back_end_verified_init(
+            operation_user=request.user.username
+        )
+        ret_data = {
+            "uuid": _uuid,
+            "package_name_lst": _package_name_lst
+        }
+
+        return Response(ret_data)
