@@ -22,10 +22,11 @@ def back_end_verified_init(operation_user):
             return str(lock, encoding="utf-8")
         back_verified = os.path.join(package_hub, package_dir.get('back_end_verified'))
         service_name = os.listdir(back_verified)
-        exec_name = [p for p in service_name if os.path.isfile(os.path.join(back_verified, p)) and 'tar' in p]
+        exec_name = [p for p in service_name if
+                     os.path.isfile(os.path.join(back_verified, p)) and ('.tar' in p or '.tar.gz' in p)]
         for j in exec_name:
             front_end_verified.delay(uuid, operation_user, j)
         publish_bak_end.delay(uuid, len(exec_name))
-        return uuid
+        return uuid, exec_name
 
     return back_end_verified()
