@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'db_models',
     'users',
     'tests',
+    'inspection',
 ]
 
 MIDDLEWARE = [

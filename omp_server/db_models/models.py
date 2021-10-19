@@ -54,6 +54,7 @@ class OperateLog(models.Model):
 class Env(models.Model):
     """ 环境表 """
 
+    objects = None
     name = models.CharField(
         "环境名称", max_length=256, help_text="环境名称")
     created = models.DateTimeField(
