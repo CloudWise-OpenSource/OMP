@@ -26,4 +26,5 @@ router.register("componentDetail", ComponentDetailView,
 router.register("serviceDetail", ServiceDetailView, basename='serviceDetail')
 router.register("pack_verification_results", ServicePackPageVerificationView, basename="pack_verification_results")
 router.register("publish", PublishViewSet, basename="publish")
-
+router.register("pack_verification_results", ServicePackPageVerificationView, basename="pack_verification_results")
+router.register("publish", PublishViewSet, basename="publish")
