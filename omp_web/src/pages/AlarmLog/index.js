@@ -99,21 +99,6 @@ const AlarmLog = () => {
       });
   };
 
-  // const fetchNameList = () => {
-  //   setSearchLoading(true);
-  //   fetchGet(apiRequest.Alert.instanceNameList)
-  //     .then((res) => {
-  //       handleResponse(res, (res) => {
-  //         //setIpListSource(res.data);
-  //         console.log(res);
-  //       });
-  //     })
-  //     .catch((e) => console.log(e))
-  //     .finally(() => {
-  //       setSearchLoading(false);
-  //     });
-  // };
-
   const updateAlertRead = (ids = []) => {
     setLoading(true);
     fetchPost(apiRequest.Alert.updateAlert, {
