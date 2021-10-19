@@ -10,6 +10,7 @@ from rest_framework.serializers import ModelSerializer
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import Serializer
 from utils.common.exceptions import OperateError
+from app_store.tasks import front_end_verified
 
 from db_models.models import (
     ApplicationHub, ProductHub, UploadPackageHistory
@@ -68,6 +69,10 @@ class UploadPackageSerializer(Serializer):
         required=True,
         error_messages={"required": "必须包含[file]字段"}
     )
+    md5 = serializers.CharField(help_text="文件包的md5值",
+                                required=True,
+                                error_messages={"required": "必须包含[md5]字段"}
+                                )
 
     def validate(self, attrs):
         file = attrs.get("file")
@@ -85,17 +90,23 @@ class UploadPackageSerializer(Serializer):
         return attrs
 
     def create(self, validated_data):
+        uuid = validated_data.get("uuid")
+        operation_user = validated_data.get("operation_user")
         request_file = validated_data.get("file")
+        ma5 = validated_data.get("ma5")
+        package_name = request_file.name
         if not request_file:
             raise OperateError("上传文件为空")
         destination_dir = os.path.join(
-            settings.PROJECT_DIR, 'package_hub/back_end_verified')
+            settings.PROJECT_DIR, 'package_hub/front_end_verified')
         with open(os.path.join(destination_dir, request_file.name), 'wb+') as f:
             for chunk in request_file.chunks():
                 try:
                     f.write(chunk)
                 except Exception:
                     raise OperateError("文件写入过程失败")
+
+        front_end_verified.delay(uuid, operation_user, package_name, ma5)
         return validated_data
 
 

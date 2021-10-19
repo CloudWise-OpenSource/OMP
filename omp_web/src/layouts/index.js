@@ -266,7 +266,9 @@ const OmpLayout = (props) => {
                 title={item.menuTitle}
               >
                 {item.children.map((i) => {
-                  return <Menu.Item key={i.path}>{i.title}</Menu.Item>;
+                  if (!i.notInMenu) {
+                    return <Menu.Item key={i.path}>{i.title}</Menu.Item>;
+                  }
                 })}
               </SubMenu>
             );

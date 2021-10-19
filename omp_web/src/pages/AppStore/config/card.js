@@ -1,33 +1,31 @@
 import { useSelector } from "react-redux";
-import { Button } from "antd";
+import { Button, Tooltip } from "antd";
 import styles from "./index.module.less";
-import img from "@/config/logo/logo.svg";
-import { useEffect, useRef, useState } from "react";
+import imgObj from "./img";
+import { useEffect, useState } from "react";
 
-const Card = ({ idx }) => {
-  const ref = useRef(null);
-  //console.log(idx)
-  const viewHeight = useSelector((state) => state.layouts.viewSize.height);
-  const viewWith = useSelector((state) => state.layouts.viewSize.width);
+const Card = ({ idx, history, info, tabKey }) => {
 
-  console.log(ref?.current?.height);
-  console.log((viewHeight - 355 - 10 * 2) / 3);
-
-  const [cardHeight, setCardHeight] = useState(120);
-
-  //   useEffect(() => {
-  //       if(viewHeight > 955){
-  //         setCardHeight(200)
-  //       }else if(viewHeight <= 860 && viewHeight > 760){
-  //         setCardHeight(180)
-  //       }else if(viewHeight <= 860 && viewHeight > 760){
-
-  //       }
-  //   }, []);
+  //定义命名
+  let nameObj = {
+    component:{
+      logo:"app_logo",
+      name:"app_name",
+      version:"app_version",
+      description:"app_description",
+      instance_number:"instance_number",
+    },
+    service:{
+      logo:"pro_logo",
+      name:"pro_name",
+      version:"pro_version",
+      description:"pro_description",
+      instance_number:"instance_number",
+    }
+  }
 
   return (
     <div
-      ref={ref}
       className={styles.cardContainer}
       style={{
         transition: "all .2s ease-in-out",
@@ -56,38 +54,39 @@ const Card = ({ idx }) => {
               justifyContent: "center",
               alignItems: "center",
               marginLeft: 10,
+              marginRight: 10,
+              overflow:"hidden"
             }}
+            dangerouslySetInnerHTML={{__html: info[nameObj[tabKey].logo] || imgObj[tabKey]}}
           >
-            <img style={{ width: 40, height: 40 }} src={img} />
           </div>
         </div>
         <div
           style={{
-            flex: 1,
+            //flex: 1,
             fontSize: 13,
             color: "#a2a2a2",
             position: "relative",
+            width:"calc(100% - 80px)"
+          }}
+          onClick={()=>{
+            history?.push({
+              pathname: `/application_management/app_store/app-${tabKey}-detail/${info[nameObj[tabKey].name]}`,
+            });
           }}
         >
-          <div style={{ fontSize: 16, color: "#222222" }}>mysql</div>
+          <div style={{ fontSize: 16, color: "#222222" }}>{info[nameObj[tabKey].name]}</div>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <span>最新版本</span>
-            <span>5.7.31</span>
+            <span>{info[nameObj[tabKey].version]}</span>
           </div>
           <p
             className={styles.text}
-            style={{
-              height: 70,
-              overflow: "hidden",
-              lineHeight: "18px",
-              //   /backgroundColor: "aqua",
-            //   display: "-webkit-box",
-            //   "box-orient": "vertical",
-            //   "line-clamp": 3,   
-            }}
           >
-            MySQL Database Service is a fully managed database service to deploy
-            cloud-native applications
+            <Tooltip placement="top" title={info[nameObj[tabKey].description]}>
+            {info[nameObj[tabKey].description]}
+      </Tooltip>
+            
           </p>
           <span
             style={{
@@ -97,16 +96,21 @@ const Card = ({ idx }) => {
               right: 2,
             }}
           >
-            已安装3个实例
+            已安装{info[nameObj[tabKey].instance_number]}个实例
           </span>
         </div>
       </div>
       <div className={styles.cardBtn}>
-        <div style={{ borderRight: "1px solid #b9b9b9" }}>查看</div>
+        <div style={{ borderRight: "1px solid #e7e7e7" }}
+           onClick={()=>{
+            history?.push({
+              pathname: `/application_management/app_store/app-${tabKey}-detail/${info[nameObj[tabKey].name]}`,
+            });
+          }}
+        >查看</div>
         <div>安装</div>
       </div>
     </div>
   );
 };
-
 export default Card;
