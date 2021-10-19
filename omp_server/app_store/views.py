@@ -126,7 +126,7 @@ class RemovePackageView(GenericViewSet, CreateModelMixin):
     post_description = "移除安装包"
 
 
-class ApplicationDetailView(GenericViewSet, RetrieveModelMixin):
+class ComponentDetailView(GenericViewSet, RetrieveModelMixin):
     queryset = ApplicationHub.objects.all()
     serializer_class = ApplicationDetailSerializer
 
@@ -134,7 +134,7 @@ class ApplicationDetailView(GenericViewSet, RetrieveModelMixin):
     get_description = "查询组件详情"
 
 
-class ProductDetailView(GenericViewSet, RetrieveModelMixin):
+class ServiceDetailView(GenericViewSet, RetrieveModelMixin):
     queryset = ProductHub.objects.all()
     serializer_class = ProductDetailSerializer
 
