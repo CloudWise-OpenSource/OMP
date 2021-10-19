@@ -56,7 +56,7 @@ class CrontabUtils(object):
         创建定时任务
         如果定时任务正在执行，但是在指定频率内未完成，那么新任务仍能下发
         :param minute: 分钟
-        :param hour: 消失
+        :param hour: 小时
         :param day_of_month: 每月的第几天
         :param month_of_year: 每年的第几个月
         :param day_of_week: 每周的第几天
