@@ -362,12 +362,15 @@ class ExplainYml:
 
 @shared_task
 def publish_bak_end(uuid, exc_len):
+    # 增加try，并增加超时机制释放锁
     exc_task = True
-    while exc_task:
+    time_count = 0
+    while exc_task and time_count <= 60:
         valid_uuids = UploadPackageHistory.objects.filter(operation_uuid=uuid,
                                                           package_parent__isnull=True,
                                                           ).exclude(package_status=2).count()
         if valid_uuids != exc_len:
+            time_count += 1
             time.sleep(5)
         else:
             publish_entry(uuid)
@@ -422,12 +425,13 @@ def publish_entry(uuid):
             return None
         valid_packages_obj.append(line['package_name'].id)
     clear_dir = os.path.dirname(tmp_dir)
+    UploadPackageHistory.objects.filter(id__in=valid_packages_obj).update(package_status=3)
+    online = UploadPackageHistory.objects.filter(is_deleted=False,
+                                                 package_status_in=[2, 5]).count()
     if len(clear_dir) <= 28:
         logger.error('{clear_dir}路径异常')
         return None
-    clear_out = public_utils.local_cmd(f'rm -rf {clear_dir} && mkdir {clear_dir}')
-    if clear_out[2] != 0:
-        valid_uuids.update(package_status=4)
-        logger.error('清理环境失败')
-        return None
-    UploadPackageHistory.objects.filter(id__in=valid_packages_obj).update(package_status=3)
+    if online == 0:
+        clear_out = public_utils.local_cmd(f'rm -rf {clear_dir} && mkdir {clear_dir}')
+        if clear_out[2] != 0:
+            logger.error('清理环境失败')
