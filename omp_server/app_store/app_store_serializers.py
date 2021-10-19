@@ -210,13 +210,14 @@ class ProductDetailSerializer(ModelSerializer):
         return product_list
 
 
-class app_store_Serializer(serializers.ModelSerializer):
+class UploadPackageHistorySerializer(serializers.ModelSerializer):
     """ 操作记录序列化类 """
 
     class Meta:
         """ 元数据 """
         model = UploadPackageHistory
-        fields = ["package_name", "package_status", "error_msg", "operation_uuid"]
+        fields = ["package_name", "package_status",
+                  "error_msg", "operation_uuid"]
 
 
 class ExecuteLocalPackageScanSerializer(Serializer):

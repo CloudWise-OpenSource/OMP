@@ -5,7 +5,7 @@ import django_filters
 from django_filters.rest_framework import FilterSet
 
 from db_models.models import (
-    Labels, ApplicationHub, ProductHub
+    Labels, ApplicationHub, ProductHub, UploadPackageHistory
 )
 
 
@@ -41,3 +41,13 @@ class ServiceFilter(FilterSet):
     class Meta:
         model = ProductHub
         fields = ("pro_name", "type")
+
+
+class UploadPackageHistoryFilter(FilterSet):
+    """ 发布-安装包校验结果接口 """
+    operation_uuid = django_filters.CharFilter(
+        help_text="operation_uuid，查询", field_name="operation_uuid", lookup_expr="exact")
+
+    class Meta:
+        model = UploadPackageHistory
+        fields = ("operation_uuid",)
