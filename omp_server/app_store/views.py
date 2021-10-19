@@ -17,11 +17,18 @@ from app_store.app_store_filters import (
 )
 from app_store.app_store_serializers import (
     ComponentListSerializer, ServiceListSerializer,
-    UploadPackageSerializer, RemovePackageSerializer
+    UploadPackageSerializer, RemovePackageSerializer,
+    app_store_Serializer
 )
 from app_store.app_store_serializers import (
     ProductDetailSerializer, ApplicationDetailSerializer
 )
+
+from utils.common.exceptions import OperateError
+from app_store.tasks import publish_entry
+from django_filters.rest_framework import FilterSet
+import django_filters
+from rest_framework.filters import OrderingFilter
 
 
 class AppStoreListView(GenericViewSet, ListModelMixin):
@@ -140,3 +147,40 @@ class ServiceDetailView(GenericViewSet, RetrieveModelMixin):
 
     # 操作信息描述
     get_description = "查询产品详情"
+
+
+class UploadPackageHistoryFilter(FilterSet):
+    """ 发布-安装包校验结果接口 """
+    operation_uuid = django_filters.CharFilter(
+        help_text="operation_uuid，查询", field_name="operation_uuid", lookup_expr="exact")
+
+    class Meta:
+        model = UploadPackageHistory
+        fields = ("operation_uuid",)
+
+
+class ServicePackPageVerificationView(GenericViewSet, ListModelMixin):
+    queryset = UploadPackageHistory.objects.all()
+    serializer_class = app_store_Serializer
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    filter_class = UploadPackageHistoryFilter
+
+
+class PublishViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
+    """
+        create:
+        上传接口
+    """
+
+    queryset = UploadPackageHistory.objects.filter(package_status__in=[3, 4, 5])
+    serializer_class = app_store_Serializer
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    filter_class = UploadPackageHistoryFilter
+
+    def create(self, request, *args, **kwargs):
+        params = request.query_params.dict()
+        uuid = params.pop('uuid', None)
+        if not uuid:
+            raise OperateError("请传入uuid")
+        publish_entry.delay(uuid)
+        return Response({"status": "发布任务下发成功"})

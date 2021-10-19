@@ -11,7 +11,8 @@ from rest_framework.routers import DefaultRouter
 from app_store.views import (
     LabelListView, ComponentListView, ServiceListView,
     UploadPackageView, RemovePackageView,
-    ComponentDetailView, ServiceDetailView
+    ComponentDetailView, ServiceDetailView,
+    ServicePackPageVerificationView, PublishViewSet
 )
 
 router = DefaultRouter()
@@ -23,3 +24,7 @@ router.register("remove", RemovePackageView, basename="remove")
 router.register("componentDetail", ComponentDetailView,
                 basename='componentDetail')
 router.register("serviceDetail", ServiceDetailView, basename='serviceDetail')
+router.register("pack_verification_results", ServicePackPageVerificationView, basename="pack_verification_results")
+router.register("publish", PublishViewSet, basename="publish")
+router.register("pack_verification_results", ServicePackPageVerificationView, basename="pack_verification_results")
+router.register("publish", PublishViewSet, basename="publish")
