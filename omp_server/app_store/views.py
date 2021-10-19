@@ -14,12 +14,12 @@ from db_models.models import (
 )
 from utils.common.paginations import PageNumberPager
 from app_store.app_store_filters import (
-    LabelFilter, ComponentFilter, ServiceFilter
+    LabelFilter, ComponentFilter, ServiceFilter, UploadPackageHistoryFilter
 )
 from app_store.app_store_serializers import (
     ComponentListSerializer, ServiceListSerializer,
     UploadPackageSerializer, RemovePackageSerializer,
-    app_store_Serializer, ExecuteLocalPackageScanSerializer
+    UploadPackageHistorySerializer, ExecuteLocalPackageScanSerializer
 )
 from app_store.app_store_serializers import (
     ProductDetailSerializer, ApplicationDetailSerializer
@@ -28,8 +28,6 @@ from app_store import tmp_exec_back_task
 
 from utils.common.exceptions import OperateError
 from app_store.tasks import publish_entry
-from django_filters.rest_framework import FilterSet
-import django_filters
 from rest_framework.filters import OrderingFilter
 
 
@@ -151,19 +149,9 @@ class ServiceDetailView(GenericViewSet, RetrieveModelMixin):
     get_description = "查询产品详情"
 
 
-class UploadPackageHistoryFilter(FilterSet):
-    """ 发布-安装包校验结果接口 """
-    operation_uuid = django_filters.CharFilter(
-        help_text="operation_uuid，查询", field_name="operation_uuid", lookup_expr="exact")
-
-    class Meta:
-        model = UploadPackageHistory
-        fields = ("operation_uuid",)
-
-
 class ServicePackPageVerificationView(GenericViewSet, ListModelMixin):
     queryset = UploadPackageHistory.objects.all()
-    serializer_class = app_store_Serializer
+    serializer_class = UploadPackageHistorySerializer
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     filter_class = UploadPackageHistoryFilter
 
@@ -174,8 +162,9 @@ class PublishViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
         上传接口
     """
 
-    queryset = UploadPackageHistory.objects.filter(package_status__in=[3, 4, 5])
-    serializer_class = app_store_Serializer
+    queryset = UploadPackageHistory.objects.filter(
+        package_status__in=[3, 4, 5])
+    serializer_class = UploadPackageHistorySerializer
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     filter_class = UploadPackageHistoryFilter
 
@@ -186,6 +175,7 @@ class PublishViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
             raise OperateError("请传入uuid")
         publish_entry.delay(uuid)
         return Response({"status": "发布任务下发成功"})
+
 
 class ExecuteLocalPackageScanView(GenericViewSet, CreateModelMixin):
     """
