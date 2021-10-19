@@ -56,7 +56,7 @@ class AppStoreDetailTest(AutoLoginTest):
         # 查询应用表 -> 返回所指定应用名符合的数据
         app = ApplicationHub.objects.get(app_name='mysql', app_version='5.1')
         application_detail_url = reverse(
-            "ApplicationDetail-detail", args=[app.id])
+            "componentDetail-detail", args=[app.id])
         resp = self.get(application_detail_url).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
@@ -67,7 +67,7 @@ class AppStoreDetailTest(AutoLoginTest):
         测试产品详情
         """
         pro = ProductHub.objects.get(pro_name='dosm', pro_version='5.2')
-        product_detail_url = reverse("ProductDetail-detail", args=[pro.id])
+        product_detail_url = reverse("serviceDetail-detail", args=[pro.id])
         resp = self.get(product_detail_url).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
