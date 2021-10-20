@@ -54,7 +54,7 @@ class ServiceListSerializer(ModelSerializer):
 class UploadPackageSerializer(Serializer):
     """上传安装包序列化类"""
 
-    uuid = serializers.UUIDField(
+    uuid = serializers.CharField(
         help_text="上传安装包uuid",
         required=True,
         error_messages={"required": "必须包含[uuid]字段"}
