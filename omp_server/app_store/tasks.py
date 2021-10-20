@@ -3,7 +3,6 @@
 """
 
 import os
-import time
 import random
 import yaml
 import logging
