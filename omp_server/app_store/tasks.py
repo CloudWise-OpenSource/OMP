@@ -143,7 +143,7 @@ def front_end_verified(uuid, operation_user, package_name, md5=None):
         upload_obj.save()
         public_action = PublicAction(md5)
     touch_name = file_name[:-7] if file_name[-7:] == ".tar.gz" else file_name[
-        :-3]
+                                                                    :-3]
     tmp_dir = os.path.join(package_path, touch_name + random_str)
     os.mkdir(tmp_dir)
     tar_out = public_utils.local_cmd(f'tar -xvf {file_name} -C {tmp_dir}')
@@ -512,8 +512,8 @@ def publish_entry(uuid):
         package_status=3)
     online = UploadPackageHistory.objects.filter(
         is_deleted=False,
-        package_status_in=[2,
-                           5]).count()
+        package_status__in=[2,
+                            5]).count()
     if len(clear_dir) <= 28:
         logger.error('{clear_dir}路径异常')
         return None
