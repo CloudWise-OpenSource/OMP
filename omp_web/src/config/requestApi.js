@@ -69,7 +69,11 @@ export const apiRequest = {
     // 基础组件详情
     ProductDetail:"/api/appStore/ProductDetail/",
     // 应用服务详情
-    ApplicationDetail: "/api/appStore/ApplicationDetail/"
+    ApplicationDetail: "/api/appStore/ApplicationDetail/",
+    // 安装包删除
+    remove: "/api/appStore/remove/",
+    // 安装包校验结果
+    pack_verification_results:"/api/appStore/pack_verification_results/"
   },
 
   // ========================================================

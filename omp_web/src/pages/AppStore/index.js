@@ -1,4 +1,4 @@
-import { Input, Button, Pagination, Empty, Spin } from "antd";
+import { Input, Button, Pagination, Empty, Spin, Modal, Upload, message } from "antd";
 import { useEffect, useState } from "react";
 import styles from "./index.module.less";
 import { SearchOutlined, DownloadOutlined } from "@ant-design/icons";
@@ -8,6 +8,7 @@ import { useHistory } from "react-router-dom";
 import { fetchGet } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import { handleResponse } from "@/utils/utils";
+import ReleaseModal from "./config/modal.js"
 
 const AppStore = () => {
   // 视口高度
@@ -19,7 +20,7 @@ const AppStore = () => {
 
   const [searchName, setSearchName] = useState("");
 
-  const [total, setTotal] = useState(0)
+  const [total, setTotal] = useState(0);
 
   const [loading, setLoading] = useState(false);
   const [dataSource, setDataSource] = useState([]);
@@ -29,6 +30,8 @@ const AppStore = () => {
     total: 0,
     searchParams: {},
   });
+
+  const [releaseModalVisibility, setReleaseModalVisibility] = useState(false);
 
   function fetchData(pageParams = { current: 1, pageSize: 8 }, searchParams) {
     setLoading(true);
@@ -48,11 +51,11 @@ const AppStore = () => {
       .then((res) => {
         handleResponse(res, (res) => {
           // 获得真正的总数，要查询条件都为空时
-          let obj = {...searchParams}
-          delete obj.tabKey
-          let arr = Object.values(obj).filter(i=>i)
-          if(arr.length == 0){
-            setTotal(res.data.count)
+          let obj = { ...searchParams };
+          delete obj.tabKey;
+          let arr = Object.values(obj).filter((i) => i);
+          if (arr.length == 0) {
+            setTotal(res.data.count);
           }
           setDataSource(res.data.results);
           setPagination({
@@ -157,7 +160,7 @@ const AppStore = () => {
                     },
                     {
                       ...pagination.searchParams,
-                      [tabKey=="component"?"app_name":"pro_name"]: null,
+                      [tabKey == "component" ? "app_name" : "pro_name"]: null,
                     }
                   );
                 }
@@ -170,7 +173,8 @@ const AppStore = () => {
                   },
                   {
                     ...pagination.searchParams,
-                    [tabKey=="component"?"app_name":"pro_name"]: searchName,
+                    [tabKey == "component" ? "app_name" : "pro_name"]:
+                      searchName,
                   }
                 );
               }}
@@ -182,12 +186,17 @@ const AppStore = () => {
                   },
                   {
                     ...pagination.searchParams,
-                    [tabKey=="component"?"app_name":"pro_name"]: searchName,
+                    [tabKey == "component" ? "app_name" : "pro_name"]:
+                      searchName,
                   }
                 );
               }}
             />
-            <Button style={{ marginRight: 10 }} type="primary">
+            <Button
+              style={{ marginRight: 10 }}
+              type="primary"
+              onClick={() => setReleaseModalVisibility(true)}
+            >
               发布
             </Button>
             <Button type="primary">扫描服务端</Button>
@@ -293,6 +302,11 @@ const AppStore = () => {
           />
         </div>
       )}
+      <ReleaseModal 
+        releaseModalVisibility={releaseModalVisibility}
+        setReleaseModalVisibility={setReleaseModalVisibility}
+      />
+            
     </div>
   );
 };
