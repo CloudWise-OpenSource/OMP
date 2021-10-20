@@ -31,20 +31,3 @@ def deco(cls):
         return __deco
 
     return _deco
-
-
-if __name__ == "__main__":
-    import time
-
-
-    def a(c):
-        @deco(RedisLock("1122334554363546", c))
-        def myfunc(lock=None):
-            print(c)
-            print(lock)
-            time.sleep(100)
-
-        return myfunc()
-
-
-    a('1111')

@@ -3,15 +3,18 @@
 """
 
 import os
+import time
 import random
 import yaml
 import logging
 import json
+
+import redis
 from celery import shared_task
-from app_store.lockredis import *
 from celery.utils.log import get_task_logger
 from utils.plugin import public_utils
-from utils.parse_config import OMP_REDIS_PORT, OMP_REDIS_PASSWORD, OMP_REDIS_HOST
+from utils.parse_config import OMP_REDIS_PORT, OMP_REDIS_PASSWORD, \
+    OMP_REDIS_HOST
 from db_models.models import UploadPackageHistory, ApplicationHub, ProductHub
 from app_store.upload_task import CreateDatabase
 import time
@@ -24,7 +27,8 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.path.dirname(os.path.dirname(current_dir))
 package_hub = os.path.join(project_dir, "package_hub")
 
-package_dir = {"back_end_verified": "back_end_verified", "front_end_verified": "front_end_verified",
+package_dir = {"back_end_verified": "back_end_verified",
+               "front_end_verified": "front_end_verified",
                "verified": "verified"}
 
 
@@ -66,7 +70,9 @@ class FiledCheck(object):
                 field = set(settings.keys())
             for i in field:
                 if not settings.get(i):
-                    self.db_obj.update_package_status(1, f"yml{i}缺乏值，检查yml文件{self.yaml_dir}")
+                    self.db_obj.update_package_status(
+                        1,
+                        f"yml{i}缺乏值，检查yml文件{self.yaml_dir}")
                     return False
             return True
         elif isinstance(settings, list):
@@ -75,7 +81,9 @@ class FiledCheck(object):
             for i in settings:
                 for j in field:
                     if not i.get(j):
-                        self.db_obj.update_package_status(1, f"yml{i}缺乏值，检查yml文件{self.yaml_dir}")
+                        self.db_obj.update_package_status(
+                            1,
+                            f"yml{i}缺乏值，检查yml文件{self.yaml_dir}")
                         return False
             return True
         else:
@@ -85,14 +93,18 @@ class FiledCheck(object):
         if isinstance(settings, dict):
             status = set(settings.keys()) - field
             if status:
-                self.db_obj.update_package_status(1, f"yml{str(status)}字段和预期不符，检查yml文件{self.yaml_dir}")
+                self.db_obj.update_package_status(
+                    1,
+                    f"yml{str(status)}字段和预期不符，检查yml文件{self.yaml_dir}")
                 return False
             return True
         elif isinstance(settings, list):
             for i in settings:
                 status = set(i.keys()) - field
                 if status:
-                    self.db_obj.update_package_status(1, f"yml{str(status)}字段和预期不符，检查yml文件{self.yaml_dir}")
+                    self.db_obj.update_package_status(
+                        1,
+                        f"yml{str(status)}字段和预期不符，检查yml文件{self.yaml_dir}")
                     return False
             return True
         else:
@@ -101,7 +113,8 @@ class FiledCheck(object):
 
 @shared_task
 def front_end_verified(uuid, operation_user, package_name, md5=None):
-    random_str = ''.join(random.sample('abcdefghijklmnopqrstuvwxyz1234567890', 10))
+    random_str = ''.join(
+        random.sample('abcdefghijklmnopqrstuvwxyz1234567890', 10))
     if md5:
         ver_dir = package_dir.get("front_end_verified")
     else:
@@ -109,15 +122,19 @@ def front_end_verified(uuid, operation_user, package_name, md5=None):
         md5 = random_str
     package_path = os.path.join(package_hub, ver_dir)
     file_name = os.path.join(package_path, package_name)
-    upload_obj = UploadPackageHistory(operation_uuid=uuid, operation_user=operation_user,
-                                      package_name=package_name,
-                                      package_md5=md5,
-                                      package_path=package_dir.get("verified"))
+    upload_obj = UploadPackageHistory(
+        operation_uuid=uuid,
+        operation_user=operation_user,
+        package_name=package_name,
+        package_md5=md5,
+        package_path=package_dir.get("verified"))
     upload_obj.save()
     public_action = PublicAction(md5)
     md5_out = public_utils.local_cmd(f'md5sum {file_name}')
     if md5_out[2] != 0:
-        return public_action.update_package_status(1, f"md5sum执行{file_name}shell校验失败:{md5_out[1]}")
+        return public_action.update_package_status(
+            1,
+            f"md5sum执行{file_name}shell校验失败:{md5_out[1]}")
     md5sum = md5_out[0].split()[0]
     if md5sum != md5 and md5 != random_str:
         return public_action.update_package_status(1, f"md5{file_name}校验失败")
@@ -126,16 +143,21 @@ def front_end_verified(uuid, operation_user, package_name, md5=None):
         upload_obj.package_md5 = md5
         upload_obj.save()
         public_action = PublicAction(md5)
-    touch_name = file_name[:-7] if file_name[-7:] == ".tar.gz" else file_name[:-3]
+    touch_name = file_name[:-7] if file_name[-7:] == ".tar.gz" else file_name[
+        :-3]
     tmp_dir = os.path.join(package_path, touch_name + random_str)
     os.mkdir(tmp_dir)
     tar_out = public_utils.local_cmd(f'tar -xvf {file_name} -C {tmp_dir}')
     if tar_out[2] != 0:
-        return public_action.update_package_status(1, f"安装包{file_name}解压失败或者压缩包格式不合规:{md5_out[1]}")
+        return public_action.update_package_status(
+            1,
+            f"安装包{file_name}解压失败或者压缩包格式不合规:{md5_out[1]}")
     app_name = package_name.split('-', 1)[0]
     check_file = os.path.join(tmp_dir, f'{app_name}.yaml')
     if not os.path.exists(check_file):
-        return public_action.update_package_status(1, f"安装包{file_name}:{check_file}文件不存在")
+        return public_action.update_package_status(
+            1,
+            f"安装包{file_name}:{check_file}文件不存在")
     explain_yml = ExplainYml(public_action, check_file).explain_yml()
     # 这个校验可能用不到
     if isinstance(explain_yml, bool):
@@ -155,35 +177,47 @@ def front_end_verified(uuid, operation_user, package_name, md5=None):
         explain_service_list = []
         yml_dirs = os.path.join(tmp_dir, app_name)
         service_name = [os.path.join(tmp_dir, i) for i in os.listdir(tmp_dir)]
-        service_packages_value = [p for p in service_name if os.path.isfile(p) and 'tar' in p]
-        service_packages_key = [service_package.split("-")[0].rsplit("/", 1)[1] for service_package in
+        service_packages_value = [
+            p for p in service_name if
+            os.path.isfile(p) and 'tar' in p]
+        service_packages_key = [service_package.split("-")[0].rsplit("/", 1)[1]
+                                for service_package in
                                 service_packages_value]
-        service_package = dict(zip(service_packages_key, service_packages_value))
+        service_package = dict(
+            zip(service_packages_key, service_packages_value))
         for i in service:
             service_dir = os.path.join(yml_dirs, f"{i.get('name')}.yaml")
             if not os.path.exists(service_dir):
-                return public_action.update_package_status(1, f"安装包{file_name}:{service_dir}文件不存在")
-            explain_service_yml = ExplainYml(public_action, service_dir).explain_yml()
+                return public_action.update_package_status(
+                    1,
+                    f"安装包{file_name}:{service_dir}文件不存在")
+            explain_service_yml = ExplainYml(public_action,
+                                             service_dir).explain_yml()
             if isinstance(explain_service_yml, bool):
                 return None
             name = i.get('name')
             service_pk = service_package.get(name, name)
             service_pk_name = service_pk.rsplit("/", 1)[1]
-            UploadPackageHistory.objects.create(operation_uuid=uuid, operation_user=operation_user,
-                                                package_name=service_pk,
-                                                package_md5=md5,
-                                                package_path=os.path.join(package_dir.get("verified"), pro_name,
-                                                                          service_pk_name),
-                                                package_status=0,
-                                                package_parent=upload_obj
-                                                )
+            UploadPackageHistory.objects.create(
+                operation_uuid=uuid,
+                operation_user=operation_user,
+                package_name=service_pk,
+                package_md5=md5,
+                package_path=os.path.join(
+                    package_dir.get(
+                        "verified"), pro_name,
+                    service_pk_name),
+                package_status=0,
+                package_parent=upload_obj
+            )
             explain_service_yml[1]['package_name'] = service_pk
             explain_service_list.append(explain_service_yml[1])
         explain_yml[1]['product_service'] = explain_service_list
     explain_yml[1]['image'] = image
     explain_yml[1]['package_name'] = package_name
     explain_yml[1]['tmp_dir'] = tmp_dir
-    upload_obj.package_path = os.path.join(package_dir.get("verified"), pro_name)
+    upload_obj.package_path = os.path.join(package_dir.get("verified"),
+                                           pro_name)
     upload_obj.save()
     # 开启写入中间结果  包含入库所有的信息
     middle_data = os.path.join(project_dir, 'data', f'middle_data-{uuid}.json')
@@ -192,9 +226,11 @@ def front_end_verified(uuid, operation_user, package_name, md5=None):
     name = explain_yml[1]['name']
     version = explain_yml[1]['version']
     if explain_yml[1]['kind'] == 'product':
-        count = ProductHub.objects.filter(pro_version=name, pro_name=version).count()
+        count = ProductHub.objects.filter(pro_version=name,
+                                          pro_name=version).count()
     else:
-        count = ApplicationHub.objects.filter(app_version=name, app_name=version).count()
+        count = ApplicationHub.objects.filter(app_version=name,
+                                              app_name=version).count()
     if count:
         count = "已存在,将覆盖"
     logger.info(public_action)
@@ -224,7 +260,9 @@ class ExplainYml:
             with open(self.yaml_dir, "r", encoding="utf8") as fp:
                 settings = yaml.load(fp, Loader=yaml.FullLoader)
         except Exception as e:
-            self.db_obj.update_package_status(1, f"yml包格式错误，检查yml文件{self.yaml_dir}:{e}")
+            self.db_obj.update_package_status(
+                1,
+                f"yml包格式错误，检查yml文件{self.yaml_dir}:{e}")
             return False
         kind = settings.pop('kind', None)
         name = settings.pop('name', None)
@@ -235,16 +273,24 @@ class ExplainYml:
         if dependencies:
             for i in dependencies:
                 if not i.get("name") or not i.get("version"):
-                    self.db_obj.update_package_status(1, f"yml校验dependecies校验失败，检查yml文件{self.yaml_dir}")
+                    self.db_obj.update_package_status(
+                        1,
+                        f"yml校验dependecies校验失败，检查yml文件{self.yaml_dir}")
                     return False
         if description == "-1" or dependencies == "-1":
-            self.db_obj.update_package_status(1, f"yml校验description或dependencies校验失败，检查yml文件{self.yaml_dir}")
+            self.db_obj.update_package_status(
+                1,
+                f"yml校验description或dependencies校验失败，检查yml文件{self.yaml_dir}")
             return False
         if kind not in kinds:
-            self.db_obj.update_package_status(1, f"yml校验kind校验失败，检查yml文件{self.yaml_dir}")
+            self.db_obj.update_package_status(
+                1,
+                f"yml校验kind校验失败，检查yml文件{self.yaml_dir}")
             return False
         if not name or not version:
-            self.db_obj.update_package_status(1, f"yml校验name或version校验失败，检查yml文件{self.yaml_dir}")
+            self.db_obj.update_package_status(
+                1,
+                f"yml校验name或version校验失败，检查yml文件{self.yaml_dir}")
             return False
         yml = getattr(self, kind)(settings)
         if isinstance(yml, bool):
@@ -266,16 +312,22 @@ class ExplainYml:
         db_filed = {}
         service = settings.pop('service', None)
         if not service:
-            self.db_obj.update_package_status(1, f"yml校验service校验失败，检查yml文件{self.yaml_dir}")
+            self.db_obj.update_package_status(
+                1,
+                f"yml校验service校验失败，检查yml文件{self.yaml_dir}")
             return False
         for i in service:
             if not i.get("name") or not i.get("version"):
-                self.db_obj.update_package_status(1, f"yml校验service校验失败，检查yml文件{self.yaml_dir}")
+                self.db_obj.update_package_status(
+                    1,
+                    f"yml校验service校验失败，检查yml文件{self.yaml_dir}")
                 return False
         db_filed['service'] = service
         label = settings.pop('labels', None)
         if not label:
-            self.db_obj.update_package_status(1, f"yml校验labels失败，检查yml文件{self.yaml_dir}")
+            self.db_obj.update_package_status(
+                1,
+                f"yml校验labels失败，检查yml文件{self.yaml_dir}")
             return False
         db_filed['labels'] = label
         return True, db_filed
@@ -283,7 +335,8 @@ class ExplainYml:
     def service(self, settings):
         """校验kind为service"""
         db_filed = {}
-        first_check = {"auto_launch", "monitor", "ports", "resources", "install", "control", "deploy", "base_env"}
+        first_check = {"auto_launch", "monitor", "ports", "resources",
+                       "install", "control", "deploy", "base_env"}
         if not self.check_obj.weak_check(settings, first_check):
             return False
         # auto_launch 校验
@@ -293,35 +346,51 @@ class ExplainYml:
         # ports 校验
         ports = settings.pop('ports')
         ports_strong_check = {"name", "protocol", "port", "key"}
-        port = self.check_obj.strong_check(ports, ports_strong_check, is_weak=True, ignore={"key"}) if ports else 1
+        port = self.check_obj.strong_check(
+            ports, ports_strong_check,
+            is_weak=True,
+            ignore={"key"}) if ports else 1
         if not port:
             return False
         db_filed['ports'] = ports
         #  control校验
         control = settings.pop('control')
-        control_weak_check = {"start", "stop", "restart", "reload", "install", "init"}
-        control_check = self.check_obj.weak_check(control, control_weak_check) if control else 1
+        control_weak_check = {"start", "stop", "restart", "reload", "install",
+                              "init"}
+        control_check = self.check_obj.weak_check(
+            control,
+            control_weak_check) if control else 1
         if not control_check:
             return False
-        control_strong_check = self.check_obj.strong_check(control, {"install"})
+        control_strong_check = self.check_obj.strong_check(
+            control,
+            {"install"})
         if not control_strong_check:
             return False
         db_filed['control'] = control
         # deploy校验
         deploy = settings.get('deploy')
         deploy_weak_check = {"single", "complex"}
-        deploy_check = self.check_obj.weak_check(deploy, deploy_weak_check) if deploy else 1
+        deploy_check = self.check_obj.weak_check(
+            deploy,
+            deploy_weak_check) if deploy else 1
         if not deploy_check:
             return False
         if deploy_check != 1:
             single = deploy.get('single')
             single_strong_check = {"name", "key"}
-            single_check = self.check_obj.strong_check(single, single_strong_check, is_weak=True)
+            single_check = self.check_obj.strong_check(
+                single,
+                single_strong_check,
+                is_weak=True)
             if not single_check:
                 return False
             complex_list = deploy.get('complex')
             complex_strong_check = {'name', 'key', 'nodes'}
-            complex_check = self.check_obj.strong_check(complex_list, complex_strong_check, is_weak=True)
+            complex_check = self.check_obj.strong_check(
+                complex_list,
+                complex_strong_check,
+                is_weak=True)
             if not complex_check:
                 return False
         # resources 校验
@@ -332,7 +401,10 @@ class ExplainYml:
         # install 校验
         install = settings.pop('install')
         single_strong_install = {"name", "key", "default"}
-        install_check = self.check_obj.strong_check(install, single_strong_install, is_weak=True) if install else 1
+        install_check = self.check_obj.strong_check(
+            install,
+            single_strong_install,
+            is_weak=True) if install else 1
         if not install_check:
             return False
         db_filed['install'] = install
@@ -351,7 +423,9 @@ class ExplainYml:
         db_filed = {}
         label = settings.pop('labels', None)
         if not label:
-            self.db_obj.update_package_status(1, f"yml校验labels失败，检查yml文件{self.yaml_dir}")
+            self.db_obj.update_package_status(
+                1,
+                f"yml校验labels失败，检查yml文件{self.yaml_dir}")
             return False
         db_filed['labels'] = label
         result = self.service(settings)
@@ -367,28 +441,35 @@ def publish_bak_end(uuid, exc_len):
     exc_task = True
     time_count = 0
     while exc_task and time_count <= 60:
-        valid_uuids = UploadPackageHistory.objects.filter(operation_uuid=uuid,
-                                                          package_parent__isnull=True,
-                                                          ).exclude(package_status=2).count()
+        valid_uuids = UploadPackageHistory.objects.filter(
+            operation_uuid=uuid,
+            package_parent__isnull=True,
+        ).exclude(
+            package_status=2).count()
         if valid_uuids != exc_len:
             time_count += 1
             time.sleep(5)
         else:
             publish_entry(uuid)
             exc_task = False
-    re = redis.Redis(host=OMP_REDIS_HOST, port=OMP_REDIS_PORT, db=9, password=OMP_REDIS_PASSWORD)
+    re = redis.Redis(host=OMP_REDIS_HOST, port=OMP_REDIS_PORT, db=9,
+                     password=OMP_REDIS_PASSWORD)
     re.delete('back_end_verified')
 
 
 @shared_task
 def publish_entry(uuid):
-    valid_uuids = UploadPackageHistory.objects.filter(is_deleted=False, operation_uuid=uuid,
-                                                      package_parent__isnull=True,
-                                                      package_status=0)
+    valid_uuids = UploadPackageHistory.objects.filter(
+        is_deleted=False,
+        operation_uuid=uuid,
+        package_parent__isnull=True,
+        package_status=0)
     valid_uuids.update(package_status=5)
-    valid_uuids = UploadPackageHistory.objects.filter(is_deleted=False, operation_uuid=uuid,
-                                                      package_parent__isnull=True,
-                                                      package_status=5)
+    valid_uuids = UploadPackageHistory.objects.filter(
+        is_deleted=False,
+        operation_uuid=uuid,
+        package_parent__isnull=True,
+        package_status=5)
     valid_packages = {}
     if valid_uuids:
         for j in valid_uuids:
@@ -418,21 +499,27 @@ def publish_entry(uuid):
             line['package_name'].update(package_status=4)
             logger.error('{tmp_dir}路径异常')
             return None
-        valid_dir = os.path.join(project_dir, 'package_hub', line.get('package_name').package_path)
-        move_out = public_utils.local_cmd(f'rm -rf {valid_dir} && mv {tmp_dir} {valid_dir}')
+        valid_dir = os.path.join(project_dir, 'package_hub',
+                                 line.get('package_name').package_path)
+        move_out = public_utils.local_cmd(
+            f'rm -rf {valid_dir} && mv {tmp_dir} {valid_dir}')
         if move_out[2] != 0:
             line['package_name'].update(package_status=4)
             logger.error('移动或删除失败')
             return None
         valid_packages_obj.append(line['package_name'].id)
     clear_dir = os.path.dirname(tmp_dir)
-    UploadPackageHistory.objects.filter(id__in=valid_packages_obj).update(package_status=3)
-    online = UploadPackageHistory.objects.filter(is_deleted=False,
-                                                 package_status_in=[2, 5]).count()
+    UploadPackageHistory.objects.filter(id__in=valid_packages_obj).update(
+        package_status=3)
+    online = UploadPackageHistory.objects.filter(
+        is_deleted=False,
+        package_status_in=[2,
+                           5]).count()
     if len(clear_dir) <= 28:
         logger.error('{clear_dir}路径异常')
         return None
     if online == 0:
-        clear_out = public_utils.local_cmd(f'rm -rf {clear_dir} && mkdir {clear_dir}')
+        clear_out = public_utils.local_cmd(
+            f'rm -rf {clear_dir} && mkdir {clear_dir}')
         if clear_out[2] != 0:
             logger.error('清理环境失败')

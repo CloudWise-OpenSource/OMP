@@ -25,7 +25,6 @@ class ExceptionResponse:
 
     def err_response(self):
         response = exception_handler(self.exc, self.context)
-
         response_status_code = 200
         if response:
             response_status_code = response.status_code
