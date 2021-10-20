@@ -13,7 +13,7 @@ from app_store.views import (
     UploadPackageView, RemovePackageView,
     ComponentDetailView, ServiceDetailView,
     ServicePackPageVerificationView, PublishViewSet,
-    ExecuteLocalPackageScanView
+    ExecuteLocalPackageScanView, LocalPackageScanResultView
 )
 
 router = DefaultRouter()
@@ -25,10 +25,15 @@ router.register("remove", RemovePackageView, basename="remove")
 router.register("componentDetail", ComponentDetailView,
                 basename='componentDetail')
 router.register("serviceDetail", ServiceDetailView, basename='serviceDetail')
-router.register("pack_verification_results", ServicePackPageVerificationView, basename="pack_verification_results")
+router.register("pack_verification_results",
+                ServicePackPageVerificationView, basename="pack_verification_results")
 router.register("publish", PublishViewSet, basename="publish")
-router.register("pack_verification_results", ServicePackPageVerificationView, basename="pack_verification_results")
+router.register("pack_verification_results",
+                ServicePackPageVerificationView, basename="pack_verification_results")
 router.register("publish", PublishViewSet, basename="publish")
 router.register(
     "executeLocalPackageScan", ExecuteLocalPackageScanView,
     basename='executeLocalPackageScan')
+router.register(
+    "localPackageScanResult", LocalPackageScanResultView,
+    basename='localPackageScanResult')
