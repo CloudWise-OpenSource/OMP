@@ -169,7 +169,7 @@ class PublishViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
     filter_class = UploadPackageHistoryFilter
 
     def create(self, request, *args, **kwargs):
-        params = request.query_params.dict()
+        params = request.data
         uuid = params.pop('uuid', None)
         if not uuid:
             raise OperateError("请传入uuid")
