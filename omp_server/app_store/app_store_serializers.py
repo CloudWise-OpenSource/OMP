@@ -93,7 +93,7 @@ class UploadPackageSerializer(Serializer):
         uuid = validated_data.get("uuid")
         operation_user = validated_data.get("operation_user")
         request_file = validated_data.get("file")
-        ma5 = validated_data.get("ma5")
+        md5 = validated_data.get("md5")
         package_name = request_file.name
         if not request_file:
             raise OperateError("上传文件为空")
@@ -106,7 +106,7 @@ class UploadPackageSerializer(Serializer):
                 except Exception:
                     raise OperateError("文件写入过程失败")
 
-        front_end_verified.delay(uuid, operation_user, package_name, ma5)
+        front_end_verified.delay(uuid, operation_user, package_name, md5)
         return validated_data
 
 
