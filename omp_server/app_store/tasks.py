@@ -133,10 +133,11 @@ def front_end_verified(uuid, operation_user, package_name, md5=None):
     if md5_out[2] != 0:
         return public_action.update_package_status(
             1,
-            f"md5sum执行{file_name}shell校验失败:{md5_out[1]}")
+            f"md5sum命令执行失败")
     md5sum = md5_out[0].split()[0]
     if md5sum != md5 and md5 != random_str:
-        return public_action.update_package_status(1, f"md5{file_name}校验失败")
+        md5 = md5sum
+        # return public_action.update_package_status(1, f"md5{package_name}校验失败")
     if md5 == random_str:
         md5 = md5sum
         upload_obj.package_md5 = md5
@@ -225,11 +226,11 @@ def front_end_verified(uuid, operation_user, package_name, md5=None):
     name = explain_yml[1]['name']
     version = explain_yml[1]['version']
     if explain_yml[1]['kind'] == 'product':
-        count = ProductHub.objects.filter(pro_version=name,
-                                          pro_name=version).count()
+        count = ProductHub.objects.filter(pro_version=version,
+                                          pro_name=name).count()
     else:
-        count = ApplicationHub.objects.filter(app_version=name,
-                                              app_name=version).count()
+        count = ApplicationHub.objects.filter(app_version=version,
+                                              app_name=name).count()
     if count:
         count = "已存在,将覆盖"
     logger.info(public_action)
