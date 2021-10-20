@@ -150,64 +150,63 @@ class RemovePackageSerializer(Serializer):
         return validated_data
 
 
-class ApplicationDetailSerializer(ModelSerializer):
+class ApplicationDetailSerializer(ModelSerializer):  # NOQA
     """ 组件详情序列化器 """
-    versions = serializers.SerializerMethodField()
+    app_instances_info = serializers.SerializerMethodField()
+    app_labels = serializers.SerializerMethodField()
+    app_package_md5 = serializers.SerializerMethodField()
+    app_operation_user = serializers.SerializerMethodField()
 
     class Meta:
         """ 元数据 """
         model = ApplicationHub
-        fields = ("app_name", "versions",)
+        fields = ("app_name", "app_version", "app_logo", "app_description",
+                  "created", "app_dependence", "app_instances_info",
+                  "app_labels", "app_package_md5", "app_operation_user")
 
-    def get_versions(self, obj):  # NOQA
-        """ 获取组件版本数据 """
-        application_queryset = ApplicationHub.objects.filter(
-            app_name=obj.app_name)
-        application_list = list()
-        for item in application_queryset:
-            application_list.append({
-                "app_name": item.app_name,
-                "app_version": item.app_version,
-                "app_logo": item.app_logo,
-                "app_description": item.app_description,
-                "app_labels": list(item.app_labels.all().values_list('label_name', flat=True)),
-                "created": item.created,
-                "app_package_md5": item.app_package.package_md5,
-                "app_operation_user": item.app_package.operation_user,
-                "app_dependence": item.app_dependence,
-                "app_instances_info": {}  # TODO 暂为空
-            })
-        return application_list
+    def get_app_instances_info(self, obj):  # NOQA
+        """ 获取服务安装实例信息 """
+        # TODO 获取组件的已安装实例信息
+        return {}
+
+    def get_app_labels(self, obj):  # NOQA
+        return list(obj.app_labels.all().values_list('label_name', flat=True))
+
+    def get_app_package_md5(self, obj):  # NOQA
+        return obj.app_package.package_md5
+
+    def get_app_operation_user(self, obj):  # NOQA
+        return obj.app_package.operation_user
 
 
-class ProductDetailSerializer(ModelSerializer):
+class ProductDetailSerializer(ModelSerializer):  # NOQA
     """ 产品详情序列化器 """
-    versions = serializers.SerializerMethodField()
+
+    pro_instances_info = serializers.SerializerMethodField()
+    pro_labels = serializers.SerializerMethodField()
+    pro_package_md5 = serializers.SerializerMethodField()
+    pro_operation_user = serializers.SerializerMethodField()
 
     class Meta:
         """ 元数据 """
         model = ProductHub
-        fields = ("pro_name", "versions")
+        fields = ("pro_name", "pro_version", "pro_logo", "pro_description",
+                  "created", "pro_dependence", "pro_services", "pro_instances_info",
+                  "pro_labels", "pro_package_md5", "pro_operation_user")
 
-    def get_versions(self, obj):  # NOQA
-        """ 获取组件版本数据 """
-        product_queryset = ProductHub.objects.filter(pro_name=obj.pro_name)
-        product_list = list()
-        for ele in product_queryset:
-            product_list.append({
-                "pro_name": ele.pro_name,
-                "pro_version": ele.pro_version,
-                "pro_logo": ele.pro_logo,
-                "pro_description": ele.pro_description,
-                "pro_labels": list(ele.pro_labels.all().values_list('label_name', flat=True)),
-                "created": ele.created,
-                "pro_package_md5": ele.pro_package.package_md5,
-                "pro_operation_user": ele.pro_package.operation_user,
-                "pro_dependence": ele.pro_dependence,
-                "pro_services": ele.pro_services,
-                "pro_instances_info": {}  # TODO 暂无
-            })
-        return product_list
+    def get_pro_instances_info(self, obj):  # NOQA
+        """ 获取服务安装实例信息 """
+        # TODO 获取服务的已安装实例信息
+        return {}
+
+    def get_pro_labels(self, obj):  # NOQA
+        return list(obj.pro_labels.all().values_list('label_name', flat=True))
+
+    def get_pro_package_md5(self, obj):  # NOQA
+        return obj.pro_package.package_md5
+
+    def get_pro_operation_user(self, obj):  # NOQA
+        return obj.pro_package.operation_user
 
 
 class UploadPackageHistorySerializer(serializers.ModelSerializer):

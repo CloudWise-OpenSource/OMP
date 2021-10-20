@@ -3,7 +3,7 @@
 """
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import (
-    ListModelMixin, CreateModelMixin, RetrieveModelMixin
+    ListModelMixin, CreateModelMixin
 )
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
@@ -134,20 +134,54 @@ class RemovePackageView(GenericViewSet, CreateModelMixin):
     post_description = "移除安装包"
 
 
-class ComponentDetailView(GenericViewSet, RetrieveModelMixin):
-    queryset = ApplicationHub.objects.all()
+class ComponentDetailView(GenericViewSet, ListModelMixin):
     serializer_class = ApplicationDetailSerializer
+
+    filter_class = ComponentFilter
+    filter_backends = (DjangoFilterBackend,)
 
     # 操作信息描述
     get_description = "查询组件详情"
 
+    def list(self, request, *args, **kwargs):
+        arg_app_name = request.GET.get('app_name')
 
-class ServiceDetailView(GenericViewSet, RetrieveModelMixin):
-    queryset = ProductHub.objects.all()
+        queryset = ApplicationHub.objects.filter(
+            app_name=arg_app_name).order_by("-created")
+        serializer = self.get_serializer(queryset, many=True)
+        result = dict()
+        result.update(
+            {
+                "app_name": arg_app_name,
+                "versions": list(serializer.data)
+            }
+        )
+        return Response(result)
+
+
+class ServiceDetailView(GenericViewSet, ListModelMixin):
     serializer_class = ProductDetailSerializer
+
+    filter_class = ServiceFilter
+    filter_backends = (DjangoFilterBackend,)
 
     # 操作信息描述
     get_description = "查询产品详情"
+
+    def list(self, request, *args, **kwargs):
+        arg_pro_name = request.GET.get('pro_name')
+
+        queryset = ProductHub.objects.filter(
+            pro_name=arg_pro_name).order_by("-created")
+        serializer = self.get_serializer(queryset, many=True)
+        result = dict()
+        result.update(
+            {
+                "pro_name": arg_pro_name,
+                "versions": list(serializer.data)
+            }
+        )
+        return Response(result)
 
 
 class ServicePackPageVerificationView(GenericViewSet, ListModelMixin):
