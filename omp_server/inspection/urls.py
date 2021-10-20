@@ -11,5 +11,5 @@ router = DefaultRouter()
 router.register("history", InspectionHistoryView, basename="history")
 # 巡检 定时任务配置
 router.register("crontab", InspectionCrontabView, basename="crontab")
-# 巡检报告
+
 router.register("report", InspectionReportView, basename="report")

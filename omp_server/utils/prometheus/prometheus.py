@@ -8,12 +8,13 @@ import requests
 
 
 class Prometheus:
-    address = "10.0.9.158:19011"
+    # 测试，暂时先写在这
+    address = "10.0.2.113:19011"
 
     def query(self, expr):
         url = 'http://' + self.address + '/api/v1/query?query=' + expr
         try:
-            rsp = json.loads(requests.get(url=url).content.decode('utf8', 'ignore'))
+            rsp = json.loads(requests.get(url=url, timeout=0.5).content.decode('utf8', 'ignore'))
             if rsp.get('status') == 'success':
                 return rsp.get('data')
             else:

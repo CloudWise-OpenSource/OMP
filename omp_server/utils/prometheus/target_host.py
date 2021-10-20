@@ -3,7 +3,7 @@
 # Author: len chen
 # CreateDate: 2021/10/14 6:26 下午
 # Description: 主机指标
-from prometheus import Prometheus
+from utils.prometheus.prometheus import Prometheus
 
 
 class HostCrawl(Prometheus):
@@ -14,7 +14,7 @@ class HostCrawl(Prometheus):
     target = ['run_time', 'cpu_num', 'total_memory', 'rate_cpu', 'rate_io_wait', 'rate_memory', 'rate_max_disk',
               'rate_exchange_disk', 'rate_cpu_io_wait', ]
 
-    def __init__(self, env='default', instance='10.0.9.158'):
+    def __init__(self, env, instance):
         self.ret = {}
         self.env = env  # 环境
         self.instance = instance    # 主机ip

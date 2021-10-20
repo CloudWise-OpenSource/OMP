@@ -17,7 +17,7 @@ class InspectionHistory(models.Model):
     execute_type = models.CharField(max_length=32, null=False, blank=False, default="man",
                                     help_text="执行方式: 手动-man；定时：auto")
     inspection_operator = models.CharField(max_length=16, null=False, blank=False, help_text="操作人员-当前登录人")
-    hosts = models.JSONField(null=True, blank=True, help_text="巡检主机:[{'id':'1', 'host':'10.0.9.158'}]")
+    hosts = models.JSONField(null=True, blank=True, help_text="巡检主机:[{'id':'1', 'ip':'10.0.9.158'}]")
     services = models.JSONField(null=True, blank=True, help_text="巡检组件")
     start_time = models.DateTimeField(auto_now_add=True, help_text="开始时间")
     end_time = models.DateTimeField(null=True, help_text="结束时间，后端后补")

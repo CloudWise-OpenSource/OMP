@@ -170,7 +170,7 @@ CELERY_ENABLE_UTC = False
 CELERY_TIMEZONE = TIME_ZONE
 DJANGO_CELERY_BEAT_TZ_AWARE = False
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
-CELERY_IMPORTS = ("hosts.tasks", )
+CELERY_IMPORTS = ("hosts.tasks", "inspection.tasks")
 
 LOGGER_CLASS = 'concurrent_log_handler.ConcurrentRotatingFileHandler'
 LOG_BACKUP_SIZE = 1024 * 1024 * 100
