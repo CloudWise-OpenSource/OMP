@@ -225,11 +225,11 @@ def front_end_verified(uuid, operation_user, package_name, md5=None):
     name = explain_yml[1]['name']
     version = explain_yml[1]['version']
     if explain_yml[1]['kind'] == 'product':
-        count = ProductHub.objects.filter(pro_version=name,
-                                          pro_name=version).count()
+        count = ProductHub.objects.filter(pro_version=version,
+                                          pro_name=name).count()
     else:
-        count = ApplicationHub.objects.filter(app_version=name,
-                                              app_name=version).count()
+        count = ApplicationHub.objects.filter(app_version=version,
+                                              app_name=name).count()
     if count:
         count = "已存在,将覆盖"
     logger.info(public_action)
