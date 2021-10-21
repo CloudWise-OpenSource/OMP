@@ -199,11 +199,17 @@ def front_end_verified(uuid, operation_user, package_name, md5=None):
             if not service_pk:
                 continue
             service_pk_name = service_pk.rsplit("/", 1)[1]
+            md5_ser = public_utils.local_cmd(f'md5sum {service_pk}')
+            if md5_ser[2] != 0:
+                return public_action.update_package_status(
+                    1,
+                    f"md5sum命令执行失败")
+            md5_service = md5_ser[0].split()[0]
             UploadPackageHistory.objects.create(
                 operation_uuid=uuid,
                 operation_user=operation_user,
                 package_name=service_pk_name,
-                package_md5=md5,
+                package_md5=md5_service,
                 package_path=os.path.join(
                     package_dir.get(
                         "verified"), pro_name
@@ -485,8 +491,6 @@ def publish_entry(uuid):
         if valid_obj:
             json_line['package_name'] = valid_obj
             valid_info.append(json_line)
-        continue
-    tmp_dir = '1'
     valid_packages_obj = []
     for line in valid_info:
         if line.get('kind') == 'product':
