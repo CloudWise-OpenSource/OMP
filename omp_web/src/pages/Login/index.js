@@ -1,5 +1,5 @@
 import { Input, Checkbox, Button, Form, message } from "antd";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import styles from "./index.module.less";
 import img from "@/config/logo/logo.svg";
 import {
@@ -10,7 +10,7 @@ import {
 import { OmpContentWrapper } from "@/components";
 import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-import { handleResponse } from "@/utils/utils";
+import { handleResponse, logout } from "@/utils/utils";
 import { withRouter } from "react-router";
 
 const Login = withRouter(({ history }) => {
@@ -50,6 +50,10 @@ const Login = withRouter(({ history }) => {
       })
       .finally(() => setLoading(false));
   }
+
+  useEffect(()=>{
+    logout("loginPage")
+  },[])
 
   return (
     <OmpContentWrapper

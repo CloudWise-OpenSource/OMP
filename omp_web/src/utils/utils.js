@@ -1769,10 +1769,10 @@ export function getCookie(name) {
   return null;
 }
 
-export const logout = () => {
+export const logout = (login) => {
   delCookie("jwtToken");
   localStorage.clear();
-  window.__history__.replace("/login");
+  !login && window.__history__.replace("/login");
   return;
 };
 

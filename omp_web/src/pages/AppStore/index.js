@@ -1,4 +1,13 @@
-import { Input, Button, Pagination, Empty, Spin, Modal, Upload, message } from "antd";
+import {
+  Input,
+  Button,
+  Pagination,
+  Empty,
+  Spin,
+  Modal,
+  Upload,
+  message,
+} from "antd";
 import { useEffect, useState } from "react";
 import styles from "./index.module.less";
 import { SearchOutlined, DownloadOutlined } from "@ant-design/icons";
@@ -8,7 +17,8 @@ import { useHistory } from "react-router-dom";
 import { fetchGet } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import { handleResponse } from "@/utils/utils";
-import ReleaseModal from "./config/modal.js"
+import ReleaseModal from "./config/ReleaseModal.js";
+import ScanServerModal from "./config/ScanServerModal";
 
 const AppStore = () => {
   // 视口高度
@@ -22,6 +32,8 @@ const AppStore = () => {
 
   const [total, setTotal] = useState(0);
 
+  const [timeUnix, setTimeUnix] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [dataSource, setDataSource] = useState([]);
   const [pagination, setPagination] = useState({
@@ -31,7 +43,12 @@ const AppStore = () => {
     searchParams: {},
   });
 
+  //发布操作
   const [releaseModalVisibility, setReleaseModalVisibility] = useState(false);
+
+  //扫描服务端
+  const [scanServerModalVisibility, setScanServerModalVisibility] =
+    useState(false);
 
   function fetchData(pageParams = { current: 1, pageSize: 8 }, searchParams) {
     setLoading(true);
@@ -195,11 +212,22 @@ const AppStore = () => {
             <Button
               style={{ marginRight: 10 }}
               type="primary"
-              onClick={() => setReleaseModalVisibility(true)}
+              onClick={() => {
+                setTimeUnix(new Date().getTime());
+                setReleaseModalVisibility(true);
+              }}
             >
               发布
             </Button>
-            <Button type="primary">扫描服务端</Button>
+            <Button
+              type="primary"
+              onClick={() => {
+                setScanServerModalVisibility(true);
+                //executeLocalPackageScan()
+              }}
+            >
+              扫描服务端
+            </Button>
           </div>
         </div>
 
@@ -208,11 +236,13 @@ const AppStore = () => {
           <div
             className={styles.headerSearchCondition}
             onClick={(e) => {
+              // 在把含有&符号的字符串存进数据库后，再读出来的时候，发现&都变成了&amp;
+              let str = e.target.innerHTML.replace(new RegExp("&amp;","g"),"&")
               if (
-                searchData?.indexOf(e.target.innerHTML) !== -1 ||
-                e.target.innerHTML == "全部"
+                searchData?.indexOf(str) !== -1 ||
+                str == "全部"
               ) {
-                setSearchKey(e.target.innerHTML);
+                setSearchKey(str);
               }
             }}
           >
@@ -302,11 +332,15 @@ const AppStore = () => {
           />
         </div>
       )}
-      <ReleaseModal 
+      <ReleaseModal
+        timeUnix={timeUnix}
         releaseModalVisibility={releaseModalVisibility}
         setReleaseModalVisibility={setReleaseModalVisibility}
       />
-            
+      <ScanServerModal
+        scanServerModalVisibility={scanServerModalVisibility}
+        setScanServerModalVisibility={setScanServerModalVisibility}
+      />
     </div>
   );
 };
