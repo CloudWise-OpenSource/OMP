@@ -122,6 +122,17 @@ const AppStore = () => {
     );
   }, [tabKey, searchKey]);
 
+  const refresh = ()=>{
+    fetchData(
+      { current: 1, pageSize: pagination.pageSize },
+      {
+        ...pagination.searchParams,
+        tabKey: tabKey,
+        type: searchKey == "全部" ? null : searchKey,
+      }
+    );
+  }
+
   return (
     <div>
       <div className={styles.header}>
@@ -336,10 +347,12 @@ const AppStore = () => {
         timeUnix={timeUnix}
         releaseModalVisibility={releaseModalVisibility}
         setReleaseModalVisibility={setReleaseModalVisibility}
+        refresh={refresh}
       />
       <ScanServerModal
         scanServerModalVisibility={scanServerModalVisibility}
         setScanServerModalVisibility={setScanServerModalVisibility}
+        refresh={refresh}
       />
     </div>
   );
