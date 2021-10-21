@@ -15,12 +15,14 @@ from db_models.models import (
 )
 from utils.common.paginations import PageNumberPager
 from app_store.app_store_filters import (
-    LabelFilter, ComponentFilter, ServiceFilter, UploadPackageHistoryFilter
+    LabelFilter, ComponentFilter, ServiceFilter, UploadPackageHistoryFilter,
+    PublishPackageHistoryFilter
 )
 from app_store.app_store_serializers import (
     ComponentListSerializer, ServiceListSerializer,
     UploadPackageSerializer, RemovePackageSerializer,
-    UploadPackageHistorySerializer, ExecuteLocalPackageScanSerializer
+    UploadPackageHistorySerializer, ExecuteLocalPackageScanSerializer,
+    PublishPackageHistorySerializer
 )
 from app_store.app_store_serializers import (
     ProductDetailSerializer, ApplicationDetailSerializer
@@ -185,7 +187,7 @@ class ServiceDetailView(GenericViewSet, ListModelMixin):
 
 
 class ServicePackPageVerificationView(GenericViewSet, ListModelMixin):
-    queryset = UploadPackageHistory.objects.filter(is_deleted=False)
+    queryset = UploadPackageHistory.objects.filter(is_deleted=False, package_parent__isnull=True)
     serializer_class = UploadPackageHistorySerializer
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     filter_class = UploadPackageHistoryFilter
@@ -194,14 +196,15 @@ class ServicePackPageVerificationView(GenericViewSet, ListModelMixin):
 class PublishViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
     """
         create:
-        上传接口
+        发布接口
     """
 
     queryset = UploadPackageHistory.objects.filter(is_deleted=False,
+                                                   package_parent__isnull=True,
                                                    package_status__in=[3, 4, 5])
-    serializer_class = UploadPackageHistorySerializer
+    serializer_class = PublishPackageHistorySerializer
     filter_backends = (DjangoFilterBackend, OrderingFilter)
-    filter_class = UploadPackageHistoryFilter
+    filter_class = PublishPackageHistoryFilter
 
     def create(self, request, *args, **kwargs):
         params = request.data

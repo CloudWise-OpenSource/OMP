@@ -137,7 +137,6 @@ def front_end_verified(uuid, operation_user, package_name, md5=None):
     md5sum = md5_out[0].split()[0]
     if md5sum != md5 and md5 != random_str:
         md5 = md5sum
-        # return public_action.update_package_status(1, f"md5{package_name}校验失败")
     if md5 == random_str:
         md5 = md5sum
         upload_obj.package_md5 = md5
@@ -196,17 +195,25 @@ def front_end_verified(uuid, operation_user, package_name, md5=None):
             if isinstance(explain_service_yml, bool):
                 return None
             name = i.get('name')
-            service_pk = service_package.get(name, name)
+            service_pk = service_package.get(name)
+            if not service_pk:
+                continue
             service_pk_name = service_pk.rsplit("/", 1)[1]
+            md5_ser = public_utils.local_cmd(f'md5sum {service_pk}')
+            if md5_ser[2] != 0:
+                return public_action.update_package_status(
+                    1,
+                    f"md5sum命令执行失败")
+            md5_service = md5_ser[0].split()[0]
             UploadPackageHistory.objects.create(
                 operation_uuid=uuid,
                 operation_user=operation_user,
-                package_name=service_pk,
-                package_md5=md5,
+                package_name=service_pk_name,
+                package_md5=md5_service,
                 package_path=os.path.join(
                     package_dir.get(
-                        "verified"), pro_name,
-                    service_pk_name),
+                        "verified"), pro_name
+                ),
                 package_status=0,
                 package_parent=upload_obj
             )
@@ -216,9 +223,6 @@ def front_end_verified(uuid, operation_user, package_name, md5=None):
     explain_yml[1]['image'] = image
     explain_yml[1]['package_name'] = package_name
     explain_yml[1]['tmp_dir'] = tmp_dir
-    upload_obj.package_path = os.path.join(package_dir.get("verified"),
-                                           pro_name)
-    upload_obj.save()
     # 开启写入中间结果  包含入库所有的信息
     middle_data = os.path.join(project_dir, 'data', f'middle_data-{uuid}.json')
     with open(middle_data, mode='a', encoding='utf-8') as f:
@@ -233,7 +237,8 @@ def front_end_verified(uuid, operation_user, package_name, md5=None):
                                               app_name=name).count()
     if count:
         count = "已存在,将覆盖"
-    logger.info(public_action)
+    else:
+        count = None
     return public_action.update_package_status(0, count)
 
 
@@ -486,8 +491,6 @@ def publish_entry(uuid):
         if valid_obj:
             json_line['package_name'] = valid_obj
             valid_info.append(json_line)
-        continue
-    tmp_dir = '1'
     valid_packages_obj = []
     for line in valid_info:
         if line.get('kind') == 'product':
