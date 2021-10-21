@@ -5,20 +5,21 @@
 # Description:
 import json
 import requests
+import traceback
 
 
 class Prometheus:
-    # 测试，暂时先写在这
-    address = "10.0.2.113:19011"
+    # prometheus 的 ip:port
+    address = None
 
     def query(self, expr):
         url = 'http://' + self.address + '/api/v1/query?query=' + expr
         try:
-            rsp = json.loads(requests.get(url=url, timeout=0.5).content.decode('utf8', 'ignore'))
+            rsp = json.loads(requests.get(url=url, timeout=0.5
+                                          ).content.decode('utf8', 'ignore'))
             if rsp.get('status') == 'success':
-                return rsp.get('data')
+                return True, rsp.get('data'), 'success'
             else:
-                return {}
+                return False, {}, 'fail'
         except Exception as e:
-            print(e)
-            return {}
+            return False, {}, traceback.format_exc(e)
