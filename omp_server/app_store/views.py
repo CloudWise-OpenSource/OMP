@@ -15,12 +15,14 @@ from db_models.models import (
 )
 from utils.common.paginations import PageNumberPager
 from app_store.app_store_filters import (
-    LabelFilter, ComponentFilter, ServiceFilter, UploadPackageHistoryFilter
+    LabelFilter, ComponentFilter, ServiceFilter, UploadPackageHistoryFilter,
+    PublishPackageHistoryFilter
 )
 from app_store.app_store_serializers import (
     ComponentListSerializer, ServiceListSerializer,
     UploadPackageSerializer, RemovePackageSerializer,
-    UploadPackageHistorySerializer, ExecuteLocalPackageScanSerializer
+    UploadPackageHistorySerializer, ExecuteLocalPackageScanSerializer,
+    PublishPackageHistorySerializer
 )
 from app_store.app_store_serializers import (
     ProductDetailSerializer, ApplicationDetailSerializer
@@ -200,9 +202,9 @@ class PublishViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
     queryset = UploadPackageHistory.objects.filter(is_deleted=False,
                                                    package_parent__isnull=True,
                                                    package_status__in=[3, 4, 5])
-    serializer_class = UploadPackageHistorySerializer
+    serializer_class = PublishPackageHistorySerializer
     filter_backends = (DjangoFilterBackend, OrderingFilter)
-    filter_class = UploadPackageHistoryFilter
+    filter_class = PublishPackageHistoryFilter
 
     def create(self, request, *args, **kwargs):
         params = request.data

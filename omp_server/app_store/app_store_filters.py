@@ -51,3 +51,13 @@ class UploadPackageHistoryFilter(FilterSet):
     class Meta:
         model = UploadPackageHistory
         fields = ("operation_uuid",)
+
+
+class PublishPackageHistoryFilter(FilterSet):
+    """ 发布-安装包校验结果接口 """
+    operation_uuid = django_filters.CharFilter(
+        help_text="operation_uuid，查询", field_name="operation_uuid", lookup_expr="exact")
+
+    class Meta:
+        model = UploadPackageHistory
+        fields = ("operation_uuid",)

@@ -219,6 +219,16 @@ class UploadPackageHistorySerializer(serializers.ModelSerializer):
                   "error_msg", "operation_uuid"]
 
 
+class PublishPackageHistorySerializer(serializers.ModelSerializer):
+    """ 操作记录序列化类 """
+
+    class Meta:
+        """ 元数据 """
+        model = UploadPackageHistory
+        fields = ["package_name", "package_status",
+                  "error_msg", "operation_uuid"]
+
+
 class ExecuteLocalPackageScanSerializer(Serializer):
     """ 本地安装包扫描执行序列化类 """
     pass
