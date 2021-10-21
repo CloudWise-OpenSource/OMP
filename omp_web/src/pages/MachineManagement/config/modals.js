@@ -298,11 +298,6 @@ export const AddMachineModal = ({
                 key="IPtext"
                 noStyle
                 seforminstanceinvalidator="true"
-                // rules={[
-                //   {
-
-                //   },
-                // ]}
               >
                 <Input placeholder={"例如: 192.168.10.10"} />
               </Form.Item>
@@ -882,7 +877,7 @@ class UploadExcelComponent extends React.Component {
             <CloudUploadOutlined />
           </p>
           <p style={{ textAlign: "center", color: "#575757" }}>
-            点击将文件拖拽到这里上传
+            点击或将文件拖拽到这里上传
           </p>
           <p
             style={{
