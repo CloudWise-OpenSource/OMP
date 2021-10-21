@@ -67,9 +67,9 @@ export const apiRequest = {
     // 服务筛选条件列表
     queryLabels: "/api/appStore/labels/",
     // 基础组件详情
-    ProductDetail: "/api/appStore/ProductDetail/",
+    ProductDetail: "/api/appStore/componentDetail/",
     // 应用服务详情
-    ApplicationDetail: "/api/appStore/ApplicationDetail/",
+    ApplicationDetail: "/api/appStore/serviceDetail/",
     // 安装包删除
     remove: "/api/appStore/remove/",
     // 安装包校验结果

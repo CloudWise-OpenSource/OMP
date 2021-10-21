@@ -13,6 +13,7 @@ import { handleResponse } from "@/utils/utils";
 const ScanServerModal = ({
   scanServerModalVisibility,
   setScanServerModalVisibility,
+  refresh,
 }) => {
   const [stepNum, setStepNum] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -61,7 +62,12 @@ const ScanServerModal = ({
     fetchPost(apiRequest.appStore.executeLocalPackageScan)
       .then((res) => {
         handleResponse(res, (res) => {
-          fetchData(res.data);
+          if (
+            res.data &&
+            res.data?.package_names.filter((item) => item).length > 0
+          ) {
+            fetchData(res.data);
+          }
         });
       })
       .catch((e) => {
@@ -92,9 +98,9 @@ const ScanServerModal = ({
           </span>
         </span>
       }
-      //   afterClose={() => {
-      //     setStepNum(0);
-      //   }}
+      afterClose={() => {
+        refresh();
+      }}
       onCancel={() => {
         setScanServerModalVisibility(false);
       }}
@@ -135,7 +141,7 @@ const ScanServerModal = ({
               paddingBottom: 20,
             }}
           >
-            <p style={{ textAlign: "center" }}>正在扫描服务端...</p>
+            {loading ?<p style={{ textAlign: "center" }}>正在扫描服务端...</p>:<p style={{ textAlign: "center" }}>扫描结束，服务端暂无安装包！</p> }
           </div>
         </div>
       )}
@@ -237,7 +243,7 @@ const ScanServerModal = ({
                   setScanServerModalVisibility(false);
                 }}
               >
-                  完成
+                完成
               </Button>
             </div>
           )}

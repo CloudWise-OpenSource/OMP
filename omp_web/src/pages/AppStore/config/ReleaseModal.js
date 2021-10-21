@@ -22,6 +22,7 @@ const ReleaseModal = ({
   setReleaseModalVisibility,
   releaseModalVisibility,
   timeUnix,
+  refresh,
 }) => {
   const [loading, setLoading] = useState(false);
 
@@ -33,12 +34,12 @@ const ReleaseModal = ({
 
   const [stepNum, setStepNum] = useState(0);
 
-  const timer = useRef(null)
+  const timer = useRef(null);
 
   function checkData() {
     // 防止在弹窗关闭后还继续轮训
-    if(!timer.current){
-      return
+    if (!timer.current) {
+      return;
     }
     fetchGet(apiRequest.appStore.pack_verification_results, {
       params: {
@@ -92,9 +93,9 @@ const ReleaseModal = ({
       });
   };
 
-  useEffect(()=>{
-    timer.current = releaseModalVisibility
-  },[releaseModalVisibility])
+  useEffect(() => {
+    timer.current = releaseModalVisibility;
+  }, [releaseModalVisibility]);
 
   return (
     <>
@@ -112,6 +113,7 @@ const ReleaseModal = ({
           setFilesList([]);
           setStepNum(0);
           setDataSource([]);
+          refresh();
         }}
         onCancel={() => {
           if (
