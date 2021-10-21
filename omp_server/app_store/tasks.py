@@ -135,13 +135,10 @@ def front_end_verified(uuid, operation_user, package_name, md5=None):
             1,
             f"md5sum命令执行失败")
     md5sum = md5_out[0].split()[0]
-    if md5sum != md5 and md5 != random_str:
-        md5 = md5sum
-    if md5 == random_str:
-        md5 = md5sum
-        upload_obj.package_md5 = md5
-        upload_obj.save()
-        public_action = PublicAction(md5)
+    md5 = md5sum
+    upload_obj.package_md5 = md5
+    upload_obj.save()
+    public_action = PublicAction(md5)
     touch_name = file_name[:-7] if file_name[-7:] == ".tar.gz" else file_name[
                                                                     :-3]
     tmp_dir = os.path.join(package_path, touch_name + random_str)
@@ -152,6 +149,7 @@ def front_end_verified(uuid, operation_user, package_name, md5=None):
             1,
             f"安装包{file_name}解压失败或者压缩包格式不合规:{md5_out[1]}")
     app_name = package_name.split('-', 1)[0]
+    tmp_dir = os.path.join(tmp_dir, app_name)
     check_file = os.path.join(tmp_dir, f'{app_name}.yaml')
     if not os.path.exists(check_file):
         return public_action.update_package_status(
@@ -162,6 +160,7 @@ def front_end_verified(uuid, operation_user, package_name, md5=None):
     if isinstance(explain_yml, bool):
         return None
     kind = explain_yml[1].get("kind")
+    versions = explain_yml[1].get("version")
     pro_name = explain_yml[1]['name'] + "-" + explain_yml[1]['version']
     # 校验图片
     image = None
@@ -220,6 +219,9 @@ def front_end_verified(uuid, operation_user, package_name, md5=None):
             explain_service_yml[1]['package_name'] = service_pk
             explain_service_list.append(explain_service_yml[1])
         explain_yml[1]['product_service'] = explain_service_list
+        tmp_dir = tmp_dir + "-" + versions
+    else:
+        tmp_dir = file_name
     explain_yml[1]['image'] = image
     explain_yml[1]['package_name'] = package_name
     explain_yml[1]['tmp_dir'] = tmp_dir
@@ -445,21 +447,24 @@ def publish_bak_end(uuid, exc_len):
     # 增加try，并增加超时机制释放锁
     exc_task = True
     time_count = 0
-    while exc_task and time_count <= 60:
-        valid_uuids = UploadPackageHistory.objects.filter(
-            operation_uuid=uuid,
-            package_parent__isnull=True,
-        ).exclude(
-            package_status=2).count()
-        if valid_uuids != exc_len:
-            time_count += 1
-            time.sleep(5)
-        else:
-            publish_entry(uuid)
-            exc_task = False
-    re = redis.Redis(host=OMP_REDIS_HOST, port=OMP_REDIS_PORT, db=9,
-                     password=OMP_REDIS_PASSWORD)
-    re.delete('back_end_verified')
+    try:
+        while exc_task and time_count <= 60:
+            valid_uuids = UploadPackageHistory.objects.filter(
+                operation_uuid=uuid,
+                package_parent__isnull=True,
+            ).exclude(
+                package_status=2).count()
+            if valid_uuids != exc_len:
+                time_count += 1
+                time.sleep(5)
+            else:
+                if valid_uuids != 0:
+                    publish_entry(uuid)
+                exc_task = False
+    finally:
+        re = redis.Redis(host=OMP_REDIS_HOST, port=OMP_REDIS_PORT, db=9,
+                         password=OMP_REDIS_PASSWORD)
+        re.delete('back_end_verified')
 
 
 @shared_task
@@ -503,15 +508,15 @@ def publish_entry(uuid):
             logger.error('{tmp_dir}路径异常')
             return None
         valid_dir = os.path.join(project_dir, 'package_hub',
-                                 line.get('package_name').package_path)
+                                 'verified', tmp_dir.rsplit('/', 1)[1])
         move_out = public_utils.local_cmd(
-            f'rm -rf {valid_dir} && mv {tmp_dir} {valid_dir}')
+            f'rm -rf {valid_dir} && mv {tmp_dir.rsplit("-", 1)[0]} {valid_dir}')
         if move_out[2] != 0:
             line['package_name'].update(package_status=4)
             logger.error('移动或删除失败')
             return None
         valid_packages_obj.append(line['package_name'].id)
-    clear_dir = os.path.dirname(tmp_dir)
+    clear_dir = os.path.dirname(os.path.dirname(tmp_dir))
     UploadPackageHistory.objects.filter(id__in=valid_packages_obj).update(
         package_status=3)
     online = UploadPackageHistory.objects.filter(
