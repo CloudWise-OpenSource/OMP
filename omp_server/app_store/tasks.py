@@ -202,12 +202,12 @@ def front_end_verified(uuid, operation_user, package_name, md5=None):
             UploadPackageHistory.objects.create(
                 operation_uuid=uuid,
                 operation_user=operation_user,
-                package_name=service_pk,
+                package_name=service_pk_name,
                 package_md5=md5,
                 package_path=os.path.join(
                     package_dir.get(
-                        "verified"), pro_name,
-                    service_pk_name),
+                        "verified"), pro_name
+                ),
                 package_status=0,
                 package_parent=upload_obj
             )
@@ -217,9 +217,6 @@ def front_end_verified(uuid, operation_user, package_name, md5=None):
     explain_yml[1]['image'] = image
     explain_yml[1]['package_name'] = package_name
     explain_yml[1]['tmp_dir'] = tmp_dir
-    upload_obj.package_path = os.path.join(package_dir.get("verified"),
-                                           pro_name)
-    upload_obj.save()
     # 开启写入中间结果  包含入库所有的信息
     middle_data = os.path.join(project_dir, 'data', f'middle_data-{uuid}.json')
     with open(middle_data, mode='a', encoding='utf-8') as f:
