@@ -185,7 +185,7 @@ class ServiceDetailView(GenericViewSet, ListModelMixin):
 
 
 class ServicePackPageVerificationView(GenericViewSet, ListModelMixin):
-    queryset = UploadPackageHistory.objects.all()
+    queryset = UploadPackageHistory.objects.filter(is_deleted=False)
     serializer_class = UploadPackageHistorySerializer
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     filter_class = UploadPackageHistoryFilter
@@ -197,8 +197,8 @@ class PublishViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
         上传接口
     """
 
-    queryset = UploadPackageHistory.objects.filter(
-        package_status__in=[3, 4, 5])
+    queryset = UploadPackageHistory.objects.filter(is_deleted=False,
+                                                   package_status__in=[3, 4, 5])
     serializer_class = UploadPackageHistorySerializer
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     filter_class = UploadPackageHistoryFilter
@@ -264,15 +264,15 @@ class LocalPackageScanResultView(GenericViewSet, ListModelMixin):
             # 当全部安装包的状态为 1 - 校验失败 时，整个流程结束
             stage_status = "check_all_failed"
         elif UploadPackageHistory.objects.filter(
-            operation_uuid=operation_uuid,
-            package_name__in=package_names_lst,
-            package_status__gt=2
+                operation_uuid=operation_uuid,
+                package_name__in=package_names_lst,
+                package_status__gt=2
         ).exists():
             # 当有安装包进入到分布流程时，整个流程进入到发布流程
             if UploadPackageHistory.objects.filter(
-                operation_uuid=operation_uuid,
-                package_name__in=package_names_lst,
-                package_status=5
+                    operation_uuid=operation_uuid,
+                    package_name__in=package_names_lst,
+                    package_status=5
             ).exists():
                 # 如果有安装包处于发布中装太，那么整个流程处于发布中状态
                 stage_status = "publishing"
