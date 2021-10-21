@@ -16,6 +16,24 @@ const AppStoreDetail = () => {
   // true 是组件， false是组件
   let keyTab = location.pathname.includes("component");
 
+//定义命名
+let nameObj = {
+  component:{
+    logo:"app_logo",
+    name:"app_name",
+    version:"app_version",
+    description:"app_description",
+    instance_number:"instance_number",
+  },
+  service:{
+    logo:"pro_logo",
+    name:"pro_name",
+    version:"pro_version",
+    description:"pro_description",
+    instance_number:"instance_number",
+  }
+}
+
   const [loading, setLoading] = useState(false);
 
   const [dataSource, setDataSource] = useState({});
@@ -28,7 +46,7 @@ const AppStoreDetail = () => {
         : apiRequest.appStore.ApplicationDetail,
         {
           params: {
-            name:name
+            [keyTab?"app_name":"pro_name"]:name
           },
         }
     )
@@ -147,7 +165,8 @@ const AppStoreDetail = () => {
               dataSource={[
                 {
                   name:"jdk",
-                  verson:"1.8"
+                  verson:"1.8",
+                  key:"1.8"
                 }
               ]}
             />
@@ -204,7 +223,8 @@ const AppStoreDetail = () => {
                   port:"3306",
                   verson:"1.8",
                   mode:"单实例",
-                  time:"2021-09-22 11:22:33"
+                  time:"2021-09-22 11:22:33",
+                  key:"192.168.100.100",
                 }
               ]}
             />
