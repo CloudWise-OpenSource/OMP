@@ -137,7 +137,6 @@ def front_end_verified(uuid, operation_user, package_name, md5=None):
     md5sum = md5_out[0].split()[0]
     if md5sum != md5 and md5 != random_str:
         md5 = md5sum
-        # return public_action.update_package_status(1, f"md5{package_name}校验失败")
     if md5 == random_str:
         md5 = md5sum
         upload_obj.package_md5 = md5
@@ -196,7 +195,9 @@ def front_end_verified(uuid, operation_user, package_name, md5=None):
             if isinstance(explain_service_yml, bool):
                 return None
             name = i.get('name')
-            service_pk = service_package.get(name, name)
+            service_pk = service_package.get(name)
+            if not service_pk:
+                continue
             service_pk_name = service_pk.rsplit("/", 1)[1]
             UploadPackageHistory.objects.create(
                 operation_uuid=uuid,
@@ -233,7 +234,8 @@ def front_end_verified(uuid, operation_user, package_name, md5=None):
                                               app_name=name).count()
     if count:
         count = "已存在,将覆盖"
-    logger.info(public_action)
+    else:
+        count = None
     return public_action.update_package_status(0, count)
 
 

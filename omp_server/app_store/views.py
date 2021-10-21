@@ -185,7 +185,7 @@ class ServiceDetailView(GenericViewSet, ListModelMixin):
 
 
 class ServicePackPageVerificationView(GenericViewSet, ListModelMixin):
-    queryset = UploadPackageHistory.objects.filter(is_deleted=False)
+    queryset = UploadPackageHistory.objects.filter(is_deleted=False, package_parent__isnull=True)
     serializer_class = UploadPackageHistorySerializer
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     filter_class = UploadPackageHistoryFilter
@@ -194,10 +194,11 @@ class ServicePackPageVerificationView(GenericViewSet, ListModelMixin):
 class PublishViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
     """
         create:
-        上传接口
+        发布接口
     """
 
     queryset = UploadPackageHistory.objects.filter(is_deleted=False,
+                                                   package_parent__isnull=True,
                                                    package_status__in=[3, 4, 5])
     serializer_class = UploadPackageHistorySerializer
     filter_backends = (DjangoFilterBackend, OrderingFilter)
