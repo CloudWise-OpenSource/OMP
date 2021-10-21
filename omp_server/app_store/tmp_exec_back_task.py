@@ -28,7 +28,7 @@ class RedisLock(object):
         return redis.Redis(host, port, db)
 
     def get_lock(self):
-        if self.rdcon.exists(self.lock_key) == 0:
+        if self.rdcon.exists('back_end_verified') == 0:
             return False, self.rdcon
         return True, self.rdcon
 
