@@ -7,6 +7,8 @@ import {
   CheckCircleFilled,
   LoadingOutlined,
   SyncOutlined,
+  ClockCircleFilled,
+  SendOutlined,
 } from "@ant-design/icons";
 //import BMF from "browser-md5-file";
 import { fetchPost, fetchGet } from "@/utils/request";
@@ -19,11 +21,10 @@ import { OmpMessageModal } from "@/components";
 const ReleaseModal = ({
   setReleaseModalVisibility,
   releaseModalVisibility,
+  timeUnix,
+  refresh,
 }) => {
   const [loading, setLoading] = useState(false);
-  const [stepNum, setStepNum] = useState(0);
-
-  const [timeUnix, setTimeUnix] = useState("");
 
   const [filesList, setFilesList] = useState([]);
 
@@ -31,25 +32,70 @@ const ReleaseModal = ({
 
   const [dataSource, setDataSource] = useState([]);
 
+  const [stepNum, setStepNum] = useState(0);
+
+  const timer = useRef(null);
+
   function checkData() {
-    //setLoading(true);
+    // 防止在弹窗关闭后还继续轮训
+    if (!timer.current) {
+      return;
+    }
     fetchGet(apiRequest.appStore.pack_verification_results, {
       params: {
         operation_uuid: timeUnix,
       },
     })
       .then((res) => {
-        handleResponse(res, (res) => {
-          setDataSource(res.data);
-        });
+        if (res)
+          handleResponse(res, (res) => {
+            setDataSource(res.data);
+            if (res.data) {
+              let checkRunningArr = res.data.filter((item) => {
+                return item.package_status == 2;
+              });
+              let publishRunningArr = res.data.filter((item) => {
+                return item.package_status == 5;
+              });
+              if (checkRunningArr.length > 0 || publishRunningArr.length > 0) {
+                setTimeout(() => {
+                  checkData();
+                }, 2000);
+              }
+            }
+          });
       })
-      .catch((e) => console.log(e))
-      .finally(() => {});
+      .catch((e) => {
+        console.log(e);
+      })
+      .finally((e) => {});
   }
 
+  // 发布
+  const publishApp = () => {
+    setLoading(true);
+    fetchPost(apiRequest.appStore.publish, {
+      body: {
+        uuid: timeUnix,
+      },
+    })
+      .then((res) => {
+        if (res && res.data) {
+          if (res.data.code == 0) {
+            setStepNum(2);
+            checkData();
+          }
+        }
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setLoading(false);
+      });
+  };
+
   useEffect(() => {
-    setTimeUnix(new Date().getTime());
-  }, []);
+    timer.current = releaseModalVisibility;
+  }, [releaseModalVisibility]);
 
   return (
     <>
@@ -57,20 +103,30 @@ const ReleaseModal = ({
         zIndex={1}
         title={
           <span>
-            <span style={{ position: "relative", left: "-10px" }}></span>
-            <span>批量创建主机</span>
+            <span style={{ position: "relative", left: "-10px" }}>
+              <SendOutlined />
+            </span>
+            <span>发布</span>
           </span>
         }
-        afterClose={()=>{
-            setStepNum(0)
+        afterClose={() => {
+          setFilesList([]);
+          setStepNum(0);
+          setDataSource([]);
+          refresh();
         }}
         onCancel={() => {
+          if (
+            dataSource.filter((item) => item.package_status == 5).length == 0
+          ) {
+            setReleaseModalVisibility(false);
+            return;
+          }
           if (filesList.length == 0) {
             setReleaseModalVisibility(false);
           } else {
             setDeleteModal(true);
           }
-          //setReleaseModalVisibility(false);
         }}
         visible={releaseModalVisibility}
         footer={null}
@@ -94,6 +150,7 @@ const ReleaseModal = ({
                 visibility: stepNum == 0 ? "visible" : "hidden",
                 height: stepNum == 0 ? null : 0,
                 overflow: "hidden",
+                paddingBottom: 20,
               }}
             >
               <div>
@@ -102,14 +159,14 @@ const ReleaseModal = ({
                   action="/api/appStore/upload/"
                   accept=".tar,.gz"
                   multiple={true}
-                  data={(file) => {
+                  data={(file, ...arg) => {
+                    //console.log(arg,file)
                     return {
                       uuid: timeUnix,
                       operation_user: localStorage.getItem("username"),
-                      md5: "1",
+                      md5: file.uid,
                     };
                     // return new Promise((res, rej) => {
-                    //   console.log("算md5了");
                     //   bmf.md5(file, (err, md5) => {
                     //     if (err) {
                     //     } else {
@@ -129,11 +186,21 @@ const ReleaseModal = ({
                       message.error("仅支持传入4G以内文件");
                       return Upload.LIST_IGNORE;
                     }
+
                     if (fileList.length > 5) {
                       if (file == fileList[0]) {
                         message.error("仅支持上传5个文件");
                       }
-
+                      return Upload.LIST_IGNORE;
+                    }
+                    //console.log(filesList);
+                    let fileNameArr =
+                      fileList.length == 1
+                        ? [...filesList, file].map((i) => i.name)
+                        : fileList.map((i) => i.name);
+                    let uniqueArr = [...new Set(fileNameArr)];
+                    if (fileNameArr.length !== uniqueArr.length) {
+                      message.error("上传文件存在同名");
                       return Upload.LIST_IGNORE;
                     }
                   }}
@@ -141,7 +208,7 @@ const ReleaseModal = ({
                     setFilesList(e.fileList);
                   }}
                   onRemove={(e) => {
-                    if (e.response.code == 0) {
+                    if (e && e.response && e.response.code == 0) {
                       fetchPost(apiRequest.appStore.remove, {
                         body: {
                           uuid: timeUnix,
@@ -152,9 +219,7 @@ const ReleaseModal = ({
                           handleResponse(res, (res) => {});
                         })
                         .catch((e) => console.log(e))
-                        .finally(() => {
-                          //setSearchLoading(false);
-                        });
+                        .finally(() => {});
                     }
                   }}
                 >
@@ -223,7 +288,7 @@ const ReleaseModal = ({
                 <div
                   key={idx}
                   style={{
-                    marginBottom:10,
+                    marginBottom: 10,
                     display: "flex",
                     justifyContent: "space-around",
                     paddingRight: 80,
@@ -298,20 +363,175 @@ const ReleaseModal = ({
               style={{
                 display: "flex",
                 justifyContent: "center",
-                marginTop: 20,
+                marginTop: 60,
+                position: "relative",
+                left: -20,
               }}
             >
               <Button
                 type="primary"
                 disabled={
-                  true
+                  dataSource.filter((i) => i.package_status == 0).length == 0
                 }
-                // onClick={() => {
-                //   setStepNum(1);
-                //   checkData();
-                // }}
+                loading={loading}
+                onClick={() => {
+                  publishApp();
+                }}
               >
                 发布
+              </Button>
+            </div>
+          </div>
+        )}
+        {stepNum == 2 && (
+          <div style={{ paddingLeft: 30, paddingTop: 30 }}>
+            {dataSource.filter((item) => item.package_status == 5).length >
+            0 ? (
+              <div
+                style={{
+                  paddingBottom: 20,
+                  position: "relative",
+                  left: -20,
+                }}
+              >
+                <p style={{ textAlign: "center", fontSize: 20 }}>
+                  <ClockCircleFilled
+                    style={{
+                      paddingRight: 10,
+                      color: "#ffb436",
+                      fontSize: 24,
+                      position: "relative",
+                      top: 1,
+                    }}
+                  />
+                  发布中
+                </p>
+              </div>
+            ) : (
+              <div
+                style={{
+                  marginBottom: 20,
+                  position: "relative",
+                  left: -20,
+                }}
+              >
+                <p style={{ textAlign: "center", fontSize: 20 }}>
+                  <CheckCircleFilled
+                    style={{
+                      paddingRight: 10,
+                      color: "#3cbd35",
+                      fontSize: 24,
+                      position: "relative",
+                      top: 1,
+                    }}
+                  />
+                  发布完成
+                </p>
+                <p style={{ textAlign: "center" }}>
+                  本次成功发布{" "}
+                  {dataSource.filter((item) => item.package_status == 3).length}
+                  个 服务
+                </p>
+              </div>
+            )}
+
+            {dataSource.map((item, idx) => {
+              return (
+                <div
+                  key={idx}
+                  style={{
+                    marginBottom: 10,
+                    display: "flex",
+                    justifyContent: "space-around",
+                    paddingRight: 80,
+                  }}
+                >
+                  <div style={{ flex: 2 }}>{item.package_name}</div>
+                  <div style={{ flex: 1, textAlign: "right" }}>
+                    {item.package_status == 3 && (
+                      <span style={{ color: "#3cbd35" }}>
+                        发布成功
+                        <CheckCircleFilled
+                          style={{
+                            fontSize: 18,
+                            position: "relative",
+                            top: 1,
+                            paddingLeft: 10,
+                            color: "#3cbd35",
+                          }}
+                        />
+                      </span>
+                    )}
+                    {item.package_status == 4 && (
+                      <span style={{ color: "#fe1937" }}>
+                        发布失败
+                        <CloseCircleFilled
+                          style={{
+                            fontSize: 18,
+                            position: "relative",
+                            top: 1,
+                            paddingLeft: 10,
+                            color: "#fe1937",
+                          }}
+                        />
+                      </span>
+                    )}
+
+                    {item.package_status == 5 && (
+                      <span>
+                        发布中...
+                        <SyncOutlined
+                          spin
+                          style={{
+                            fontSize: 16,
+                            position: "relative",
+                            top: 1,
+
+                            marginLeft: 10,
+                            //color: "#fe1937",
+                          }}
+                        />
+                      </span>
+                    )}
+                  </div>
+                  <Tooltip placement="right" title={item.error_msg}>
+                    <div
+                      style={{
+                        flex: 3,
+                        textAlign: "right",
+                        overflow: "hidden",
+                        paddingLeft: 20,
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {item.error_msg}
+                    </div>
+                  </Tooltip>
+                </div>
+              );
+            })}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                marginTop: 60,
+                position: "relative",
+                left: -20,
+              }}
+            >
+              <Button
+                type="primary"
+                disabled={
+                  dataSource.filter((item) => item.package_status == 5).length >
+                  0
+                }
+                //loading={loading}
+                onClick={() => {
+                  setReleaseModalVisibility(false);
+                }}
+              >
+                完成
               </Button>
             </div>
           </div>
@@ -337,10 +557,18 @@ const ReleaseModal = ({
         }
         //loading={loading}
         onFinish={() => {
+          let updatedFile = filesList.filter(
+            (i) => i.response && i.response.code == 0
+          );
+          if (updatedFile.length == 0) {
+            setReleaseModalVisibility(false);
+            setDeleteModal(false);
+            return;
+          }
           fetchPost(apiRequest.appStore.remove, {
             body: {
               uuid: timeUnix,
-              package_names: filesList.map((i) => i.name),
+              package_names: updatedFile.map((i) => i.name),
             },
           })
             .then((res) => {

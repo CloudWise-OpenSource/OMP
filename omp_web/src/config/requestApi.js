@@ -67,13 +67,19 @@ export const apiRequest = {
     // 服务筛选条件列表
     queryLabels: "/api/appStore/labels/",
     // 基础组件详情
-    ProductDetail:"/api/appStore/ProductDetail/",
+    ProductDetail: "/api/appStore/componentDetail/",
     // 应用服务详情
-    ApplicationDetail: "/api/appStore/ApplicationDetail/",
+    ApplicationDetail: "/api/appStore/serviceDetail/",
     // 安装包删除
     remove: "/api/appStore/remove/",
     // 安装包校验结果
-    pack_verification_results:"/api/appStore/pack_verification_results/"
+    pack_verification_results: "/api/appStore/pack_verification_results/",
+    // 发布命令下发
+    publish: "/api/appStore/publish/",
+    // 扫描服务端命令下发
+    executeLocalPackageScan: "/api/appStore/executeLocalPackageScan/",
+    // 扫描状态查询
+    localPackageScanResult:"/api/appStore/localPackageScanResult/"
   },
 
   // ========================================================
