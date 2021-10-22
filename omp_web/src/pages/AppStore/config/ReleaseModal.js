@@ -36,6 +36,9 @@ const ReleaseModal = ({
 
   const timer = useRef(null);
 
+  // 失败时的轮训次数标识
+  const trainingInRotationNum = useRef(0);
+
   function checkData() {
     // 防止在弹窗关闭后还继续轮训
     if (!timer.current) {
@@ -67,6 +70,74 @@ const ReleaseModal = ({
       })
       .catch((e) => {
         console.log(e);
+        trainingInRotationNum.current++;
+        if (trainingInRotationNum.current < 3) {
+          setTimeout(() => {
+            checkData();
+          }, 5000);
+        } else {
+          setDataSource((data) => {
+            console.log(data);
+            return data.map((item) => {
+              return {
+                ...item,
+                package_status: 9,
+              };
+            });
+          });
+        }
+      })
+      .finally((e) => {});
+  }
+
+  // 发布的查询
+  function publishCheckData() {
+    // 防止在弹窗关闭后还继续轮训
+    if (!timer.current) {
+      return;
+    }
+    fetchGet(apiRequest.appStore.publish, {
+      params: {
+        operation_uuid: timeUnix,
+      },
+    })
+      .then((res) => {
+        if (res)
+          handleResponse(res, (res) => {
+            setDataSource(res.data);
+            if (res.data) {
+              let checkRunningArr = res.data.filter((item) => {
+                return item.package_status == 2;
+              });
+              let publishRunningArr = res.data.filter((item) => {
+                return item.package_status == 5;
+              });
+              if (checkRunningArr.length > 0 || publishRunningArr.length > 0) {
+                setTimeout(() => {
+                  publishCheckData();
+                }, 2000);
+              }
+            }
+          });
+      })
+      .catch((e) => {
+        console.log(e);
+        trainingInRotationNum.current++;
+        if (trainingInRotationNum.current < 3) {
+          setTimeout(() => {
+            publishCheckData();
+          }, 5000);
+        } else {
+          setDataSource((data) => {
+            console.log(data);
+            return data.map((item) => {
+              return {
+                ...item,
+                package_status: 9,
+              };
+            });
+          });
+        }
       })
       .finally((e) => {});
   }
@@ -83,7 +154,7 @@ const ReleaseModal = ({
         if (res && res.data) {
           if (res.data.code == 0) {
             setStepNum(2);
-            checkData();
+            publishCheckData();
           }
         }
       })
@@ -341,6 +412,21 @@ const ReleaseModal = ({
                         />
                       </span>
                     )}
+
+                    {item.package_status == 9 && (
+                      <span style={{ color: "#fe1937" }}>
+                        网络错误
+                        <CloseCircleFilled
+                          style={{
+                            fontSize: 18,
+                            position: "relative",
+                            top: 1,
+                            paddingLeft: 10,
+                            color: "#fe1937",
+                          }}
+                        />
+                      </span>
+                    )}
                   </div>
                   <Tooltip placement="right" title={item.error_msg}>
                     <div
@@ -489,6 +575,21 @@ const ReleaseModal = ({
 
                             marginLeft: 10,
                             //color: "#fe1937",
+                          }}
+                        />
+                      </span>
+                    )}
+
+                    {item.package_status == 9 && (
+                      <span style={{ color: "#fe1937" }}>
+                        网络错误
+                        <CloseCircleFilled
+                          style={{
+                            fontSize: 18,
+                            position: "relative",
+                            top: 1,
+                            paddingLeft: 10,
+                            color: "#fe1937",
                           }}
                         />
                       </span>
