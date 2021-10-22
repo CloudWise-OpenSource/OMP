@@ -8,6 +8,8 @@ import MonitoringSettings from "@/pages/MonitoringSettings";
 import SystemManagement from "@/pages/SystemManagement";
 import AlarmLog from "@/pages/AlarmLog";
 import ExceptionList from "@/pages/ExceptionList";
+import PatrolInspectionRecord from "@/pages/PatrolInspectionRecord";
+import PatrolStrategy from "@/pages/PatrolStrategy"
 import {
   DesktopOutlined,
   ClusterOutlined,
@@ -15,6 +17,7 @@ import {
   SettingOutlined,
   LineChartOutlined,
   AppstoreOutlined,
+  EyeOutlined
 } from "@ant-design/icons";
 
 export default [
@@ -38,7 +41,7 @@ export default [
       {
         title: "应用商店",
         path: "/application_management/app_store",
-        component: AppStore
+        component: AppStore,
       },
       {
         title: "应用商店服务详情",
@@ -73,6 +76,23 @@ export default [
         title: "监控设置",
         path: "/application-monitoring/monitoring-settings",
         component: MonitoringSettings,
+      },
+    ],
+  },
+  {
+    menuTitle: "状态巡检",
+    menuIcon: <EyeOutlined />,
+    menuKey: "/status-patrol",
+    children: [
+      {
+        title: "巡检记录",
+        path: "/status-patrol/patrol-inspection-record",
+        component: PatrolInspectionRecord,
+      },
+      {
+        title: "巡检策略",
+        path: "/status-patrol/patrol-strategy",
+        component: PatrolStrategy,
       },
     ],
   },

@@ -264,6 +264,14 @@ const ReleaseModal = ({
                       }
                       return Upload.LIST_IGNORE;
                     }
+
+                    if (filesList.length >= 5) {
+                      if (file == fileList[0]) {
+                        message.error("仅支持上传5个文件");
+                      }
+                      return Upload.LIST_IGNORE;
+                    }
+
                     //console.log(filesList);
                     let fileNameArr =
                       fileList.length == 1
