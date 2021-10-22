@@ -13,8 +13,8 @@ from rest_framework.mixins import (
     ListModelMixin, CreateModelMixin, UpdateModelMixin, RetrieveModelMixin)
 from db_models.models import Env
 from utils.plugin.crontab_utils import CrontabUtils
-from inspection.tasks import get_prometheus_host_data
-from inspection.models import (
+from inspection.tasks import get_prometheus_data
+from db_models.models import (
     InspectionHistory, InspectionCrontab, InspectionReport)
 from inspection.filters import (
     InspectionHistoryFilter, InspectionCrontabFilter, InspectionReportFilter)
@@ -50,14 +50,10 @@ class InspectionHistoryView(ListModelMixin, GenericViewSet, CreateModelMixin):
         # 三、手动序列化数据，不是json的不能response
         data_dict.update({'id': his_obj.id, 'env': data_dict['env'].id})
         # 四、下发celery异步任务
-        # target为实例方法，目的是统一执行实例方法并统一返回值
-        target = ['rate_cpu', 'rate_memory', 'rate_max_disk',
-                  'rate_exchange_disk', 'run_time', 'avg_load',
-                  'total_file_descriptor', 'rate_io_wait',
-                  'network_bytes_total', 'disk_io']
-        get_prometheus_host_data(
+        handle = data_dict.get('inspection_type')
+        get_prometheus_data(
             env=env_obj.name, hosts=his_obj.hosts,
-            history_id=his_obj.id, report_id=rep_obj.id, target=target)
+            history_id=his_obj.id, report_id=rep_obj.id, handle=handle)
         return Response(data_dict, status=status.HTTP_200_OK)
 
 

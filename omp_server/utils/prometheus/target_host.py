@@ -3,7 +3,6 @@
 # Author: len chen
 # CreateDate: 2021/10/14 6:26 下午
 # Description: 主机指标
-from db_models.models import MonitorUrl
 from utils.prometheus.prometheus import Prometheus
 
 
@@ -22,7 +21,6 @@ class HostCrawl(Prometheus):
         self.tag_total_num = 0      # 总指标数
         self.tag_error_num = 0      # 异常指标数
         self.instance = instance    # 主机ip
-        self.address = MonitorUrl.objects.get(name='prometheus').monitor_url
 
     def unified_job(self, is_success, ret, msg):
         """

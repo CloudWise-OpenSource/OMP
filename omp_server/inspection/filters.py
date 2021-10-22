@@ -5,7 +5,7 @@
 # Description: 巡检查询
 import django_filters
 from django_filters.rest_framework import FilterSet
-from inspection.models import (
+from db_models.models import (
     InspectionHistory, InspectionCrontab, InspectionReport)
 
 

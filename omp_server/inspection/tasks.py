@@ -11,7 +11,7 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 
 from db_models.models import Host, Env
-from inspection.models import InspectionHistory, InspectionReport
+from db_models.models import InspectionHistory, InspectionReport
 from utils.prometheus.target_host import HostCrawl
 # 屏蔽celery任务日志中的paramiko日志
 logging.getLogger("paramiko").setLevel(logging.WARNING)
@@ -57,17 +57,27 @@ def get_hosts_data(env, hosts, history_id, report_id, target):
 
 
 @shared_task
-def get_prometheus_host_data(env, hosts, history_id, report_id, target):
+def get_prometheus_data(env, hosts, history_id, report_id, handle):
     """
     异步任务：查询多主机prometheus数据，组装后进行反填
     :env: 环境，例：demo
     :hosts: 主机列表，例：[{"id":"主键id", "ip":"主机ip"}]
     :history_id: 巡检历史表id，例：1
     :report_id: 巡检报告表id，例：1
-    :target: 自定义的实例方法，目的是统一执行实例方法并统一返回值，例：['rate_cpu', 'rate_memory']
+    :handle: 巡检类型 service-服务巡检、host-主机巡检、deep-深度巡检
     """
     try:
-        get_hosts_data(env, hosts, history_id, report_id, target)
+        if handle == 'host':
+            # target为实例方法，目的是统一执行实例方法并统一返回值
+            target = ['rate_cpu', 'rate_memory', 'rate_max_disk',
+                      'rate_exchange_disk', 'run_time', 'avg_load',
+                      'total_file_descriptor', 'rate_io_wait',
+                      'network_bytes_total', 'disk_io']
+            get_hosts_data(env, hosts, history_id, report_id, target)
+        elif handle == 'service':
+            pass
+        elif handle == 'deep':
+            pass
     except Exception as e:
         logger.error(
             f"Inspection man task failed with error: {traceback.format_exc(e)}")

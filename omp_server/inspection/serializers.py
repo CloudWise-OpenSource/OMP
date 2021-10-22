@@ -4,7 +4,7 @@
 # CreateDate: 2021/10/13 8:36 下午
 # Description: 巡检序列化
 from rest_framework.serializers import (ModelSerializer,)
-from inspection.models import (
+from db_models.models import (
     InspectionHistory, InspectionCrontab, InspectionReport)
 
 

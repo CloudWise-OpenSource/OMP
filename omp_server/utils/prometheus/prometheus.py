@@ -6,11 +6,12 @@
 import json
 import requests
 import traceback
+from db_models.models import MonitorUrl
 
 
 class Prometheus:
     # prometheus 的 ip:port
-    address = None
+    address = MonitorUrl.objects.get(name='prometheus').monitor_url
 
     def query(self, expr):
         url = 'http://' + self.address + '/api/v1/query?query=' + expr
