@@ -111,23 +111,10 @@ class FiledCheck(object):
 
 
 @shared_task
-def front_end_verified(uuid, operation_user, package_name, md5=None):
-    random_str = ''.join(
-        random.sample('abcdefghijklmnopqrstuvwxyz1234567890', 10))
-    if md5:
-        ver_dir = package_dir.get("front_end_verified")
-    else:
-        ver_dir = package_dir.get("back_end_verified")
-        md5 = random_str
+def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_dir, upload_obj):
+    upload_obj = UploadPackageHistory.objects.get(id=upload_obj)
     package_path = os.path.join(package_hub, ver_dir)
     file_name = os.path.join(package_path, package_name)
-    upload_obj = UploadPackageHistory(
-        operation_uuid=uuid,
-        operation_user=operation_user,
-        package_name=package_name,
-        package_md5=md5,
-        package_path=package_dir.get("verified"))
-    upload_obj.save()
     public_action = PublicAction(md5)
     md5_out = public_utils.local_cmd(f'md5sum {file_name}')
     if md5_out[2] != 0:
@@ -147,14 +134,14 @@ def front_end_verified(uuid, operation_user, package_name, md5=None):
     if tar_out[2] != 0:
         return public_action.update_package_status(
             1,
-            f"安装包{file_name}解压失败或者压缩包格式不合规:{md5_out[1]}")
+            f"安装包{touch_name}解压失败或者压缩包格式不合规")
     app_name = package_name.split('-', 1)[0]
     tmp_dir = os.path.join(tmp_dir, app_name)
     check_file = os.path.join(tmp_dir, f'{app_name}.yaml')
     if not os.path.exists(check_file):
         return public_action.update_package_status(
             1,
-            f"安装包{file_name}:{check_file}文件不存在")
+            f"安装包{touch_name}:{app_name}.yaml文件不存在")
     explain_yml = ExplainYml(public_action, check_file).explain_yml()
     # 这个校验可能用不到
     if isinstance(explain_yml, bool):

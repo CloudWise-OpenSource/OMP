@@ -10,7 +10,7 @@ from rest_framework.serializers import ModelSerializer
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import Serializer
 from utils.common.exceptions import OperateError
-from app_store.tasks import front_end_verified
+from app_store.tmp_exec_back_task import front_end_verified_init
 
 from db_models.models import (
     ApplicationHub, ProductHub, UploadPackageHistory
@@ -106,7 +106,7 @@ class UploadPackageSerializer(Serializer):
                 except Exception:
                     raise OperateError("文件写入过程失败")
 
-        front_end_verified.delay(uuid, operation_user, package_name, md5)
+        front_end_verified_init(uuid, operation_user, package_name, md5)
         return validated_data
 
 

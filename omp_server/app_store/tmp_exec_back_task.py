@@ -5,6 +5,8 @@ from utils.parse_config import (
 import time
 from app_store.tasks import front_end_verified, publish_bak_end
 import redis
+from db_models.models import UploadPackageHistory
+import random
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.path.dirname(os.path.dirname(current_dir))
@@ -52,6 +54,25 @@ def back_end_verified_init(operation_user):
     redis_key.lpush("back_end_verified", uuid, ",".join(exec_name))
     redis_key.expire("back_end_verified", 600)
     for j in exec_name:
-        front_end_verified.delay(uuid, operation_user, j)
+        front_end_verified_init(uuid, operation_user, j)
     publish_bak_end.delay(uuid, len(exec_name))
     return uuid, exec_name
+
+
+def front_end_verified_init(uuid, operation_user, package_name, md5=None):
+    random_str = ''.join(
+        random.sample('abcdefghijklmnopqrstuvwxyz1234567890', 10))
+    if md5:
+        ver_dir = package_dir.get("front_end_verified")
+    else:
+        ver_dir = package_dir.get("back_end_verified")
+        md5 = random_str
+    upload_obj = UploadPackageHistory(
+        operation_uuid=uuid,
+        operation_user=operation_user,
+        package_name=package_name,
+        package_md5=md5,
+        package_path=package_dir.get("verified"))
+    upload_obj.save()
+    front_end_verified.delay(uuid, operation_user, package_name, md5,
+                             random_str, ver_dir, upload_obj.id)
