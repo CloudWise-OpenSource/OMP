@@ -22,6 +22,9 @@ const ScanServerModal = ({
 
   const timer = useRef(null);
 
+  // 失败时的轮训次数标识
+  const trainingInRotationNum = useRef(0);
+
   function fetchData(data) {
     // 防止在弹窗关闭后还继续轮训
     if (!timer.current) {
@@ -51,7 +54,27 @@ const ScanServerModal = ({
           });
       })
       .catch((e) => {
-        console.log(e);
+        trainingInRotationNum.current++;
+        if (trainingInRotationNum.current < 3) {
+          setTimeout(() => {
+            fetchData(data);
+          }, 5000);
+        } else {
+          setDataSource((dataS) => {
+            console.log(dataS);
+            let arr = dataS.package_detail.map((item) => {
+              return {
+                ...item,
+                status: 9,
+              };
+            });
+            console.log(arr);
+            return {
+              ...dataS,
+              package_detail: arr,
+            };
+          });
+        }
       })
       .finally((e) => {});
   }
@@ -141,7 +164,13 @@ const ScanServerModal = ({
               paddingBottom: 20,
             }}
           >
-            {loading ?<p style={{ textAlign: "center" }}>正在扫描服务端...</p>:<p style={{ textAlign: "center" }}>扫描结束，服务端暂无安装包！</p> }
+            {loading ? (
+              <p style={{ textAlign: "center" }}>正在扫描服务端...</p>
+            ) : (
+              <p style={{ textAlign: "center" }}>
+                扫描结束，服务端暂无安装包！
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -184,6 +213,9 @@ const ScanServerModal = ({
                       break;
                     case 0:
                       return "校验成功";
+                      break;
+                    case 9:
+                      return "网络错误";
                       break;
                     default:
                       break;
@@ -302,6 +334,9 @@ const ScanServerModal = ({
                       break;
                     case 5:
                       return "发布中";
+                      break;
+                    case 9:
+                      return "网络错误";
                       break;
                     default:
                       break;
