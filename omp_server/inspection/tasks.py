@@ -57,11 +57,12 @@ def get_hosts_data(env, hosts, history_id, report_id, target):
 
 
 @shared_task
-def get_prometheus_data(env, hosts, history_id, report_id, handle):
+def get_prometheus_data(env, hosts, services, history_id, report_id, handle):
     """
-    异步任务：查询多主机prometheus数据，组装后进行反填
+    异步任务：查询多巡检类型prometheus数据，组装后进行反填
     :env: 环境，例：demo
     :hosts: 主机列表，例：[{"id":"主键id", "ip":"主机ip"}]
+    :services: 组件列表，例：["mysql"]
     :history_id: 巡检历史表id，例：1
     :report_id: 巡检报告表id，例：1
     :handle: 巡检类型 service-服务巡检、host-主机巡检、deep-深度巡检
@@ -75,7 +76,9 @@ def get_prometheus_data(env, hosts, history_id, report_id, handle):
                       'network_bytes_total', 'disk_io']
             get_hosts_data(env, hosts, history_id, report_id, target)
         elif handle == 'service':
+            # if
             pass
+            # get_hosts_data(env, hosts, history_id, report_id, target)
         elif handle == 'deep':
             pass
     except Exception as e:

@@ -10,11 +10,6 @@ class ServiceMysqlCrawl(Prometheus):
     """
     查询 prometheus mysql 指标
     """
-    # 类的实例方法名，为的是统一执行实例方法及对可查询指标进行验证
-    target = ['run_time', 'cpu_num', 'total_memory', 'rate_cpu', 'rate_io_wait',
-              'rate_memory', 'rate_max_disk', 'rate_exchange_disk',
-              'rate_cpu_io_wait', ]
-
     def __init__(self, env, instance):
         self.ret = {}
         self.env = env  # 环境
@@ -35,6 +30,12 @@ class ServiceMysqlCrawl(Prometheus):
         else:
             self.tag_error_num += 1     # 统计异常指标数
             return msg
+
+    def run_status(self):
+        """运行状态"""
+        expr = f"up{{env='{self.env}', instance='{self.instance}', " \
+               f"job='mysqlExporter'}}"
+        self.ret['run_status'] = self.unified_job(*self.query(expr))
 
     def run_time(self):
         """运行时间"""

@@ -21,6 +21,7 @@ from inspection.filters import (
 from inspection.serializers import (
     InspectionHistorySerializer, InspectionCrontabSerializer,
     InspectionReportSerializer)
+from rest_framework.filters import OrderingFilter
 
 
 class InspectionHistoryView(ListModelMixin, GenericViewSet, CreateModelMixin):
@@ -31,10 +32,41 @@ class InspectionHistoryView(ListModelMixin, GenericViewSet, CreateModelMixin):
     serializer_class = InspectionHistorySerializer
     pagination_class = PageNumberPager
     # 过滤字段
-    filter_backends = (DjangoFilterBackend,)
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
     filter_class = InspectionHistoryFilter
+    # 动态排序字段
+    dynamic_fields = ("start_time", )
     # 操作描述信息
     get_description = "查询巡检历史记录列表"
+
+    def list(self, request, *args, **kwargs):
+        # 获取序列化数据列表
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(
+            self.paginate_queryset(queryset), many=True)
+        serializer_data = serializer.data
+
+        # 获取请求中 ordering 字段
+        query_field = request.query_params.get("ordering", "")
+        reverse_flag = False
+        if query_field.startswith("-"):
+            reverse_flag = True
+            query_field = query_field[1:]
+        # 若排序字段在类视图 dynamic_fields 中，则对根据动态数据进行排序
+        none_ls = list(filter(
+            lambda x: x.get(query_field) is None,
+            serializer_data))
+        exists_ls = list(filter(
+            lambda x: x.get(query_field) is not None,
+            serializer_data))
+        if query_field in self.dynamic_fields:
+            exists_ls = sorted(
+                exists_ls,
+                key=lambda x: x.get(query_field),
+                reverse=reverse_flag)
+        exists_ls.extend(none_ls)
+
+        return self.get_paginated_response(exists_ls)
 
     def create(self, request, *args, **kwargs):
         data_dict = request.data
@@ -52,7 +84,7 @@ class InspectionHistoryView(ListModelMixin, GenericViewSet, CreateModelMixin):
         # 四、下发celery异步任务
         handle = data_dict.get('inspection_type')
         get_prometheus_data(
-            env=env_obj.name, hosts=his_obj.hosts,
+            env=env_obj.name, hosts=his_obj.hosts, services=his_obj.services,
             history_id=his_obj.id, report_id=rep_obj.id, handle=handle)
         return Response(data_dict, status=status.HTTP_200_OK)
 

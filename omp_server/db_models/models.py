@@ -428,7 +428,7 @@ class InspectionHistory(models.Model):
     inspection_type = models.CharField(
         max_length=32, default="service", help_text="巡检类型，service、host、deep")
     inspection_status = models.IntegerField(
-        default=0, help_text="巡检状态: 0-未开始；1-进行中；2-成功；3-失败")
+        default=0, help_text="巡检状态:1-进行中；2-成功；3-失败")
     execute_type = models.CharField(
         max_length=32, null=False, blank=False, default="man",
         help_text="执行方式: 手动-man；定时：auto")
