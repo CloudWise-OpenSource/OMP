@@ -505,7 +505,8 @@ def publish_entry(uuid):
             CreateDatabase(line).create_component()
         tmp_dir = line.get('tmp_dir')
         if len(tmp_dir) <= 28:
-            line['package_name'].update(package_status=4)
+            line['package_name'].package_status = 4
+            line['package_name'].save()
             logger.error('{tmp_dir}路径异常')
             return None
         valid_dir = os.path.join(project_dir, 'package_hub',
@@ -514,7 +515,8 @@ def publish_entry(uuid):
         move_out = public_utils.local_cmd(
             f'rm -rf {valid_dir} && mv {move_tmp} {valid_dir}')
         if move_out[2] != 0:
-            line['package_name'].update(package_status=4)
+            line['package_name'].package_status = 4
+            line['package_name'].save()
             logger.error('移动或删除失败')
             return None
         valid_packages_obj.append(line['package_name'].id)
