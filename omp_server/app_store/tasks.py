@@ -68,7 +68,7 @@ class FiledCheck(object):
             if not field:
                 field = set(settings.keys())
             for i in field:
-                if not settings.get(i):
+                if settings.get(i) is None:
                     self.db_obj.update_package_status(
                         1,
                         f"yml{i}缺乏值，检查yml文件{self.yaml_dir}")
@@ -79,7 +79,7 @@ class FiledCheck(object):
                 field = set(settings[0].keys())
             for i in settings:
                 for j in field:
-                    if not i.get(j):
+                    if i.get(j) is None:
                         self.db_obj.update_package_status(
                             1,
                             f"yml{i}缺乏值，检查yml文件{self.yaml_dir}")
