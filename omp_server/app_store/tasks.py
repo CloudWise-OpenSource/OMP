@@ -509,8 +509,9 @@ def publish_entry(uuid):
             return None
         valid_dir = os.path.join(project_dir, 'package_hub',
                                  'verified', tmp_dir.rsplit('/', 1)[1])
+        move_tmp = tmp_dir if os.path.isfile(tmp_dir) else tmp_dir.rsplit("-", 1)[0]
         move_out = public_utils.local_cmd(
-            f'rm -rf {valid_dir} && mv {tmp_dir.rsplit("-", 1)[0]} {valid_dir}')
+            f'rm -rf {valid_dir} && mv {move_tmp} {valid_dir}')
         if move_out[2] != 0:
             line['package_name'].update(package_status=4)
             logger.error('移动或删除失败')
