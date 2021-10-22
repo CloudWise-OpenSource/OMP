@@ -7,7 +7,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('db_models', '0014_upload_package_history_package_status'),
+        ('db_models', '0015_app_install'),
     ]
 
     operations = [
