@@ -499,3 +499,262 @@ class InspectionReport(models.Model):
         db_table = 'inspection_report'
         verbose_name = verbose_name_plural = "巡检任务 报告数据"
         ordering = ("id",)
+
+
+class ServiceConnectInfo(TimeStampMixin):
+    """ 存储用户名密码信息 """
+    # 服务用户名、密码信息，同一个集群公用一套用户名、密码
+    service_name = models.CharField(
+        "服务名", max_length=32,
+        null=False, blank=False, help_text="服务名")
+    service_username = models.CharField(
+        "用户名", max_length=512,
+        null=True, blank=True, help_text="用户名")
+    service_password = models.CharField(
+        "密码", max_length=512,
+        null=True, blank=True, help_text="密码")
+    service_username_enc = models.CharField(
+        "加密用户名", max_length=512,
+        null=True, blank=True, help_text="加密用户名")
+    service_password_enc = models.CharField(
+        "加密密码", max_length=512,
+        null=True, blank=True, help_text="加密密码")
+
+    class Meta:
+        """ 元数据 """
+        db_table = "omp_service_connect_info"
+        verbose_name = verbose_name_plural = "用户名密码信息表"
+
+
+class ClusterInfo(TimeStampMixin, DeleteMixin):
+    """ 集群信息表 """
+
+    cluster_service_name = models.CharField(
+        "集群所属服务", max_length=36,
+        null=True, blank=True, help_text="集群所属服务")
+    # 选择的集群类型
+    cluster_type = models.CharField(
+        "集群类型", max_length=36,
+        null=True, blank=True, help_text="集群类型")
+    # 集群实例名称，虚拟名称
+    cluster_name = models.CharField(
+        "集群名称", max_length=64,
+        null=False, blank=False, help_text="集群名称")
+    # 集群连接的信息，公共组件可能存在集群信息，自研服务一般无集群概念
+    connect_info = models.CharField(
+        "集群连接信息", max_length=512,
+        null=True, blank=True, help_text="集群连接信息")
+    service_connect_info = models.ForeignKey(
+        ServiceConnectInfo, null=True, blank=True,
+        on_delete=models.SET_NULL, help_text="用户名密码信息")
+    # 预留解析字段，集群连接有多种方式
+    # eg1: 10.0.0.1:18117,10.0.0.2:18117,10.0.0.3:18117
+    # eg2: 10.0.0.1,10.0.0.2,10.0.0.3:18117
+    # 在安装时应该按照指定的方式拼接集群信息
+    connect_info_parse_type = models.CharField(
+        "连接信息解析方式", max_length=32,
+        null=True, blank=True, help_text="连接信息解析方式")
+
+    class Meta:
+        """元数据"""
+        db_table = "omp_cluster_info"
+        verbose_name = verbose_name_plural = "集群信息表"
+
+    def __str__(self):
+        return f"<instance> of {self.cluster_name}"
+
+
+class Service(TimeStampMixin):
+    """ 服务表 """
+
+    SERVICE_TYPE_COMPONENT = 0
+    SERVICE_TYPE_SERVICE = 1
+    SERVICE_TYPE_CHOICES = (
+        (SERVICE_TYPE_COMPONENT, "组件"),
+        (SERVICE_TYPE_SERVICE, "服务")
+    )
+
+    SERVICE_STATUS_NORMAL = 0
+    SERVICE_STATUS_STARTING = 1
+    SERVICE_STATUS_STOPPING = 2
+    SERVICE_STATUS_RESTARTING = 3
+    SERVICE_STATUS_STOP = 4
+    SERVICE_STATUS_UNKNOWN = 5
+    SERVICE_STATUS_INSTALLING = 6
+    SERVICE_STATUS_INSTALL_FAILED = 7
+    SERVICE_STATUS_CHOICES = (
+        (SERVICE_STATUS_NORMAL, "正常"),
+        (SERVICE_STATUS_STARTING, "启动中"),
+        (SERVICE_STATUS_STOPPING, "停止中"),
+        (SERVICE_STATUS_RESTARTING, "重启中"),
+        (SERVICE_STATUS_STOP, "停止"),
+        (SERVICE_STATUS_UNKNOWN, "未知"),
+        (SERVICE_STATUS_INSTALLING, "安装中"),
+        (SERVICE_STATUS_INSTALL_FAILED, "安装失败"),
+    )
+
+    # 是否用外键关联？
+    ip = models.GenericIPAddressField(
+        "服务所在主机", help_text="服务所在主机")
+
+    service_instance_name = models.CharField(
+        "服务实例名称", max_length=64,
+        null=False, blank=False, help_text="服务实例名称")
+
+    service = models.ForeignKey(
+        ApplicationHub, null=True, blank=True,
+        on_delete=models.SET_NULL, help_text="服务表外键")
+    product = models.ForeignKey(
+        ProductHub, null=True, blank=True,
+        on_delete=models.SET_NULL, help_text="产品表外键")
+    product_name = models.CharField(
+        "应用名称", max_length=64,
+        null=True, blank=True, help_text="应用名称")
+
+    # 以下字段含义同 ApplicationHub 但具备定制化场景，无法做得到唯一关联
+    # 存储格式[{"port": 18080, "key": "http_port"}]
+    service_port = models.TextField(
+        "服务端口", null=True, blank=True, help_text="服务端口")
+    # 服务控制脚本，按照其所安装的主机拼接绝对路径并进行存储(主机数据目录存在被更改风险)
+    # {"start": "./start.sh", "stop": "./stop.sh"}
+    service_controllers = models.JSONField(
+        "服务控制脚本", null=True, blank=True, help_text="服务控制脚本")
+
+    # 以下字段用于角色及集群使用
+    service_role = models.CharField(
+        "服务角色", max_length=128,
+        null=True, blank=True, help_text="服务角色")
+    cluster = models.ForeignKey(
+        ClusterInfo, null=True, blank=True,
+        on_delete=models.SET_NULL, help_text="所属集群")
+    env = models.ForeignKey(
+        Env, null=True, blank=True,
+        on_delete=models.SET_NULL, help_text="所属环境")
+
+    service_connect_info = models.ForeignKey(
+        ServiceConnectInfo, null=True, blank=True,
+        on_delete=models.SET_NULL, help_text="用户名密码信息")
+
+    # 服务状态信息
+    service_status = models.IntegerField(
+        "服务状态", choices=SERVICE_STATUS_CHOICES,
+        default=5, help_text="服务状态")
+
+    # 服务告警、自愈、监控信息
+    alert_count = models.IntegerField(
+        "告警次数", default=0, help_text="告警次数")
+    self_healing_count = models.IntegerField(
+        "服务自愈次数", default=0, help_text="服务自愈次数")
+
+    class Meta:
+        """元数据"""
+        db_table = 'omp_service'
+        verbose_name = verbose_name_plural = "服务实例表"
+
+
+class ServiceHistory(models.Model):
+    """ 服务操作记录表 """
+
+    objects = None
+    username = models.CharField(
+        "操作用户", max_length=128, help_text="操作用户")
+    description = models.CharField(
+        "用户行为描述", max_length=1024, help_text="用户行为描述")
+    result = models.CharField(
+        "操作结果", max_length=1024, default="success", help_text="操作结果")
+    created = models.DateTimeField(
+        '发生时间', null=True, auto_now_add=True, help_text='发生时间')
+    service = models.ForeignKey(
+        Service, null=True, on_delete=models.SET_NULL, verbose_name="服务")
+
+    class Meta:
+        """ 元数据 """
+        db_table = "omp_service_operate_log"
+        verbose_name = verbose_name_plural = "服务操作记录"
+        ordering = ("-created",)
+
+
+class MainInstallHistory(TimeStampMixin):
+    """ 主安装记录表 """
+
+    INSTALL_STATUS_READY = 0
+    INSTALL_STATUS_INSTALLING = 1
+    INSTALL_STATUS_SUCCESS = 2
+    INSTALL_STATUS_FAILED = 3
+    INSTALL_STATUS_CHOICES = (
+        (INSTALL_STATUS_READY, "待安装"),
+        (INSTALL_STATUS_INSTALLING, "安装中"),
+        (INSTALL_STATUS_SUCCESS, "安装成功"),
+        (INSTALL_STATUS_FAILED, "安装失败"),
+    )
+
+    operation_uuid = models.CharField(
+        "部署操作uuid", max_length=36,
+        null=False, blank=False, help_text="部署操作uuid")
+    # 直接代表整体的安装状态
+    install_status = models.IntegerField(
+        "安装状态", choices=INSTALL_STATUS_CHOICES,
+        default=0, help_text="安装状态")
+    install_args = models.JSONField()
+    install_log = models.TextField("MAIN安装日志", help_text="MAIN安装日志")
+
+    class Meta:
+        """元数据"""
+        db_table = "omp_main_install_history"
+        verbose_name = verbose_name_plural = "主安装记录表"
+
+
+class DetailInstallHistory(TimeStampMixin):
+    """
+    安装细节表，针对单服务
+    在下发安装任务之前，需要对安装顺序进行排序确定
+    """
+
+    INSTALL_STATUS_READY = 0
+    INSTALL_STATUS_INSTALLING = 1
+    INSTALL_STATUS_SUCCESS = 2
+    INSTALL_STATUS_FAILED = 3
+    INSTALL_STEP_CHOICES = (
+        (INSTALL_STATUS_READY, "待安装"),
+        (INSTALL_STATUS_INSTALLING, "安装中"),
+        (INSTALL_STATUS_SUCCESS, "安装成功"),
+        (INSTALL_STATUS_FAILED, "安装失败"),
+    )
+
+    service = models.ForeignKey(
+        Service, null=True, blank=True,
+        on_delete=models.SET_NULL, help_text="关联服务对象")
+    main_install_history = models.ForeignKey(
+        MainInstallHistory, null=True, blank=True,
+        on_delete=models.SET_NULL, help_text="关联主安装记录")
+    # 单服务安装步骤:
+    install_step_status = models.IntegerField(
+        "安装步骤状态", choices=INSTALL_STEP_CHOICES,
+        default=0, help_text="安装步骤状态")
+
+    # 安装细节标记及日志
+    send_flag = models.IntegerField(
+        "发包状态", default=0,
+        help_text="0-待发送 1-发送中 2-发送成功 3-发送失败")
+    send_msg = models.TextField("发包日志", help_text="发包日志")
+    unzip_flag = models.IntegerField(
+        "解压包状态", default=0,
+        help_text="0-待解压 1-解压中 2-解压成功 3-解压失败")
+    unzip_msg = models.TextField("解压日志", help_text="解压日志")
+    install_flag = models.IntegerField(
+        "安装执行状态", default=0,
+        help_text="0-待安装 1-安装中 2-安装成功 3-安装失败")
+    install_msg = models.TextField("安装日志", help_text="安装日志")
+    init_flag = models.IntegerField(
+        "初始化执行状态", default=0,
+        help_text="0-待初始化 1-初始化中 2-初始化成功 3-初始化失败")
+    init_msg = models.TextField("初始化日志", help_text="初始化日志")
+    start_flag = models.IntegerField(
+        "启动执行状态", default=0,
+        help_text="0-待启动 1-启动中 2-启动成功 3-启动失败")
+    start_msg = models.TextField("启动日志", help_text="启动日志")
+
+    class Meta:
+        """元数据"""
+        db_table = "omp_detail_install_history"
+        verbose_name = verbose_name_plural = "安装记录详情表"

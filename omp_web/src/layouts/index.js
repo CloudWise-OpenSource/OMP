@@ -149,11 +149,8 @@ const OmpLayout = (props) => {
     fetchGet(apiRequest.auth.users)
       .then((res) => {
         if (res && res.data.code == 1 && res.data.message == "未认证") {
-          //message.warning("登录失效,请重新登录")
-          //history.replace("/login");
         }
-        //console.log(res.data);
-        res.data && setUserInfo(res.data.data[0]);
+        res.data && res.data.data && setUserInfo(res.data.data[0]);
       })
       .catch((e) => {
         console.log(e);
@@ -266,7 +263,9 @@ const OmpLayout = (props) => {
                 title={item.menuTitle}
               >
                 {item.children.map((i) => {
-                  return <Menu.Item key={i.path}>{i.title}</Menu.Item>;
+                  if (!i.notInMenu) {
+                    return <Menu.Item key={i.path}>{i.title}</Menu.Item>;
+                  }
                 })}
               </SubMenu>
             );
@@ -359,7 +358,6 @@ const OmpLayout = (props) => {
         <CustomBreadcrumb />
         <Content style={{ margin: "0 16px" }}>
           <div
-            //className="site-layout-background"
             style={{
               padding: 0,
               paddingBottom: 30,
@@ -376,14 +374,11 @@ const OmpLayout = (props) => {
         </Content>
         <Footer
           style={{
-            //color: "#acb5ba",
             backgroundColor: "rgba(0,0,0,0)",
             textAlign: "center",
             height: 30,
             padding: 0,
             paddingTop: 0,
-            // position:"absolute",
-            // bottom:0
           }}
         >
           Copyright © 2020-2021 Cloudwise.All Rights Reserved{" "}

@@ -1,16 +1,137 @@
-import { Input, Button, Pagination } from "antd";
+import {
+  Input,
+  Button,
+  Pagination,
+  Empty,
+  Spin,
+  Modal,
+  Upload,
+  message,
+} from "antd";
 import { useEffect, useState } from "react";
 import styles from "./index.module.less";
 import { SearchOutlined, DownloadOutlined } from "@ant-design/icons";
 import Card from "./config/card.js";
 import { useSelector } from "react-redux";
+import { useHistory } from "react-router-dom";
+import { fetchGet } from "@/utils/request";
+import { apiRequest } from "@/config/requestApi";
+import { handleResponse } from "@/utils/utils";
+import ReleaseModal from "./config/ReleaseModal.js";
+import ScanServerModal from "./config/ScanServerModal";
 
 const AppStore = () => {
-  const [tabKey, setTabKey] = useState("component");
-  const [searchKey, setSearchKey] = useState("all");
   // 视口高度
   const viewHeight = useSelector((state) => state.layouts.viewSize.height);
-  console.log(viewHeight);
+  const history = useHistory();
+  const [tabKey, setTabKey] = useState("component");
+  const [searchKey, setSearchKey] = useState("全部");
+  const [searchData, setSearchData] = useState([]);
+
+  const [searchName, setSearchName] = useState("");
+
+  const [total, setTotal] = useState(0);
+
+  const [timeUnix, setTimeUnix] = useState("");
+
+  const [loading, setLoading] = useState(false);
+  const [dataSource, setDataSource] = useState([]);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: viewHeight > 955 ? 12 : 8,
+    total: 0,
+    searchParams: {},
+  });
+
+  //发布操作
+  const [releaseModalVisibility, setReleaseModalVisibility] = useState(false);
+
+  //扫描服务端
+  const [scanServerModalVisibility, setScanServerModalVisibility] =
+    useState(false);
+
+  function fetchData(pageParams = { current: 1, pageSize: 8 }, searchParams) {
+    setLoading(true);
+    fetchGet(
+      searchParams.tabKey == "component"
+        ? apiRequest.appStore.queryComponents
+        : apiRequest.appStore.queryServices,
+      {
+        params: {
+          page: pageParams.current,
+          size: pageParams.pageSize,
+          ...searchParams,
+          tabKey: null,
+        },
+      }
+    )
+      .then((res) => {
+        handleResponse(res, (res) => {
+          // 获得真正的总数，要查询条件都为空时
+          let obj = { ...searchParams };
+          delete obj.tabKey;
+          let arr = Object.values(obj).filter((i) => i);
+          if (arr.length == 0) {
+            setTotal(res.data.count);
+          }
+          setDataSource(res.data.results);
+          setPagination({
+            ...pagination,
+            total: res.data.count,
+            pageSize: pageParams.pageSize,
+            current: pageParams.current,
+            searchParams: searchParams,
+          });
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        location.state = {};
+        setLoading(false);
+        fetchSearchlist();
+        //fetchIPlist();
+      });
+  }
+
+  const fetchSearchlist = () => {
+    //setSearchLoading(true);
+    fetchGet(apiRequest.appStore.queryLabels, {
+      params: {
+        label_type: tabKey == "component" ? 0 : 1,
+      },
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          setSearchData(res.data);
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        //setSearchLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    fetchData(
+      { current: 1, pageSize: pagination.pageSize },
+      {
+        ...pagination.searchParams,
+        tabKey: tabKey,
+        type: searchKey == "全部" ? null : searchKey,
+      }
+    );
+  }, [tabKey, searchKey]);
+
+  const refresh = ()=>{
+    fetchData(
+      { current: 1, pageSize: pagination.pageSize },
+      {
+        ...pagination.searchParams,
+        tabKey: tabKey,
+        type: searchKey == "全部" ? null : searchKey,
+      }
+    );
+  }
 
   return (
     <div>
@@ -19,6 +140,14 @@ const AppStore = () => {
           <div
             className={styles.headerTab}
             onClick={(e) => {
+              setPagination({
+                current: 1,
+                pageSize: viewHeight > 955 ? 12 : 8,
+                total: 0,
+                searchParams: {},
+              });
+              setSearchName("");
+              setSearchKey("全部");
               if (e.target.innerHTML == "应用服务") {
                 setTabKey("service");
               } else if (e.target.innerHTML == "基础组件") {
@@ -42,41 +171,109 @@ const AppStore = () => {
           </div>
           <div className={styles.headerBtn}>
             <Input
-              style={{ marginRight: 10 }}
               placeholder="请输入应用名称"
-              suffix={<SearchOutlined style={{ color: "#b6b6b6" }} />}
+              suffix={
+                !searchName && <SearchOutlined style={{ color: "#b6b6b6" }} />
+              }
+              style={{ marginRight: 10 }}
+              value={searchName}
+              allowClear
+              onChange={(e) => {
+                setSearchName(e.target.value);
+                if (!e.target.value) {
+                  fetchData(
+                    {
+                      current: 1,
+                      pageSize: 10,
+                    },
+                    {
+                      ...pagination.searchParams,
+                      [tabKey == "component" ? "app_name" : "pro_name"]: null,
+                    }
+                  );
+                }
+              }}
+              onBlur={() => {
+                fetchData(
+                  {
+                    current: 1,
+                    pageSize: 10,
+                  },
+                  {
+                    ...pagination.searchParams,
+                    [tabKey == "component" ? "app_name" : "pro_name"]:
+                      searchName,
+                  }
+                );
+              }}
+              onPressEnter={() => {
+                fetchData(
+                  {
+                    current: 1,
+                    pageSize: 10,
+                  },
+                  {
+                    ...pagination.searchParams,
+                    [tabKey == "component" ? "app_name" : "pro_name"]:
+                      searchName,
+                  }
+                );
+              }}
             />
-            <Button style={{ marginRight: 10 }} type="primary">
+            <Button
+              style={{ marginRight: 10 }}
+              type="primary"
+              onClick={() => {
+                setTimeUnix(new Date().getTime());
+                setReleaseModalVisibility(true);
+              }}
+            >
               发布
             </Button>
-            <Button type="primary">扫描服务端</Button>
+            <Button
+              type="primary"
+              onClick={() => {
+                setScanServerModalVisibility(true);
+                //executeLocalPackageScan()
+              }}
+            >
+              扫描服务端
+            </Button>
           </div>
         </div>
 
         <hr className={styles.headerHr} />
         <div className={styles.headerSearch}>
-          <div className={styles.headerSearchCondition}>
-            <p style={searchKey == "all" ? { color: "rgb(46, 124, 238)" } : {}}>
+          <div
+            className={styles.headerSearchCondition}
+            onClick={(e) => {
+              // 在把含有&符号的字符串存进数据库后，再读出来的时候，发现&都变成了&amp;
+              let str = e.target.innerHTML.replace(new RegExp("&amp;","g"),"&")
+              if (
+                searchData?.indexOf(str) !== -1 ||
+                str == "全部"
+              ) {
+                setSearchKey(str);
+              }
+            }}
+          >
+            <p
+              style={searchKey == "全部" ? { color: "rgb(46, 124, 238)" } : {}}
+            >
               全部
             </p>
-            <p
-              style={searchKey == "data" ? { color: "rgb(46, 124, 238)" } : {}}
-            >
-              数据库
-            </p>
-            <p style={searchKey == "msg" ? { color: "rgb(46, 124, 238)" } : {}}>
-              消息队列
-            </p>
-            <p style={searchKey == "web" ? { color: "rgb(46, 124, 238)" } : {}}>
-              WEB服务
-            </p>
-            <p
-              style={
-                searchKey == "config" ? { color: "rgb(46, 124, 238)" } : {}
-              }
-            >
-              配置中心
-            </p>
+            {searchData.map((item) => {
+              return (
+                <p
+                  style={
+                    searchKey == item ? { color: "rgb(46, 124, 238)" } : {}
+                  }
+                  key={item}
+                >
+                  {item}
+                </p>
+              );
+            })}
           </div>
           <div className={styles.headerSearchInfo}>
             <Button
@@ -85,36 +282,78 @@ const AppStore = () => {
             >
               <span style={{ color: "#818181" }}>下载组件模版</span>
             </Button>
-            共收录21个基础组件
+            共收录 {total} 个{tabKey == "component" ? "基础组件" : "应用服务"}
           </div>
         </div>
       </div>
-      <div style={{ display: "flex", flexWrap: "wrap" }}>
-        <Card key={1} idx={1} />
-        <Card key={2} idx={2} />
-        <Card key={3} idx={3} />
-        <Card key={4} idx={4} />
-        <Card key={5} idx={5} />
-        <Card key={6} idx={6} />
-        {viewHeight > 955 && (
-          <>
-            <Card key={7} idx={7} />
-            <Card key={8} idx={8} />
-            <Card key={9} idx={9} />
-            <Card key={10} idx={10} />
-          </>
-        )}
-      </div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          position: "relative",
-          top: 25,
-        }}
-      >
-        <Pagination defaultCurrent={1} total={50} />
-      </div>
+      <Spin spinning={loading}>
+        <div style={{ display: "flex", flexWrap: "wrap" }}>
+          {dataSource.length == 0 ? (
+            <Empty
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: viewHeight > 955 ? 500 : 300,
+                flexDirection: "column",
+              }}
+              description={
+                tabKey == "component" ? "商店暂无基础组件" : "商店暂无应用服务"
+              }
+            />
+          ) : (
+            <>
+              {dataSource.map((item, idx) => {
+                return (
+                  <Card
+                    history={history}
+                    key={idx}
+                    idx={idx + 1}
+                    info={item}
+                    tabKey={tabKey}
+                  />
+                );
+              })}
+            </>
+          )}
+        </div>
+      </Spin>
+      {dataSource.length !== 0 && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            position: "relative",
+            top: 25,
+          }}
+        >
+          <Pagination
+            onChange={(e) => {
+              fetchData(
+                { ...pagination, current: e },
+                {
+                  ...pagination.searchParams,
+                }
+              );
+            }}
+            current={pagination.current}
+            pageSize={pagination.pageSize}
+            total={pagination.total}
+          />
+        </div>
+      )}
+      <ReleaseModal
+        timeUnix={timeUnix}
+        releaseModalVisibility={releaseModalVisibility}
+        setReleaseModalVisibility={setReleaseModalVisibility}
+        refresh={refresh}
+      />
+      <ScanServerModal
+        scanServerModalVisibility={scanServerModalVisibility}
+        setScanServerModalVisibility={setScanServerModalVisibility}
+        refresh={refresh}
+      />
     </div>
   );
 };

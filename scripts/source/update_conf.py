@@ -132,7 +132,7 @@ http {
     server_names_hash_bucket_size 128;
     client_header_buffer_size 32k;
     large_client_header_buffers 4 32k;
-    client_max_body_size 500m;
+    client_max_body_size 4000m;
     sendfile on;
     tcp_nopush on;
     keepalive_timeout 30;
@@ -191,6 +191,9 @@ server {
         alias %s/tmp/;
     }
     location /api/ {
+        uwsgi_connect_timeout 600;
+        uwsgi_send_timeout 600;
+        uwsgi_read_timeout 600;
         uwsgi_pass SOCKET;
         include %s;
     }

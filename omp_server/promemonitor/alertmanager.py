@@ -19,8 +19,9 @@ class Alertmanager:
     def __init__(self):
         self.basic_url = self.get_alertmanager_config()
         self.headers = {'Content-Type': 'application/json'}
-        self.add_url = f'http://{self.basic_url}/api/v1/silences'
-        self.delete_url = f'http://{self.basic_url}/api/v1/silence'
+        self.add_url = f'http://{self.basic_url}/api/v1/silences'  # NOQA
+        self.delete_url = f'http://{self.basic_url}/api/v1/silence'  # NOQA
+        self.select_url = f'http://{self.basic_url}/api/v1/silence'  # NOQA
 
     @staticmethod
     def get_alertmanager_config():
@@ -102,7 +103,10 @@ class Alertmanager:
             logger.error(str(e))
             return False
         logger.info(resp)
-        return resp.get("status") == "success"
+        if resp.get("status") != "success":
+            logger.error(resp.get("error"))
+            return True
+        return False
 
     def set_maintain_by_host_list(self, host_list):
         """
@@ -143,6 +147,15 @@ class Alertmanager:
             maintain_id = maintain.maintain_id
             delete_setting_result = self.delete_setting(maintain_id)
             if not delete_setting_result:
+                try:
+                    resp = requests.get(
+                        f"{self.select_url}/{maintain_id}", timeout=5).json()
+                    if resp.get("status") == "success" and resp.get("data").get("status").get("state") == "expired":
+                        Maintain.objects.filter(
+                            maintain_id=maintain_id).delete()
+                        return True
+                except Exception as e:
+                    logger.error(str(e))
                 return False
             Maintain.objects.filter(maintain_id=maintain_id).delete()
         return True
