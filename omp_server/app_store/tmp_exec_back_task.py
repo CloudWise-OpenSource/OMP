@@ -75,4 +75,4 @@ def front_end_verified_init(uuid, operation_user, package_name, md5=None):
         package_path=package_dir.get("verified"))
     upload_obj.save()
     front_end_verified.delay(uuid, operation_user, package_name, md5,
-                             random_str, ver_dir, upload_obj)
+                             random_str, ver_dir, upload_obj.id)

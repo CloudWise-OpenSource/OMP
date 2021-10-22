@@ -112,6 +112,7 @@ class FiledCheck(object):
 
 @shared_task
 def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_dir, upload_obj):
+    upload_obj = UploadPackageHistory.objects.get(id=upload_obj)
     package_path = os.path.join(package_hub, ver_dir)
     file_name = os.path.join(package_path, package_name)
     public_action = PublicAction(md5)
