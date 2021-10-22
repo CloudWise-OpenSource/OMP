@@ -36,6 +36,12 @@ class HostCrawl(Prometheus):
             self.tag_error_num += 1     # 统计异常指标数
             return msg
 
+    def run_status(self):
+        """运行状态"""
+        expr = f"up{{env='{self.env}', instance='{self.instance}', " \
+               f"job='nodeExporter'}}"
+        self.ret['run_status'] = self.unified_job(*self.query(expr))
+
     def run_time(self):
         """运行时间"""
         expr = f"avg(time() - node_boot_time_seconds{{env='{self.env}'," \
