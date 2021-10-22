@@ -1,6 +1,7 @@
 """
 应用商店
 """
+import json
 import logging
 import os
 from django.conf import settings
@@ -13,7 +14,8 @@ from utils.common.exceptions import OperateError
 from app_store.tmp_exec_back_task import front_end_verified_init
 
 from db_models.models import (
-    ApplicationHub, ProductHub, UploadPackageHistory
+    ApplicationHub, ProductHub, UploadPackageHistory,
+    Service
 )
 
 logger = logging.getLogger("server")
@@ -232,3 +234,125 @@ class PublishPackageHistorySerializer(serializers.ModelSerializer):
 class ExecuteLocalPackageScanSerializer(Serializer):
     """ 本地安装包扫描执行序列化类 """
     pass
+
+
+class ComponentEntranceSerializer(serializers.ModelSerializer):
+    """ 组件安装入口数据序列化 """
+
+    app_dependence = serializers.SerializerMethodField()
+    app_install_args = serializers.SerializerMethodField()
+    deploy_mode = serializers.SerializerMethodField()
+
+    def get_app_dependence(self, obj):  # NOQA
+        """ 解析获取依赖信息 """
+        if not obj.app_dependence:
+            return []
+        dependence_resolve_lst = list()
+
+        def _get_dependence(inner_ret_lst, app_dependence):
+            """
+            获取内部基础依赖关系方法
+            :param inner_ret_lst: 依赖关系结果列表
+            :param app_dependence: 应用的依赖项
+            :return:
+            """
+            for inner_item in app_dependence:
+                # 定义服务&版本唯一标准，防止递归错误
+                unique_key = \
+                    inner_item.get("name", "") + inner_item.get("version")
+                # 排除服务自身依赖，避免因环形依赖而导致的服务自己依赖自己的问题
+                self_unique_key = obj.app_name + obj.app_version
+                if unique_key in dependence_resolve_lst or \
+                        self_unique_key in dependence_resolve_lst or \
+                        self_unique_key == unique_key:
+                    continue
+                # 被依赖服务获取到的主机实例信息
+                # TODO 解决单实例与集群之间的关系问题
+                dependence_app_instance_info = Service.objects.filter(
+                    service__app_name=inner_item.get("name"),
+                    service__app_version=inner_item.get("version")
+                ).values("ip", "service_instance_name")
+                inner_item["dependence_app_instance_ips"] = list(
+                    dependence_app_instance_info)
+
+                # 判断当前应用商店内是否具备此依赖服务，是否可进行安装
+                if ApplicationHub.objects.filter(
+                        app_name=inner_item.get("name"),
+                        app_version=inner_item.get("version"),
+                        is_release=True
+                ).exists():
+                    inner_item["can_install"] = True
+                else:
+                    inner_item["can_install"] = False
+                # 判断整体安装流程是否能够继续进行
+                # 判断依据如下：
+                #   如果没有已经安装的实例，并且应用商店内未发布过该服务，则不可安装
+                # TODO 服务间具备强依赖关系时需要考虑到其中的安装逻辑
+                if not inner_item["dependence_app_instance_ips"] and \
+                        not inner_item["can_install"]:
+                    inner_item["process_continue"] = False
+                else:
+                    inner_item["process_continue"] = True
+
+                inner_ret_lst.append(inner_item)
+                dependence_resolve_lst.append(unique_key)
+                # 判断 inner_item 服务是否有依赖信息
+                _app = ApplicationHub.objects.filter(
+                    app_name=inner_item.get("name"),
+                    app_version=inner_item.get("version"),
+                    is_release=True
+                ).order_by("created").last()
+                if not _app or not _app.app_dependence:
+                    continue
+                _app_dependence = json.loads(_app.app_dependence)
+                _get_dependence(
+                    inner_ret_lst, app_dependence=_app_dependence
+                )
+
+        ret_lst = list()
+        # 解决依赖关系
+        _get_dependence(
+            inner_ret_lst=ret_lst,
+            app_dependence=json.loads(obj.app_dependence)
+        )
+        return ret_lst
+
+    def get_app_install_args(self, obj):  # NOQA
+        """ 解析安装参数信息 """
+        ret_lst = list()
+        # 标记安装过程中涉及到的数据目录，通过此标记给前端
+        # 给与前端提示信息，此标记对应于主机中的数据目录 data_folder
+        # 在后续前端提供出安装参数后，我们应该检查其准确性
+        DIR_KEY = "{data_path}"
+        # 拼接服务端口配置信息
+        if obj.app_port:
+            ret_lst.extend(json.loads(obj.app_port))
+        if obj.app_install_args:
+            ret_lst.extend(json.loads(obj.app_install_args))
+        for item in ret_lst:
+            if isinstance(item.get("default"), str) and \
+                    DIR_KEY in item.get("default"):
+                item["default"] = item["default"].replace(DIR_KEY, "")
+                item["dir_key"] = DIR_KEY
+        return ret_lst
+
+    def get_deploy_mode(self, obj):     # NOQA
+        """ 解析部署模式信息 """
+        # 如果服务未配置部署模式相关信息，那么默认为单实例模式
+        if not obj.extend_fields or not obj.extend_fields.get("deploy", {}):
+            return [{"key": "single", "name": "单实例"}]
+        deploy_info = obj.extend_fields.get("deploy", {})
+        ret_lst = list()
+        if "single" in deploy_info:
+            ret_lst.extend(deploy_info["single"])
+        if "complex" in deploy_info:
+            ret_lst.extend(deploy_info["complex"])
+        return ret_lst
+
+    class Meta:
+        """ 元数据 """
+        model = ApplicationHub
+        fields = [
+            "app_name", "app_version", "app_dependence",
+            "app_install_args", "deploy_mode"
+        ]
