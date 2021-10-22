@@ -17,12 +17,17 @@ import { apiRequest } from "@/config/requestApi";
 //   BatchImportMachineModal,
 // } from "./config/modals";
 import { useDispatch } from "react-redux";
-//import getColumnsConfig, { DetailHost } from "./config/columns";
-import { DownOutlined, ExclamationCircleOutlined, SearchOutlined } from "@ant-design/icons";
+import getColumnsConfig from "./config/columns";
+import {
+  DownOutlined,
+  ExclamationCircleOutlined,
+  SearchOutlined,
+} from "@ant-design/icons";
 import { useHistory, useLocation } from "react-router-dom";
 const PatrolInspectionRecord = () => {
   const [loading, setLoading] = useState(false);
   const [instanceSelectValue, setInstanceSelectValue] = useState("");
+  const [dataSource, setDataSource] = useState([]);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -35,44 +40,49 @@ const PatrolInspectionRecord = () => {
     searchParams = {},
     ordering
   ) {
-    // setLoading(true);
-    // fetchGet(apiRequest.Alert.listAlert, {
-    //   params: {
-    //     page: pageParams.current,
-    //     size: pageParams.pageSize,
-    //     ordering: ordering ? ordering : null,
-    //     ...searchParams,
-    //   },
-    // })
-    //   .then((res) => {
-    //     handleResponse(res, (res) => {
-    //       setDataSource(res.data.results);
-    //       setPagination({
-    //         ...pagination,
-    //         total: res.data.count,
-    //         pageSize: pageParams.pageSize,
-    //         current: pageParams.current,
-    //         ordering: ordering,
-    //         searchParams: searchParams,
-    //       });
-    //     });
-    //   })
-    //   .catch((e) => console.log(e))
-    //   .finally(() => {
-    //     location.state = {};
-    //     setLoading(false);
-    //     fetchIPlist();
-    //     //fetchNameList();
-    //   });
+    setLoading(true);
+    fetchGet(apiRequest.inspection.inspectionList, {
+      params: {
+        page: pageParams.current,
+        size: pageParams.pageSize,
+        ordering: ordering ? ordering : null,
+        ...searchParams,
+      },
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          setDataSource(res.data.results);
+          setPagination({
+            ...pagination,
+            total: res.data.count,
+            pageSize: pageParams.pageSize,
+            current: pageParams.current,
+            ordering: ordering,
+            searchParams: searchParams,
+          });
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setLoading(false);
+      });
   }
-  return <div>123123</div>
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
   return (
     <OmpContentWrapper>
       <div style={{ display: "flex" }}>
-        <Button type="primary">添加</Button>
+        <Button type="primary">深度分析</Button>
 
         <Button type="primary" style={{ marginLeft: 10 }}>
-          导入
+          主机巡检
+        </Button>
+
+        <Button type="primary" style={{ marginLeft: 10 }}>
+          组件巡检
         </Button>
 
         <div style={{ display: "flex", marginLeft: "auto" }}>
@@ -80,30 +90,41 @@ const PatrolInspectionRecord = () => {
             报告名称:
           </span>
           <Input
-            placeholder="输入实例名称"
+            placeholder="输入报告名称"
             style={{ width: 200 }}
             allowClear
             value={instanceSelectValue}
             onChange={(e) => {
               setInstanceSelectValue(e.target.value);
               if (!e.target.value) {
-                fetchData({
-                  //...searchParams,
-                  instance_name: null,
-                });
+                fetchData(
+                  { current: 1, pageSize: 10 },
+                  {
+                    ...pagination.searchParams,
+                    inspection_name: null,
+                  }
+                );
               }
             }}
             onBlur={() => {
-              fetchData({
-                //...searchParams,
-                instance_name: instanceSelectValue,
-              });
+              if (instanceSelectValue) {
+                fetchData(
+                  { current: 1, pageSize: 10 },
+                  {
+                    ...pagination.searchParams,
+                    inspection_name: instanceSelectValue,
+                  }
+                );
+              }
             }}
             onPressEnter={() => {
-              fetchData({
-                //...searchParams,
-                instance_name: instanceSelectValue,
-              });
+              fetchData(
+                { current: 1, pageSize: 10 },
+                {
+                  ...pagination.searchParams,
+                  inspection_name: instanceSelectValue,
+                }
+              );
             }}
             suffix={
               !instanceSelectValue && (
@@ -114,12 +135,9 @@ const PatrolInspectionRecord = () => {
           <Button
             style={{ marginLeft: 10 }}
             onClick={() => {
-              //location.state = {}
-              dispatch(refreshTime());
-              setCheckedList({});
               fetchData(
                 { current: pagination.current, pageSize: pagination.pageSize },
-                { ip: selectValue },
+                { inspection_name: instanceSelectValue },
                 pagination.ordering
               );
             }}
@@ -137,27 +155,25 @@ const PatrolInspectionRecord = () => {
       >
         <OmpTable
           loading={loading}
-          //scroll={{ x: 1900 }}
-          //   onChange={(e, filters, sorter) => {
-          //     let ordering = sorter.order
-          //       ? `${sorter.order == "descend" ? "" : "-"}${sorter.columnKey}`
-          //       : null;
-          //     setTimeout(() => {
-          //       fetchData(e, pagination.searchParams, ordering);
-          //     }, 200);
-          //   }}
-          columns={[]}
-          //   columns={getColumnsConfig(
-          //     setIsShowDrawer,
-          //     setRow,
-          //     setUpdateMoadlVisible,
-          //     fetchHistoryData,
-          //     setCloseMaintainOneModal,
-          //     setOpenMaintainOneModal,
-          //     setShowIframe,
-          //     history
-          //   )}
-          // dataSource={dataSource}
+          //   /scroll={{ x: 1900 }}
+          onChange={(e, filters, sorter) => {
+            console.log("ui");
+            let ordering = sorter.order
+              ? `${sorter.order == "descend" ? "" : "-"}${sorter.columnKey}`
+              : null;
+            setTimeout(() => {
+              fetchData(e, pagination.searchParams, ordering);
+            }, 200);
+          }}
+          columns={getColumnsConfig((params) => {
+            // console.log(pagination.searchParams)
+            fetchData(
+              { current: 1, pageSize: 10 },
+              { ...pagination.searchParams, ...params },
+              pagination.ordering
+            );
+          })}
+          dataSource={dataSource}
           pagination={{
             showSizeChanger: true,
             pageSizeOptions: ["10", "20", "50", "100"],
@@ -166,19 +182,10 @@ const PatrolInspectionRecord = () => {
                 style={{
                   display: "flex",
                   width: "200px",
-                  justifyContent: "space-between",
+                  flexDirection: "row-reverse",
                   lineHeight: 2.8,
                 }}
               >
-                <p>
-                  已选中{" "}
-                  {
-                    Object.keys(checkedList)
-                      .map((k) => checkedList[k])
-                      .flat(1).length
-                  }{" "}
-                  条
-                </p>
                 <p style={{ color: "rgb(152, 157, 171)" }}>
                   共计{" "}
                   <span style={{ color: "rgb(63, 64, 70)" }}>

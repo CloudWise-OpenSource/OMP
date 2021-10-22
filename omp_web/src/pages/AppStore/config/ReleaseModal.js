@@ -272,7 +272,12 @@ const ReleaseModal = ({
                       return Upload.LIST_IGNORE;
                     }
 
-                    //console.log(filesList);
+                    var reg = /[^a-zA-Z0-9\_\-\.]/g;
+                    if (reg.test(file.name)) {
+                      message.error(`文件名仅支持字母、数字、"_"、"-"和"."`);
+                      return Upload.LIST_IGNORE;
+                    }
+
                     let fileNameArr =
                       fileList.length == 1
                         ? [...filesList, file].map((i) => i.name)

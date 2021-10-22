@@ -1420,8 +1420,6 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
               scroll={{ x: 700 }}
               columns={tableColumns}
               dataSource={tableErrorData.length > 0 ? tableErrorData : tableCorrectData}
-              //size="small"
-              //pageSize
               pagination={{
                 pageSize: 5,
               }}
@@ -1438,8 +1436,6 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
                 style={{ marginRight: 16 }}
                 onClick={() => {
                   setStepNum(0);
-                  // setDataSource([])
-                  // setColumns([])
                 }}
               >
                 上一步
@@ -1487,9 +1483,6 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
                 marginTop: 40,
               }}
             >
-              {/* <Button style={{ marginRight: 16 }} onClick={() => setStepNum(1)}>
-                上一步
-              </Button> */}
               <Button
                 loading={loading}
                 type="primary"

@@ -143,12 +143,22 @@ const AppStoreDetail = () => {
               overflow: "hidden",
               padding: 10,
             }}
-            dangerouslySetInnerHTML={{
-              __html:
-                currentVersionDataSource[nameObj.logo] ||
-                imgObj[keyTab ? "component" : "service"],
-            }}
-          ></div>
+          >
+            <div
+              style={{
+                width: 80,
+                height: 80,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+              dangerouslySetInnerHTML={{
+                __html:
+                  currentVersionDataSource[nameObj.logo] ||
+                  imgObj[keyTab ? "component" : "service"],
+              }}
+            ></div>
+          </div>
           <div className={styles.detailTitleDescribe}>
             {currentVersionDataSource[nameObj.description]}
           </div>
