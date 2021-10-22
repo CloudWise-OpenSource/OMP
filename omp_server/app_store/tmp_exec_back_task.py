@@ -50,6 +50,7 @@ def back_end_verified_init(operation_user):
         os.path.isfile(os.path.join(back_verified, p)) and
         (p.endswith('.tar') or p.endswith('.tar.gz'))]
     redis_key.lpush("back_end_verified", uuid, ",".join(exec_name))
+    redis_key.expire("back_end_verified", 600)
     for j in exec_name:
         front_end_verified.delay(uuid, operation_user, j)
     publish_bak_end.delay(uuid, len(exec_name))
