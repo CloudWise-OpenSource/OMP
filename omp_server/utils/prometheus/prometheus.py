@@ -11,10 +11,11 @@ from db_models.models import MonitorUrl
 
 class Prometheus:
     # prometheus 的 ip:port
-    address = MonitorUrl.objects.get(name='prometheus').monitor_url
+    # address = MonitorUrl.objects.get(name='prometheus').monitor_url
 
     def query(self, expr):
-        url = 'http://' + self.address + '/api/v1/query?query=' + expr
+        address = MonitorUrl.objects.get(name='prometheus').monitor_url
+        url = 'http://' + address + '/api/v1/query?query=' + expr
         try:
             rsp = json.loads(requests.get(url=url, timeout=0.5
                                           ).content.decode('utf8', 'ignore'))
