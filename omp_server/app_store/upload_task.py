@@ -75,7 +75,7 @@ class CreateDatabase(object):
         self.label_type = 0
         self.create_lab()
         app_obj = ApplicationHub.objects.create(
-            is_release=True, app_type=1, app_name=self.json_data.get("name"), app_version=self.json_data.get("version"),
+            is_release=True, app_type=0, app_name=self.json_data.get("name"), app_version=self.json_data.get("version"),
             app_description=self.json_data.get("name"),
             app_port=self.explain("ports"),
             app_dependence=self.explain("dependencies"),
