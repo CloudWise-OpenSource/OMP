@@ -2,7 +2,7 @@ import { Dropdown, Menu } from "antd";
 import { FilterFilled } from "@ant-design/icons";
 import { useState } from "react";
 
-const OmpTableFilter = ({dataIndex, filterMenuList, queryRequest }) => {
+const OmpTableFilter = ({ dataIndex, filterMenuList, queryRequest }) => {
   // 表格的筛选控制器
   const [filterControl, setFilterControl] = useState("");
 
@@ -14,7 +14,7 @@ const OmpTableFilter = ({dataIndex, filterMenuList, queryRequest }) => {
       visible={dropDownIsOpen}
       onVisibleChange={(e) => {
         if (filterControl) {
-          queryRequest({[dataIndex]:null})
+          queryRequest({ [dataIndex]: null });
           setFilterControl("");
         } else {
           setDropDownIsOpen(e);
@@ -25,17 +25,12 @@ const OmpTableFilter = ({dataIndex, filterMenuList, queryRequest }) => {
           selectedKeys={[filterControl]}
           onClick={(e) => {
             setFilterControl(e.key);
-            // console.log(e);
-            queryRequest({[dataIndex]:e.key})
+            queryRequest({ [dataIndex]: e.key });
             setDropDownIsOpen(false);
           }}
         >
-          {filterMenuList?.map(item=>{
-            return (
-              <Menu.Item key={item.value}>
-                {item.text}
-              </Menu.Item>
-            )
+          {filterMenuList?.map((item) => {
+            return <Menu.Item key={item.value}>{item.text}</Menu.Item>;
           })}
         </Menu>
       }

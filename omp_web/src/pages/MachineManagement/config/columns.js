@@ -411,8 +411,6 @@ const getColumnsConfig = (
       key: "instance_name",
       dataIndex: "instance_name",
       align: "center",
-      //render: nonEmptyProcessing,
-      //width: 120,
       ellipsis: true,
       render: (text) => {
         return (
@@ -421,25 +419,6 @@ const getColumnsConfig = (
           </Tooltip>
         );
       },
-      // ellipsis: true,
-      // render: (text, record) => {
-      //   let str = nonEmptyProcessing(text)
-      //   if(str == "-"){
-      //     return "-"
-      //   }else{
-      //     return <Tooltip title={text}>
-      //        <div
-      //     style={{
-      //       overflow: "hidden",
-      //       whiteSpace: "nowrap",
-      //       textOverflow: "ellipsis",
-      //     }}
-      //   >
-      //     {text}
-      //   </div>
-      //     </Tooltip>
-      //   }
-      // }
     },
     {
       title: "CPU使用率",
@@ -448,8 +427,6 @@ const getColumnsConfig = (
       align: "center",
       sorter: (a, b) => a.cpu_usage - b.cpu_usage,
       sortDirections: ["descend", "ascend"],
-      //ellipsis: true,
-      //width:100,
       render: (text, record) => {
         let str = nonEmptyProcessing(text);
         return str == "-" ? (
@@ -470,8 +447,6 @@ const getColumnsConfig = (
       sorter: (a, b) => a.mem_usage - b.mem_usage,
       sortDirections: ["descend", "ascend"],
       align: "center",
-      //ellipsis: true,
-      //width:100,
       render: (text, record) => {
         let str = nonEmptyProcessing(text);
         return str == "-" ? (
@@ -540,8 +515,6 @@ const getColumnsConfig = (
       title: "维护模式",
       key: "is_maintenance",
       dataIndex: "is_maintenance",
-      //ellipsis: true,
-      //width: 80,
       align: "center",
       //ellipsis: true,
       render: (text) => {
@@ -649,7 +622,6 @@ const getColumnsConfig = (
                   setShowIframe({
                     isOpen: true,
                     src: record.monitor_url,
-                    // src: "http://10.0.7.146:19001/proxy/v1/grafana/d/9CWBz0bik/zhu-ji-xin-xi-mian-ban?var-node=10.0.7.146",
                     record: record,
                     isLog: false,
                   });

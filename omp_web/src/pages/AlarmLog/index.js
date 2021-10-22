@@ -125,7 +125,7 @@ const AlarmLog = () => {
   };
 
   useEffect(() => {
-    fetchData(pagination,{ alert_host_ip: location.state?.ip });
+    fetchData(pagination, { alert_host_ip: location.state?.ip });
   }, []);
 
   return (
@@ -141,9 +141,9 @@ const AlarmLog = () => {
           }
           onClick={() => {
             let ids = Object.keys(checkedList)
-            .map((k) => checkedList[k])
-            .flat(1)
-            .map((item) => item.id)
+              .map((k) => checkedList[k])
+              .flat(1)
+              .map((item) => item.id);
             updateAlertRead(ids);
           }}
         >
@@ -165,7 +165,7 @@ const AlarmLog = () => {
                   },
                   pagination.ordering
                 );
-              }else{
+              } else {
                 let result = e.filter((item) => item);
                 if (result.length == 2) {
                   fetchData(
@@ -178,7 +178,9 @@ const AlarmLog = () => {
                       start_alert_time: moment(e[0]).format(
                         "YYYY-MM-DD HH:mm:ss"
                       ),
-                      end_alert_time: moment(e[1]).format("YYYY-MM-DD HH:mm:ss"),
+                      end_alert_time: moment(e[1]).format(
+                        "YYYY-MM-DD HH:mm:ss"
+                      ),
                     },
                     pagination.ordering
                   );
@@ -254,17 +256,19 @@ const AlarmLog = () => {
                     }
                   }}
                   onBlur={() => {
-                    fetchData(
-                      {
-                        current: 1,
-                        pageSize: 10,
-                      },
-                      {
-                        ...pagination.searchParams,
-                        alert_instance_name: instanceSelectValue,
-                      },
-                      pagination.ordering
-                    );
+                    if (instanceSelectValue) {
+                      fetchData(
+                        {
+                          current: 1,
+                          pageSize: 10,
+                        },
+                        {
+                          ...pagination.searchParams,
+                          alert_instance_name: instanceSelectValue,
+                        },
+                        pagination.ordering
+                      );
+                    }
                   }}
                   onPressEnter={() => {
                     fetchData(
@@ -281,9 +285,7 @@ const AlarmLog = () => {
                   }}
                   suffix={
                     !instanceSelectValue && (
-                      <SearchOutlined
-                        style={{ color: "#b6b6b6" }}
-                      />
+                      <SearchOutlined style={{ color: "#b6b6b6" }} />
                     )
                   }
                 />
@@ -327,16 +329,19 @@ const AlarmLog = () => {
               fetchData(e, pagination.searchParams, ordering);
             }, 200);
           }}
-          columns={getColumnsConfig((params) => {
-            // console.log(pagination.searchParams)
-            fetchData(
-              { current: pagination.current, pageSize: pagination.pageSize },
-              { ...pagination.searchParams, ...params },
-              pagination.ordering
-            );
-          },setShowIframe,
+          columns={getColumnsConfig(
+            (params) => {
+              // console.log(pagination.searchParams)
+              fetchData(
+                { current: 1, pageSize: 10 },
+                { ...pagination.searchParams, ...params },
+                pagination.ordering
+              );
+            },
+            setShowIframe,
             updateAlertRead,
-            history)}
+            history
+          )}
           dataSource={dataSource}
           pagination={{
             showSizeChanger: true,

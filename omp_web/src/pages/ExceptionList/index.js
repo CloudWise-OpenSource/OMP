@@ -131,10 +131,12 @@ const ExceptionList = () => {
                     }
                   }}
                   onBlur={() => {
-                    fetchData({
-                      ...searchParams,
-                      instance_name: instanceSelectValue,
-                    });
+                    if(instanceSelectValue){
+                      fetchData({
+                        ...searchParams,
+                        instance_name: instanceSelectValue,
+                      });
+                    }
                   }}
                   onPressEnter={() => {
                     fetchData({

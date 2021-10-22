@@ -10,28 +10,39 @@ import { Table, Pagination } from "antd";
 import styles from "./index.module.less";
 import { useLayoutEffect } from "react";
 import { useSelector } from "react-redux";
-import OmpTableFilter from "./components/OmpTableFilter"
+import OmpTableFilter from "./components/OmpTableFilter";
 
-const OmpTable = ({ checkedState, columns, notSelectable, ...residualParam }) => {
+const OmpTable = ({
+  checkedState,
+  columns,
+  notSelectable,
+  ...residualParam
+}) => {
   // console.log(residualParam)
   // 当columns传入usefilter时，对该项做处理
-  const extensionsColumns = columns.map(item=>{
-    if(item.usefilter){
-        return {
-          ...item,
-          filterIcon: () => {
-            return <OmpTableFilter dataIndex={item.dataIndex} filterMenuList={item.filterMenuList} queryRequest={item.queryRequest} />
-          },
-          filters: [{ text: "mock", value: "mock" }],
-          filterDropdown: () => {
-            return <span key="mock_"></span>;
-          },
-        }
+  const extensionsColumns = columns.map((item) => {
+    if (item.usefilter) {
+      return {
+        ...item,
+        filterIcon: () => {
+          return (
+            <OmpTableFilter
+              dataIndex={item.dataIndex}
+              filterMenuList={item.filterMenuList}
+              queryRequest={item.queryRequest}
+            />
+          );
+        },
+        filters: [{ text: "mock", value: "mock" }],
+        filterDropdown: () => {
+          return <span key="mock_"></span>;
+        },
+      };
     }
     return {
-      ...item
-    }
-  })
+      ...item,
+    };
+  });
 
   const [checkedList, setCheckedList] = checkedState ? checkedState : [];
   // 视口高度
@@ -70,39 +81,41 @@ const OmpTable = ({ checkedState, columns, notSelectable, ...residualParam }) =>
   }, []);
 
   return (
-      <Table
-        scroll={viewWith > 1500 ? null : { x: 1400 }}
-        {...residualParam}
-        columns={extensionsColumns}
-        //size="small"
-        rowSelection={
-          checkedState && {
-            onSelect: (record, selected, selectedRows) => {
-              setCheckedList({
-                ...checkedList,
-                [residualParam.pagination.current]: selectedRows,
-              });
-            },
-            onSelectAll: (selected, selectedRows, changeRows) => {
-              setCheckedList({
-                ...checkedList,
-                [residualParam.pagination.current]: selectedRows.filter(
-                  (item) => item
-                ),
-              });
-            },
-            getCheckboxProps: notSelectable || ((record) => ({
+    <Table
+      scroll={viewWith > 1500 ? null : { x: 1400 }}
+      {...residualParam}
+      columns={extensionsColumns}
+      //size="small"
+      rowSelection={
+        checkedState && {
+          onSelect: (record, selected, selectedRows) => {
+            setCheckedList({
+              ...checkedList,
+              [residualParam.pagination.current]: selectedRows,
+            });
+          },
+          onSelectAll: (selected, selectedRows, changeRows) => {
+            setCheckedList({
+              ...checkedList,
+              [residualParam.pagination.current]: selectedRows.filter(
+                (item) => item
+              ),
+            });
+          },
+          getCheckboxProps:
+            notSelectable ||
+            ((record) => ({
               disabled: record.is_read === 1,
             })),
-            selectedRowKeys: Object.keys(checkedList)
-              .map((k) => checkedList[k])
-              .flat(1)
-              .map((item) => item?.id),
-            // 传入rowselect优先使用传入的
-            ...residualParam.rowSelection,
-          }
+          selectedRowKeys: Object.keys(checkedList)
+            .map((k) => checkedList[k])
+            .flat(1)
+            .map((item) => item?.id),
+          // 传入rowselect优先使用传入的
+          ...residualParam.rowSelection,
         }
-      />
+      }
+    />
   );
 };
 
