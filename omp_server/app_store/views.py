@@ -137,10 +137,10 @@ class RemovePackageView(GenericViewSet, CreateModelMixin):
 
 
 class ComponentDetailView(GenericViewSet, ListModelMixin):
+    """
+    查询组件详情
+    """
     serializer_class = ApplicationDetailSerializer
-
-    filter_class = ComponentFilter
-    filter_backends = (DjangoFilterBackend,)
 
     # 操作信息描述
     get_description = "查询组件详情"
@@ -162,13 +162,13 @@ class ComponentDetailView(GenericViewSet, ListModelMixin):
 
 
 class ServiceDetailView(GenericViewSet, ListModelMixin):
+    """
+    查询服务详情
+    """
     serializer_class = ProductDetailSerializer
 
-    filter_class = ServiceFilter
-    filter_backends = (DjangoFilterBackend,)
-
     # 操作信息描述
-    get_description = "查询产品详情"
+    get_description = "查询服务详情"
 
     def list(self, request, *args, **kwargs):
         arg_pro_name = request.GET.get('pro_name')
@@ -187,7 +187,8 @@ class ServiceDetailView(GenericViewSet, ListModelMixin):
 
 
 class ServicePackPageVerificationView(GenericViewSet, ListModelMixin):
-    queryset = UploadPackageHistory.objects.filter(is_deleted=False, package_parent__isnull=True)
+    queryset = UploadPackageHistory.objects.filter(
+        is_deleted=False, package_parent__isnull=True)
     serializer_class = UploadPackageHistorySerializer
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     filter_class = UploadPackageHistoryFilter
