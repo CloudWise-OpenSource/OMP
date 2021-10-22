@@ -31,6 +31,9 @@ const breadcrumbNameMap = {
   app_store: "应用商店",
   "app-service-detail": "服务详情",
   "app-component-detail": "组件详情",
+  "status-patrol":"状态巡检",
+  "patrol-inspection-record":"巡检记录",
+  "patrol-strategy":"巡检策略"
 };
 
 // 基于面包屑组件的一层封装，用于匹配当前路由地址，动态展示页面路径

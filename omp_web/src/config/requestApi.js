@@ -79,7 +79,10 @@ export const apiRequest = {
     // 扫描服务端命令下发
     executeLocalPackageScan: "/api/appStore/executeLocalPackageScan/",
     // 扫描状态查询
-    localPackageScanResult:"/api/appStore/localPackageScanResult/"
+    localPackageScanResult: "/api/appStore/localPackageScanResult/",
+  },
+  inspection: {
+    inspectionList: "/api/inspection/history/",
   },
 
   // ========================================================
