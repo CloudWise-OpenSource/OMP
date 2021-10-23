@@ -9,8 +9,11 @@ import { useHistory, useLocation } from "react-router-dom";
 import { handleResponse } from "@/utils/utils";
 import imgObj from "./img";
 import moment from "moment";
+import { getTabKeyChangeAction } from "../store/actionsCreators";
+import { useDispatch } from "react-redux";
 
 const AppStoreDetail = () => {
+  const dispatch = useDispatch();
   const history = useHistory();
   const location = useLocation();
   let arr = location.pathname.split("/");
@@ -100,6 +103,9 @@ const AppStoreDetail = () => {
               style={{ fontSize: 16 }}
               className={styles.backIcon}
               onClick={() => {
+                keyTab
+                  ? dispatch(getTabKeyChangeAction("component"))
+                  : dispatch(getTabKeyChangeAction("service"));
                 history?.push({
                   pathname: `/application_management/app_store`,
                 });
@@ -207,9 +213,7 @@ const AppStoreDetail = () => {
                 ]}
                 pagination={false}
                 dataSource={JSON.parse(
-                  currentVersionDataSource[nameObj.dependence].map((i) => {
-                    return { ...i, key: i.version };
-                  })
+                  currentVersionDataSource[nameObj.dependence]
                 )}
               />
             </div>
