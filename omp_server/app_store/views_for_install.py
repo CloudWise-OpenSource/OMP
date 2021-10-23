@@ -12,14 +12,18 @@ from rest_framework.mixins import (
 )
 from django_filters.rest_framework.backends import DjangoFilterBackend
 
-from db_models.models import ApplicationHub
+from db_models.models import (
+    ApplicationHub, ProductHub
+)
 
 from app_store.app_store_serializers import (
-    ComponentEntranceSerializer
+    ComponentEntranceSerializer,
+    ProductEntranceSerializer
 )
 
 from app_store.app_store_filters import (
-    ComponentEntranceFilter
+    ComponentEntranceFilter,
+    ProductEntranceFilter
 )
 
 
@@ -36,3 +40,17 @@ class ComponentEntranceView(GenericViewSet, ListModelMixin):
     filter_backends = (DjangoFilterBackend, )
     filter_class = ComponentEntranceFilter
     get_description = "获取组件安装数据入口"
+
+
+class ProductEntranceView(GenericViewSet, ListModelMixin):
+    """
+        list:
+        产品、应用安装入口
+    """
+    queryset = ProductHub.objects.filter(
+        is_release=True,
+    ).order_by("-created")
+    serializer_class = ProductEntranceSerializer
+    filter_backends = (DjangoFilterBackend, )
+    filter_class = ProductEntranceFilter
+    get_description = "获取产品应用安装数据入口"
