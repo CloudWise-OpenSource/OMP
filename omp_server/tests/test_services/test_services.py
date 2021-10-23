@@ -13,8 +13,9 @@ class ListServiceTest(AutoLoginTest, ServicesResourceMixin):
 
     def test_services_list(self):
         """ 测试服务列表 """
-        service_ls = self.get_services()
-        print(service_ls)
-
-        resp = self.get(self.list_service_url).json()
-        print(resp)
+        # service_ls = self.get_services()
+        # print(service_ls)
+        #
+        # resp = self.get(self.list_service_url).json()
+        # print(resp)
+        pass
