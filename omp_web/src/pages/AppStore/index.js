@@ -12,19 +12,26 @@ import { useEffect, useState } from "react";
 import styles from "./index.module.less";
 import { SearchOutlined, DownloadOutlined } from "@ant-design/icons";
 import Card from "./config/card.js";
-import { useSelector } from "react-redux";
+import { useSelector,useDispatch } from "react-redux";
 import { useHistory } from "react-router-dom";
 import { fetchGet } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import { handleResponse } from "@/utils/utils";
 import ReleaseModal from "./config/ReleaseModal.js";
 import ScanServerModal from "./config/ScanServerModal";
+import { getTabKeyChangeAction } from "./store/actionsCreators";
 
 const AppStore = () => {
+
+  // appStoreTabKey
+  const appStoreTabKey = useSelector(
+    (state) => state.appStore.appStoreTabKey
+  );
+  const dispatch = useDispatch();
   // 视口高度
   const viewHeight = useSelector((state) => state.layouts.viewSize.height);
   const history = useHistory();
-  const [tabKey, setTabKey] = useState("component");
+  const [tabKey, setTabKey] = useState(appStoreTabKey);
   const [searchKey, setSearchKey] = useState("全部");
   const [searchData, setSearchData] = useState([]);
 
@@ -120,6 +127,10 @@ const AppStore = () => {
         type: searchKey == "全部" ? null : searchKey,
       }
     );
+
+    return ()=>{
+      dispatch(getTabKeyChangeAction("component"))
+    }
   }, [tabKey, searchKey]);
 
   const refresh = ()=>{
@@ -175,7 +186,7 @@ const AppStore = () => {
               suffix={
                 !searchName && <SearchOutlined style={{ color: "#b6b6b6" }} />
               }
-              style={{ marginRight: 10 }}
+              style={{ marginRight: 10,width:200 }}
               value={searchName}
               allowClear
               onChange={(e) => {
@@ -184,7 +195,7 @@ const AppStore = () => {
                   fetchData(
                     {
                       current: 1,
-                      pageSize: 10,
+                      pageSize: pagination.pageSize,
                     },
                     {
                       ...pagination.searchParams,
@@ -197,7 +208,7 @@ const AppStore = () => {
                 fetchData(
                   {
                     current: 1,
-                    pageSize: 10,
+                    pageSize: pagination.pageSize,
                   },
                   {
                     ...pagination.searchParams,
@@ -210,7 +221,7 @@ const AppStore = () => {
                 fetchData(
                   {
                     current: 1,
-                    pageSize: 10,
+                    pageSize: pagination.pageSize,
                   },
                   {
                     ...pagination.searchParams,
