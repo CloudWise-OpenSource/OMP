@@ -15,6 +15,9 @@ from app_store.views import (
     ServicePackPageVerificationView, PublishViewSet,
     ExecuteLocalPackageScanView, LocalPackageScanResultView
 )
+from app_store.views_for_install import (
+    ComponentEntranceView
+)
 
 router = DefaultRouter()
 router.register("labels", LabelListView, basename="labels")
@@ -34,3 +37,8 @@ router.register(
 router.register(
     "localPackageScanResult", LocalPackageScanResultView,
     basename='localPackageScanResult')
+
+# 安装部分使用路由
+router.register(
+    "componentEntrance", ComponentEntranceView,
+    basename='componentEntrance')
