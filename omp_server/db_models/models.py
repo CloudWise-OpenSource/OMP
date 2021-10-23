@@ -567,13 +567,6 @@ class ClusterInfo(TimeStampMixin, DeleteMixin):
 class Service(TimeStampMixin):
     """ 服务表 """
 
-    SERVICE_TYPE_COMPONENT = 0
-    SERVICE_TYPE_SERVICE = 1
-    SERVICE_TYPE_CHOICES = (
-        (SERVICE_TYPE_COMPONENT, "组件"),
-        (SERVICE_TYPE_SERVICE, "服务")
-    )
-
     SERVICE_STATUS_NORMAL = 0
     SERVICE_STATUS_STARTING = 1
     SERVICE_STATUS_STOPPING = 2
@@ -604,12 +597,6 @@ class Service(TimeStampMixin):
     service = models.ForeignKey(
         ApplicationHub, null=True, blank=True,
         on_delete=models.SET_NULL, help_text="服务表外键")
-    product = models.ForeignKey(
-        ProductHub, null=True, blank=True,
-        on_delete=models.SET_NULL, help_text="产品表外键")
-    product_name = models.CharField(
-        "应用名称", max_length=64,
-        null=True, blank=True, help_text="应用名称")
 
     # 以下字段含义同 ApplicationHub 但具备定制化场景，无法做得到唯一关联
     # 存储格式[{"port": 18080, "key": "http_port"}]
@@ -650,6 +637,7 @@ class Service(TimeStampMixin):
         """元数据"""
         db_table = 'omp_service'
         verbose_name = verbose_name_plural = "服务实例表"
+        ordering = ("-created",)
 
 
 class ServiceHistory(models.Model):

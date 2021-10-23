@@ -128,7 +128,7 @@ class ServiceListTest(AutoLoginTest, ProductResourceMixin):
 
     def setUp(self):
         super(ServiceListTest, self).setUp()
-        self.service_list_url = reverse("services-list")
+        self.service_list_url = reverse("appServices-list")
 
     def test_service_list_filter(self):
         """ 测试应用服务列表过滤 """

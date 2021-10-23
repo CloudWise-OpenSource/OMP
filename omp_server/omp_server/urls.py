@@ -31,6 +31,7 @@ from app_store.urls import router as app_store_router
 from promemonitor.urls import router as promemonitor_router
 from promemonitor.grafana_views import grafana_proxy_view
 from inspection.urls import router as router_inspection
+from services.urls import router as services_router
 
 urlpatterns_inside = [
     path("login/", JwtAPIView.as_view(), name="login"),
@@ -40,7 +41,7 @@ urlpatterns_inside = [
          include(promemonitor_router.urls), name="promemonitor"),
     path("appStore/", include(app_store_router.urls), name="appStore"),
     path('inspection/', include(router_inspection.urls), name="inspection"),
-
+    path("services/", include(services_router.urls), name="services"),
 ]
 
 urlpatterns = [

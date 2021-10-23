@@ -22,7 +22,7 @@ from app_store.views_for_install import (
 router = DefaultRouter()
 router.register("labels", LabelListView, basename="labels")
 router.register("components", ComponentListView, basename="components")
-router.register("services", ServiceListView, basename="services")
+router.register("services", ServiceListView, basename="appServices")
 router.register("upload", UploadPackageView, basename="upload")
 router.register("remove", RemovePackageView, basename="remove")
 router.register("componentDetail", ComponentDetailView,
