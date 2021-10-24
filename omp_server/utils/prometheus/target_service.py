@@ -21,6 +21,7 @@ def target_service_run(env, services, history_id, report_id):
     services = services.values('service_instance_name', 'ip',
                                'service_port', 'service__app_name')
     ret = list()
+    tag_total_num = tag_error_num = 0
     for i in services:
         _ = None
         if i.get('service__app_name') == 'mysql':
@@ -29,6 +30,8 @@ def target_service_run(env, services, history_id, report_id):
                    'threads_connected', 'max_connections',
                    'threads_running', 'aborted_connects', 'qps',
                    'slave_sql_running'])
+            tag_total_num += _.tag_total_num
+            tag_error_num += _.tag_error_num
         elif i.get('service_instance_name') == '**':
             # TODO
             pass
@@ -37,4 +40,5 @@ def target_service_run(env, services, history_id, report_id):
         ret.append(i)
 
     # 反填巡检记录、巡检报告 数据
-    back_fill(history_id=history_id, report_id=report_id, serv_data=ret)
+    back_fill(history_id=history_id, report_id=report_id, serv_data=ret,
+              tag_total_num=tag_total_num, tag_error_num=tag_error_num)

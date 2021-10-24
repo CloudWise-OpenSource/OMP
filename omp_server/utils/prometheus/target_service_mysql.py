@@ -16,6 +16,7 @@ class ServiceMysqlCrawl(Prometheus):
         self.tag_total_num = 0      # 总指标数
         self.tag_error_num = 0      # 异常指标数
         self.instance = instance    # 主机ip
+        Prometheus.__init__(self)
 
     def unified_job(self, is_success, ret, msg):
         """
