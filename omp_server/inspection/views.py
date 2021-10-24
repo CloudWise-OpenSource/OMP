@@ -23,6 +23,7 @@ from inspection.serializers import (
     InspectionHistorySerializer, InspectionCrontabSerializer,
     InspectionReportSerializer)
 from rest_framework.filters import OrderingFilter
+from db_models.models import Service, ApplicationHub
 
 
 class InspectionServiceView(ListModelMixin, GenericViewSet):
@@ -30,7 +31,6 @@ class InspectionServiceView(ListModelMixin, GenericViewSet):
         list: 组件巡检 组件列表
     """
     def list(self, request, *args, **kwargs):
-        from db_models.models import Service, ApplicationHub
         _ = Service.objects.filter(
             service__app_type=ApplicationHub.APP_TYPE_COMPONENT)
         ret = _.values('service__id', 'service__app_name').distinct()

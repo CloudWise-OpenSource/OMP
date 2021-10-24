@@ -19,11 +19,11 @@ def target_service_run(env, services, history_id, report_id):
     # 查询该环境下服务
     services = Service.objects.filter(env=env, service__in=services)
     services = services.values('service_instance_name', 'ip',
-                               'service_port')
+                               'service_port', 'service__app_name')
     ret = list()
     for i in services:
         _ = None
-        if i.get('service_instance_name') == 'mysql':
+        if i.get('service__app_name') == 'mysql':
             _ = ServiceMysqlCrawl(env=env.name, instance=i.get('ip'))
             _.run(['run_status', 'run_time', 'slow_queries',
                    'threads_connected', 'max_connections',
@@ -33,7 +33,8 @@ def target_service_run(env, services, history_id, report_id):
             # TODO
             pass
 
-        ret.append(i.update(**_.ret))
+        i.update(**_.ret) if _ else ''
+        ret.append(i)
 
     # 反填巡检记录、巡检报告 数据
     back_fill(history_id=history_id, report_id=report_id, serv_data=ret)
