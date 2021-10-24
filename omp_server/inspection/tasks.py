@@ -30,11 +30,14 @@ def get_hosts_data(env, hosts, history_id, report_id, target):
     :target: 自定义的实例方法，目的是统一执行实例方法并统一返回值，例：['rate_cpu', 'rate_memory']
     """
     temp_list = list()
+    tag_total_num = tag_error_num = 0
     for instance in hosts:
         temp = dict()
         # 主机 prometheus 数据请求
         h_w_obj = HostCrawl(env=env, instance=instance.get('ip'))
         h_w_obj.run(target=target)
+        tag_total_num += h_w_obj.tag_total_num
+        tag_error_num += h_w_obj.tag_error_num
         temp['dynamic_data'] = h_w_obj.ret
         temp['static_data'] = {}
         h_obj = Host.objects.filter(id=instance.get('id')).first()
@@ -50,7 +53,8 @@ def get_hosts_data(env, hosts, history_id, report_id, target):
         temp_list.append(temp)
 
     # 反填巡检记录、巡检报告 数据
-    back_fill(history_id=history_id, report_id=report_id, host_data=temp_list)
+    back_fill(history_id=history_id, report_id=report_id, host_data=temp_list,
+              tag_total_num=tag_total_num, tag_error_num=tag_error_num)
 
 
 @shared_task

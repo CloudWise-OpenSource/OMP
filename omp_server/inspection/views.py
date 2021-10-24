@@ -137,8 +137,10 @@ class InspectionCrontabView(RetrieveModelMixin, ListModelMixin, GenericViewSet,
         # 判断是否需要下发任务到celery：0-开启，1-关闭
         is_success = True
         if request.data.get('is_start_crontab') == 0:
-            task_name = 'inspection_cron_task'
-            task_func = 'inspection.tasks.inspection_crontab'
+            tp = {'0': 'deep', '1': 'host', '2': 'service'}
+            task_name = \
+                f"inspection_cron_task_{tp.get(request.data.get('job_type'))}"
+            task_func = f"inspection.tasks.inspection_crontab"
             cron_obj = CrontabUtils(task_name=task_name, task_func=task_func,
                                     task_kwargs=request.data)
             cron_args = {
@@ -158,7 +160,7 @@ class InspectionCrontabView(RetrieveModelMixin, ListModelMixin, GenericViewSet,
             # 只是想在增加时加个判断及对应操作，增加还是执行父类的create
             return CreateModelMixin.create(self, request, *args, **kwargs)
         else:
-            return Response(data={'code': 500, 'message': '定时任务创建失败，请勿重复操作'},
+            return Response(data='定时任务已存在，请勿重复操作',
                             status=status.HTTP_200_OK)
 
     def update(self, request, *args, **kwargs):
