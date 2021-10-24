@@ -26,7 +26,10 @@ class ServiceMysqlCrawl(Prometheus):
         """
         self.tag_total_num += 1         # 统计总指标数
         if is_success:
-            return ret.get('result')[0].get('value')[1]
+            if ret.get('result'):
+                return ret['result'][0].get('value')[1]
+            else:
+                return ''
         else:
             self.tag_error_num += 1     # 统计异常指标数
             return msg

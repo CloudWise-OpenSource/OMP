@@ -6,18 +6,18 @@
 import json
 import requests
 import traceback
-# from db_models.models import MonitorUrl
 from datetime import datetime
+from db_models.models import MonitorUrl
 from db_models.models import InspectionHistory, InspectionReport
 
 
 class Prometheus:
-    # prometheus 的 ip:port
-    # address = MonitorUrl.objects.get(name='prometheus').monitor_url
+    def __init__(self):
+        # prometheus 的 ip:port
+        address = MonitorUrl.objects.get(name='prometheus').monitor_url
 
     def query(self, expr):
-        # address = MonitorUrl.objects.get(name='prometheus').monitor_url
-        address = "10.0.2.113:19011"
+        address = MonitorUrl.objects.get(name='prometheus').monitor_url
         url = 'http://' + address + '/api/v1/query?query=' + expr
         try:
             rsp = json.loads(requests.get(url=url, timeout=0.5
