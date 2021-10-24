@@ -6,13 +6,13 @@
 
 import logging
 import traceback
-from datetime import datetime
 from celery import shared_task
 from celery.utils.log import get_task_logger
-
 from db_models.models import Host, Env
 from db_models.models import InspectionHistory, InspectionReport
 from utils.prometheus.target_host import HostCrawl
+from utils.prometheus.prometheus import back_fill
+from utils.prometheus.target_service import target_service_run
 # 屏蔽celery任务日志中的paramiko日志
 logging.getLogger("paramiko").setLevel(logging.WARNING)
 logger = get_task_logger("celery_log")
@@ -47,20 +47,15 @@ def get_hosts_data(env, hosts, history_id, report_id, target):
 
         temp_list.append(temp)
 
-    # 反填巡检历史记录InspectionHistory表，结束时间end_time、巡检用时duration字段、巡检状态inspection_status
-    now = datetime.now()
-    his_obj = InspectionHistory.objects.filter(id=history_id)
-    his_obj.update(end_time=now, duration=(now - his_obj[0].start_time).seconds,
-                   inspection_status=2)
-    # 反填巡检报告InspectionReport表，主机列表host_data字段
-    InspectionReport.objects.filter(id=report_id).update(host_data=temp_list)
+    # 反填巡检记录、巡检报告 数据
+    back_fill(history_id=history_id, report_id=report_id, host_data=temp_list)
 
 
 @shared_task
 def get_prometheus_data(env, hosts, services, history_id, report_id, handle):
     """
     异步任务：查询多巡检类型prometheus数据，组装后进行反填
-    :env: 环境，例：demo
+    :env: 环境，例：Env 表的 queryset 对象
     :hosts: 主机列表，例：[{"id":"主键id", "ip":"主机ip"}]
     :services: 组件列表，例：["mysql"]
     :history_id: 巡检历史表id，例：1
@@ -74,12 +69,12 @@ def get_prometheus_data(env, hosts, services, history_id, report_id, handle):
                       'rate_exchange_disk', 'run_time', 'avg_load',
                       'total_file_descriptor', 'rate_io_wait',
                       'network_bytes_total', 'disk_io']
-            get_hosts_data(env, hosts, history_id, report_id, target)
+            get_hosts_data(env.name, hosts, history_id, report_id, target)
         elif handle == 'service':
-            # if
-            pass
-            # get_hosts_data(env, hosts, history_id, report_id, target)
+            # 组件巡检
+            target_service_run(env, services, history_id, report_id)
         elif handle == 'deep':
+            # TODO
             pass
     except Exception as e:
         logger.error(

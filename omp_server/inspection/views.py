@@ -3,6 +3,7 @@
 # Author: len chen
 # CreateDate: 2021/10/13 6:06 下午
 # Description: 巡检视图
+import datetime
 
 from rest_framework import status
 from rest_framework.response import Response
@@ -22,6 +23,18 @@ from inspection.serializers import (
     InspectionHistorySerializer, InspectionCrontabSerializer,
     InspectionReportSerializer)
 from rest_framework.filters import OrderingFilter
+
+
+class InspectionServiceView(ListModelMixin, GenericViewSet):
+    """
+        list: 组件巡检 组件列表
+    """
+    def list(self, request, *args, **kwargs):
+        from db_models.models import Service, ApplicationHub
+        _ = Service.objects.filter(
+            service__app_type=ApplicationHub.APP_TYPE_COMPONENT)
+        ret = _.values('service__id', 'service__app_name').distinct()
+        return Response(data=list(ret), status=status.HTTP_200_OK)
 
 
 class InspectionHistoryView(ListModelMixin, GenericViewSet, CreateModelMixin):
@@ -68,11 +81,23 @@ class InspectionHistoryView(ListModelMixin, GenericViewSet, CreateModelMixin):
 
         return self.get_paginated_response(exists_ls)
 
+    @staticmethod
+    def joint_inspection_name(data_dict):
+        now = datetime.datetime.now()
+        num = InspectionHistory.objects.filter(
+            start_time__year=now.year, start_time__month=now.month,
+            start_time__day=now.day).count()
+        tp = {'deep': '深度巡检', 'host': '主机巡检', 'service': '组建巡检'}
+        name = f"{tp.get(data_dict.get('inspection_type'))}" \
+               f"{now.strftime('%Y%m%d')}{num+1}"
+        return name
+
     def create(self, request, *args, **kwargs):
         data_dict = request.data
         # 一、创建巡检历史表数据
         env_obj = Env.objects.filter(id=data_dict['env']).first()
         data_dict['env'] = env_obj
+        data_dict['inspection_name'] = self.joint_inspection_name(data_dict)
         his_obj = InspectionHistory(**data_dict)
         his_obj.save()
         # 二、创建巡检记录历史表关联的报告表的数据
@@ -84,7 +109,7 @@ class InspectionHistoryView(ListModelMixin, GenericViewSet, CreateModelMixin):
         # 四、下发celery异步任务
         handle = data_dict.get('inspection_type')
         get_prometheus_data(
-            env=env_obj.name, hosts=his_obj.hosts, services=his_obj.services,
+            env=env_obj, hosts=his_obj.hosts, services=his_obj.services,
             history_id=his_obj.id, report_id=rep_obj.id, handle=handle)
         return Response(data_dict, status=status.HTTP_200_OK)
 

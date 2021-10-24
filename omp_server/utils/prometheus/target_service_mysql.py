@@ -46,37 +46,37 @@ class ServiceMysqlCrawl(Prometheus):
     def slow_queries(self):
         """慢查询"""
         expr = f"rate(mysql_global_status_slow_queries[5m])"
-        self.ret['run_time'] = self.unified_job(*self.query(expr))
+        self.ret['slow_queries'] = self.unified_job(*self.query(expr))
 
     def threads_connected(self):
         """当前连接数量"""
         expr = f"rate(mysql_global_status_threads_connected[5m])"
-        self.ret['run_time'] = self.unified_job(*self.query(expr))
+        self.ret['threads_connected'] = self.unified_job(*self.query(expr))
 
     def max_connections(self):
         """最大连接数"""
         expr = f"mysql_global_variables_max_connections"
-        self.ret['run_time'] = self.unified_job(*self.query(expr))
+        self.ret['max_connections'] = self.unified_job(*self.query(expr))
 
     def threads_running(self):
         """活跃连接数量"""
         expr = f"mysql_global_status_threads_running"
-        self.ret['run_time'] = self.unified_job(*self.query(expr))
+        self.ret['threads_running'] = self.unified_job(*self.query(expr))
 
     def aborted_connects(self):
         """累计所有的连接数"""
         expr = f"mysql_global_status_aborted_connects"
-        self.ret['run_time'] = self.unified_job(*self.query(expr))
+        self.ret['aborted_connects'] = self.unified_job(*self.query(expr))
 
     def qps(self):
         """qps"""
         expr = f"rate(mysql_global_status_questions[5m])"
-        self.ret['run_time'] = self.unified_job(*self.query(expr))
+        self.ret['qps'] = self.unified_job(*self.query(expr))
 
     def slave_sql_running(self):
         """备份状态"""
-        expr = f"mysql_slave_status_slave_sql_running"
-        self.ret['run_time'] = self.unified_job(*self.query(expr))
+        expr = f"mysql_global_status_slave_open_temp_tables"
+        self.ret['slave_sql_running'] = self.unified_job(*self.query(expr))
 
     def run(self, target):
         """统一执行实例方法"""
@@ -86,9 +86,8 @@ class ServiceMysqlCrawl(Prometheus):
 
 
 if __name__ == '__main__':
-    h = ServiceMysqlCrawl(env='demo', instance='10.0.2.113')
-    h.run(['run_time', 'rate_cpu', 'rate_memory', 'rate_max_disk',
-           'rate_exchange_disk', 'avg_load',
-           'total_file_descriptor', 'rate_io_wait', 'network_bytes_total',
-           'disk_io'])
+    h = ServiceMysqlCrawl(env='demo', instance='10.0.9.60')
+    h.run(['run_status', 'run_time', 'slow_queries', 'threads_connected',
+           'max_connections', 'threads_running', 'aborted_connects', 'qps',
+           'slave_sql_running'])
     print(h.ret)
