@@ -73,3 +73,15 @@ class ComponentEntranceFilter(FilterSet):
         """ 元数据 """
         model = ApplicationHub
         fields = ("app_name", )
+
+
+class ProductEntranceFilter(FilterSet):
+    """ 基础组件安装入口过滤类 """
+    pro_name = django_filters.CharFilter(
+        help_text="基础组件名称，精确匹配",
+        field_name="pro_name", lookup_expr="exact")
+
+    class Meta:
+        """ 元数据 """
+        model = ProductHub
+        fields = ("pro_name", )

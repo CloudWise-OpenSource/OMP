@@ -16,7 +16,8 @@ from app_store.views import (
     ExecuteLocalPackageScanView, LocalPackageScanResultView
 )
 from app_store.views_for_install import (
-    ComponentEntranceView
+    ComponentEntranceView,
+    ProductEntranceView
 )
 
 router = DefaultRouter()
@@ -42,3 +43,6 @@ router.register(
 router.register(
     "componentEntrance", ComponentEntranceView,
     basename='componentEntrance')
+router.register(
+    "productEntrance", ProductEntranceView,
+    basename='productEntrance')

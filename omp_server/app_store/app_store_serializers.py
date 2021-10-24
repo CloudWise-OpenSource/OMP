@@ -15,7 +15,11 @@ from app_store.tmp_exec_back_task import front_end_verified_init
 
 from db_models.models import (
     ApplicationHub, ProductHub, UploadPackageHistory,
-    Service
+)
+
+from app_store.install_utils import (
+    make_lst_unique, ServiceArgsSerializer,
+    SerDependenceParseUtils, ProDependenceParseUtils
 )
 
 logger = logging.getLogger("server")
@@ -101,7 +105,8 @@ class UploadPackageSerializer(Serializer):
             raise OperateError("上传文件为空")
         destination_dir = os.path.join(
             settings.PROJECT_DIR, 'package_hub/front_end_verified')
-        with open(os.path.join(destination_dir, request_file.name), 'wb+') as f:
+        with open(os.path.join(destination_dir, request_file.name),
+                  'wb+') as f:
             for chunk in request_file.chunks():
                 try:
                     f.write(chunk)
@@ -193,7 +198,8 @@ class ProductDetailSerializer(ModelSerializer):  # NOQA
         """ 元数据 """
         model = ProductHub
         fields = ("pro_name", "pro_version", "pro_logo", "pro_description",
-                  "created", "pro_dependence", "pro_services", "pro_instances_info",
+                  "created", "pro_dependence", "pro_services",
+                  "pro_instances_info",
                   "pro_labels", "pro_package_md5", "pro_operation_user")
 
     def get_pro_instances_info(self, obj):  # NOQA
@@ -244,110 +250,16 @@ class ComponentEntranceSerializer(serializers.ModelSerializer):
     deploy_mode = serializers.SerializerMethodField()
 
     def get_app_dependence(self, obj):  # NOQA
-        """ 解析获取依赖信息 """
-        if not obj.app_dependence:
-            return []
-        dependence_resolve_lst = list()
-
-        def _get_dependence(inner_ret_lst, app_dependence):
-            """
-            获取内部基础依赖关系方法
-            :param inner_ret_lst: 依赖关系结果列表
-            :param app_dependence: 应用的依赖项
-            :return:
-            """
-            for inner_item in app_dependence:
-                # 定义服务&版本唯一标准，防止递归错误
-                unique_key = \
-                    inner_item.get("name", "") + inner_item.get("version")
-                # 排除服务自身依赖，避免因环形依赖而导致的服务自己依赖自己的问题
-                self_unique_key = obj.app_name + obj.app_version
-                if unique_key in dependence_resolve_lst or \
-                        self_unique_key in dependence_resolve_lst or \
-                        self_unique_key == unique_key:
-                    continue
-                # 被依赖服务获取到的主机实例信息
-                # TODO 解决单实例与集群之间的关系问题
-                dependence_app_instance_info = Service.objects.filter(
-                    service__app_name=inner_item.get("name"),
-                    service__app_version=inner_item.get("version")
-                ).values("ip", "service_instance_name")
-                inner_item["dependence_app_instance_ips"] = list(
-                    dependence_app_instance_info)
-
-                # 判断当前应用商店内是否具备此依赖服务，是否可进行安装
-                if ApplicationHub.objects.filter(
-                        app_name=inner_item.get("name"),
-                        app_version=inner_item.get("version"),
-                        is_release=True
-                ).exists():
-                    inner_item["can_install"] = True
-                else:
-                    inner_item["can_install"] = False
-                # 判断整体安装流程是否能够继续进行
-                # 判断依据如下：
-                #   如果没有已经安装的实例，并且应用商店内未发布过该服务，则不可安装
-                # TODO 服务间具备强依赖关系时需要考虑到其中的安装逻辑
-                if not inner_item["dependence_app_instance_ips"] and \
-                        not inner_item["can_install"]:
-                    inner_item["process_continue"] = False
-                else:
-                    inner_item["process_continue"] = True
-
-                inner_ret_lst.append(inner_item)
-                dependence_resolve_lst.append(unique_key)
-                # 判断 inner_item 服务是否有依赖信息
-                _app = ApplicationHub.objects.filter(
-                    app_name=inner_item.get("name"),
-                    app_version=inner_item.get("version"),
-                    is_release=True
-                ).order_by("created").last()
-                if not _app or not _app.app_dependence:
-                    continue
-                _app_dependence = json.loads(_app.app_dependence)
-                _get_dependence(
-                    inner_ret_lst, app_dependence=_app_dependence
-                )
-
-        ret_lst = list()
-        # 解决依赖关系
-        _get_dependence(
-            inner_ret_lst=ret_lst,
-            app_dependence=json.loads(obj.app_dependence)
-        )
-        return ret_lst
+        """ 解析服务级别的依赖关系 """
+        return ServiceArgsSerializer().get_app_dependence(obj)
 
     def get_app_install_args(self, obj):  # NOQA
-        """ 解析安装参数信息 """
-        ret_lst = list()
-        # 标记安装过程中涉及到的数据目录，通过此标记给前端
-        # 给与前端提示信息，此标记对应于主机中的数据目录 data_folder
-        # 在后续前端提供出安装参数后，我们应该检查其准确性
-        DIR_KEY = "{data_path}"
-        # 拼接服务端口配置信息
-        if obj.app_port:
-            ret_lst.extend(json.loads(obj.app_port))
-        if obj.app_install_args:
-            ret_lst.extend(json.loads(obj.app_install_args))
-        for item in ret_lst:
-            if isinstance(item.get("default"), str) and \
-                    DIR_KEY in item.get("default"):
-                item["default"] = item["default"].replace(DIR_KEY, "")
-                item["dir_key"] = DIR_KEY
-        return ret_lst
+        """ 解析服务安装过程中的参数 """
+        return ServiceArgsSerializer().get_app_install_args(obj)
 
-    def get_deploy_mode(self, obj):     # NOQA
-        """ 解析部署模式信息 """
-        # 如果服务未配置部署模式相关信息，那么默认为单实例模式
-        if not obj.extend_fields or not obj.extend_fields.get("deploy", {}):
-            return [{"key": "single", "name": "单实例"}]
-        deploy_info = obj.extend_fields.get("deploy", {})
-        ret_lst = list()
-        if "single" in deploy_info:
-            ret_lst.extend(deploy_info["single"])
-        if "complex" in deploy_info:
-            ret_lst.extend(deploy_info["complex"])
-        return ret_lst
+    def get_deploy_mode(self, obj):  # NOQA
+        """ 解析服务的部署模式 """
+        return ServiceArgsSerializer().get_deploy_mode(obj)
 
     class Meta:
         """ 元数据 """
@@ -355,4 +267,64 @@ class ComponentEntranceSerializer(serializers.ModelSerializer):
         fields = [
             "app_name", "app_version", "app_dependence",
             "app_install_args", "deploy_mode"
+        ]
+
+
+class ProductEntranceSerializer(serializers.ModelSerializer):
+    """ 产品、应用安装序列化类 """
+
+    pro_services = serializers.SerializerMethodField()
+    pro_dependence = serializers.SerializerMethodField()
+    dependence_services_info = serializers.SerializerMethodField()
+
+    def get_pro_services(self, obj):  # NOQA
+        """ 获取服务列表 """
+        if not obj.pro_services:
+            return list()
+        ser_lst = json.loads(obj.pro_services)
+        for item in ser_lst:
+            ser_obj = ApplicationHub.objects.filter(
+                app_name=item.get("name"),
+                app_version=item.get("version")
+            ).last()
+            if not ser_obj:
+                item["process_continue"] = False
+                item["process_message"] = f"服务{item.get('name')}未发布"
+                continue
+            item["process_continue"] = True
+            item["app_install_args"] = \
+                ServiceArgsSerializer().get_app_install_args(ser_obj)
+            item["deploy_mode"] = \
+                ServiceArgsSerializer().get_deploy_mode(ser_obj)
+            item["app_dependence"] = \
+                ServiceArgsSerializer().get_app_dependence(ser_obj)
+        return ser_lst
+
+    def get_pro_dependence(self, obj):  # NOQA
+        """ 获取产品依赖关系 """
+        _pro = ProDependenceParseUtils(obj.pro_name, obj.pro_version)
+        _dep = _pro.run_pro()
+        return _dep
+
+    def get_dependence_services_info(self, obj):  # NOQA
+        """ 获取服务所依赖的信息 """
+        _service_lst = self.get_pro_services(obj=obj)
+        if not _service_lst:
+            return []
+        _all_dependence_ser_info = list()
+        for item in _service_lst:
+            _ser = SerDependenceParseUtils(
+                item.get("name"), item.get("version"))
+            _el_lst = _ser.run_ser()
+            _all_dependence_ser_info.extend(_el_lst)
+        _all_dependence_ser_info = make_lst_unique(
+            _all_dependence_ser_info, "name", "version")
+        return _all_dependence_ser_info
+
+    class Meta:
+        """ 元数据 """
+        model = ProductHub
+        fields = [
+            "pro_name", "pro_version", "pro_dependence",
+            "pro_services", "dependence_services_info"
         ]
