@@ -12,9 +12,9 @@ from db_models.models import InspectionHistory, InspectionReport
 
 
 class Prometheus:
-    def __init__(self):
-        # prometheus 的 ip:port
-        address = MonitorUrl.objects.get(name='prometheus').monitor_url
+    # def __init__(self):
+    #     # prometheus 的 ip:port
+    #     address = MonitorUrl.objects.get(name='prometheus').monitor_url
 
     def query(self, expr):
         address = MonitorUrl.objects.get(name='prometheus').monitor_url
