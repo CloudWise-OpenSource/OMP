@@ -258,5 +258,4 @@ class ProductEntranceTest(ComponentEntranceTest, ProductResourceMixin):
         self.make_pro_2()
         self.make_pro_3()
         res = self.get(self.productEntrance_url).json()
-        print(json.dumps(res, indent=2, ensure_ascii=False))
         self.assertEqual(res.get("code"), 0)
