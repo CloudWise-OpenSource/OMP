@@ -456,17 +456,15 @@ class PrometheusUtils(object):
 
     def add_service(self, service_data):
         """
-        service_data = [
-            {
-                "service_name": "mysql",
-                "instance_name": "mysql_dosm",
-                "data_path": "/data/appData/mysql",
-                "log_path": "/data/logs/mysql",
-                "env": "default",
-                "ip": "127.0.0.1",
-                "listen_port": "3306"
-            }
-        ]
+        service_data = {
+            "service_name": "mysql",
+            "instance_name": "mysql_dosm",
+            "data_path": "/data/appData/mysql",
+            "log_path": "/data/logs/mysql",
+            "env": "default",
+            "ip": "127.0.0.1",
+            "listen_port": "3306"
+        }
         添加有exporter的组件信息到各自的exporter监控
         :param service_data: 新增的服务信息
         :return:
@@ -520,7 +518,12 @@ class PrometheusUtils(object):
         self.add_rules('status', service_data.get('env'))
         reload_prometheus_url = 'http://localhost:19011/-/reload'
         # TODO 确认重载prometheus动作在哪执行
-        requests.post(reload_prometheus_url)
+        try:
+            requests.post(reload_prometheus_url)
+        except Exception as e:
+            logger.error(e)
+            logger.error("重载prometheus配置失败！")
+        return True, "success"
 
     def delete_service(self, service_data):
         """
@@ -556,3 +559,11 @@ class PrometheusUtils(object):
             json.dump(self_target_list, f2, ensure_ascii=False, indent=4)
         self.update_agent_service(
             service_data.get('ip'), 'delete', [service_data])
+        reload_prometheus_url = 'http://localhost:19011/-/reload'
+        # TODO 确认重载prometheus动作在哪执行
+        try:
+            requests.post(reload_prometheus_url)
+        except Exception as e:
+            logger.error(e)
+            logger.error("重载prometheus配置失败！")
+        return True, "success"
