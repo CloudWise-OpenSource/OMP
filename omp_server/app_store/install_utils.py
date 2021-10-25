@@ -95,7 +95,7 @@ class SerDependenceParseUtils(object):
         if obj.app_package:
             path = os.path.join(
                 PROJECT_DIR, "package_hub/verified",
-                obj.app_package.package_path)
+                obj.app_package.package_name)
             if os.path.exists(path):
                 is_pack_exist = True
         return cluster_info, instance_info, is_pack_exist
@@ -336,3 +336,26 @@ class ServiceArgsSerializer(object):
         # 如果服务未配置部署模式相关信息，那么默认为单实例模式
         ser = SerDependenceParseUtils(obj.app_name, obj.app_version)
         return ser.get_deploy_mode(obj)
+
+    def _process_continue_parse(self, obj):  # NOQA
+        """ 解析是否能够进行的核心接口 """
+        if not obj.app_package:
+            return False, f"服务{obj.app_name}无安装包"
+        # 服务级别的安装包均存在于 verified 目录内，使用 package_name 即可拼接完成
+        _path = os.path.join(
+            PROJECT_DIR,
+            "package_hub/verified/",
+            obj.app_package.package_name)
+        if not os.path.exists(_path):
+            return False, f"服务{obj.app_name}的安装包无法找到"
+        return True, "success"
+
+    def get_process_continue(self, obj):    # NOQA
+        """ 解析能否继续进行的标志接口 """
+        flag, _ = self._process_continue_parse(obj)
+        return flag
+
+    def get_process_message(self, obj):    # NOQA
+        """ 解析能否继续进行的信息接口 """
+        _, msg = self._process_continue_parse(obj)
+        return msg

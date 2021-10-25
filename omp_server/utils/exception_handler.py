@@ -9,6 +9,9 @@
 """
 整个项目内的异常处理方法
 """
+
+import logging
+
 from rest_framework.views import exception_handler
 from rest_framework.response import Response
 
@@ -17,6 +20,8 @@ from utils.common.exceptions import (
     FORMAT_ERRORS, ERROR_MESSAGE, CODE_MESSAGE
 )
 
+logger = logging.getLogger("server")
+
 
 class ExceptionResponse:
     def __init__(self, exc, context):
@@ -24,6 +29,7 @@ class ExceptionResponse:
         self.context = context
 
     def err_response(self):
+        logger.error(f"ExceptionResponse: {str(self.exc)}; {self.context}")
         response = exception_handler(self.exc, self.context)
         response_status_code = 200
         if response:
