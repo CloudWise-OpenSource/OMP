@@ -1,4 +1,3 @@
-//import ServiceManagement from "@/pages/ProductsManagement/ServiceManagement";
 import AppStore from "@/pages/AppStore";
 import AppStoreDetail from "@/pages/AppStore/config/detail";
 //import VersionManagement from "@/pages/ProductsManagement/VersionManagement";
@@ -11,6 +10,7 @@ import ExceptionList from "@/pages/ExceptionList";
 import PatrolInspectionRecord from "@/pages/PatrolInspectionRecord";
 import PatrolStrategy from "@/pages/PatrolStrategy";
 import PatrolInspectionDetail from "@/pages/PatrolInspectionRecord/config/detail";
+import ServiceManagement from "@/pages/ServiceManagement"
 import {
   DesktopOutlined,
   ClusterOutlined,
@@ -39,6 +39,11 @@ export default [
     menuIcon: <AppstoreOutlined />,
     menuKey: "/application_management",
     children: [
+      {
+        title: "服务管理",
+        path: "/application_management/service_management",
+        component: ServiceManagement,
+      },
       {
         title: "应用商店",
         path: "/application_management/app_store",
