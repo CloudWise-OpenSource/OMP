@@ -120,6 +120,7 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
         upload_obj.package_status = 1
         upload_obj.error_msg = "md5sum命令执行失败"
         upload_obj.save()
+        return None
     md5sum = md5_out[0].split()[0]
     md5 = md5sum
     upload_obj.package_md5 = md5
