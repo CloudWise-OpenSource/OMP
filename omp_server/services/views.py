@@ -1,5 +1,7 @@
 from rest_framework.viewsets import GenericViewSet
-from rest_framework.mixins import ListModelMixin
+from rest_framework.mixins import (
+    ListModelMixin, RetrieveModelMixin
+)
 from rest_framework.filters import OrderingFilter
 
 from django_filters.rest_framework.backends import DjangoFilterBackend
@@ -7,7 +9,7 @@ from django_filters.rest_framework.backends import DjangoFilterBackend
 from db_models.models import Service
 from services.services_filters import ServiceFilter
 from services.services_serializers import (
-    ServiceSerializer
+    ServiceSerializer, ServiceDetailSerializer
 )
 from utils.common.paginations import PageNumberPager
 from promemonitor.grafana_url import explain_url
@@ -38,3 +40,12 @@ class ServiceListView(GenericViewSet, ListModelMixin):
         # 获取监控及日志的url
         serializer_data = explain_url(serializer_data)
         return self.get_paginated_response(serializer_data)
+
+
+class ServiceDetailView(GenericViewSet, RetrieveModelMixin):
+    """
+        read:
+        查询服务详情
+    """
+    queryset = Service.objects.all()
+    serializer_class = ServiceDetailSerializer

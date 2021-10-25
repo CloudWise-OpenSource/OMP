@@ -4,8 +4,8 @@
 import json
 import random
 from db_models.models import (
-    Host, Env, Labels, Service, ClusterInfo,
-    ApplicationHub, ProductHub,
+    Host, Env, Labels, Service, ServiceHistory,
+    ClusterInfo, ApplicationHub, ProductHub,
 )
 from utils.plugin.crypto import AESCryptor
 
@@ -116,6 +116,24 @@ class ApplicationResourceMixin(LabelsResourceMixin):
     """ 应用资源混入类 """
     APP_NAME_START = "t_app"
 
+    def _mock_install_info(self, index):
+        """ 模拟应用安装信息 """
+        install_info = []
+        install_key_ls = ("base_dir", "log_dir", "data_dir",
+                          "username", "password")
+        for key in install_key_ls:
+            default = f"/data/app/{self.APP_NAME_START}{index}"
+            if key == "username":
+                default = "root"
+            if key == "password":
+                default = "rootPassword"
+            install_info.append({
+                "name": "xxx",
+                "key": key,
+                "default": default,
+            })
+        return json.dumps(install_info)
+
     def _create_application(self, index, is_release, app_type, label_ls, app_version):
         """ 创建应用 """
         if app_type is None:
@@ -136,7 +154,8 @@ class ApplicationResourceMixin(LabelsResourceMixin):
             app_version=app_version,
             app_description="应用描述，省略一万字...",
             app_logo="app log svg data...",
-            extend_fields=extend_fields
+            app_install_args=self._mock_install_info(index),
+            extend_fields=extend_fields,
         )
         app_obj.save()
         # 随机模拟属于多种标签情况
@@ -313,8 +332,19 @@ class ServicesResourceMixin(HostsResourceMixin, ClusterResourceMixin,
             ))
         Service.objects.bulk_create(service_ls)
 
-        return Service.objects.filter(
+        service_queryset = Service.objects.filter(
             service_instance_name__startswith=self.INSTANCE_NAME_START)
+        # 创建服务历史记录
+        history_ls = []
+        for obj in service_queryset:
+            history_ls.append(ServiceHistory(
+                username="admin",
+                description="安装实例",
+                result="success",
+                service=obj,
+            ))
+        ServiceHistory.objects.bulk_create(history_ls)
+        return service_queryset
 
     def destroy_services(self):
         """ 销毁服务 """
