@@ -115,12 +115,12 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
     upload_obj = UploadPackageHistory.objects.get(id=upload_obj)
     package_path = os.path.join(package_hub, ver_dir)
     file_name = os.path.join(package_path, package_name)
-    public_action = PublicAction(md5)
     md5_out = public_utils.local_cmd(f'md5sum {file_name}')
     if md5_out[2] != 0:
-        return public_action.update_package_status(
-            1,
-            f"md5sum命令执行失败")
+        upload_obj.package_status = 1
+        upload_obj.error_msg = "md5sum命令执行失败"
+        upload_obj.save()
+        return None
     md5sum = md5_out[0].split()[0]
     md5 = md5sum
     upload_obj.package_md5 = md5
@@ -522,9 +522,9 @@ def publish_entry(uuid):
         package_status__in=[2,
                             5]).count()
     if len(clear_dir) <= 28:
-        logger.error('{clear_dir}路径异常')
+        logger.error(f'{clear_dir}路径异常')
         return None
-    if online == 0:
+    if online == 0 or 'back_end_verified' in clear_dir:
         clear_out = public_utils.local_cmd(
             f'rm -rf {clear_dir} && mkdir {clear_dir}')
         if clear_out[2] != 0:
