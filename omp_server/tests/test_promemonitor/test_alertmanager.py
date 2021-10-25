@@ -5,7 +5,7 @@ import requests
 from django.test import TestCase
 
 from promemonitor.alertmanager import Alertmanager
-from db_models.models import MonitorUrl
+from db_models.models import MonitorUrl, Maintain
 
 
 class MockResponse:
@@ -84,9 +84,15 @@ class TestAlertmanager(TestCase):
     def test_revoke_alertmanager_maintain_by_host_list(self, mock_post):
         mock_post.return_value = self.return_revoke_alertmanager_maintain_response()
         alertmanager = Alertmanager()
+        m1 = Maintain.objects.create(
+            matcher_name="instance", matcher_value="10.0.3.71", maintain_id=1)
+        m2 = Maintain.objects.create(
+            matcher_name="instance", matcher_value="10.0.3.71", maintain_id=2)
         revoke_result = alertmanager.revoke_maintain_by_host_list(
             self.return_host_list())
         TestCase.assertIsNotNone(revoke_result, '删除维护失败')
+        m1.delete()
+        m2.delete()
 
     @mock.patch.object(requests, 'post', return_value='')
     def test_revoke_alertmanager_maintain_by_env_name(self, mock_post):

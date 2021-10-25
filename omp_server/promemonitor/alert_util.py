@@ -241,7 +241,12 @@ class AlertAnalysis:
             alert_info["env_id"] = host.env_id
             alert_info["alert_instance_name"] = host.instance_name
         else:
-            return {}  # TODO 待应用开发完成
+            host = Host.objects.filter(
+                ip=alert_info["alert_host_ip"]).first()
+            if not host:
+                return {}
+            alert_info["env_id"] = host.env_id
+            alert_info["alert_instance_name"] = host.instance_name
         alert_info.update(**self.analysis_annotations())
         # if env_id and int(env_id) != alert_info["env_id"]:
         #     return {}  # TODO 等待env开发完成

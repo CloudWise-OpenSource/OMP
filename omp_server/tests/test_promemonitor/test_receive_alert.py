@@ -49,7 +49,55 @@ class ReceiveAlertTest(AutoLoginTest):
                                     "%28irate%28node_cpu_seconds_total%7Benv%3D%22caleb%22%2Cmode%21%3D%22idle%22%7D%5B"
                                     "5m%5D%29%29%29+%2A+100+%3E%3D+10&g0.tab=1",
                     "fingerprint": "3e16190fffa56fe0"
-                }
+                },
+                {
+                    "status": "firing",
+                    "labels": {
+                        "alertname": "host cpu_used critical alert",
+                        "instance": "10.0.9.62",
+                        "job": "nodeExporter",
+                        "severity": "critical"
+                    },
+                    "annotations": {
+                        "consignee": "123456789@qq.com",
+                        "description": "主机 10.0.9.62 CPU 使用率为 10.11%, 大于阈值 10",
+                        "summary": "cpu_used (instance 10.0.7.146)"
+                    },
+                    "startsAt": "2021-06-26T08:13:32.950510932Z",
+                    "endsAt": "2021-06-26T08:15:02.950510932Z",
+                    "generatorURL": "http://centos7:19011/graph?g0.expr=sum+by%28instance%29+%28avg+without%28cpu%29+"
+                                    "%28irate%28node_cpu_seconds_total%7Benv%3D%22caleb%22%2Cmode%21%3D%22idle%22%7D%5B"
+                                    "5m%5D%29%29%29+%2A+100+%3E%3D+10&g0.tab=1",
+                    "fingerprint": "3e16190fffa56fe0"
+                },
+                {'status': 'firing',
+                 'labels': {'alertname': 'app state',
+                            'app': 'alertChannel', 'env': '118',
+                            'instance': '10.0.7.146',
+                            'job': 'alertChannelExporter',
+                            'severity': 'critical'},
+                 'annotations': {'consignee': 'cw-email-address',
+                                 'description': '主机 10.0.7.146 中的 服务 alertChannel 已经down掉超过一分钟.',
+                                 'summary': 'app state(instance 10.0.7.166)'},
+                 'startsAt': '2021-06-26T06:45:31.343952065Z',
+                 'endsAt': '0001-01-01T00:00:00Z',
+                 'generatorURL': 'http://centos7:19011/graph?g0.expr=probe_success+%3D%3D+0&g0.tab=1',
+                 'fingerprint': '941445cf659314a2'
+                 },
+                {'status': 'firing',
+                 'labels': {'alertname': 'app state',
+                            'app': 'cmdbServer', 'env': '118',
+                            'instance': '10.0.9.61',
+                            'job': 'cmdbServerExporter',
+                            'severity': 'critical'},
+                 'annotations': {'consignee': 'cw-email-address',
+                                 'description': '主机 10.0.9.61 中的 服务 cmdbServer 已经down掉超过一分钟.',
+                                 'summary': 'app state(instance 10.0.7.166)'},
+                 'startsAt': '2021-06-26T06:45:31.343952065Z',
+                 'endsAt': '0001-01-01T00:00:00Z',
+                 'generatorURL': 'http://centos7:19011/graph?g0.expr=probe_success+%3D%3D+0&g0.tab=1',
+                 'fingerprint': '941445cf659314a2'
+                 }
             ]
         }
         Host.objects.create(
