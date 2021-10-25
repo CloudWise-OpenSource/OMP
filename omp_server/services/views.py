@@ -28,7 +28,7 @@ class ServiceListView(GenericViewSet, ListModelMixin):
     filter_class = ServiceFilter
     ordering_fields = ("ip", "service_instance_name")
     # 操作描述信息
-    get_description = "查询服务"
+    get_description = "查询服务列表"
 
     def list(self, request, *args, **kwargs):
         # 获取序列化数据列表
@@ -49,3 +49,5 @@ class ServiceDetailView(GenericViewSet, RetrieveModelMixin):
     """
     queryset = Service.objects.all()
     serializer_class = ServiceDetailSerializer
+    # 操作描述信息
+    get_description = "查询服务详情"

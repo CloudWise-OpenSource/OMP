@@ -115,9 +115,6 @@ class ListServiceTest(AutoLoginTest, ServicesResourceMixin):
 class ServiceDetailTest(AutoLoginTest, ServicesResourceMixin):
     """ 服务详情测试类 """
 
-    def setUp(self):
-        super(ServiceDetailTest, self).setUp()
-
     def test_service_detail(self):
         """ 测试服务详情 """
         service_ls = self.get_services()
