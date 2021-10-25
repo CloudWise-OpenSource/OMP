@@ -1,10 +1,9 @@
 import { nonEmptyProcessing, renderDisc } from "@/utils/utils";
 import { Tooltip, Badge, Menu, Dropdown } from "antd";
-import { FilterFilled } from "@ant-design/icons";
-import OmpTableFilter from "@/components/OmpTable/components/OmpTableFilter";
 import moment from "moment";
 
-const getColumnsConfig = (queryRequest,history,queryData) => {
+const getColumnsConfig = (queryRequest, history, queryData) => {
+
   return [
     {
       title: "报告名称",
@@ -18,11 +17,9 @@ const getColumnsConfig = (queryRequest,history,queryData) => {
           <a
             style={{
               fontSize: 12,
-              // color: !record.file_name ? "rgba(0, 0, 0, 0.4)" : null,
-              // cursor: !record.file_name ? "not-allowed" : null,
             }}
             onClick={() => {
-              queryData(record.id)
+              //queryData(record.id)
               history?.push({
                 pathname: `/status-patrol/patrol-inspection-record/status-patrol-detail/${record.id}`,
               });

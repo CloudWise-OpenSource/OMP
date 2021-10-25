@@ -5,7 +5,7 @@ import {
   OmpSelect,
   OmpDrawer,
 } from "@/components";
-import { Button, message, Menu, Dropdown, Input } from "antd";
+import { Button, message, Menu, Dropdown, Input, Checkbox } from "antd";
 import { useState, useEffect, useRef } from "react";
 import { handleResponse, _idxInit } from "@/utils/utils";
 import { fetchGet, fetchPost, fetchPatch } from "@/utils/request";
@@ -16,9 +16,10 @@ import {
   DownOutlined,
   ExclamationCircleOutlined,
   SearchOutlined,
-  QuestionCircleOutlined
+  QuestionCircleOutlined,
 } from "@ant-design/icons";
 import { useHistory, useLocation } from "react-router-dom";
+import PatrolInspectionDetail from "@/pages/PatrolInspectionRecord/config/detail";
 const PatrolInspectionRecord = () => {
   const history = useHistory();
   const [loading, setLoading] = useState(false);
@@ -31,6 +32,13 @@ const PatrolInspectionRecord = () => {
   // 组件巡检modal弹框
   const [componenetAnalysisModal, setComponenetAnalysisModal] = useState(false);
 
+  const [checkboxGroupData, setcheckboxGroupData] = useState([]);
+
+  // ip列表
+  const [ipListSource, setIpListSource] = useState([]);
+  // service列表
+  const [serviceListSource, setServiceListSource] = useState([]);
+
   const [dataSource, setDataSource] = useState([]);
   const [pagination, setPagination] = useState({
     current: 1,
@@ -39,6 +47,13 @@ const PatrolInspectionRecord = () => {
     ordering: "",
     searchParams: {},
   });
+
+  // 详情数据
+  const [showDetail, setShowDetail] = useState({
+    isShow: false,
+    data: {},
+  });
+
   function fetchData(
     pageParams = { current: 1, pageSize: 10 },
     searchParams = {},
@@ -79,40 +94,97 @@ const PatrolInspectionRecord = () => {
       });
   }
 
-  const fetchDetailData = (id, setData) => {
-    fetchGet(`${apiRequest.inspection.reportDetail}/${id}/`, {
-      // params: {
-      //   page: pageParams.current,
-      //   size: pageParams.pageSize,
-      //   ordering: ordering ? ordering : null,
-      //   ...searchParams,
-      // },
+  const taskDistribution = (type, data) => {
+    setLoading(true);
+    fetchPost(apiRequest.inspection.taskDistribution, {
+      body: {
+        inspection_name: "mock",
+        inspection_type: type,
+        inspection_status: "1",
+        execute_type: "man",
+        inspection_operator: localStorage.getItem("username"),
+        env: 1,
+        ...data,
+      },
     })
       .then((res) => {
-        handleResponse(res, (res) => {
-          console.log(res);
-        });
+        if (res && res.data) {
+          if (res.data.code == 1) {
+            message.warning(res.data.message);
+          }
+          if (res.data.code == 0) {
+            message.success("任务已下发");
+            fetchData(
+              { current: pagination.current, pageSize: pagination.pageSize },
+              { inspection_name: instanceSelectValue },
+              pagination.ordering
+            );
+          }
+        }
       })
       .catch((e) => console.log(e))
       .finally(() => {
-        //setLoading(false);
+        setLoading(false);
+        setDeepAnalysisModal(false);
+        setHostAnalysisModal(false);
+        setComponenetAnalysisModal(false);
       });
+  };
+
+  // 巡检的主机ip列表
+  const fetchIPlist = () => {
+    fetchGet(apiRequest.machineManagement.ipList)
+      .then((res) => {
+        handleResponse(res, (res) => {
+          setIpListSource(res.data);
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {});
+  };
+
+  // 巡检的组件列表
+  const fetchServicelist = () => {
+    fetchGet(apiRequest.inspection.servicesList)
+      .then((res) => {
+        handleResponse(res, (res) => {
+          setServiceListSource(res.data);
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {});
   };
 
   useEffect(() => {
     fetchData();
+    fetchIPlist();
+    fetchServicelist();
   }, []);
+
+  if (showDetail.isShow) {
+    return <PatrolInspectionDetail data={showDetail.data} />;
+  }
 
   return (
     <OmpContentWrapper>
       <div style={{ display: "flex" }}>
-        <Button type="primary" onClick={()=>setDeepAnalysisModal(true)}>深度分析</Button>
+        <Button type="primary" onClick={() => setDeepAnalysisModal(true)}>
+          深度分析
+        </Button>
 
-        <Button type="primary" style={{ marginLeft: 10 }}>
+        <Button
+          type="primary"
+          onClick={() => setHostAnalysisModal(true)}
+          style={{ marginLeft: 10 }}
+        >
           主机巡检
         </Button>
 
-        <Button type="primary" style={{ marginLeft: 10 }}>
+        <Button
+          type="primary"
+          onClick={() => setComponenetAnalysisModal(true)}
+          style={{ marginLeft: 10 }}
+        >
           组件巡检
         </Button>
 
@@ -205,8 +277,8 @@ const PatrolInspectionRecord = () => {
                 pagination.ordering
               );
             },
-            history,
-            fetchDetailData
+            history
+            //fetchDetailData
           )}
           dataSource={dataSource}
           pagination={{
@@ -235,7 +307,7 @@ const PatrolInspectionRecord = () => {
         />
       </div>
       <OmpMessageModal
-        visibleHandle={[deepAnalysisModal, setDeepAnalysisModal] }
+        visibleHandle={[deepAnalysisModal, setDeepAnalysisModal]}
         title={
           <span>
             <ExclamationCircleOutlined
@@ -252,12 +324,169 @@ const PatrolInspectionRecord = () => {
         }
         loading={loading}
         onFinish={() => {
-          //fetchRestartMonitorAgent();
+          taskDistribution("deep");
         }}
       >
         <div style={{ padding: "20px" }}>
           确定要执行 <span style={{ fontWeight: 500 }}>深度分析</span> 操作 ？
         </div>
+      </OmpMessageModal>
+
+      <OmpMessageModal
+        afterClose={() => {
+          setcheckboxGroupData([]);
+        }}
+        visibleHandle={[hostAnalysisModal, setHostAnalysisModal]}
+        disabled={checkboxGroupData.length == 0}
+        title={
+          <span>
+            <ExclamationCircleOutlined
+              style={{
+                fontSize: 20,
+                color: "#f0a441",
+                paddingRight: "10px",
+                position: "relative",
+                top: 2,
+              }}
+            />
+            主机巡检
+          </span>
+        }
+        loading={loading}
+        onFinish={() => {
+          taskDistribution("host", {
+            hosts: checkboxGroupData,
+          });
+        }}
+      >
+        <>
+          <div
+            style={{
+              borderBottom: "1px solid #E9E9E9",
+              paddingBottom: 10,
+              marginBottom: 10,
+            }}
+          >
+            <Checkbox
+              indeterminate={
+                checkboxGroupData.length !== 0 &&
+                checkboxGroupData.length !== ipListSource.length
+              }
+              // onChange={this.onCheckAllChange}
+              checked={checkboxGroupData.length == ipListSource.length}
+              onChange={(e) => {
+                //console.log(e.target.checked)
+                if (e.target.checked) {
+                  setcheckboxGroupData(ipListSource);
+                } else {
+                  setcheckboxGroupData([]);
+                }
+              }}
+            >
+              全选
+            </Checkbox>
+          </div>
+          <Checkbox.Group
+            style={{ width: "100%" }}
+            onChange={(e) => {
+              setcheckboxGroupData(e);
+            }}
+            value={checkboxGroupData}
+          >
+            <div style={{ display: "flex", flexWrap: "wrap" }}>
+              {ipListSource.map((item) => {
+                return (
+                  <div key={item} style={{ padding: "0 10px 15px 0" }}>
+                    <Checkbox key={item} value={item}>
+                      {item}
+                    </Checkbox>
+                  </div>
+                );
+              })}
+            </div>
+          </Checkbox.Group>
+        </>
+      </OmpMessageModal>
+
+      <OmpMessageModal
+        afterClose={() => {
+          setcheckboxGroupData([]);
+        }}
+        visibleHandle={[componenetAnalysisModal, setComponenetAnalysisModal]}
+        disabled={checkboxGroupData.length == 0}
+        title={
+          <span>
+            <ExclamationCircleOutlined
+              style={{
+                fontSize: 20,
+                color: "#f0a441",
+                paddingRight: "10px",
+                position: "relative",
+                top: 2,
+              }}
+            />
+            组件巡检
+          </span>
+        }
+        loading={loading}
+        onFinish={() => {
+          taskDistribution("service", {
+            service: checkboxGroupData,
+          });
+        }}
+      >
+        <>
+          <div
+            style={{
+              borderBottom: "1px solid #E9E9E9",
+              paddingBottom: 10,
+              marginBottom: 10,
+            }}
+          >
+            <Checkbox
+              indeterminate={
+                checkboxGroupData.length !== 0 &&
+                checkboxGroupData.length !== serviceListSource.length
+              }
+              // onChange={this.onCheckAllChange}
+              checked={checkboxGroupData.length == serviceListSource.length}
+              onChange={(e) => {
+                //console.log(e.target.checked)
+                if (e.target.checked) {
+                  setcheckboxGroupData(
+                    serviceListSource.map((i) => i.service__id)
+                  );
+                } else {
+                  setcheckboxGroupData([]);
+                }
+              }}
+            >
+              全选
+            </Checkbox>
+          </div>
+          <Checkbox.Group
+            style={{ width: "100%" }}
+            onChange={(e) => {
+              setcheckboxGroupData(e);
+            }}
+            value={checkboxGroupData}
+          >
+            <div style={{ display: "flex", flexWrap: "wrap" }}>
+              {serviceListSource.map((item) => {
+                return (
+                  <div
+                    key={item.service__id}
+                    style={{ padding: "0 10px 15px 0" }}
+                  >
+                    <Checkbox key={item.service__id} value={item.service__id}>
+                      {item.service__app_name}
+                    </Checkbox>
+                  </div>
+                );
+              })}
+            </div>
+          </Checkbox.Group>
+        </>
       </OmpMessageModal>
     </OmpContentWrapper>
   );

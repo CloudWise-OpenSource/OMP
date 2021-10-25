@@ -8,6 +8,7 @@ import {
   Select,
   Tooltip,
   TimePicker,
+  message
 } from "antd";
 import { useState, useEffect, useRef } from "react";
 import { handleResponse } from "@/utils/utils";
@@ -83,7 +84,7 @@ const PatrolStrategy = () => {
                   `${crontab_detail.hour}:${crontab_detail.minute}`,
                   "HH:mm"
                 ),
-                day: crontab_detail.day,
+                month: crontab_detail.day,
               },
             });
           }
@@ -161,7 +162,7 @@ const PatrolStrategy = () => {
               queryData.strategy.time.format("HH:mm").split(":")[1] || "*",
             month: "*",
             day_of_week: queryData.strategy.week || "*",
-            day: queryData.strategy.month || "*",
+            day:  queryData.strategy.month || "*",
           },
           env: 1,
         },
