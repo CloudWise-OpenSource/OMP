@@ -2,8 +2,6 @@ import random
 from rest_framework.reverse import reverse
 
 from db_models.models import Service
-from services.views import ServiceListView
-
 from tests.base import AutoLoginTest
 from tests.mixin import (
     LabelsResourceMixin, ServicesResourceMixin
@@ -98,7 +96,7 @@ class ListServiceTest(AutoLoginTest, ServicesResourceMixin):
 
         # 传递排序字段，按照指定字段排序
         reverse_flag = random.choice(("", "-"))
-        order_field = random.choice(ServiceListView.ordering_fields)
+        order_field = "service_instance_name"
         ordering = f"{reverse_flag}{order_field}"
         resp = self.get(self.list_service_url, {
             "ordering": ordering
