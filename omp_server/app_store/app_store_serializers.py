@@ -148,6 +148,7 @@ class RemovePackageSerializer(Serializer):
         queryset = UploadPackageHistory.objects.filter(
             operation_uuid=operation_uuid,
             package_name__in=package_names,
+            package_parent__isnull=True
         )
         if not queryset.exists() or \
                 len(queryset) != len(package_names):
