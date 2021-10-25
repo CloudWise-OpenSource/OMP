@@ -248,7 +248,8 @@ class ExplainYml:
     def __init__(self, db_obj, yaml_dir):
         # md5 的
         self.db_obj = db_obj
-        self.yaml_dir = yaml_dir
+        self.yaml_exc = yaml_dir
+        self.yaml_dir = yaml_dir.rsplit("/", 1)[1]
         self.check_obj = FiledCheck(self.yaml_dir, self.db_obj)
 
     def explain_yml(self):
@@ -257,7 +258,7 @@ class ExplainYml:
         """
         kinds = ['product', 'service', 'upgrade', 'component']
         try:
-            with open(self.yaml_dir, "r", encoding="utf8") as fp:
+            with open(self.yaml_exc, "r", encoding="utf8") as fp:
                 settings = yaml.load(fp, Loader=yaml.FullLoader)
         except Exception as e:
             self.db_obj.update_package_status(
