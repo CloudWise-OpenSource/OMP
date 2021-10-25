@@ -436,6 +436,21 @@ class ExplainYml:
         return True, db_filed
 
 
+def exec_clear(clear_dir):
+    online = UploadPackageHistory.objects.filter(
+        is_deleted=False,
+        package_status__in=[2,
+                            5]).count()
+    if len(clear_dir) <= 28:
+        logger.error(f'{clear_dir}路径异常')
+        return None
+    if online == 0 or 'back_end_verified' in clear_dir:
+        clear_out = public_utils.local_cmd(
+            f'rm -rf {clear_dir} && mkdir {clear_dir}')
+        if clear_out[2] != 0:
+            logger.error('清理环境失败')
+
+
 @shared_task
 def publish_bak_end(uuid, exc_len):
     # 增加try，并增加超时机制释放锁
@@ -454,6 +469,9 @@ def publish_bak_end(uuid, exc_len):
             else:
                 if valid_uuids != 0:
                     publish_entry(uuid)
+                else:
+                    exec_clear(os.path.join(
+                        package_hub, package_dir.get('back_end_verified')))
                 exc_task = False
     finally:
         re = redis.Redis(host=OMP_REDIS_HOST, port=OMP_REDIS_PORT, db=9,
@@ -518,15 +536,4 @@ def publish_entry(uuid):
         os.path.dirname(os.path.dirname(tmp_dir))
     UploadPackageHistory.objects.filter(id__in=valid_packages_obj).update(
         package_status=3)
-    online = UploadPackageHistory.objects.filter(
-        is_deleted=False,
-        package_status__in=[2,
-                            5]).count()
-    if len(clear_dir) <= 28:
-        logger.error(f'{clear_dir}路径异常')
-        return None
-    if online == 0 or 'back_end_verified' in clear_dir:
-        clear_out = public_utils.local_cmd(
-            f'rm -rf {clear_dir} && mkdir {clear_dir}')
-        if clear_out[2] != 0:
-            logger.error('清理环境失败')
+    exec_clear(clear_dir)
