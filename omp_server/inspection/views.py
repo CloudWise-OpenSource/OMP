@@ -167,7 +167,9 @@ class InspectionCrontabView(RetrieveModelMixin, ListModelMixin, GenericViewSet,
         # 判断是否需要下发任务到celery：0-开启，1-关闭
         is_success = True
         if request.data.get('is_start_crontab') == 0:
-            task_name = 'inspection_cron_task'
+            tp = {'0': 'deep', '1': 'host', '2': 'service'}
+            task_name = \
+                f"inspection_cron_task_{tp.get(request.data.get('job_type'))}"
             task_func = 'inspection.tasks.inspection_crontab'
             cron_obj = CrontabUtils(task_name=task_name, task_func=task_func,
                                     task_kwargs=request.data)
