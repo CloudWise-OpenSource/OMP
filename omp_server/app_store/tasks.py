@@ -209,7 +209,7 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
                 package_status=0,
                 package_parent=upload_obj
             )
-            explain_service_yml[1]['package_name'] = service_pk
+            explain_service_yml[1]['package_name'] = service_pk_name
             explain_service_list.append(explain_service_yml[1])
         explain_yml[1]['product_service'] = explain_service_list
         tmp_dir = tmp_dir + "-" + versions
