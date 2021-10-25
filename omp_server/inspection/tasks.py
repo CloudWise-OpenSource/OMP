@@ -20,15 +20,20 @@ logging.getLogger("paramiko").setLevel(logging.WARNING)
 logger = get_task_logger("celery_log")
 
 
-def get_hosts_data(env, hosts, history_id, report_id, target):
+def get_hosts_data(env, hosts, history_id, report_id):
     """
     查询多主机prometheus数据，组装后进行反填
     :env: 环境，例：demo
     :hosts: 主机列表，例：[{"id":"主键id", "ip":"主机ip"}]
     :history_id: 巡检历史表id，例：1
     :report_id: 巡检报告表id，例：1
-    :target: 自定义的实例方法，目的是统一执行实例方法并统一返回值，例：['rate_cpu', 'rate_memory']
     """
+    # target为实例方法，目的是统一执行实例方法并统一返回值
+    target = ['rate_cpu', 'rate_memory', 'rate_max_disk', 'rate_exchange_disk',
+              'run_time', 'avg_load',
+              'total_file_descriptor', 'rate_io_wait',
+              'network_bytes_total', 'disk_io', 'run_status']
+
     temp_list = list()
     tag_total_num = tag_error_num = 0
     for instance in hosts:
@@ -71,23 +76,13 @@ def get_prometheus_data(env, hosts, services, history_id, report_id, handle):
     try:
         if handle == 'host':
             # 主机巡检
-            # target为实例方法，目的是统一执行实例方法并统一返回值
-            target = ['rate_cpu', 'rate_memory', 'rate_max_disk',
-                      'rate_exchange_disk', 'run_time', 'avg_load',
-                      'total_file_descriptor', 'rate_io_wait',
-                      'network_bytes_total', 'disk_io', 'run_status']
-            get_hosts_data(env.name, hosts, history_id, report_id, target)
+            get_hosts_data(env.name, hosts, history_id, report_id)
         elif handle == 'service':
             # 组件巡检
             target_service_run(env, services, history_id, report_id)
         elif handle == 'deep':
             # 主机巡检
-            # target为实例方法，目的是统一执行实例方法并统一返回值
-            target = ['rate_cpu', 'rate_memory', 'rate_max_disk',
-                      'rate_exchange_disk', 'run_time', 'avg_load',
-                      'total_file_descriptor', 'rate_io_wait',
-                      'network_bytes_total', 'disk_io', 'run_status']
-            get_hosts_data(env.name, hosts, history_id, report_id, target)
+            get_hosts_data(env.name, hosts, history_id, report_id)
             # 组件巡检
             target_service_run(env, services, history_id, report_id)
     except Exception as e:
