@@ -27,22 +27,19 @@ router.register("services", ServiceListView, basename="appServices")
 router.register("upload", UploadPackageView, basename="upload")
 router.register("remove", RemovePackageView, basename="remove")
 router.register("componentDetail", ComponentDetailView,
-                basename='componentDetail')
-router.register("serviceDetail", ServiceDetailView, basename='serviceDetail')
+                basename="componentDetail")
+router.register("serviceDetail", ServiceDetailView,
+                basename="appServiceDetail")
 router.register("pack_verification_results",
                 ServicePackPageVerificationView, basename="pack_verification_results")
 router.register("publish", PublishViewSet, basename="publish")
-router.register(
-    "executeLocalPackageScan", ExecuteLocalPackageScanView,
-    basename='executeLocalPackageScan')
-router.register(
-    "localPackageScanResult", LocalPackageScanResultView,
-    basename='localPackageScanResult')
+router.register("executeLocalPackageScan", ExecuteLocalPackageScanView,
+                basename="executeLocalPackageScan")
+router.register("localPackageScanResult", LocalPackageScanResultView,
+                basename="localPackageScanResult")
 
 # 安装部分使用路由
-router.register(
-    "componentEntrance", ComponentEntranceView,
-    basename='componentEntrance')
-router.register(
-    "productEntrance", ProductEntranceView,
-    basename='productEntrance')
+router.register("componentEntrance", ComponentEntranceView,
+                basename="componentEntrance")
+router.register("productEntrance", ProductEntranceView,
+                basename="productEntrance")

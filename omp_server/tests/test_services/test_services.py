@@ -110,3 +110,32 @@ class ListServiceTest(AutoLoginTest, ServicesResourceMixin):
         self.assertEqual(instance_name_ls, target_instance_name_ls)
 
         self.destroy_services()
+
+
+class ServiceDetailTest(AutoLoginTest, ServicesResourceMixin):
+    """ 服务详情测试类 """
+
+    def setUp(self):
+        super(ServiceDetailTest, self).setUp()
+
+    def test_service_detail(self):
+        """ 测试服务详情 """
+        service_ls = self.get_services()
+
+        # 使用不存在 id -> 未找到
+        resp = self.get(reverse("services-detail", [9999])).json()
+        self.assertDictEqual(resp, {
+            'code': 1,
+            'message': '未找到',
+            'data': None
+        })
+
+        # 使用存在 id -> 查询成功
+        resp = self.get(reverse("services-detail", [
+            random.choice(service_ls).id
+        ])).json()
+        self.assertEqual(resp.get("code"), 0)
+        self.assertEqual(resp.get("message"), "success")
+        self.assertTrue(resp.get("data") is not None)
+
+        self.destroy_services()

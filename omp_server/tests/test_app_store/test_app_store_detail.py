@@ -68,7 +68,7 @@ class AppStoreDetailTest(AutoLoginTest):
         测试产品详情
         """
         # pro = ProductHub.objects.get(pro_name='dosm', pro_version='5.2')
-        product_detail_url = reverse("serviceDetail-list")
+        product_detail_url = reverse("appServiceDetail-list")
         resp = self.get(product_detail_url, data={"pro_name": "dosm"}).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
