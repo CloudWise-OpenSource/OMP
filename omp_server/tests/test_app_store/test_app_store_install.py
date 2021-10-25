@@ -15,10 +15,13 @@ import json
 from rest_framework.reverse import reverse
 
 from db_models.models import (
-    ApplicationHub,
+    ApplicationHub, ProductHub
 )
 from tests.base import AutoLoginTest
-from tests.mixin import ApplicationResourceMixin
+from tests.mixin import (
+    ApplicationResourceMixin,
+    ProductResourceMixin
+)
 
 
 class ComponentEntranceTest(AutoLoginTest, ApplicationResourceMixin):
@@ -42,7 +45,7 @@ class ComponentEntranceTest(AutoLoginTest, ApplicationResourceMixin):
         self.destroy_application()
         self.destroy_labels()
 
-    def make_unique_data(self, dic):    # NOQA
+    def make_unique_app_data(self, dic):    # NOQA
         obj_dic = {
             "is_release": 1,
             "app_type": 0,
@@ -72,7 +75,7 @@ class ComponentEntranceTest(AutoLoginTest, ApplicationResourceMixin):
             "app_version": "8u211",
             "extend_fields": {"base_env": True}
         }
-        self.make_unique_data(app_base_1)
+        self.make_unique_app_data(app_base_1)
 
     def make_base_app_2(self):  # NOQA
         app_base_2 = {
@@ -89,7 +92,7 @@ class ComponentEntranceTest(AutoLoginTest, ApplicationResourceMixin):
                 },
             }
         }
-        self.make_unique_data(app_base_2)
+        self.make_unique_app_data(app_base_2)
 
     def make_base_app_3(self):  # NOQA
         app_base_3 = {
@@ -103,9 +106,9 @@ class ComponentEntranceTest(AutoLoginTest, ApplicationResourceMixin):
             ),
             "extend_fields": {}
         }
-        self.make_unique_data(app_base_3)
+        self.make_unique_app_data(app_base_3)
 
-    def make_unrelease_app(self):
+    def make_unrelease_app(self):   # NOQA
         app_base_4 = {
             "app_name": "test_app4",
             "app_version": "1.0",
@@ -115,7 +118,7 @@ class ComponentEntranceTest(AutoLoginTest, ApplicationResourceMixin):
             ),
             "extend_fields": {}
         }
-        self.make_unique_data(app_base_4)
+        self.make_unique_app_data(app_base_4)
 
     def test_dependence_one_level(self):
         """ 一层依赖信息单元测试 """
@@ -143,6 +146,7 @@ class ComponentEntranceTest(AutoLoginTest, ApplicationResourceMixin):
         self.destroy_app()
 
     def test_no_release_app_dependence(self):
+        """ 测试缺少服务依赖信息场景 """
         self.make_base_app_1()
         self.make_base_app_2()
         self.make_base_app_3()
@@ -154,3 +158,104 @@ class ComponentEntranceTest(AutoLoginTest, ApplicationResourceMixin):
                 if not el.get("process_continue"):
                     process_continue = False
         self.assertEqual(process_continue, False)
+
+
+class ProductEntranceTest(ComponentEntranceTest, ProductResourceMixin):
+
+    def setUp(self):
+        super(ProductEntranceTest, self).setUp()
+        self.productEntrance_url = reverse(
+            "productEntrance-list")
+
+    def test_normal_res(self):
+        self.get_application()
+        self.get_product()
+        res = self.get(self.productEntrance_url).json()
+        self.assertEqual(res.get("code"), 0)
+        self.assertEqual(len(res.get("data", [])) != 0, True)
+        self.destroy_application()
+        self.destroy_labels()
+        self.destroy_product()
+
+    def make_pro_1(self):   # NOQA
+        """
+        创建不依赖其他应用的应用，应用下具备2个服务
+        :return:
+        """
+        # 创建产品下的服务
+        test_pro_ser_1 = {
+            "app_name": "test_pro_ser_1",
+            "app_version": "1.0",
+            "app_dependence": json.dumps(
+                [{"name": "test_app1", "version": "8u211"}]
+            )
+        }
+        self.make_unique_app_data(test_pro_ser_1)
+        test_pro_ser_2 = {
+            "app_name": "test_pro_ser_2",
+            "app_version": "1.0",
+            "app_dependence": json.dumps(
+                [{"name": "test_app1", "version": "8u211"}]
+            )
+        }
+        self.make_unique_app_data(test_pro_ser_2)
+        pro_dic = {
+            "is_release": 1,
+            "pro_name": "test_pro_1",
+            "pro_version": "1.0",
+            "pro_dependence": json.dumps([
+                {"name": "test_pro_2", "version": "1.0"},
+                {"name": "test_pro_30", "version": "1.0"},
+            ]),
+            "pro_services": json.dumps([
+                {"name": "test_pro_ser_1", "version": "1.0"},
+                {"name": "test_pro_ser_2", "version": "1.0"}
+            ])
+        }
+        ProductHub(**pro_dic).save()
+
+    def make_pro_2(self):   # NOQA
+        pro_dic = {
+            "is_release": 1,
+            "pro_name": "test_pro_2",
+            "pro_version": "1.2",
+            "pro_dependence": json.dumps([
+                {"name": "test_pro_1", "version": "1.0"},
+                {"name": "test_pro_2", "version": "1.0"},
+            ]),
+            "pro_services": json.dumps([
+                {"name": "test_pro_ser_3", "version": "2.0"},
+                {"name": "test_pro_ser_4", "version": "2.0"},
+                {"name": "test_pro_ser_5", "version": "3.0"},
+            ])
+        }
+        ProductHub(**pro_dic).save()
+
+    def make_pro_3(self):   # NOQA
+        pro_dic = {
+            "is_release": 1,
+            "pro_name": "test_pro_3",
+            "pro_version": "1.2",
+            "pro_dependence": json.dumps([
+                {"name": "test_pro_1", "version": "1.0"},
+            ]),
+            "pro_services": json.dumps([
+                {"name": "test_pro_ser_3", "version": "2.0"},
+                {"name": "test_pro_ser_4", "version": "2.0"},
+                {"name": "test_pro_ser_5", "version": "3.0"},
+            ])
+        }
+        ProductHub(**pro_dic).save()
+
+    def test_pro_component_dependence(self):
+        self.make_pro_1()
+        res = self.get(self.productEntrance_url).json()
+        self.assertEqual(res.get("code"), 0)
+
+    def test_pro_pro_dependence(self):
+        """ 测试产品间有依赖场景 """
+        self.make_pro_1()
+        self.make_pro_2()
+        self.make_pro_3()
+        res = self.get(self.productEntrance_url).json()
+        self.assertEqual(res.get("code"), 0)

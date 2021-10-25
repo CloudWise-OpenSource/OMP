@@ -529,6 +529,7 @@ class ServiceConnectInfo(TimeStampMixin):
 class ClusterInfo(TimeStampMixin, DeleteMixin):
     """ 集群信息表 """
 
+    objects = None
     cluster_service_name = models.CharField(
         "集群所属服务", max_length=36,
         null=True, blank=True, help_text="集群所属服务")
@@ -562,6 +563,25 @@ class ClusterInfo(TimeStampMixin, DeleteMixin):
 
     def __str__(self):
         return f"<instance> of {self.cluster_name}"
+
+
+class Product(TimeStampMixin):
+    """ 已安装产品表 """
+    objects = None
+    # 用于存储安装产品时使用的实例名称
+    product_instance_name = models.CharField(
+        "产品实例名称", max_length=64,
+        null=True, blank=True, help_text="安装产品时输入的实例名称")
+    # 所属产品的相关信息，可通过此外键查看其对应的产品仓库中的数据
+    product = models.ForeignKey(
+        ProductHub, null=True, blank=True,
+        on_delete=models.SET_NULL, help_text="所属产品")
+
+    class Meta:
+        """元数据"""
+        db_table = 'omp_product_instance'
+        verbose_name = verbose_name_plural = "产品实例表"
+        ordering = ("-created",)
 
 
 class Service(TimeStampMixin):
