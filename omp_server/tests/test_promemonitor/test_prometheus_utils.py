@@ -12,10 +12,27 @@ prometheus 工具集的单元测试代码
 import os
 import uuid
 import shutil
+import json
+from unittest import mock
+
+import requests
 
 from tests.base import BaseTest
 from omp_server.settings import PROJECT_DIR
 from promemonitor.prometheus_utils import PrometheusUtils
+
+
+class MockResponse:
+    """
+    自定义mock response类
+    """
+    status_code = 0
+
+    def __init__(self, data):
+        self.text = json.dumps(data)
+
+    def json(self):
+        return json.loads(self.text)
 
 
 class PrometheusUtilsTest(BaseTest):
@@ -39,6 +56,9 @@ class PrometheusUtilsTest(BaseTest):
             os.makedirs(self.prometheus_obj.prometheus_rules_path)
         if not os.path.exists(self.prometheus_obj.prometheus_targets_path):
             os.makedirs(self.prometheus_obj.prometheus_targets_path)
+        if not os.path.exists(self.prometheus_obj.prometheus_conf_path):
+            with open(self.prometheus_obj.prometheus_conf_path, 'w') as pf:
+                pf.write('')
         self.nodes_data = [
             {
                 "data_path": "/data",
@@ -206,6 +226,42 @@ class PrometheusUtilsTest(BaseTest):
                 f"/tmp/{str(uuid.uuid4())}",
                 []
             )[0], False)
+
+    @mock.patch.object(requests, 'post', return_value='')
+    def test_add_service(self, mock_post):
+        mock_post.return_value = MockResponse(
+            {"return_code": 0, "message": "success"})
+        test_service_data = {
+            "service_name": "mysql",
+            "instance_name": "mysql_dosm",
+            "data_path": "/data/appData/mysql",
+            "log_path": "/data/logs/mysql",
+            "env": "default",
+            "ip": "127.0.0.1",
+            "listen_port": "3306"
+        }
+        flag, msg = self.prometheus_obj.add_service(test_service_data)
+        self.assertEqual(flag, True)
+
+    @mock.patch.object(requests, 'post', return_value='')
+    def test_delete_service(self, mock_post):
+        mock_post.return_value = MockResponse(
+            {"return_code": 0, "message": "success"})
+        mysql_json_file = os.path.join(
+            self.prometheus_obj.prometheus_targets_path, 'mysqlExporter_all.json')
+        with open(mysql_json_file, 'w') as mp:
+            mp.write('')
+        test_service_data = {
+            "service_name": "mysql",
+            "instance_name": "mysql_dosm",
+            "data_path": "/data/appData/mysql",
+            "log_path": "/data/logs/mysql",
+            "env": "default",
+            "ip": "127.0.0.1",
+            "listen_port": "3306"
+        }
+        flag, msg = self.prometheus_obj.delete_service(test_service_data)
+        self.assertEqual(flag, True)
 
     def tearDown(self) -> None:
         """

@@ -15,14 +15,20 @@ import json
 import pickle
 import shutil
 import logging
+import requests
 
 # import requests
 from ruamel.yaml import YAML
 
 from omp_server.settings import PROJECT_DIR
+from utils.parse_config import MONITOR_PORT
+
 # from utils.parse_config import MONITOR_PORT
 
 logger = logging.getLogger("server")
+
+CW_TOKEN = {
+    'CWAccessToken': 'FnQGiEXrYr6n8diKuY6cc61Zw3MMyLW9icwiUlHjyoAkBsBKCDIqmDZbf'}
 
 AGREE = "http"
 # 内置exporter列表
@@ -153,6 +159,11 @@ class PrometheusUtils(object):
             "DATA_PATH", data_path).replace("\n", "").replace(
             " ", ""
         ) + str(num)
+
+    @staticmethod
+    def get_service_port(service_name):
+        port = MONITOR_PORT.get(service_name)
+        return port
 
     def make_data_node_rule(self, level, data_path, env="default"):
         """
@@ -386,4 +397,173 @@ class PrometheusUtils(object):
                     break
         with open(self.node_exporter_targets_file, "w") as f2:
             json.dump(node_target_list, f2, ensure_ascii=False, indent=4)
+        return True, "success"
+
+    def update_agent_service(self, dest_ip, action, services_data):
+        """
+        接收omp传来的参数，解析后发送到monitor_agent
+        :param action: 更新动作 add or delete
+        :param services_data: 要更新的服务信息
+        :param dest_ip:
+        :return:
+        """
+        json_dict = dict()
+        json_content = list()
+        headers = CW_TOKEN
+        dest_url = ''
+        if action == 'add':
+            dest_url = 'http://{}:{}/update/service/add'.format(dest_ip, self.monitor_port)  # NOQA
+            for sd in services_data:
+                service_temp_data = dict()
+                service_temp_data['service_port'] = sd.get('port')
+                if sd.get('service_name') in EXPORTERS:
+                    service_temp_data['exporter_port'] = self.get_service_port(
+                        '{}Exporter'.format(sd.get('service_name')))
+                else:
+                    service_temp_data['exporter_port'] = 0
+                if sd.get('service_name') in METRICS.keys():
+                    service_temp_data['exporter_metric'] = METRICS.get(
+                        sd.get('service_name'), 0)
+                else:
+                    service_temp_data['exporter_metric'] = 'metrics'
+                service_temp_data['username'] = sd.get('username', '')
+                service_temp_data['password'] = sd.get('password', '')
+                service_temp_data['name'] = sd.get('service_name')
+                # omp1.3 新增对有进程无端口服务的监控
+                service_temp_data['only_process'] = sd.get('only_process')
+                service_temp_data['process_key_word'] = sd.get(
+                    'process_key_word')
+                json_content.append(service_temp_data)
+        elif action == 'delete':
+            dest_url = 'http://{}:{}/update/service/delete'.format(dest_ip, self.monitor_port)  # NOQA
+            for sd in services_data:
+                json_content.append(sd.get('service_name'))
+
+        json_dict['services'] = json.dumps(json_content)
+        try:
+            result = requests.post(
+                dest_url, headers=headers, data=json_dict).json()
+            if result['return_code'] == 0:
+                logger.info('向{}更新服务{}配置成功！'.format(
+                    dest_ip, services_data[0].get('service_name')))
+            else:
+                logger.error('向{}更新服务{}配置失败！'.format(
+                    dest_ip, services_data[0].get('service_name')))
+        except requests.exceptions.ConnectionError:
+            logger.error('向{}更新服务{}配置失败！'.format(
+                dest_ip, services_data[0].get('service_name')))
+            exit(-1)
+
+    def add_service(self, service_data):
+        """
+        service_data = {
+            "service_name": "mysql",
+            "instance_name": "mysql_dosm",
+            "data_path": "/data/appData/mysql",
+            "log_path": "/data/logs/mysql",
+            "env": "default",
+            "ip": "127.0.0.1",
+            "listen_port": "3306"
+        }
+        添加有exporter的组件信息到各自的exporter监控
+        :param service_data: 新增的服务信息
+        :return:
+        """
+        if not service_data:
+            return None
+
+        with open(self.prometheus_conf_path, 'r') as fr:
+            fr_content = fr.read()
+        job_name_str = "'{}Exporter".format(service_data.get('service_name'))
+        if job_name_str not in fr_content:  # TODO 采用读写yaml文件的方式
+            new_job_chunk = "\n  - job_name: '{}Exporter'\n    metrics_path: /metrics/monitor/{}\n    scheme: http\n    file_sd_configs:\n    - refresh_interval: 30s\n      files:\n      - targets/{}Exporter_all.json".format(
+                service_data.get('service_name'), service_data.get(
+                    'service_name'),
+                service_data.get('service_name'))
+            fw_content = fr_content + new_job_chunk
+            with open(self.prometheus_conf_path, 'w') as fw:
+                fw.write(fw_content)
+        self_exporter_target_file = os.path.join(self.prometheus_targets_path,
+                                                 "{}Exporter_all.json".format(service_data["service_name"]))
+        self_target_list = list()
+        self_target_ele = ""
+        try:
+            self_target_ele = {
+                "labels": {
+                    "instance": "{}".format(service_data["ip"]),
+                    "instance_name": "{}".format(service_data["instance_name"]),
+                    "env": "{}".format(service_data["env"])
+                },
+                "targets": [
+                    "{}:{}".format(service_data["ip"], self.monitor_port)
+                ]
+            }
+        except KeyError as func_e:
+            logger.error(func_e)
+        self_target_list.append(self_target_ele)
+
+        if os.path.exists(self_exporter_target_file):
+            with open(self_exporter_target_file, 'r') as f:
+                content = f.read()
+                if content:
+                    old_self_target_list = json.loads(content)
+                    self_target_list.extend(old_self_target_list)
+        self_target_list = self.json_distinct(self_target_list)
+
+        with open(self_exporter_target_file, 'w') as f2:
+            json.dump(self_target_list, f2, ensure_ascii=False, indent=4)
+
+        self.update_agent_service(
+            service_data.get('ip'), 'add', [service_data])
+        self.add_rules('status', service_data.get('env'))
+        reload_prometheus_url = 'http://localhost:19011/-/reload'
+        # TODO 确认重载prometheus动作在哪执行
+        try:
+            requests.post(reload_prometheus_url)
+        except Exception as e:
+            logger.error(e)
+            logger.error("重载prometheus配置失败！")
+        return True, "success"
+
+    def delete_service(self, service_data):
+        """
+        从自有的exporter中删除对应的服务信息
+        :param service_data:
+        :return:
+        """
+        if not service_data:
+            return None
+
+        self_exporter_target_file = os.path.join(self.prometheus_targets_path,
+                                                 "{}Exporter_all.json".format(service_data["service_name"]))
+
+        self_target_list = list()
+        if os.path.exists(self_exporter_target_file):
+            with open(self_exporter_target_file, 'r') as f:
+                content = f.read()
+                if content:
+                    self_target_list = json.loads(content)
+        else:
+            logger.error("{}不存在！".format(self_exporter_target_file))
+            return None
+        try:
+            instance = service_data['ip']
+            env = service_data['env']
+            for service in self_target_list:
+                if (instance == service["labels"]["instance"]) and (env == service["labels"]["env"]):
+                    self_target_list.remove(service)
+        except KeyError as func_e:
+            logger.error(func_e)
+
+        with open(self_exporter_target_file, 'w') as f2:
+            json.dump(self_target_list, f2, ensure_ascii=False, indent=4)
+        self.update_agent_service(
+            service_data.get('ip'), 'delete', [service_data])
+        reload_prometheus_url = 'http://localhost:19011/-/reload'
+        # TODO 确认重载prometheus动作在哪执行
+        try:
+            requests.post(reload_prometheus_url)
+        except Exception as e:
+            logger.error(e)
+            logger.error("重载prometheus配置失败！")
         return True, "success"
