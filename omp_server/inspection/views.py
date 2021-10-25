@@ -18,7 +18,7 @@ from inspection.tasks import get_prometheus_data
 from db_models.models import (
     InspectionHistory, InspectionCrontab, InspectionReport)
 from inspection.filters import (
-    InspectionHistoryFilter, InspectionCrontabFilter, InspectionReportFilter)
+    InspectionHistoryFilter, InspectionCrontabFilter,)
 from inspection.serializers import (
     InspectionHistorySerializer, InspectionCrontabSerializer,
     InspectionReportSerializer)
@@ -87,7 +87,7 @@ class InspectionHistoryView(ListModelMixin, GenericViewSet, CreateModelMixin):
         num = InspectionHistory.objects.filter(
             start_time__year=now.year, start_time__month=now.month,
             start_time__day=now.day).count()
-        tp = {'deep': '深度巡检', 'host': '主机巡检', 'service': '组建巡检'}
+        tp = {'deep': '深度巡检', 'host': '主机巡检', 'service': '组件巡检'}
         name = f"{tp.get(data_dict.get('inspection_type'))}" \
                f"{now.strftime('%Y%m%d')}{num+1}"
         return name
@@ -209,3 +209,16 @@ class InspectionReportView(GenericViewSet, RetrieveModelMixin):
     # filter_class = InspectionReportFilter
     # 操作描述信息
     get_description = "查询巡检任务配置列表"
+
+    def retrieve(self, request, *args, **kwargs):
+        data_dict = request.parser_context.get('kwargs')
+        _r = InspectionReport.objects.filter(
+            inst_id=data_dict.get('inst_id')).first()
+        _h = InspectionHistory.objects.filter(
+            id=data_dict.get('inst_id')).first()
+        if not _r or not _h:
+            return Response('巡检报告缺失，暂不可查看')
+
+        from inspection.joint_json_report import joint_json_data
+        ret = joint_json_data(_h.inspection_type, _r, _h)
+        return Response(ret)
