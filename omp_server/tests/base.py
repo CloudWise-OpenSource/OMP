@@ -70,7 +70,7 @@ class BaseTest(TestCase):
         """ 创建默认用户 """
         queryset = UserProfile.objects.filter(username="admin")
         if queryset.exists():
-            return
+            return queryset.first()
         user_obj = UserProfile.objects.create_user(
             username="admin",
             password="adminPassword",
