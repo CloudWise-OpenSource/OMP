@@ -442,13 +442,14 @@ class ListHostTest(AutoLoginTest, HostsResourceMixin):
         self.assertEqual(resp.get("data").get("count"), len(host_obj_ls))
 
         # IP 过滤主机 -> 展示 IP 模糊匹配项
+        ip_field = str(random.randint(1, 50))
         resp = self.get(self.list_host_url, {
-            "ip": "127"
+            "ip": ip_field
         }).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
         self.assertTrue(resp.get("data") is not None)
-        count_number = Host.objects.filter(ip__contains="127").count()
+        count_number = Host.objects.filter(ip__contains=ip_field).count()
         self.assertEqual(resp.get("data").get("count"), count_number)
         # 删除主机
         self.destroy_hosts()
