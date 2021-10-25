@@ -35,6 +35,7 @@ const breadcrumbNameMap = {
   "patrol-inspection-record": "巡检记录",
   "patrol-strategy": "巡检策略",
   "status-patrol-detail": "分析报告",
+  service_management: "服务管理",
 };
 
 // 基于面包屑组件的一层封装，用于匹配当前路由地址，动态展示页面路径
