@@ -522,9 +522,9 @@ def publish_entry(uuid):
         package_status__in=[2,
                             5]).count()
     if len(clear_dir) <= 28:
-        logger.error('{clear_dir}路径异常')
+        logger.error(f'{clear_dir}路径异常')
         return None
-    if online == 0:
+    if online == 0 or 'back_end_verified' in clear_dir:
         clear_out = public_utils.local_cmd(
             f'rm -rf {clear_dir} && mkdir {clear_dir}')
         if clear_out[2] != 0:
