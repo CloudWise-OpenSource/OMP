@@ -129,7 +129,7 @@ const ReleaseModal = ({
           }, 5000);
         } else {
           setDataSource((data) => {
-            console.log(data);
+            //console.log(data);
             return data.map((item) => {
               return {
                 ...item,
@@ -188,7 +188,7 @@ const ReleaseModal = ({
         }}
         onCancel={() => {
           if (
-            dataSource.filter((item) => item.package_status == 5).length == 0
+            stepNum == 2 && dataSource.filter((item) => item.package_status == 5).length == 0
           ) {
             setReleaseModalVisibility(false);
             return;
@@ -237,18 +237,6 @@ const ReleaseModal = ({
                       operation_user: localStorage.getItem("username"),
                       md5: file.uid,
                     };
-                    // return new Promise((res, rej) => {
-                    //   bmf.md5(file, (err, md5) => {
-                    //     if (err) {
-                    //     } else {
-                    //       res({
-                    //         md5: md5,
-                    //         uuid: timeUnix,
-                    //         operation_user: localStorage.getItem("username"),
-                    //       });
-                    //     }
-                    //   });
-                    // });
                   }}
                   maxCount={5}
                   beforeUpload={(file, fileList) => {
@@ -259,6 +247,13 @@ const ReleaseModal = ({
                     }
 
                     if (fileList.length > 5) {
+                      if (file == fileList[0]) {
+                        message.error("仅支持上传5个文件");
+                      }
+                      return Upload.LIST_IGNORE;
+                    }
+
+                    if(filesList.length + fileList.length > 5){
                       if (file == fileList[0]) {
                         message.error("仅支持上传5个文件");
                       }

@@ -133,6 +133,9 @@ const MonitoringSettings = () => {
                   <Input
                     addonBefore="Http://"
                     placeholder="请输入 Prometheus 地址"
+                    style={{
+                      width:360
+                    }}
                   />
                 </Form.Item>
 
@@ -151,6 +154,9 @@ const MonitoringSettings = () => {
                   <Input
                     addonBefore="Http://"
                     placeholder="请输入 Grafana 地址"
+                    style={{
+                      width:360
+                    }}
                   />
                 </Form.Item>
 
@@ -169,6 +175,9 @@ const MonitoringSettings = () => {
                   <Input
                     addonBefore="Http://"
                     placeholder="请输入 Alert Manager 地址"
+                    style={{
+                      width:360
+                    }}
                   />
                 </Form.Item>
 

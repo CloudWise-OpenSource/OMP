@@ -83,6 +83,14 @@ export const apiRequest = {
   },
   inspection: {
     inspectionList: "/api/inspection/history/",
+    // 巡检记录详情
+    reportDetail:"/api/inspection/report",
+    // 巡检策略查询
+    queryPatrolStrategy:"/api/inspection/crontab/0/",
+    // 创建巡检任务
+    createPatrolStrategy:"/api/inspection/crontab/",
+    // 修改巡检任务
+    updatePatrolStrategy:"/api/inspection/crontab/0/"
   },
 
   // ========================================================

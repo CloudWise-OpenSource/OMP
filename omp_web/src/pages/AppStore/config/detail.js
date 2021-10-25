@@ -17,7 +17,8 @@ const AppStoreDetail = () => {
   const history = useHistory();
   const location = useLocation();
   let arr = location.pathname.split("/");
-  let name = arr[arr.length - 1];
+  let name = arr[arr.length - 2];
+  let verson = arr[arr.length - 1];
   // true 是组件， false是服务
   let keyTab = location.pathname.includes("component");
 
@@ -67,7 +68,7 @@ const AppStoreDetail = () => {
     )
       .then((res) => {
         handleResponse(res, (res) => {
-          setVersionValue(res.data.versions[0][nameObj.version]);
+          setVersionValue(verson);
           setDataSource(() => {
             let obj = {};
             res.data.versions.map((item) => {

@@ -10,23 +10,27 @@ import { useState, useEffect, useRef } from "react";
 import { handleResponse, _idxInit } from "@/utils/utils";
 import { fetchGet, fetchPost, fetchPatch } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-
-// import {
-//   AddMachineModal,
-//   UpDateMachineModal,
-//   BatchImportMachineModal,
-// } from "./config/modals";
 import { useDispatch } from "react-redux";
 import getColumnsConfig from "./config/columns";
 import {
   DownOutlined,
   ExclamationCircleOutlined,
   SearchOutlined,
+  QuestionCircleOutlined
 } from "@ant-design/icons";
 import { useHistory, useLocation } from "react-router-dom";
 const PatrolInspectionRecord = () => {
+  const history = useHistory();
   const [loading, setLoading] = useState(false);
   const [instanceSelectValue, setInstanceSelectValue] = useState("");
+
+  // 深度分析modal弹框
+  const [deepAnalysisModal, setDeepAnalysisModal] = useState(false);
+  // 主机巡检modal弹框
+  const [hostAnalysisModal, setHostAnalysisModal] = useState(false);
+  // 组件巡检modal弹框
+  const [componenetAnalysisModal, setComponenetAnalysisModal] = useState(false);
+
   const [dataSource, setDataSource] = useState([]);
   const [pagination, setPagination] = useState({
     current: 1,
@@ -51,7 +55,14 @@ const PatrolInspectionRecord = () => {
     })
       .then((res) => {
         handleResponse(res, (res) => {
-          setDataSource(res.data.results);
+          setDataSource(
+            res.data.results.map((i) => {
+              return {
+                ...i,
+                key: i.id,
+              };
+            })
+          );
           setPagination({
             ...pagination,
             total: res.data.count,
@@ -68,6 +79,26 @@ const PatrolInspectionRecord = () => {
       });
   }
 
+  const fetchDetailData = (id, setData) => {
+    fetchGet(`${apiRequest.inspection.reportDetail}/${id}/`, {
+      // params: {
+      //   page: pageParams.current,
+      //   size: pageParams.pageSize,
+      //   ordering: ordering ? ordering : null,
+      //   ...searchParams,
+      // },
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          console.log(res);
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        //setLoading(false);
+      });
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -75,7 +106,7 @@ const PatrolInspectionRecord = () => {
   return (
     <OmpContentWrapper>
       <div style={{ display: "flex" }}>
-        <Button type="primary">深度分析</Button>
+        <Button type="primary" onClick={()=>setDeepAnalysisModal(true)}>深度分析</Button>
 
         <Button type="primary" style={{ marginLeft: 10 }}>
           主机巡检
@@ -98,7 +129,7 @@ const PatrolInspectionRecord = () => {
               setInstanceSelectValue(e.target.value);
               if (!e.target.value) {
                 fetchData(
-                  { current: 1, pageSize: 10 },
+                  { current: 1, pageSize: pagination.pageSize },
                   {
                     ...pagination.searchParams,
                     inspection_name: null,
@@ -109,7 +140,7 @@ const PatrolInspectionRecord = () => {
             onBlur={() => {
               if (instanceSelectValue) {
                 fetchData(
-                  { current: 1, pageSize: 10 },
+                  { current: 1, pageSize: pagination.pageSize },
                   {
                     ...pagination.searchParams,
                     inspection_name: instanceSelectValue,
@@ -119,7 +150,7 @@ const PatrolInspectionRecord = () => {
             }}
             onPressEnter={() => {
               fetchData(
-                { current: 1, pageSize: 10 },
+                { current: 1, pageSize: pagination.pageSize },
                 {
                   ...pagination.searchParams,
                   inspection_name: instanceSelectValue,
@@ -165,14 +196,18 @@ const PatrolInspectionRecord = () => {
               fetchData(e, pagination.searchParams, ordering);
             }, 200);
           }}
-          columns={getColumnsConfig((params) => {
-            // console.log(pagination.searchParams)
-            fetchData(
-              { current: 1, pageSize: 10 },
-              { ...pagination.searchParams, ...params },
-              pagination.ordering
-            );
-          })}
+          columns={getColumnsConfig(
+            (params) => {
+              // console.log(pagination.searchParams)
+              fetchData(
+                { current: 1, pageSize: pagination.pageSize },
+                { ...pagination.searchParams, ...params },
+                pagination.ordering
+              );
+            },
+            history,
+            fetchDetailData
+          )}
           dataSource={dataSource}
           pagination={{
             showSizeChanger: true,
@@ -199,6 +234,31 @@ const PatrolInspectionRecord = () => {
           }}
         />
       </div>
+      <OmpMessageModal
+        visibleHandle={[deepAnalysisModal, setDeepAnalysisModal] }
+        title={
+          <span>
+            <ExclamationCircleOutlined
+              style={{
+                fontSize: 20,
+                color: "#f0a441",
+                paddingRight: "10px",
+                position: "relative",
+                top: 2,
+              }}
+            />
+            提示
+          </span>
+        }
+        loading={loading}
+        onFinish={() => {
+          //fetchRestartMonitorAgent();
+        }}
+      >
+        <div style={{ padding: "20px" }}>
+          确定要执行 <span style={{ fontWeight: 500 }}>深度分析</span> 操作 ？
+        </div>
+      </OmpMessageModal>
     </OmpContentWrapper>
   );
 };

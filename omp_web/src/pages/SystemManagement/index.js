@@ -1,42 +1,21 @@
 import {
   OmpContentWrapper,
-  OmpDatePicker,
-  OmpOperationWrapper,
-  OmpTable,
-  OmpCollapseWrapper,
-  OmpButton,
   OmpMessageModal,
-  OmpModal,
-  OmpIframe,
 } from "@/components";
 import {
-  Button,
-  Input,
-  Select,
-  Badge,
-  Form,
   message,
-  Menu,
-  Dropdown,
-  Table,
   Switch,
 } from "antd";
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import {
   handleResponse,
   _idxInit,
-  refreshTime,
-  MessageTip,
-  nonEmptyProcessing,
-  logout,
-  isPassword,
 } from "@/utils/utils";
-import { fetchGet, fetchDelete, fetchPost, fetchPut } from "@/utils/request";
+import { fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import styles from "./index.module.less";
 import {
   ToolFilled,
-  InfoCircleOutlined,
   ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import { getMaintenanceChangeAction } from "./store/actionsCreators";

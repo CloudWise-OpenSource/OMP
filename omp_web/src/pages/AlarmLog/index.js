@@ -156,7 +156,7 @@ const AlarmLog = () => {
                 fetchData(
                   {
                     current: 1,
-                    pageSize: 10,
+                    pageSize: pagination.pageSize,
                   },
                   {
                     ...pagination.searchParams,
@@ -171,7 +171,7 @@ const AlarmLog = () => {
                   fetchData(
                     {
                       current: 1,
-                      pageSize: 10,
+                      pageSize: pagination.pageSize,
                     },
                     {
                       ...pagination.searchParams,
@@ -198,7 +198,7 @@ const AlarmLog = () => {
                   fetchData(
                     {
                       current: 1,
-                      pageSize: 10,
+                      pageSize: pagination.pageSize,
                     },
                     {
                       ...pagination.searchParams,
@@ -224,7 +224,7 @@ const AlarmLog = () => {
                     fetchData(
                       {
                         current: 1,
-                        pageSize: 10,
+                        pageSize: pagination.pageSize,
                       },
                       { ...pagination.searchParams, alert_host_ip: value },
                       pagination.ordering
@@ -245,7 +245,7 @@ const AlarmLog = () => {
                       fetchData(
                         {
                           current: 1,
-                          pageSize: 10,
+                          pageSize: pagination.pageSize,
                         },
                         {
                           ...pagination.searchParams,
@@ -260,7 +260,7 @@ const AlarmLog = () => {
                       fetchData(
                         {
                           current: 1,
-                          pageSize: 10,
+                          pageSize: pagination.pageSize,
                         },
                         {
                           ...pagination.searchParams,
@@ -274,7 +274,7 @@ const AlarmLog = () => {
                     fetchData(
                       {
                         current: 1,
-                        pageSize: 10,
+                        pageSize: pagination.pageSize,
                       },
                       {
                         ...pagination.searchParams,
@@ -333,7 +333,7 @@ const AlarmLog = () => {
             (params) => {
               // console.log(pagination.searchParams)
               fetchData(
-                { current: 1, pageSize: 10 },
+                { current: 1, pageSize: pagination.pageSize, },
                 { ...pagination.searchParams, ...params },
                 pagination.ordering
               );

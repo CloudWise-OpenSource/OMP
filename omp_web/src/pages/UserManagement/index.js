@@ -253,7 +253,7 @@ const UserManagement = () => {
                 fetchData(
                   {
                     current: 1,
-                    pageSize: 10,
+                    pageSize: pagination.pageSize,
                   },
                   {
                     ...pagination.searchParams,
@@ -266,7 +266,7 @@ const UserManagement = () => {
               fetchData(
                 {
                   current: 1,
-                  pageSize: 10,
+                  pageSize: pagination.pageSize,
                 },
                 {
                   ...pagination.searchParams,
@@ -278,7 +278,7 @@ const UserManagement = () => {
               fetchData(
                 {
                   current: 1,
-                  pageSize: 10,
+                  pageSize: pagination.pageSize,
                 },
                 {
                   ...pagination.searchParams,

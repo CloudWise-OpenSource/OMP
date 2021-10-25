@@ -476,7 +476,7 @@ const MachineManagement = () => {
             // }}
             fetchData={(value) => {
               fetchData(
-                { current: 1, pageSize: 10 },
+                { current: 1, pageSize: pagination.pageSize, },
                 { ip: value },
                 pagination.ordering
               );
