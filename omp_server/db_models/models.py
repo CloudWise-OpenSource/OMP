@@ -484,6 +484,8 @@ class InspectionReport(models.Model):
     """巡检 报告"""
     objects = None
     id = models.AutoField(primary_key=True, unique=True, help_text="自增主键")
+    file_name = models.CharField(
+        max_length=128, null=True, blank=True, help_text="导出文件名")
     tag_total_num = models.IntegerField(default=0, help_text="总指标数")
     tag_error_num = models.IntegerField(default=0, help_text="异常指标数")
     risk_data = models.JSONField(null=True, blank=True, help_text="风险指标")

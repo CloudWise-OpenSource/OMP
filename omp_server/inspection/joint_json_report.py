@@ -36,7 +36,7 @@ def joint_json_data(handle, _r, _h):
             "service_list": []
         },
         "detail_dict": {},
-        "file_name": f"{_h.inspection_name}.tar.gz"
+        "file_name": _r.file_name
     }
 
     # 主机巡检
