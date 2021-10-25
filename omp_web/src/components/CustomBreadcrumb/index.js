@@ -31,10 +31,10 @@ const breadcrumbNameMap = {
   app_store: "应用商店",
   "app-service-detail": "服务详情",
   "app-component-detail": "组件详情",
-  "status-patrol":"状态巡检",
-  "patrol-inspection-record":"巡检记录",
-  "patrol-strategy":"巡检策略",
-  "status-patrol-detail":"分析报告"
+  "status-patrol": "状态巡检",
+  "patrol-inspection-record": "巡检记录",
+  "patrol-strategy": "巡检策略",
+  "status-patrol-detail": "分析报告",
 };
 
 // 基于面包屑组件的一层封装，用于匹配当前路由地址，动态展示页面路径
@@ -64,6 +64,22 @@ const CustomBreadcrumb = withRouter(({ location }) => {
     return (
       <>
         {url.map((i, idx) => {
+          if (idx == url.length - 3) {
+            if (!breadcrumbNameMap[url[url.length - 2]]) {
+              return (
+                <Breadcrumb.Item
+                  style={{
+                    color: "#2e7cee",
+                    fontSize: 14,
+                  }}
+                  key={i}
+                >
+                  {breadcrumbNameMap[i]}
+                </Breadcrumb.Item>
+              );
+            }
+          }
+
           if (idx == url.length - 2) {
             // 动态路由的时候url的最后一项不一定能体现当前页面，也有可能是动态参数
             if (!breadcrumbNameMap[url[url.length - 1]]) {
@@ -80,6 +96,7 @@ const CustomBreadcrumb = withRouter(({ location }) => {
               );
             }
           }
+
           if (idx == url.length - 1) {
             return (
               <Breadcrumb.Item

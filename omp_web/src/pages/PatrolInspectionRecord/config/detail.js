@@ -7,12 +7,16 @@ import {
   kafka_offsets_columns,
   kafka_partition_columns,
   kafka_topic_size_columns,
+  handleResponse,
 } from "@/utils/utils";
 import { Card, Collapse, message, Table, BackTop, Drawer } from "antd";
 import * as R from "ramda";
 import React, { useEffect, useState } from "react";
-import data from "./data.json";
+//import data from "./data.json";
 import { useHistory, useLocation } from "react-router-dom";
+import { LeftOutlined } from "@ant-design/icons";
+import { fetchGet, fetchPost, fetchPatch } from "@/utils/request";
+import { apiRequest } from "@/config/requestApi";
 const { Panel } = Collapse;
 
 const reportColumnConfig = [
@@ -31,25 +35,80 @@ export default function PatrolInspectionDetail() {
   const title = "巡检报告";
 
   const location = useLocation();
+  const history = useHistory();
 
-  const id = location
+  // /const data = localStorage.getItem("recordDetailData");
 
+  let arr = location.pathname.split("/");
+  const id = arr[arr.length - 1];
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [drawerText, setDrawerText] = useState("");
 
   const [expandKey, setExpandKey] = useState([]);
 
-  if(!data){
-    return <div>没数据</div>
+  const [data, setData] = useState({});
+
+  const [loading, setLoading] = useState(false);
+
+  const fetchDetailData = (id) => {
+    setLoading(true);
+    fetchGet(`${apiRequest.inspection.reportDetail}/${id}/`)
+      .then((res) => {
+        handleResponse(res, (res) => {
+          setData(res.data);
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    fetchDetailData(id);
+  }, []);
+
+  if (!data) {
+    return <div>数据暂无</div>;
   }
 
   return (
     <div id="reportContent" className={"reportContent"}>
       <div className={"reportTitle"}>
-        <div>
-          {" "}
+        <div style={{width:"100%",display:"flex",justifyContent:"center",alignItems:"center"}}>
+          {/* <LeftOutlined
+            style={{ fontSize: 16,position:"relative",left:20}}
+            //className={styles.backIcon}
+            // onClick={() => {
+            //   keyTab
+            //     ? dispatch(getTabKeyChangeAction("component"))
+            //     : dispatch(getTabKeyChangeAction("service"));
+            //   history?.push({
+            //     pathname: `/application_management/app_store`,
+            //   });
+            // }}
+          />{" "} */}
           {/* <img style={{ width: 30, height: 30, position:"relative",top:-3,left:-10 }} src="./logo.svg" /> */}
           {title}
+        </div>
+        <div>
+          <div
+            className={"goBackElement"}
+            id={"invisible"}
+            style={{paddingRight:10}}
+            onClick={() => history.push("/status-patrol/patrol-inspection-record")}
+          >
+            返回
+          </div>
+          <div
+            id={"invisible"}
+            onClick={() => {
+              message.success(`正在下载巡检报告，双击文件夹中index.html查看报告`);
+              // download();
+            }}
+          >
+            导出
+          </div>
         </div>
       </div>
       <div>
@@ -71,11 +130,11 @@ export default function PatrolInspectionDetail() {
         >
           <Panel header="概述信息" key="overview" className={"panelItem"}>
             <div className={"overviewItemWrapper"}>
-              <OverviewItem data={data.summary.task_info} type={"task_info"} />
-              <OverviewItem data={data.summary.time_info} type={"time_info"} />
-              <OverviewItem data={data.summary.scan_info} type={"scan_info"} />
+              <OverviewItem data={data.summary?.task_info} type={"task_info"} />
+              <OverviewItem data={data.summary?.time_info} type={"time_info"} />
+              <OverviewItem data={data.summary?.scan_info} type={"scan_info"} />
               <OverviewItem
-                data={data.summary.scan_result}
+                data={data.summary?.scan_result}
                 type={"scan_result"}
               />
             </div>
@@ -195,7 +254,7 @@ export default function PatrolInspectionDetail() {
               </Panel>
             )}
 
-          {!R.either(R.isNil, R.isEmpty)(data.service_topology) && (
+          {!R.either(R.isNil, R.isEmpty)(data?.service_topology) && (
             <Panel header="服务平面图" key="map" className={"panelItem"}>
               <div
                 style={{ display: "flex", flexFlow: "row wrap", margin: 10 }}
@@ -204,17 +263,17 @@ export default function PatrolInspectionDetail() {
                   return (
                     <PlanChart
                       key={index}
-                      title={item.host_ip}
-                      list={item.service_list}
+                      title={item?.host_ip}
+                      list={item?.service_list}
                       data={data}
                     />
                   );
-                }, data.service_topology)}
+                }, data?.service_topology)}
               </div>
             </Panel>
           )}
 
-          {!R.either(R.isNil, R.isEmpty)(data.detail_dict.host) && (
+          {!R.either(R.isNil, R.isEmpty)(data.detail_dict?.host) && (
             <Panel header="主机列表" key="host" className={"panelItem"}>
               <Table
                 //rowClassName={()=>{return styles.didingyi;}}
@@ -290,7 +349,7 @@ export default function PatrolInspectionDetail() {
             </Panel>
           )}
 
-          {!R.either(R.isNil, R.isEmpty)(data.detail_dict.database) && (
+          {!R.either(R.isNil, R.isEmpty)(data.detail_dict?.database) && (
             <Panel header="数据库列表" key="database" className={"panelItem"}>
               <Table
                 size={"small"}
@@ -317,7 +376,7 @@ export default function PatrolInspectionDetail() {
             </Panel>
           )}
 
-          {!R.either(R.isNil, R.isEmpty)(data.detail_dict.component) && (
+          {!R.either(R.isNil, R.isEmpty)(data.detail_dict?.component) && (
             <Panel header="组件列表" key="component" className={"panelItem"}>
               <Table
                 size={"small"}
@@ -344,7 +403,7 @@ export default function PatrolInspectionDetail() {
             </Panel>
           )}
 
-          {!R.either(R.isNil, R.isEmpty)(data.detail_dict.service) && (
+          {!R.either(R.isNil, R.isEmpty)(data.detail_dict?.service) && (
             <Panel header="服务列表" key="service" className={"panelItem"}>
               <Table
                 size={"small"}
@@ -416,9 +475,9 @@ function OverviewItem({ data, type }) {
         <div className={"overviewItem"}>
           <div>任务信息</div>
           <div>
-            <div>任务名称：{data.task_name}</div>
-            <div>操作人员：{data.operator}</div>
-            <div>任务状态：{data.task_status === 2 ? "已完成" : "失败"}</div>
+            <div>任务名称：{data?.task_name}</div>
+            <div>操作人员：{data?.operator}</div>
+            <div>任务状态：{data?.task_status === 2 ? "已完成" : "失败"}</div>
           </div>
         </div>
       );
@@ -427,9 +486,9 @@ function OverviewItem({ data, type }) {
         <div className={"overviewItem"}>
           <div>时间统计</div>
           <div>
-            <div>开始时间：{data.start_time}</div>
-            <div>结束时间：{data.end_time}</div>
-            <div>任务耗时：{formatTime(data.cost)}</div>
+            <div>开始时间：{data?.start_time}</div>
+            <div>结束时间：{data?.end_time}</div>
+            <div>任务耗时：{formatTime(data?.cost)}</div>
           </div>
         </div>
       );
@@ -439,9 +498,9 @@ function OverviewItem({ data, type }) {
           <div>扫描统计</div>
           <div style={{ display: "flex", alignItems: "center" }}>
             <div>
-              {data.host > 0 && <div>主机个数：{data.host}台</div>}
-              {data.component > 0 && <div>组件个数：{data.component}个</div>}
-              {data.service > 0 && <div>服务个数：{data.service}个</div>}
+              {data?.host > 0 && <div>主机个数：{data.host}台</div>}
+              {data?.component > 0 && <div>组件个数：{data.component}个</div>}
+              {data?.service > 0 && <div>服务个数：{data.service}个</div>}
             </div>
           </div>
         </div>
@@ -452,8 +511,8 @@ function OverviewItem({ data, type }) {
           <div>分析结果</div>
           <div style={{ display: "flex", alignItems: "center" }}>
             <div>
-              <div>总指标数：{data.all_target_num}</div>
-              <div>异常指标：{data.abnormal_target}</div>
+              <div>总指标数：{data?.all_target_num}</div>
+              <div>异常指标：{data?.abnormal_target}</div>
               {/* <div>健康度：{data.healthy}</div> */}
             </div>
           </div>
@@ -471,7 +530,7 @@ function PlanChart({ title, list, data }) {
         {title}
       </div>
       <div className={"planChartBlockWrapper"}>
-        {list.map((item) => {
+        {list?.map((item) => {
           return (
             <div className={"stateButton"} key={item}>
               <div>{item}</div>
