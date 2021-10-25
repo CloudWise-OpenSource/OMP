@@ -58,7 +58,7 @@ def back_end_verified_init(operation_user):
             operation_uuid=uuid,
             operation_user=operation_user,
             package_name=j,
-            package_md5=None,
+            package_md5='1',
             package_path="verified")
         upload_obj.save()
         front_end_verified_init(uuid, operation_user, j, upload_obj.id)
