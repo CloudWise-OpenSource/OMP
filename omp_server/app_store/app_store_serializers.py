@@ -105,15 +105,23 @@ class UploadPackageSerializer(Serializer):
             raise OperateError("上传文件为空")
         destination_dir = os.path.join(
             settings.PROJECT_DIR, 'package_hub/front_end_verified')
+        upload_obj = UploadPackageHistory(
+            operation_uuid=uuid,
+            operation_user=operation_user,
+            package_name=package_name,
+            package_md5=md5,
+            package_path="verified")
+        upload_obj.save()
         with open(os.path.join(destination_dir, request_file.name),
                   'wb+') as f:
             for chunk in request_file.chunks():
                 try:
                     f.write(chunk)
                 except Exception:
+                    upload_obj.delete()
                     raise OperateError("文件写入过程失败")
 
-        front_end_verified_init(uuid, operation_user, package_name, md5)
+        front_end_verified_init(uuid, operation_user, package_name, upload_obj.id, md5)
         return validated_data
 
 
