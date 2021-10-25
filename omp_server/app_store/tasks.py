@@ -161,7 +161,7 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
             logger.error(f'{package_name}:图片格式异常{e}')
             return public_action.update_package_status(
                 1,
-                f"图片格式异常")
+                f"{package_name}图片格式异常")
     # 校验产品yml
     if kind == 'product':
         service = explain_yml[1].get("service")
