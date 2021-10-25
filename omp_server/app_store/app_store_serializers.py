@@ -123,7 +123,8 @@ class UploadPackageSerializer(Serializer):
                     upload_obj.delete()
                     raise OperateError("文件写入过程失败")
 
-        front_end_verified_init(uuid, operation_user, package_name, upload_obj.id, md5)
+        front_end_verified_init(uuid, operation_user,
+                                package_name, upload_obj.id, md5)
         return validated_data
 
 
@@ -150,7 +151,8 @@ class RemovePackageSerializer(Serializer):
         queryset = UploadPackageHistory.objects.filter(
             operation_uuid=operation_uuid,
             package_name__in=package_names,
-            package_parent__isnull=True
+            package_parent__isnull=True,
+            is_deleted=False
         )
         if not queryset.exists() or \
                 len(queryset) != len(package_names):
@@ -274,11 +276,11 @@ class ComponentEntranceSerializer(serializers.ModelSerializer):
         """ 解析服务的部署模式 """
         return ServiceArgsSerializer().get_deploy_mode(obj)
 
-    def get_process_continue(self, obj):     # NOQA
+    def get_process_continue(self, obj):  # NOQA
         """ 服务能否安装的接口 """
         return ServiceArgsSerializer().get_process_continue(obj)
 
-    def get_process_message(self, obj):     # NOQA
+    def get_process_message(self, obj):  # NOQA
         return ServiceArgsSerializer().get_process_message(obj)
 
     class Meta:
