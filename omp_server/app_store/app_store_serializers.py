@@ -15,6 +15,7 @@ from app_store.tmp_exec_back_task import front_end_verified_init
 
 from db_models.models import (
     ApplicationHub, ProductHub, UploadPackageHistory,
+    Service
 )
 
 from app_store.install_utils import (
@@ -37,8 +38,8 @@ class ComponentListSerializer(ModelSerializer):
 
     def get_instance_number(self, obj):
         """ 获取组件已安装实例数量 """
-        # TODO 计算组件的已安装实例数量
-        return 1111
+        return Service.objects.filter(
+            service__app_name=obj.app_name).count()
 
 
 class ServiceListSerializer(ModelSerializer):
@@ -53,8 +54,8 @@ class ServiceListSerializer(ModelSerializer):
 
     def get_instance_number(self, obj):
         """ 获取组件已安装实例数量 """
-        # TODO 计算组件的已安装实例数量
-        return 1111
+        return Service.objects.filter(
+            service__product__pro_name=obj.pro_name).count()
 
 
 class UploadPackageSerializer(Serializer):
@@ -75,10 +76,11 @@ class UploadPackageSerializer(Serializer):
         required=True,
         error_messages={"required": "必须包含[file]字段"}
     )
-    md5 = serializers.CharField(help_text="文件包的md5值",
-                                required=True,
-                                error_messages={"required": "必须包含[md5]字段"}
-                                )
+    md5 = serializers.CharField(
+        help_text="文件包的md5值",
+        required=True,
+        error_messages={"required": "必须包含[md5]字段"}
+    )
 
     def validate(self, attrs):
         file = attrs.get("file")
