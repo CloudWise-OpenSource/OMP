@@ -148,6 +148,7 @@ class RemovePackageSerializer(Serializer):
         queryset = UploadPackageHistory.objects.filter(
             operation_uuid=operation_uuid,
             package_name__in=package_names,
+            package_parent__isnull=True
         )
         if not queryset.exists() or \
                 len(queryset) != len(package_names):
@@ -256,6 +257,8 @@ class ComponentEntranceSerializer(serializers.ModelSerializer):
     app_dependence = serializers.SerializerMethodField()
     app_install_args = serializers.SerializerMethodField()
     deploy_mode = serializers.SerializerMethodField()
+    process_continue = serializers.SerializerMethodField()
+    process_message = serializers.SerializerMethodField()
 
     def get_app_dependence(self, obj):  # NOQA
         """ 解析服务级别的依赖关系 """
@@ -269,12 +272,20 @@ class ComponentEntranceSerializer(serializers.ModelSerializer):
         """ 解析服务的部署模式 """
         return ServiceArgsSerializer().get_deploy_mode(obj)
 
+    def get_process_continue(self, obj):     # NOQA
+        """ 服务能否安装的接口 """
+        return ServiceArgsSerializer().get_process_continue(obj)
+
+    def get_process_message(self, obj):     # NOQA
+        return ServiceArgsSerializer().get_process_message(obj)
+
     class Meta:
         """ 元数据 """
         model = ApplicationHub
         fields = [
             "app_name", "app_version", "app_dependence",
-            "app_install_args", "deploy_mode"
+            "app_install_args", "deploy_mode", "process_continue",
+            "process_message"
         ]
 
 
