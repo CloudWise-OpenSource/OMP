@@ -94,7 +94,7 @@
 
 .reportTitle {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   color: #1890ff;
   margin-bottom: 20px;
   height: 40px;

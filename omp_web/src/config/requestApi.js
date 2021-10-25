@@ -90,7 +90,11 @@ export const apiRequest = {
     // 创建巡检任务
     createPatrolStrategy:"/api/inspection/crontab/",
     // 修改巡检任务
-    updatePatrolStrategy:"/api/inspection/crontab/0/"
+    updatePatrolStrategy:"/api/inspection/crontab/0/",
+    // 深度分析｜主机巡检｜组件巡检 任务下发
+    taskDistribution:"/api/inspection/history/",
+    // 巡检渲染组件列表
+    servicesList:"/api/inspection/services/"
   },
 
   // ========================================================
