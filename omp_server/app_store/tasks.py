@@ -134,14 +134,14 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
     if tar_out[2] != 0:
         return public_action.update_package_status(
             1,
-            f"安装包{touch_name}解压失败或者压缩包格式不合规")
+            f"安装包{package_name}解压失败或者压缩包格式不合规")
     app_name = package_name.split('-', 1)[0]
     tmp_dir = os.path.join(tmp_dir, app_name)
     check_file = os.path.join(tmp_dir, f'{app_name}.yaml')
     if not os.path.exists(check_file):
         return public_action.update_package_status(
             1,
-            f"安装包{touch_name}:{app_name}.yaml文件不存在")
+            f"安装包{package_name}:{app_name}.yaml文件不存在")
     explain_yml = ExplainYml(public_action, check_file).explain_yml()
     # 这个校验可能用不到
     if isinstance(explain_yml, bool):
