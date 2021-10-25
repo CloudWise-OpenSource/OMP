@@ -4,11 +4,11 @@ import { FilterFilled } from "@ant-design/icons";
 import OmpTableFilter from "@/components/OmpTable/components/OmpTableFilter";
 import moment from "moment";
 
-const getColumnsConfig = (queryRequest) => {
+const getColumnsConfig = (queryRequest,history,queryData) => {
   return [
     {
       title: "报告名称",
-      width: 160,
+      width: 120,
       key: "inspection_name",
       dataIndex: "inspection_name",
       align: "center",
@@ -18,10 +18,15 @@ const getColumnsConfig = (queryRequest) => {
           <a
             style={{
               fontSize: 12,
-              color: !record.file_name ? "rgba(0, 0, 0, 0.4)" : null,
-              cursor: !record.file_name ? "not-allowed" : null,
+              // color: !record.file_name ? "rgba(0, 0, 0, 0.4)" : null,
+              // cursor: !record.file_name ? "not-allowed" : null,
             }}
-            onClick={() => {}}
+            onClick={() => {
+              queryData(record.id)
+              history?.push({
+                pathname: `/status-patrol/patrol-inspection-record/status-patrol-detail/${record.id}`,
+              });
+            }}
           >
             {text}
           </a>
@@ -168,10 +173,10 @@ const getColumnsConfig = (queryRequest) => {
     },
     {
       title: "操作",
-      width: 100,
+      width: 60,
       key: "",
       dataIndex: "",
-      // fixed: "right",
+      fixed: "right",
       align: "center",
       render: function renderFunc(text, record, index) {
         return (

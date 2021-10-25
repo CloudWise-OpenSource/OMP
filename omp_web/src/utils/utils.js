@@ -1213,10 +1213,11 @@ export const columnsConfig = {
     align: "center",
   },
   report_risk_describe: {
+    width: 400,
     title: "风险描述",
     key: "report_risk_describe",
     dataIndex: "risk_describe",
-    //ellipsis: true,
+    ellipsis: true,
     render: formatTableRenderData,
     align: "center",
   },
@@ -1794,9 +1795,9 @@ export const handleResponse = (res, succCallback, failedCallback) => {
 
   if (res.data.code === 1) {
     if (res.data.message) {
-      if(res.data.message == "未认证") {
+      if (res.data.message == "未认证") {
         logout();
-        return
+        return;
       }
       message.warn(res.data.message);
     }
@@ -1841,7 +1842,7 @@ export const MessageTip = ({ setMsgShow, msgShow, msg }) => {
       style={{
         position: "relative",
         top: -10,
-        left:10,
+        left: 10,
         backgroundColor: "#fbe3e2",
         padding: "10px",
         height: "40px",
@@ -1849,9 +1850,9 @@ export const MessageTip = ({ setMsgShow, msgShow, msg }) => {
         display: "flex",
         justifyContent: "space-between",
         cursor: "pointer",
-        width:240,
-        margin:"0 auto",
-        paddingLeft:15
+        width: 240,
+        margin: "0 auto",
+        paddingLeft: 15,
       }}
       className={msgShow ? styles.loginMessageShow : styles.loginMessageHide}
       onClick={() => setMsgShow(false)}
@@ -1864,65 +1865,64 @@ export const MessageTip = ({ setMsgShow, msgShow, msg }) => {
   );
 };
 
-
-
 //校验中文
 export const isChineseChar = (str) => {
-  var reg = /[\u4E00-\u9FA5\uF900-\uFA2D]/
-  return reg.test(str)
+  var reg = /[\u4E00-\u9FA5\uF900-\uFA2D]/;
+  return reg.test(str);
 };
 
 //校验数字
-export const isNumberChar = (str) => { 
-  const reg = /^\d+$/
-  return reg.test(str)  
-}
+export const isNumberChar = (str) => {
+  const reg = /^\d+$/;
+  return reg.test(str);
+};
 
 // 校验小写
-export const isLowercaseChar = (str) => { 
-  const reg = /^[a-z]+$/
-  return reg.test(str)  
-}
+export const isLowercaseChar = (str) => {
+  const reg = /^[a-z]+$/;
+  return reg.test(str);
+};
 
 // 校验大写
 export const isUppercaseChar = (str) => {
-  const reg = /^[A-Z]+$/
-  return reg.test(str)
-}
+  const reg = /^[A-Z]+$/;
+  return reg.test(str);
+};
 
 // 校验字母
-export const isLetterChar = (str) => { 
-  const reg = /^[a-zA-Z]+$/
-  return reg.test(str)  
-}
-
+export const isLetterChar = (str) => {
+  const reg = /^[a-zA-Z]+$/;
+  return reg.test(str);
+};
 
 // 校验ip
 export const isValidIpChar = (ip) => {
-  var reg = /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/
+  var reg =
+    /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/;
   return reg.test(ip);
-} 
+};
 
 // 校验表情
-export const isExpression = (str)=>{
-  var reg = /[^\u0020-\u007E\u00A0-\u00BE\u2E80-\uA4CF\uF900-\uFAFF\uFE30-\uFE4F\uFF00-\uFFEF\u0080-\u009F\u2000-\u201f\u2026\u2022\u20ac\r\n]/g
+export const isExpression = (str) => {
+  var reg =
+    /[^\u0020-\u007E\u00A0-\u00BE\u2E80-\uA4CF\uF900-\uFAFF\uFE30-\uFE4F\uFF00-\uFFEF\u0080-\u009F\u2000-\u201f\u2026\u2022\u20ac\r\n]/g;
   return reg.test(str);
-}
+};
 
 // 校验空格
-export const isSpace = (str)=>{
+export const isSpace = (str) => {
   return str.includes(" ");
-}
+};
 
 export function debounce(fn, wait) {
   return function () {
-      clearTimeout(window.timer);
-      window.timer = setTimeout(fn, wait);
-  }
+    clearTimeout(window.timer);
+    window.timer = setTimeout(fn, wait);
+  };
 }
 
 // 校验密码
-export function isPassword(str){
+export function isPassword(str) {
   var reg = /[^a-zA-Z0-9\`\~\!\?\@\#\$\%\^\&\,\(\)\[\]\{\}\_\+\_\*\/\.\;\:]/g;
   return reg.test(str);
 }

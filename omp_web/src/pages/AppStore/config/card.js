@@ -71,7 +71,7 @@ const Card = ({ idx, history, info, tabKey }) => {
           }}
           onClick={()=>{
             history?.push({
-              pathname: `/application_management/app_store/app-${tabKey}-detail/${info[nameObj[tabKey].name]}`,
+              pathname: `/application_management/app_store/app-${tabKey}-detail/${info[nameObj[tabKey].name]}/${info[nameObj[tabKey].version]}`,
             });
           }}
         >
@@ -104,7 +104,7 @@ const Card = ({ idx, history, info, tabKey }) => {
         <div style={{ borderRight: "1px solid #e7e7e7" }}
            onClick={()=>{
             history?.push({
-              pathname: `/application_management/app_store/app-${tabKey}-detail/${info[nameObj[tabKey].name]}`,
+              pathname: `/application_management/app_store/app-${tabKey}-detail/${info[nameObj[tabKey].name]}/${info[nameObj[tabKey].version]}`,
             });
           }}
         >查看</div>
