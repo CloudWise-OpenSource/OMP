@@ -55,7 +55,9 @@ class ServiceSerializer(serializers.ModelSerializer):
         """ 获取告警数量 """
         alert_count = f"{obj.alert_count}次"
         # 服务状态为 '安装中'、'安装失败' 告警数量显示为 '-'
-        if obj.service_status in (6, 7):
+        if obj.service_status in (
+                Service.SERVICE_STATUS_INSTALLING,
+                Service.SERVICE_STATUS_INSTALL_FAILED):
             alert_count = "-"
         # '基础环境' 展示为 '-'
         if obj.service.extend_fields.get("base_env") in (True, "True"):
