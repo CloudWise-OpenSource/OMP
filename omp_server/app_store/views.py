@@ -149,7 +149,7 @@ class ComponentDetailView(GenericViewSet, ListModelMixin):
         arg_app_name = request.GET.get('app_name')
 
         queryset = ApplicationHub.objects.filter(
-            app_name=arg_app_name).order_by("-created")
+            app_name=arg_app_name).order_by("created")
         serializer = self.get_serializer(queryset, many=True)
         result = dict()
         result.update(
@@ -174,7 +174,7 @@ class ServiceDetailView(GenericViewSet, ListModelMixin):
         arg_pro_name = request.GET.get('pro_name')
 
         queryset = ProductHub.objects.filter(
-            pro_name=arg_pro_name).order_by("-created")
+            pro_name=arg_pro_name).order_by("created")
         serializer = self.get_serializer(queryset, many=True)
         result = dict()
         result.update(
