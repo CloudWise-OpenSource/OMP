@@ -9,7 +9,8 @@ import SystemManagement from "@/pages/SystemManagement";
 import AlarmLog from "@/pages/AlarmLog";
 import ExceptionList from "@/pages/ExceptionList";
 import PatrolInspectionRecord from "@/pages/PatrolInspectionRecord";
-import PatrolStrategy from "@/pages/PatrolStrategy"
+import PatrolStrategy from "@/pages/PatrolStrategy";
+import PatrolInspectionDetail from "@/pages/PatrolInspectionRecord/config/detail";
 import {
   DesktopOutlined,
   ClusterOutlined,
@@ -45,13 +46,13 @@ export default [
       },
       {
         title: "应用商店服务详情",
-        path: "/application_management/app_store/app-service-detail/:name",
+        path: "/application_management/app_store/app-service-detail/:name/:verson",
         notInMenu: true,
         component: AppStoreDetail,
       },
       {
         title: "应用商店组件详情",
-        path: "/application_management/app_store/app-component-detail/:name",
+        path: "/application_management/app_store/app-component-detail/:name/:verson",
         notInMenu: true,
         component: AppStoreDetail,
       },
@@ -88,6 +89,12 @@ export default [
         title: "巡检记录",
         path: "/status-patrol/patrol-inspection-record",
         component: PatrolInspectionRecord,
+      },
+      {
+        title: "巡检记录详情",
+        path: "/status-patrol/patrol-inspection-record/status-patrol-detail/:id",
+        notInMenu: true,
+        component: PatrolInspectionDetail,
       },
       {
         title: "巡检策略",
