@@ -94,8 +94,11 @@ class SerDependenceParseUtils(object):
         # 判断当前应用商店内是否包含该服务以及该服务的安装包条件
         if obj.app_package:
             path = os.path.join(
-                PROJECT_DIR, "package_hub/verified",
-                obj.app_package.package_name)
+                PROJECT_DIR,
+                "package_hub",
+                obj.app_package.package_path,
+                obj.app_package.package_name
+            )
             if os.path.exists(path):
                 is_pack_exist = True
         return cluster_info, instance_info, is_pack_exist
@@ -344,8 +347,10 @@ class ServiceArgsSerializer(object):
         # 服务级别的安装包均存在于 verified 目录内，使用 package_name 即可拼接完成
         _path = os.path.join(
             PROJECT_DIR,
-            "package_hub/verified/",
-            obj.app_package.package_name)
+            "package_hub",
+            obj.app_package.package_path,
+            obj.app_package.package_name
+        )
         if not os.path.exists(_path):
             return False, f"服务{obj.app_name}的安装包无法找到"
         return True, "success"
