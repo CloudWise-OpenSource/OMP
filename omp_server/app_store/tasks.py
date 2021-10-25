@@ -134,14 +134,14 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
     if tar_out[2] != 0:
         return public_action.update_package_status(
             1,
-            f"安装包{touch_name}解压失败或者压缩包格式不合规")
+            f"安装包{package_name}解压失败或者压缩包格式不合规")
     app_name = package_name.split('-', 1)[0]
     tmp_dir = os.path.join(tmp_dir, app_name)
     check_file = os.path.join(tmp_dir, f'{app_name}.yaml')
     if not os.path.exists(check_file):
         return public_action.update_package_status(
             1,
-            f"安装包{touch_name}:{app_name}.yaml文件不存在")
+            f"安装包{package_name}:{app_name}.yaml文件不存在")
     explain_yml = ExplainYml(public_action, check_file).explain_yml()
     # 这个校验可能用不到
     if isinstance(explain_yml, bool):
@@ -152,10 +152,16 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
     # 校验图片
     image = None
     if kind == 'product' or 'component':
-        image_dir = os.path.join(tmp_dir, f'{app_name}.svg')
-        if os.path.exists(image_dir):
-            with open(image_dir, 'r') as fp:
-                image = fp.read()
+        try:
+            image_dir = os.path.join(tmp_dir, f'{app_name}.svg')
+            if os.path.exists(image_dir):
+                with open(image_dir, 'r') as fp:
+                    image = fp.read()
+        except UnicodeDecodeError as e:
+            logger.error(f'{package_name}:图片格式异常{e}')
+            return public_action.update_package_status(
+                1,
+                f"{package_name}图片格式异常")
     # 校验产品yml
     if kind == 'product':
         service = explain_yml[1].get("service")

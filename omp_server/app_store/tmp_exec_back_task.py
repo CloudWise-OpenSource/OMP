@@ -59,7 +59,7 @@ def back_end_verified_init(operation_user):
     return uuid, exec_name
 
 
-def front_end_verified_init(uuid, operation_user, package_name, md5=None):
+def front_end_verified_init(uuid, operation_user, package_name, obj_id, md5=None):
     random_str = ''.join(
         random.sample('abcdefghijklmnopqrstuvwxyz1234567890', 10))
     if md5:
@@ -67,12 +67,5 @@ def front_end_verified_init(uuid, operation_user, package_name, md5=None):
     else:
         ver_dir = package_dir.get("back_end_verified")
         md5 = random_str
-    upload_obj = UploadPackageHistory(
-        operation_uuid=uuid,
-        operation_user=operation_user,
-        package_name=package_name,
-        package_md5=md5,
-        package_path=package_dir.get("verified"))
-    upload_obj.save()
     front_end_verified.delay(uuid, operation_user, package_name, md5,
-                             random_str, ver_dir, upload_obj.id)
+                             random_str, ver_dir, obj_id)
