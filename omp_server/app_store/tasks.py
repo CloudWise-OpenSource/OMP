@@ -148,7 +148,7 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
         return None
     kind = explain_yml[1].get("kind")
     versions = explain_yml[1].get("version")
-    pro_name = explain_yml[1]['name'] + "-" + explain_yml[1]['version']
+    pro_name = f"{explain_yml[1]['name']}-{explain_yml[1]['version']}"
     # 校验图片
     image = None
     if kind == 'product' or 'component':
