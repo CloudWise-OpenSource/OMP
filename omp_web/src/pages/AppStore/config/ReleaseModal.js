@@ -34,6 +34,8 @@ const ReleaseModal = ({
 
   const [stepNum, setStepNum] = useState(0);
 
+  const isRun = useRef(null);
+
   const timer = useRef(null);
 
   // 失败时的轮训次数标识
@@ -41,7 +43,7 @@ const ReleaseModal = ({
 
   function checkData() {
     // 防止在弹窗关闭后还继续轮训
-    if (!timer.current) {
+    if (!isRun.current) {
       return;
     }
     fetchGet(apiRequest.appStore.pack_verification_results, {
@@ -61,7 +63,7 @@ const ReleaseModal = ({
                 return item.package_status == 5;
               });
               if (checkRunningArr.length > 0 || publishRunningArr.length > 0) {
-                setTimeout(() => {
+                timer.current = setTimeout(() => {
                   checkData();
                 }, 2000);
               }
@@ -93,7 +95,7 @@ const ReleaseModal = ({
   // 发布的查询
   function publishCheckData() {
     // 防止在弹窗关闭后还继续轮训
-    if (!timer.current) {
+    if (!isRun.current) {
       return;
     }
     fetchGet(apiRequest.appStore.publish, {
@@ -165,7 +167,7 @@ const ReleaseModal = ({
   };
 
   useEffect(() => {
-    timer.current = releaseModalVisibility;
+    isRun.current = releaseModalVisibility;
   }, [releaseModalVisibility]);
 
   return (
@@ -181,6 +183,7 @@ const ReleaseModal = ({
           </span>
         }
         afterClose={() => {
+          clearTimeout(timer.current);
           setFilesList([]);
           setStepNum(0);
           setDataSource([]);
@@ -188,7 +191,8 @@ const ReleaseModal = ({
         }}
         onCancel={() => {
           if (
-            stepNum == 2 && dataSource.filter((item) => item.package_status == 5).length == 0
+            stepNum == 2 &&
+            dataSource.filter((item) => item.package_status == 5).length == 0
           ) {
             setReleaseModalVisibility(false);
             return;
@@ -253,7 +257,7 @@ const ReleaseModal = ({
                       return Upload.LIST_IGNORE;
                     }
 
-                    if(filesList.length + fileList.length > 5){
+                    if (filesList.length + fileList.length > 5) {
                       if (file == fileList[0]) {
                         message.error("仅支持上传5个文件");
                       }

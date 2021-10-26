@@ -82,7 +82,9 @@ export const apiRequest = {
     localPackageScanResult: "/api/appStore/localPackageScanResult/",
 
     // 服务列表
-    services:"/api/services/services/"
+    services: "/api/services/services/",
+    // 模版下载
+    applicationTemplate: "/api/appStore/applicationTemplate/"
   },
   inspection: {
     inspectionList: "/api/inspection/history/",
@@ -97,6 +99,8 @@ export const apiRequest = {
     // 深度分析｜主机巡检｜组件巡检 任务下发
     taskDistribution:"/api/inspection/history/",
     // 巡检渲染组件列表
-    servicesList:"/api/inspection/services/"
+    servicesList:"/api/inspection/services/",
+    // 巡检导出
+    download:"/download-inspection"
   },
 };

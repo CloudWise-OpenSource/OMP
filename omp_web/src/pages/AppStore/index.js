@@ -12,21 +12,18 @@ import { useEffect, useState } from "react";
 import styles from "./index.module.less";
 import { SearchOutlined, DownloadOutlined } from "@ant-design/icons";
 import Card from "./config/card.js";
-import { useSelector,useDispatch } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useHistory } from "react-router-dom";
 import { fetchGet } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-import { handleResponse } from "@/utils/utils";
+import { handleResponse, downloadFile } from "@/utils/utils";
 import ReleaseModal from "./config/ReleaseModal.js";
 import ScanServerModal from "./config/ScanServerModal";
 import { getTabKeyChangeAction } from "./store/actionsCreators";
 
 const AppStore = () => {
-
   // appStoreTabKey
-  const appStoreTabKey = useSelector(
-    (state) => state.appStore.appStoreTabKey
-  );
+  const appStoreTabKey = useSelector((state) => state.appStore.appStoreTabKey);
   const dispatch = useDispatch();
   // 视口高度
   const viewHeight = useSelector((state) => state.layouts.viewSize.height);
@@ -128,12 +125,12 @@ const AppStore = () => {
       }
     );
 
-    return ()=>{
-      dispatch(getTabKeyChangeAction("component"))
-    }
+    return () => {
+      dispatch(getTabKeyChangeAction("component"));
+    };
   }, [tabKey, searchKey]);
 
-  const refresh = ()=>{
+  const refresh = () => {
     fetchData(
       { current: 1, pageSize: pagination.pageSize },
       {
@@ -142,7 +139,7 @@ const AppStore = () => {
         type: searchKey == "全部" ? null : searchKey,
       }
     );
-  }
+  };
 
   return (
     <div>
@@ -186,7 +183,7 @@ const AppStore = () => {
               suffix={
                 !searchName && <SearchOutlined style={{ color: "#b6b6b6" }} />
               }
-              style={{ marginRight: 10,width:200 }}
+              style={{ marginRight: 10, width: 200 }}
               value={searchName}
               allowClear
               onChange={(e) => {
@@ -259,11 +256,11 @@ const AppStore = () => {
             className={styles.headerSearchCondition}
             onClick={(e) => {
               // 在把含有&符号的字符串存进数据库后，再读出来的时候，发现&都变成了&amp;
-              let str = e.target.innerHTML.replace(new RegExp("&amp;","g"),"&")
-              if (
-                searchData?.indexOf(str) !== -1 ||
-                str == "全部"
-              ) {
+              let str = e.target.innerHTML.replace(
+                new RegExp("&amp;", "g"),
+                "&"
+              );
+              if (searchData?.indexOf(str) !== -1 || str == "全部") {
                 setSearchKey(str);
               }
             }}
@@ -290,6 +287,9 @@ const AppStore = () => {
             <Button
               style={{ marginRight: 15, fontSize: 13 }}
               icon={<DownloadOutlined />}
+              onClick={() => {
+                downloadFile(apiRequest.appStore.applicationTemplate);
+              }}
             >
               <span style={{ color: "#818181" }}>下载组件模版</span>
             </Button>
