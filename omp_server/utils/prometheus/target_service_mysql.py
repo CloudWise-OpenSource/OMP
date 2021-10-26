@@ -12,8 +12,7 @@ class ServiceMysqlCrawl(Prometheus):
     """
     def __init__(self, env, instance):
         self.ret = {}
-        self.env = env  # 环境
-        self.tag_total_num = 0      # 总指标数
+        self.env = env              # 环境
         self.tag_error_num = 0      # 异常指标数
         self.instance = instance    # 主机ip
         Prometheus.__init__(self)
@@ -25,14 +24,13 @@ class ServiceMysqlCrawl(Prometheus):
         :msg: 返回值描述
         :is_success: 请求是否成功
         """
-        self.tag_total_num += 1         # 统计总指标数
         if is_success:
             if ret.get('result'):
                 return ret['result'][0].get('value')[1]
             else:
                 return ''
         else:
-            self.tag_error_num += 1     # 统计异常指标数
+            self.tag_error_num += 1  # 统计异常指标数
             return msg
 
     def run_status(self):
@@ -82,8 +80,12 @@ class ServiceMysqlCrawl(Prometheus):
         expr = f"mysql_global_status_slave_open_temp_tables"
         self.ret['slave_sql_running'] = self.unified_job(*self.query(expr))
 
-    def run(self, target):
+    def run(self):
         """统一执行实例方法"""
+        target = ['run_status', 'run_time', 'slow_queries',
+                  'threads_connected', 'max_connections',
+                  'threads_running', 'aborted_connects', 'qps',
+                  'slave_sql_running']
         for t in target:
             if getattr(self, t):
                 getattr(self, t)()
@@ -91,7 +93,5 @@ class ServiceMysqlCrawl(Prometheus):
 
 if __name__ == '__main__':
     h = ServiceMysqlCrawl(env='demo', instance='10.0.9.60')
-    h.run(['run_status', 'run_time', 'slow_queries', 'threads_connected',
-           'max_connections', 'threads_running', 'aborted_connects', 'qps',
-           'slave_sql_running'])
+    h.run()
     print(h.ret)
