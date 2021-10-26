@@ -8,7 +8,7 @@ import {
   Select,
   Tooltip,
   TimePicker,
-  message
+  message,
 } from "antd";
 import { useState, useEffect, useRef } from "react";
 import { handleResponse } from "@/utils/utils";
@@ -113,9 +113,7 @@ const PatrolStrategy = () => {
 
   // 修改策略的方法，当前无策略时使用post请求，当前有策略时使用put
   const changeStrategy = (data) => {
-    //console.log(data, form.getFieldsValue("isOpen"));
     let queryData = form.getFieldsValue();
-    //console.log(queryData);
     if (dataSource.job_name) {
       // 本来有任务，使用更新put
       fetchPut(apiRequest.inspection.updatePatrolStrategy, {
@@ -162,7 +160,7 @@ const PatrolStrategy = () => {
               queryData.strategy.time.format("HH:mm").split(":")[1] || "*",
             month: "*",
             day_of_week: queryData.strategy.week || "*",
-            day:  queryData.strategy.month || "*",
+            day: queryData.strategy.month || "*",
           },
           env: 1,
         },

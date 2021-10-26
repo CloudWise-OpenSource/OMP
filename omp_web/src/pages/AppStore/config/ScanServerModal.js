@@ -20,6 +20,8 @@ const ScanServerModal = ({
 
   const [dataSource, setDataSource] = useState();
 
+  const isOpen = useRef(null);
+
   const timer = useRef(null);
 
   // 失败时的轮训次数标识
@@ -27,7 +29,7 @@ const ScanServerModal = ({
 
   function fetchData(data) {
     // 防止在弹窗关闭后还继续轮训
-    if (!timer.current) {
+    if (!isOpen.current) {
       return;
     }
     fetchGet(apiRequest.appStore.localPackageScanResult, {
@@ -37,6 +39,9 @@ const ScanServerModal = ({
       },
     })
       .then((res) => {
+        timer.current = setTimeout(() => {
+          fetchData(data);
+        }, 2000);
         if (res)
           handleResponse(res, (res) => {
             if (res.data.stage_status.includes("check")) {
@@ -47,7 +52,7 @@ const ScanServerModal = ({
             }
             setDataSource(res.data);
             if (res.data && res.data.stage_status.includes("ing")) {
-              setTimeout(() => {
+              timer.current = setTimeout(() => {
                 fetchData(data);
               }, 2000);
             }
@@ -81,7 +86,7 @@ const ScanServerModal = ({
 
   // 扫描服务端executeLocalPackageScan
   const executeLocalPackageScan = () => {
-    setStepNum(0)
+    setStepNum(0);
     setLoading(true);
     fetchPost(apiRequest.appStore.executeLocalPackageScan)
       .then((res) => {
@@ -101,7 +106,7 @@ const ScanServerModal = ({
   };
 
   useEffect(() => {
-    timer.current = scanServerModalVisibility;
+    isOpen.current = scanServerModalVisibility;
     if (scanServerModalVisibility) {
       executeLocalPackageScan();
     }
@@ -123,6 +128,7 @@ const ScanServerModal = ({
         </span>
       }
       afterClose={() => {
+        clearTimeout(timer.current);
         refresh();
       }}
       onCancel={() => {

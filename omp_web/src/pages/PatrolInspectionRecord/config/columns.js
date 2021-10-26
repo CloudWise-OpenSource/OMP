@@ -1,8 +1,24 @@
-import { nonEmptyProcessing, renderDisc } from "@/utils/utils";
-import { Tooltip, Badge, Menu, Dropdown } from "antd";
+import { nonEmptyProcessing, renderDisc, downloadFile, handleResponse } from "@/utils/utils";
+import { Tooltip, Badge, Menu, Dropdown, message } from "antd";
 import moment from "moment";
+import { apiRequest } from "src/config/requestApi";
+import { fetchGet } from "@/utils/request";
 
 const getColumnsConfig = (queryRequest, history, queryData) => {
+  const fetchDetailData = (id) => {
+    //setLoading(true);
+    fetchGet(`${apiRequest.inspection.reportDetail}/${id}/`)
+      .then((res) => {
+        handleResponse(res, (res) => {
+          console.log(res.data.file_name)
+          downloadFile(`/download-inspection/${res.data.file_name}`);
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+       // setLoading(false);
+      });
+  };
 
   return [
     {
@@ -180,16 +196,11 @@ const getColumnsConfig = (queryRequest, history, queryData) => {
           <div style={{ display: "flex", justifyContent: "space-around" }}>
             <a
               onClick={() => {
-                //   record.is_read == 0 && updateAlertRead([record.id]);
-                //   setShowIframe({
-                //     isOpen: true,
-                //     src: record.monitor_log,
-                //     record: {
-                //       ...record,
-                //       ip: record.alert_host_ip,
-                //     },
-                //     isLog: true,
-                //   });
+                message.success(
+                  `正在下载巡检报告，双击文件夹中index.html查看报告`
+                );
+                //downloadFile(`/download-inspection/${record.inspection_name}`)
+                fetchDetailData(record.id);
               }}
             >
               导出
