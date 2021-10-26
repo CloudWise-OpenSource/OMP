@@ -435,8 +435,9 @@ class InspectionHistory(models.Model):
     inspection_operator = models.CharField(
         max_length=16, null=False, blank=False, help_text="操作人员-当前登录人")
     hosts = models.JSONField(
-        null=True, blank=True, help_text="巡检主机:[{'id':'1', 'ip':'10.0.9.158'}]")
-    services = models.JSONField(null=True, blank=True, help_text="巡检组件")
+        null=True, blank=True, help_text="巡检主机:['10.0.9.158']")
+    services = models.JSONField(
+        null=True, blank=True, help_text="巡检组件: [8,9]")
     start_time = models.DateTimeField(auto_now_add=True, help_text="开始时间")
     end_time = models.DateTimeField(null=True, help_text="结束时间，后端后补")
     duration = models.IntegerField(default=0, help_text="巡检用时：单位s，后端后补")
@@ -486,8 +487,8 @@ class InspectionReport(models.Model):
     id = models.AutoField(primary_key=True, unique=True, help_text="自增主键")
     file_name = models.CharField(
         max_length=128, null=True, blank=True, help_text="导出文件名")
-    tag_total_num = models.IntegerField(default=0, help_text="总指标数")
-    tag_error_num = models.IntegerField(default=0, help_text="异常指标数")
+    scan_info = models.JSONField(null=True, blank=True, help_text="扫描统计")
+    scan_result = models.JSONField(null=True, blank=True, help_text="分析结果")
     risk_data = models.JSONField(null=True, blank=True, help_text="风险指标")
     host_data = models.JSONField(null=True, blank=True, help_text="主机列表")
     serv_plan = models.JSONField(null=True, blank=True, help_text="服务平面图")

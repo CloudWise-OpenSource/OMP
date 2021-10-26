@@ -10,15 +10,9 @@ class HostCrawl(Prometheus):
     """
     查询 prometheus 主机指标
     """
-    # 类的实例方法名，为的是统一执行实例方法及对可查询指标进行验证
-    target = ['run_time', 'cpu_num', 'total_memory', 'rate_cpu', 'rate_io_wait',
-              'rate_memory', 'rate_max_disk', 'rate_exchange_disk',
-              'rate_cpu_io_wait', ]
-
     def __init__(self, env, instance):
         self.ret = {}
         self.env = env  # 环境
-        self.tag_total_num = 0      # 总指标数
         self.tag_error_num = 0      # 异常指标数
         self.instance = instance    # 主机ip
         Prometheus.__init__(self)
@@ -30,7 +24,6 @@ class HostCrawl(Prometheus):
         :msg: 返回值描述
         :is_success: 请求是否成功
         """
-        self.tag_total_num += 1         # 统计总指标数
         if is_success:
             if ret.get('result'):
                 return ret['result'][0].get('value')[1]
@@ -66,7 +59,8 @@ class HostCrawl(Prometheus):
 
     def rate_cpu(self):
         """总cpu使用率"""
-        expr = f"round(100 - (avg(rate(node_cpu_seconds_total{{env='{self.env}'," \
+        expr = f"round(100 - (avg(rate(node_cpu_seconds_total" \
+               f"{{env='{self.env}'," \
                f"instance=~'{self.instance}'," \
                f"mode='idle'}}[5m])) * 100))"
         self.ret['rate_cpu'] = self.unified_job(*self.query(expr))
@@ -79,7 +73,8 @@ class HostCrawl(Prometheus):
 
     def rate_memory(self):
         """内存使用率"""
-        expr = f"round((1 - (node_memory_MemAvailable_bytes{{env='{self.env}'," \
+        expr = f"round((1 - (node_memory_MemAvailable_bytes" \
+               f"{{env='{self.env}'," \
                f"instance=~'{self.instance}'}} / " \
                f"(node_memory_MemTotal_bytes{{env='{self.env}'," \
                f"instance=~'{self.instance}'}})))* 100)"
@@ -163,12 +158,19 @@ class HostCrawl(Prometheus):
                f"instance=~'{self.instance}'}}[2m])))"
         self.ret['disk_io'] = {'read': self.unified_job(*self.query(expr))}
         # 写
-        expr = f"round(sum(rate(node_disk_written_bytes_total{{env='{self.env}'," \
+        expr = f"round(sum(rate(node_disk_written_bytes_total" \
+               f"{{env='{self.env}'," \
                f"instance=~'{self.instance}'}}[2m])))"
         self.ret['disk_io']['write'] = self.unified_job(*self.query(expr))
 
-    def run(self, target):
+    def run(self):
         """统一执行实例方法"""
+        # target为实例方法，目的是统一执行实例方法并统一返回值
+        target = ['rate_cpu', 'rate_memory', 'rate_max_disk',
+                  'rate_exchange_disk',
+                  'run_time', 'avg_load',
+                  'total_file_descriptor', 'rate_io_wait',
+                  'network_bytes_total', 'disk_io', 'run_status']
         for t in target:
             if getattr(self, t):
                 getattr(self, t)()
@@ -176,8 +178,5 @@ class HostCrawl(Prometheus):
 
 if __name__ == '__main__':
     h = HostCrawl(env='demo', instance='10.0.2.113')
-    h.run(['run_time', 'rate_cpu', 'rate_memory', 'rate_max_disk',
-           'rate_exchange_disk', 'avg_load',
-           'total_file_descriptor', 'rate_io_wait', 'network_bytes_total',
-           'disk_io'])
+    h.run()
     print(h.ret)

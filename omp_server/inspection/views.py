@@ -187,7 +187,14 @@ class InspectionCrontabView(RetrieveModelMixin, ListModelMixin, GenericViewSet,
             # 增加定时任务
             is_success, job_name = cron_obj.create_crontab_job(**cron_args)
         else:
-            pass
+            tp = {'0': 'deep', '1': 'host', '2': 'service'}
+            task_name = \
+                f"inspection_cron_task_{tp.get(request.data.get('job_type'))}"
+            task_func = 'inspection.tasks.inspection_crontab'
+            cron_obj = CrontabUtils(task_name=task_name, task_func=task_func,
+                                    task_kwargs=request.data)
+            # 删除定时任务
+            cron_obj.delete_job()
 
         if is_success:
             # 只是想在修改时加个判断及对应操作，修改还是执行父类的update

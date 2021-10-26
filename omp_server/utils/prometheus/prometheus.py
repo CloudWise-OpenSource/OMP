@@ -30,7 +30,8 @@ class Prometheus(object):
 
 
 def back_fill(history_id, report_id, host_data=None, serv_data=None,
-              serv_plan=None, risk_data=None, tag_total_num=0, tag_error_num=0):
+              serv_plan=None, risk_data=None, scan_info=None, scan_result=None,
+              file_name=None):
     """
     异步反填报告数据
     :history_id : 巡检历史记录id
@@ -39,8 +40,9 @@ def back_fill(history_id, report_id, host_data=None, serv_data=None,
     :serv_data : 组件巡检数据
     :serv_plan : 服务
     :risk_data : 报警数据
-    :tag_total_num : 指标总数
-    :tag_error_num : 异常指标数
+    :scan_info : 扫描统计
+    :scan_result : 分析结果
+    :file_name : 导出文件名
     """
     # 反填巡检历史记录InspectionHistory表，结束时间end_time、巡检用时duration字段、巡检状态inspection_status
     now = datetime.now()
@@ -63,6 +65,6 @@ def back_fill(history_id, report_id, host_data=None, serv_data=None,
         # 反填巡检报告InspectionReport表，服务列表risk_data字段
         InspectionReport.objects.filter(id=report_id).update(
             risk_data=risk_data)
-    # 反填巡检报告InspectionReport表tag_total_num、tag_error_num
+    # 反填巡检报告InspectionReport表scan_info、scan_result
     InspectionReport.objects.filter(id=report_id).update(
-        tag_total_num=tag_total_num, tag_error_num=tag_error_num)
+        scan_info=scan_info, scan_result=scan_result, file_name=file_name)
