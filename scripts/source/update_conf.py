@@ -213,6 +213,7 @@ server {
 """ % (
     PROJECT_FOLDER,
     PROJECT_FOLDER,
+    PROJECT_FOLDER,
     os.path.join(PROJECT_FOLDER, "component/tengine/conf/uwsgi_params"),
     os.path.join(PROJECT_FOLDER, "component/tengine/conf/uwsgi_params"),
     os.path.join(PROJECT_FOLDER, "omp_web/dist"),
