@@ -1,11 +1,12 @@
 """
-单元测试混入类
+单元测试资源模拟混入类
 """
+import time
 import json
 import random
 from db_models.models import (
     Host, Env, Labels, Service, ServiceHistory,
-    ClusterInfo, ApplicationHub, ProductHub,
+    ClusterInfo, ApplicationHub, ProductHub, UploadPackageHistory
 )
 from utils.plugin.crypto import AESCryptor
 
@@ -112,7 +113,47 @@ class LabelsResourceMixin:
             label_name__startswith=self.LABEL_NAME_START).delete()
 
 
-class ApplicationResourceMixin(LabelsResourceMixin):
+class UploadPackageHistoryMixin:
+    """ 上传安装包记录资源混入类 """
+
+    PACKAGE_NAME_START = "t_pkg"
+
+    def get_upload_package_history(self, number=20, is_many=True):
+        """
+        获取上传安装包记录
+        :param number: 创建数量
+        :param is_many: 是否单次多个上传
+        """
+        history_ls = []
+        for index in range(number):
+            index += 1
+            # 短暂休眠，避免毫秒级时间戳重复
+            time.sleep(0.01)
+            opera_uuid = str(int(round(time.time() * 1000)))
+            # 模拟单次多个安装包数量
+            pkg_number = 1
+            if is_many:
+                pkg_number = random.randint(3, 5)
+            for package_number in range(pkg_number):
+                package_number += 1
+                history_ls.append(UploadPackageHistory(
+                    operation_uuid=opera_uuid,
+                    operation_user="admin",
+                    package_name=f"{self.PACKAGE_NAME_START}_{index}_{package_number}",
+                    package_md5=f"{self.PACKAGE_NAME_START}_{index}_{package_number}_md5",
+                    package_path=f"/data/app/{package_number}"
+                ))
+        UploadPackageHistory.objects.bulk_create(history_ls)
+        return UploadPackageHistory.objects.filter(
+            package_name__startswith=self.PACKAGE_NAME_START)
+
+    def destroy_upload_package_history(self):
+        """ 销毁上传安装包记录 """
+        UploadPackageHistory.objects.filter(
+            package_name__startswith=self.PACKAGE_NAME_START).delete()
+
+
+class ApplicationResourceMixin(LabelsResourceMixin, UploadPackageHistoryMixin):
     """ 应用资源混入类 """
     APP_NAME_START = "t_app"
 
@@ -134,7 +175,7 @@ class ApplicationResourceMixin(LabelsResourceMixin):
             })
         return json.dumps(install_info)
 
-    def _create_application(self, index, is_release, app_type, label_ls, app_version):
+    def _create_application(self, index, is_release, app_type, label_ls, app_package, app_version):
         """ 创建应用 """
         if app_type is None:
             app_type = random.choice(
@@ -156,6 +197,7 @@ class ApplicationResourceMixin(LabelsResourceMixin):
             app_logo="app log svg data...",
             app_install_args=self._mock_install_info(index),
             extend_fields=extend_fields,
+            app_package=app_package,
         )
         app_obj.save()
         # 随机模拟属于多种标签情况
@@ -175,18 +217,28 @@ class ApplicationResourceMixin(LabelsResourceMixin):
         """
         label_ls = self.get_labels(
             label_type=Labels.LABEL_TYPE_COMPONENT)
+        # 创建上传包记录
+        upload_history_ls = self.get_upload_package_history(
+            number=number, is_many=False)
         for index in range(number):
+            app_package = upload_history_ls[index]
             index += 1
             self._create_application(
-                index, is_release, app_type, label_ls, app_version="1.0")
+                index, is_release, app_type, label_ls,
+                app_package=app_package, app_version="1.0")
         # 随机模拟多个版本情况
         random_app_ls = random.sample(
             list(range(number)),
             random.randint(0, number // 2 + 1))
+        # 创建上传包记录
+        upload_history_ls = self.get_upload_package_history(
+            number=len(random_app_ls), is_many=False)
         for index in random_app_ls:
+            app_package = upload_history_ls[index]
             index += 1
             self._create_application(
-                index, is_release, app_type, label_ls, app_version="2.0")
+                index, is_release, app_type, label_ls,
+                app_package=app_package, app_version="2.0")
         return ApplicationHub.objects.filter(
             app_name__startswith=self.APP_NAME_START)
 
@@ -194,14 +246,15 @@ class ApplicationResourceMixin(LabelsResourceMixin):
         """ 销毁应用 """
         ApplicationHub.objects.filter(
             app_name__startswith=self.APP_NAME_START).delete()
+        self.destroy_upload_package_history()
         self.destroy_labels()
 
 
-class ProductResourceMixin(LabelsResourceMixin):
+class ProductResourceMixin(LabelsResourceMixin, UploadPackageHistoryMixin):
     """ 产品资源混入类 """
     PRO_NAME_START = "t_pro"
 
-    def _create_product(self, index, is_release, label_ls, pro_version):
+    def _create_product(self, index, is_release, label_ls, pro_package, pro_version):
         if is_release is None:
             is_release = random.choice((True, False))
         pro_obj = ProductHub(
@@ -210,6 +263,7 @@ class ProductResourceMixin(LabelsResourceMixin):
             pro_version=pro_version,
             pro_description="产品描述，省略一万字...",
             pro_logo="pro log svg data",
+            pro_package=pro_package,
         )
         pro_obj.save()
         # 随机模拟属于多种标签情况
@@ -228,18 +282,28 @@ class ProductResourceMixin(LabelsResourceMixin):
         """
         label_ls = self.get_labels(
             label_type=Labels.LABEL_TYPE_COMPONENT)
+        # 创建上传包记录
+        upload_history_ls = self.get_upload_package_history(
+            number=number, is_many=False)
         for index in range(number):
+            pro_package = upload_history_ls[index]
             index += 1
             self._create_product(
-                index, is_release, label_ls, pro_version="1.0")
+                index, is_release, label_ls,
+                pro_package=pro_package, pro_version="1.0")
         # 随机模拟多个版本情况
         random_pro_ls = random.sample(
             list(range(number)),
             random.randint(0, number // 2 + 1))
+        # 创建上传包记录
+        upload_history_ls = self.get_upload_package_history(
+            number=len(random_pro_ls), is_many=False)
         for index in random_pro_ls:
+            pro_package = upload_history_ls[index]
             index += 1
             self._create_product(
-                index, is_release, label_ls, pro_version="2.0")
+                index, is_release, label_ls,
+                pro_package=pro_package, pro_version="2.0")
         return ProductHub.objects.filter(
             pro_name__startswith=self.PRO_NAME_START)
 
