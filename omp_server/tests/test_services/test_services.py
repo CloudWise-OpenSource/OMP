@@ -14,16 +14,20 @@ class ListServiceTest(AutoLoginTest, ServicesResourceMixin):
     def setUp(self):
         super(ListServiceTest, self).setUp()
         self.list_service_url = reverse("services-list")
+        self.service_ls = self.get_services()
+
+    def tearDown(self):
+        super(ListServiceTest, self).tearDown()
+        self.destroy_services()
 
     def test_services_list_filter(self):
         """ 测试服务列表过滤 """
-        service_ls = self.get_services()
 
         # 查询服务列表 -> 展示所用服务
         resp = self.get(self.list_service_url).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
-        self.assertEqual(resp.get("data").get("count"), len(service_ls))
+        self.assertEqual(resp.get("data").get("count"), len(self.service_ls))
 
         # IP 过滤 -> 模糊匹配
         ip_field = str(random.randint(1, 20))
@@ -76,11 +80,8 @@ class ListServiceTest(AutoLoginTest, ServicesResourceMixin):
                 service__app_type=app_type).count()
         )
 
-        self.destroy_services()
-
     def test_services_list_order(self):
         """ 测试服务列表排序 """
-        self.get_services()
 
         # 不传递排序字段 -> 默认按照创建时间倒序
         resp = self.get(self.list_service_url).json()
@@ -109,15 +110,20 @@ class ListServiceTest(AutoLoginTest, ServicesResourceMixin):
             ordering).values_list("service_instance_name", flat=True))[:10]
         self.assertEqual(instance_name_ls, target_instance_name_ls)
 
-        self.destroy_services()
-
 
 class ServiceDetailTest(AutoLoginTest, ServicesResourceMixin):
     """ 服务详情测试类 """
 
+    def setUp(self):
+        super(ServiceDetailTest, self).setUp()
+        self.service_ls = self.get_services()
+
+    def tearDown(self):
+        super(ServiceDetailTest, self).tearDown()
+        self.destroy_services()
+
     def test_service_detail(self):
         """ 测试服务详情 """
-        service_ls = self.get_services()
 
         # 使用不存在 id -> 未找到
         resp = self.get(reverse("services-detail", [9999])).json()
@@ -129,10 +135,8 @@ class ServiceDetailTest(AutoLoginTest, ServicesResourceMixin):
 
         # 使用存在 id -> 查询成功
         resp = self.get(reverse("services-detail", [
-            random.choice(service_ls).id
+            random.choice(self.service_ls).id
         ])).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
         self.assertTrue(resp.get("data") is not None)
-
-        self.destroy_services()
