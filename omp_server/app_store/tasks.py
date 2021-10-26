@@ -457,7 +457,7 @@ def publish_bak_end(uuid, exc_len):
     exc_task = True
     time_count = 0
     try:
-        while exc_task and time_count <= 60:
+        while exc_task and time_count <= 600:
             valid_uuids = UploadPackageHistory.objects.filter(
                 operation_uuid=uuid,
                 package_parent__isnull=True,
