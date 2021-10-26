@@ -1,13 +1,17 @@
 """
 应用商店相关视图
 """
+import os
+import logging
+
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import (
     ListModelMixin, CreateModelMixin
 )
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
-
+from django.http import FileResponse
+from django.conf import settings
 from django_filters.rest_framework.backends import DjangoFilterBackend
 
 from db_models.models import (
@@ -32,6 +36,8 @@ from app_store import tmp_exec_back_task
 from utils.common.exceptions import OperateError
 from app_store.tasks import publish_entry
 from rest_framework.filters import OrderingFilter
+
+logger = logging.getLogger("server")
 
 
 class AppStoreListView(GenericViewSet, ListModelMixin):
@@ -352,3 +358,28 @@ class LocalPackageScanResultView(GenericViewSet, ListModelMixin):
         self.check_request_param(operation_uuid, package_names)
         res = self.get_res_data(operation_uuid, package_names)
         return Response(res)
+
+
+class ApplicationTemplateView(GenericViewSet, ListModelMixin):
+    """
+        list:
+        获取应用商店下载模板
+    """
+    # 操作描述信息
+    get_description = "应用商店下载组件模板"
+
+    def list(self, request, *args, **kwargs):
+        template_file_name = "template.md"
+        template_path = os.path.join(
+            settings.BASE_DIR.parent,
+            "package_hub", "template", template_file_name)
+        try:
+            file = open(template_path, 'rb')
+            response = FileResponse(file)
+            response["Content-Type"] = "application/octet-stream"
+            response["Content-Disposition"] = \
+                f"attachment;filename={template_file_name}"
+        except FileNotFoundError:
+            logger.error("template.md file not found")
+            raise OperateError("组件模板文件缺失")
+        return response

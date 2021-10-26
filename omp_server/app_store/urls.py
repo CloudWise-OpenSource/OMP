@@ -13,7 +13,8 @@ from app_store.views import (
     UploadPackageView, RemovePackageView,
     ComponentDetailView, ServiceDetailView,
     ServicePackPageVerificationView, PublishViewSet,
-    ExecuteLocalPackageScanView, LocalPackageScanResultView
+    ExecuteLocalPackageScanView, LocalPackageScanResultView,
+    ApplicationTemplateView
 )
 from app_store.views_for_install import (
     ComponentEntranceView,
@@ -38,6 +39,15 @@ router.register("executeLocalPackageScan", ExecuteLocalPackageScanView,
                 basename="executeLocalPackageScan")
 router.register("localPackageScanResult", LocalPackageScanResultView,
                 basename="localPackageScanResult")
+router.register(
+    "executeLocalPackageScan", ExecuteLocalPackageScanView,
+    basename='executeLocalPackageScan')
+router.register(
+    "localPackageScanResult", LocalPackageScanResultView,
+    basename='localPackageScanResult')
+router.register(
+    "applicationTemplate", ApplicationTemplateView,
+    basename='applicationTemplate')
 
 # 安装部分使用路由
 router.register(
