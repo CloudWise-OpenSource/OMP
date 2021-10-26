@@ -5,7 +5,7 @@ import time
 import json
 import random
 from db_models.models import (
-    Host, Env, Labels, Service, ServiceHistory,
+    Host, Env, Labels, Service, ServiceHistory, GrafanaMainPage,
     ClusterInfo, ApplicationHub, ProductHub, UploadPackageHistory
 )
 from utils.plugin.crypto import AESCryptor
@@ -80,6 +80,32 @@ class HostBatchRequestMixin:
                 data["row"] = i + 1
             host_list.append(data)
         return {"host_list": host_list}
+
+
+class GrafanaMainPageResourceMixin:
+    """ Grafana 主面板资源混入类 """
+
+    INSTANCE_NAME_TUPLE = ("node", "service", "log", "mysql")
+    INSTANCE_URL_CONTAIN = "t_grafana"
+
+    def get_grafana_main_pages(self):
+        """ 获取面板信息 """
+        grafana_main_page_ls = []
+        for instance_name in self.INSTANCE_NAME_TUPLE:
+            grafana_main_page_ls.append(GrafanaMainPage(
+                instance_name=instance_name,
+                instance_url=f"/proxy/v1/{self.INSTANCE_URL_CONTAIN}/d/{instance_name}-url"
+            ))
+        GrafanaMainPage.objects.bulk_create(grafana_main_page_ls)
+        return GrafanaMainPage.objects.filter(
+            instance_name__in=self.INSTANCE_NAME_TUPLE,
+            instance_url__contains=self.INSTANCE_URL_CONTAIN)
+
+    def destroy_grafana_main_pages(self):
+        """ 销毁面板信息 """
+        GrafanaMainPage.objects.filter(
+            instance_name__in=self.INSTANCE_NAME_TUPLE,
+            instance_url__contains=self.INSTANCE_URL_CONTAIN).delete()
 
 
 class LabelsResourceMixin:

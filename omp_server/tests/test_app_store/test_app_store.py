@@ -18,11 +18,14 @@ class LabelListTest(AutoLoginTest, LabelsResourceMixin):
     def setUp(self):
         super(LabelListTest, self).setUp()
         self.label_list_url = reverse("labels-list")
+        self.label_ls = self.get_labels()
+
+    def tearDown(self):
+        super(LabelListTest, self).tearDown()
+        self.destroy_labels()
 
     def test_label_list(self):
         """ 测试标签列表 """
-
-        self.get_labels()
 
         # 查询标签列表 -> 返回所有标签列表数据
         resp = self.get(self.label_list_url).json()
@@ -47,8 +50,6 @@ class LabelListTest(AutoLoginTest, LabelsResourceMixin):
             ).values_list("label_name", flat=True))
         )
 
-        self.destroy_labels()
-
 
 class ComponentListTest(AutoLoginTest, ApplicationResourceMixin):
     """ 基础组件列表测试类 """
@@ -56,16 +57,20 @@ class ComponentListTest(AutoLoginTest, ApplicationResourceMixin):
     def setUp(self):
         super(ComponentListTest, self).setUp()
         self.component_list_url = reverse("components-list")
+        self.app_obj_ls = self.get_application()
+
+    def tearDown(self):
+        super(ComponentListTest, self).tearDown()
+        self.destroy_application()
 
     def test_component_list_filter(self):
         """ 测试基础组件列表过滤 """
-        app_obj_ls = self.get_application()
 
         # 查询组件列表 -> 按名称合并展示所有已发布组件
         resp = self.get(self.component_list_url).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
-        comp_set = set(app_obj_ls.filter(
+        comp_set = set(self.app_obj_ls.filter(
             is_release=True,
             app_type=ApplicationHub.APP_TYPE_COMPONENT
         ).values_list("app_name"))
@@ -77,7 +82,7 @@ class ComponentListTest(AutoLoginTest, ApplicationResourceMixin):
         }).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
-        comp_set = set(app_obj_ls.filter(
+        comp_set = set(self.app_obj_ls.filter(
             is_release=True,
             app_type=ApplicationHub.APP_TYPE_COMPONENT,
             app_name__contains="app_1",
@@ -91,24 +96,21 @@ class ComponentListTest(AutoLoginTest, ApplicationResourceMixin):
         }).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
-        comp_set = set(app_obj_ls.filter(
+        comp_set = set(self.app_obj_ls.filter(
             is_release=True,
             app_type=ApplicationHub.APP_TYPE_COMPONENT,
             app_labels__label_name=label_name,
         ).values_list("app_name"))
         self.assertEqual(resp.get("data").get("count"), len(comp_set))
 
-        self.destroy_application()
-
     def test_component_list_order(self):
         """ 测试基础组建列表排序 """
-        app_obj_ls = self.get_application()
 
         # 查询组件列表 -> 各组件返回最新数据，按照创建时间排序
         resp = self.get(self.component_list_url).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
-        obj_ls = list(app_obj_ls.filter(
+        obj_ls = list(self.app_obj_ls.filter(
             is_release=True,
             app_type=ApplicationHub.APP_TYPE_COMPONENT
         ).values("app_name").annotate(c=Max("created")).order_by(
@@ -124,8 +126,6 @@ class ComponentListTest(AutoLoginTest, ApplicationResourceMixin):
             resp.get("data").get("results")))
         self.assertEqual(result_ls, target_ls)
 
-        self.destroy_application()
-
 
 class ServiceListTest(AutoLoginTest, ProductResourceMixin):
     """ 产品列表测试类 """
@@ -133,16 +133,20 @@ class ServiceListTest(AutoLoginTest, ProductResourceMixin):
     def setUp(self):
         super(ServiceListTest, self).setUp()
         self.service_list_url = reverse("appServices-list")
+        self.service_obj_ls = self.get_product()
+
+    def tearDown(self):
+        super(ServiceListTest, self).tearDown()
+        self.destroy_product()
 
     def test_service_list_filter(self):
         """ 测试应用服务列表过滤 """
-        service_obj_ls = self.get_product()
 
         # 查询服务列表 -> 按名称合并展示所有已发布服务
         resp = self.get(self.service_list_url).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
-        service_set = set(service_obj_ls.filter(
+        service_set = set(self.service_obj_ls.filter(
             is_release=True
         ).values_list("pro_name"))
         self.assertEqual(resp.get("data").get("count"), len(service_set))
@@ -153,7 +157,7 @@ class ServiceListTest(AutoLoginTest, ProductResourceMixin):
         }).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
-        service_set = set(service_obj_ls.filter(
+        service_set = set(self.service_obj_ls.filter(
             is_release=True,
             pro_name__contains="pro_1",
         ).values_list("pro_name"))
@@ -163,13 +167,12 @@ class ServiceListTest(AutoLoginTest, ProductResourceMixin):
 
     def test_service_list_order(self):
         """ 测试应用服务列表排序 """
-        service_obj_ls = self.get_product()
 
         # 查询应用服务列表 -> 各组件返回最新数据，按照创建时间排序
         resp = self.get(self.service_list_url).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
-        obj_ls = list(service_obj_ls.filter(
+        obj_ls = list(self.service_obj_ls.filter(
             is_release=True,
         ).values("pro_name").annotate(c=Max("created")).order_by(
             "-created").values_list("pro_name", flat=True))
@@ -181,8 +184,6 @@ class ServiceListTest(AutoLoginTest, ProductResourceMixin):
             lambda x: x.get("pro_name"),
             resp.get("data").get("results")))
         self.assertEqual(result_ls, target_ls[:10])
-
-        self.destroy_product()
 
 
 class AppStoreDetailTest(AutoLoginTest, ApplicationResourceMixin, ProductResourceMixin):
