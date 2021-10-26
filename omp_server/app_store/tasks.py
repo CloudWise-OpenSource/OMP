@@ -462,12 +462,14 @@ def publish_bak_end(uuid, exc_len):
                 operation_uuid=uuid,
                 package_parent__isnull=True,
             ).exclude(
-                package_status=2).count()
-            if valid_uuids != exc_len:
+                package_status=2)
+            valid_success = valid_uuids.exclude(
+                package_status=1).count()
+            if valid_uuids.count() != exc_len:
                 time_count += 1
                 time.sleep(5)
             else:
-                if valid_uuids != 0:
+                if valid_uuids.count() != 0 and valid_success != 0:
                     publish_entry(uuid)
                 else:
                     exec_clear(os.path.join(
