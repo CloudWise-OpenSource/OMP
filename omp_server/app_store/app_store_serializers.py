@@ -20,7 +20,8 @@ from db_models.models import (
 
 from app_store.install_utils import (
     make_lst_unique, ServiceArgsSerializer,
-    SerDependenceParseUtils, ProDependenceParseUtils
+    SerDependenceParseUtils, ProDependenceParseUtils,
+    ValidateExistService, ValidateInstallService
 )
 
 logger = logging.getLogger("server")
@@ -258,11 +259,16 @@ class ExecuteLocalPackageScanSerializer(Serializer):
 class ComponentEntranceSerializer(serializers.ModelSerializer):
     """ 组件安装入口数据序列化 """
 
+    app_port = serializers.SerializerMethodField()
     app_dependence = serializers.SerializerMethodField()
     app_install_args = serializers.SerializerMethodField()
     deploy_mode = serializers.SerializerMethodField()
     process_continue = serializers.SerializerMethodField()
     process_message = serializers.SerializerMethodField()
+
+    def get_app_port(self, obj):    # NOQA
+        """ 获取服务端口 """
+        return ServiceArgsSerializer().get_app_port(obj)
 
     def get_app_dependence(self, obj):  # NOQA
         """ 解析服务级别的依赖关系 """
@@ -287,7 +293,7 @@ class ComponentEntranceSerializer(serializers.ModelSerializer):
         """ 元数据 """
         model = ApplicationHub
         fields = [
-            "app_name", "app_version", "app_dependence",
+            "app_name", "app_version", "app_dependence", "app_port",
             "app_install_args", "deploy_mode", "process_continue",
             "process_message"
         ]
@@ -351,3 +357,73 @@ class ProductEntranceSerializer(serializers.ModelSerializer):
             "pro_name", "pro_version", "pro_dependence",
             "pro_services", "dependence_services_info"
         ]
+
+
+class ExecuteInstallSerializer(Serializer):
+    """
+        执行安装时需要解析前端上传的数据的准确性，服务间的关联依赖关系
+        目标服务器上实际安装的数据信息等内容
+    """
+
+    INSTALL_COMPONENT = 0
+    INSTALL_PRODUCT = 1
+    INSTALL_TYPE_CHOICES = (
+        (INSTALL_COMPONENT, "组件安装"),
+        (INSTALL_PRODUCT, "产品安装")
+    )
+    install_type = serializers.ChoiceField(
+        choices=INSTALL_TYPE_CHOICES,
+        help_text="选择安装方式: 0-组件; 1-应用",
+        required=True, allow_null=False, allow_blank=False,
+        error_messages={"required": "必须包含[install_type]字段"}
+    )
+    use_exist_services = serializers.ListField(
+        child=serializers.DictField(),
+        help_text="复用已安装的服务列表，eg: [{'name': 'ser1', 'id': 1}]",
+        required=True, allow_empty=True,
+        error_messages={"required": "必须包含[use_exist_services]字段"}
+    )
+    install_services = serializers.ListField(
+        child=serializers.DictField(),
+        help_text="需要安装的服务列表，eg: [{'name': 'ser1', 'version': 1}]",
+        required=True, allow_empty=False,
+        error_messages={
+            "required": "必须包含[install_services]字段",
+            "empty": "必须包含将要安装的服务信息"
+        }
+    )
+
+    def validate_use_exist_services(self, data):    # NOQA
+        """
+        校验已经存在的服务是否准确
+        :param data:
+        :return:
+        """
+        if not data:
+            return data
+        _val = ValidateExistService(data=data)
+        if not _val.run():
+            raise ValidationError("复用已存在的服务信息有误")
+        return data
+
+    def validate_install_services(self, data):  # NOQA
+        """
+        校验即将安装的服务及参数
+        :param data:
+        :return:
+        """
+        _val = ValidateInstallService(data=data)
+        _flag, _data = _val.run()
+        if not _flag:
+            raise ValidationError("error")
+        return data
+
+    def create(self, validated_data):   # NOQA
+        """
+        生成部署计划，调用异步任务
+        :param validated_data:
+        :return:
+        """
+        # TODO 生成部署计划
+        print(validated_data)
+        return validated_data
