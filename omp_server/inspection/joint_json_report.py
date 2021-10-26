@@ -23,7 +23,8 @@ def joint_json_data(handle, _r, _h):
             "scan_info": _r.scan_info,
             "scan_result": _r.scan_result
         },
-        "risks": _r.risk_data if _r.risk_data else [],
+        "risks": _r.risk_data
+        if _r.risk_data else {"host_list": [], "service_list": []},
         "detail_dict": {},
         "file_name": _r.file_name
     }
@@ -42,5 +43,7 @@ def joint_json_data(handle, _r, _h):
         ret["service_topology"] = _r.serv_plan if _r.serv_plan else []
         ret['detail_dict']['host'] = _r.host_data
         ret['detail_dict']["service"] = _r.serv_data
+        ret['detail_dict']["database"] = []
+        ret['detail_dict']["component"] = []
 
     return ret

@@ -24,6 +24,7 @@ from inspection.serializers import (
     InspectionReportSerializer)
 from rest_framework.filters import OrderingFilter
 from db_models.models import Service, ApplicationHub
+from inspection.joint_json_report import joint_json_data
 
 
 class InspectionServiceView(ListModelMixin, GenericViewSet):
@@ -226,6 +227,5 @@ class InspectionReportView(GenericViewSet, RetrieveModelMixin):
         if not _r or not _h:
             return Response('巡检报告缺失，暂不可查看')
 
-        from inspection.joint_json_report import joint_json_data
         ret = joint_json_data(_h.inspection_type, _r, _h)
         return Response(ret)

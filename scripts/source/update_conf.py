@@ -184,6 +184,9 @@ tengine_vhost_content = """
 server {
     listen ACCESS_PORT;
     server_name LOCAL_IP;
+    location /download-inspection/ {
+        alias %s/data/inspection_file/;
+    }
     location /download-backup/ {
         alias %s/data/backup/;
     }
