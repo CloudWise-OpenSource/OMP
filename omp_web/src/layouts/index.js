@@ -127,16 +127,12 @@ const OmpLayout = (props) => {
   // 相应路由跳转，submenu打开
   useEffect(() => {
     try {
-      if (
-        location.pathname == "/products-management/version/rapidDeployment" ||
-        location.pathname == "/products-management/version/upload" ||
-        location.pathname == "/products-management/version/installationDetails"
-      ) {
-        setSelectedKeys(["/products-management/version"]);
-      } else {
-        setSelectedKeys([location.pathname]);
-      }
+
       let pathArr = location.pathname.split("/");
+      // console.log([location.pathname])
+      // console.log([`/${pathArr[0]}/${pathArr[1]}`])
+      setSelectedKeys([`/${pathArr[1]}/${pathArr[2]}`]);
+
       let newPath = `/${pathArr[1]}`;
       setCurrentOpenedKeys([newPath]);
     } catch (e) {

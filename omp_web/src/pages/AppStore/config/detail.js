@@ -100,7 +100,7 @@ const AppStoreDetail = () => {
       <Spin spinning={loading}>
         <div className={styles.detailHeader}>
           <div>
-            {/* <LeftOutlined
+            <LeftOutlined
               style={{ fontSize: 16 }}
               className={styles.backIcon}
               onClick={() => {
@@ -111,7 +111,7 @@ const AppStoreDetail = () => {
                   pathname: `/application_management/app_store`,
                 });
               }}
-            /> */}
+            />
             {" "}
             <span style={{ paddingLeft: 20, fontSize: 16, color: "#4c4c4c" }}>
               {dataSource[nameObj.name]}
