@@ -212,7 +212,7 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
             explain_service_yml[1]['package_name'] = service_pk_name
             explain_service_list.append(explain_service_yml[1])
         explain_yml[1]['product_service'] = explain_service_list
-        tmp_dir = tmp_dir + "-" + versions
+        tmp_dir = f"{tmp_dir}-{versions}"
     else:
         tmp_dir = file_name
     explain_yml[1]['image'] = image
