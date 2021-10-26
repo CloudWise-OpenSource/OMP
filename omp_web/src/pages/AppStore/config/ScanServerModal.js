@@ -61,14 +61,14 @@ const ScanServerModal = ({
           }, 5000);
         } else {
           setDataSource((dataS) => {
-            console.log(dataS);
+            // /console.log(dataS);
             let arr = dataS.package_detail.map((item) => {
               return {
                 ...item,
                 status: 9,
               };
             });
-            console.log(arr);
+            //console.log(arr);
             return {
               ...dataS,
               package_detail: arr,
@@ -81,6 +81,7 @@ const ScanServerModal = ({
 
   // 扫描服务端executeLocalPackageScan
   const executeLocalPackageScan = () => {
+    setStepNum(0)
     setLoading(true);
     fetchPost(apiRequest.appStore.executeLocalPackageScan)
       .then((res) => {
