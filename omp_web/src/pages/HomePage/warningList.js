@@ -173,6 +173,7 @@ function WarningList() {
   ];
 
   const queryData = () => {
+    return
     setLoading(true);
     fetchGet(apiRequest.operationManagement.alertList)
       .then((res) => {
