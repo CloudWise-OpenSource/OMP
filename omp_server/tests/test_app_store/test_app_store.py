@@ -7,7 +7,9 @@ from tests.mixin import (
     LabelsResourceMixin, ApplicationResourceMixin,
     ProductResourceMixin
 )
-from db_models.models import Labels, ApplicationHub
+from db_models.models import (
+    Labels, ApplicationHub
+)
 
 
 class LabelListTest(AutoLoginTest, LabelsResourceMixin):
@@ -115,6 +117,8 @@ class ComponentListTest(AutoLoginTest, ApplicationResourceMixin):
         for obj in obj_ls:
             if obj not in target_ls:
                 target_ls.append(obj)
+            if len(target_ls) == 10:
+                break
         result_ls = list(map(
             lambda x: x.get("app_name"),
             resp.get("data").get("results")))
@@ -177,5 +181,43 @@ class ServiceListTest(AutoLoginTest, ProductResourceMixin):
             lambda x: x.get("pro_name"),
             resp.get("data").get("results")))
         self.assertEqual(result_ls, target_ls[:10])
+
+        self.destroy_product()
+
+
+class AppStoreDetailTest(AutoLoginTest, ApplicationResourceMixin, ProductResourceMixin):
+    """ 应用商店组件和产品测试类 """
+
+    def setUp(self):
+        super(AppStoreDetailTest, self).setUp()
+        self.application_detail_url = reverse("componentDetail-list")
+        self.product_detail_url = reverse("appServiceDetail-list")
+
+    def test_application_detail(self):
+        """ 测试应用详情 """
+        app_ls = self.get_application()
+
+        # 查询应用表 -> 返回所指定应用名符合的数据
+        resp = self.get(self.application_detail_url, {
+            "app_name": random.choice(app_ls).app_name
+        }).json()
+        self.assertEqual(resp.get("code"), 0)
+        self.assertEqual(resp.get("message"), "success")
+        self.assertIsNotNone(resp.get('data'))
+
+        self.destroy_application()
+
+    def test_product_detail(self):
+        """
+        测试产品详情
+        """
+        pro_ls = self.get_product()
+
+        resp = self.get(self.product_detail_url, {
+            "pro_name": random.choice(pro_ls).pro_name
+        }).json()
+        self.assertEqual(resp.get("code"), 0)
+        self.assertEqual(resp.get("message"), "success")
+        self.assertIsNotNone(resp.get('data'))
 
         self.destroy_product()
