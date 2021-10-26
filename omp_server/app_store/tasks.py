@@ -212,7 +212,7 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
             explain_service_yml[1]['package_name'] = service_pk_name
             explain_service_list.append(explain_service_yml[1])
         explain_yml[1]['product_service'] = explain_service_list
-        tmp_dir = tmp_dir + "-" + versions
+        tmp_dir = f"{tmp_dir}-{versions}"
     else:
         tmp_dir = file_name
     explain_yml[1]['image'] = image
@@ -462,12 +462,14 @@ def publish_bak_end(uuid, exc_len):
                 operation_uuid=uuid,
                 package_parent__isnull=True,
             ).exclude(
-                package_status=2).count()
-            if valid_uuids != exc_len:
+                package_status=2)
+            valid_success = valid_uuids.exclude(
+                package_status=1).count()
+            if valid_uuids.count() != exc_len:
                 time_count += 1
                 time.sleep(5)
             else:
-                if valid_uuids != 0:
+                if valid_uuids.count() != 0 and valid_success != 0:
                     publish_entry(uuid)
                 else:
                     exec_clear(os.path.join(
