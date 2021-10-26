@@ -536,8 +536,8 @@ def publish_entry(uuid):
             logger.error('移动或删除失败')
             return None
         valid_packages_obj.append(line['package_name'].id)
-    clear_dir = tmp_dir[0] if os.path.isfile(valid_dir) else \
-        os.path.dirname(tmp_dir[0])
+    clear_dir = os.path.dirname(tmp_dir[0]) if os.path.isfile(valid_dir) else \
+        os.path.dirname(os.path.dirname(tmp_dir[0]))
     UploadPackageHistory.objects.filter(id__in=valid_packages_obj).update(
         package_status=3)
     exec_clear(clear_dir)
