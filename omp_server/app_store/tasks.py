@@ -259,7 +259,7 @@ class ExplainYml:
         kinds = ['product', 'service', 'upgrade', 'component']
         try:
             with open(self.yaml_exc, "r", encoding="utf8") as fp:
-                settings = yaml.load(fp, Loader=yaml.FullLoader)
+                settings = yaml.load(fp, Loader=yaml.BaseLoader)
         except Exception as e:
             self.db_obj.update_package_status(
                 1,
