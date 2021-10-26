@@ -84,23 +84,27 @@ export const apiRequest = {
     // 服务列表
     services: "/api/services/services/",
     // 模版下载
-    applicationTemplate: "/api/appStore/applicationTemplate/"
+    applicationTemplate: "/api/appStore/applicationTemplate/",
+    // 组件安装查询接口
+    componentEntranc: "/api/appStore/componentEntrance/",
+    // 产品安装查询接口
+    productEntrance: "/api/appStore/productEntrance/",
   },
   inspection: {
     inspectionList: "/api/inspection/history/",
     // 巡检记录详情
-    reportDetail:"/api/inspection/report",
+    reportDetail: "/api/inspection/report",
     // 巡检策略查询
-    queryPatrolStrategy:"/api/inspection/crontab/0/",
+    queryPatrolStrategy: "/api/inspection/crontab/0/",
     // 创建巡检任务
-    createPatrolStrategy:"/api/inspection/crontab/",
+    createPatrolStrategy: "/api/inspection/crontab/",
     // 修改巡检任务
-    updatePatrolStrategy:"/api/inspection/crontab/0/",
+    updatePatrolStrategy: "/api/inspection/crontab/0/",
     // 深度分析｜主机巡检｜组件巡检 任务下发
-    taskDistribution:"/api/inspection/history/",
+    taskDistribution: "/api/inspection/history/",
     // 巡检渲染组件列表
-    servicesList:"/api/inspection/services/",
+    servicesList: "/api/inspection/services/",
     // 巡检导出
-    download:"/download-inspection"
+    download: "/download-inspection",
   },
 };

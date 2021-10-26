@@ -431,7 +431,7 @@ const PatrolInspectionRecord = () => {
         loading={loading}
         onFinish={() => {
           taskDistribution("service", {
-            service: checkboxGroupData,
+            services: checkboxGroupData,
           });
         }}
       >

@@ -10,7 +10,9 @@ import ExceptionList from "@/pages/ExceptionList";
 import PatrolInspectionRecord from "@/pages/PatrolInspectionRecord";
 import PatrolStrategy from "@/pages/PatrolStrategy";
 import PatrolInspectionDetail from "@/pages/PatrolInspectionRecord/config/detail";
-import ServiceManagement from "@/pages/ServiceManagement"
+import ServiceManagement from "@/pages/ServiceManagement";
+import ComponentInstallation from "@/pages/AppStore/config/ComponentInstallation";
+import ApplicationInstallation from "@/pages/AppStore/config/ApplicationInstallation";
 import {
   DesktopOutlined,
   ClusterOutlined,
@@ -18,7 +20,7 @@ import {
   SettingOutlined,
   LineChartOutlined,
   AppstoreOutlined,
-  EyeOutlined
+  EyeOutlined,
 } from "@ant-design/icons";
 
 export default [
@@ -49,18 +51,18 @@ export default [
         path: "/application_management/app_store",
         component: AppStore,
       },
-      // {
-      //   title: "应用安装",
-      //   path: "/application_management/app_store/application_installation/:name",
-      //   notInMenu: true,
-      //   component: AppStoreDetail,
-      // },
-      // {
-      //   title: "组件安装",
-      //   path: "/application_management/app_store/application_installation/:name",
-      //   notInMenu: true,
-      //   component: AppStoreDetail,
-      // },
+      {
+        title: "组件安装",
+        path: "/application_management/app_store/component_installation/:name",
+        notInMenu: true,
+        component: ComponentInstallation,
+      },
+      {
+        title: "应用安装",
+        path: "/application_management/app_store/application_installation/:name",
+        notInMenu: true,
+        component: ApplicationInstallation,
+      },
       {
         title: "应用商店服务详情",
         path: "/application_management/app_store/app-service-detail/:name/:verson",

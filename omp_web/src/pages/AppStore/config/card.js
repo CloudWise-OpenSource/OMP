@@ -5,24 +5,25 @@ import imgObj from "./img";
 import { useEffect, useState } from "react";
 
 const Card = ({ idx, history, info, tabKey }) => {
-
   //定义命名
   let nameObj = {
-    component:{
-      logo:"app_logo",
-      name:"app_name",
-      version:"app_version",
-      description:"app_description",
-      instance_number:"instance_number",
+    component: {
+      logo: "app_logo",
+      name: "app_name",
+      version: "app_version",
+      description: "app_description",
+      instance_number: "instance_number",
+      install_url: "/application_management/app_store/component_installation",
     },
-    service:{
-      logo:"pro_logo",
-      name:"pro_name",
-      version:"pro_version",
-      description:"pro_description",
-      instance_number:"instance_number",
-    }
-  }
+    service: {
+      logo: "pro_logo",
+      name: "pro_name",
+      version: "pro_version",
+      description: "pro_description",
+      instance_number: "instance_number",
+      install_url: "/application_management/app_store/application_installation",
+    },
+  };
 
   return (
     <div
@@ -55,11 +56,12 @@ const Card = ({ idx, history, info, tabKey }) => {
               alignItems: "center",
               marginLeft: 10,
               marginRight: 10,
-              overflow:"hidden"
+              overflow: "hidden",
             }}
-            dangerouslySetInnerHTML={{__html: info[nameObj[tabKey].logo] || imgObj[tabKey]}}
-          >
-          </div>
+            dangerouslySetInnerHTML={{
+              __html: info[nameObj[tabKey].logo] || imgObj[tabKey],
+            }}
+          ></div>
         </div>
         <div
           style={{
@@ -67,26 +69,27 @@ const Card = ({ idx, history, info, tabKey }) => {
             fontSize: 13,
             color: "#a2a2a2",
             position: "relative",
-            width:"calc(100% - 80px)"
+            width: "calc(100% - 80px)",
           }}
-          onClick={()=>{
+          onClick={() => {
             history?.push({
-              pathname: `/application_management/app_store/app-${tabKey}-detail/${info[nameObj[tabKey].name]}/${info[nameObj[tabKey].version]}`,
+              pathname: `/application_management/app_store/app-${tabKey}-detail/${
+                info[nameObj[tabKey].name]
+              }/${info[nameObj[tabKey].version]}`,
             });
           }}
         >
-          <div style={{ fontSize: 16, color: "#222222" }}>{info[nameObj[tabKey].name]}</div>
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <div style={{ fontSize: 14, color: "#222222" }}>
+            {info[nameObj[tabKey].name]}
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between",fontSize:12 }}>
             <span>最新版本</span>
             <span>{info[nameObj[tabKey].version]}</span>
           </div>
-          <p
-            className={styles.text}
-          >
+          <p className={styles.text}>
             <Tooltip placement="top" title={info[nameObj[tabKey].description]}>
-            {info[nameObj[tabKey].description]}
-      </Tooltip>
-            
+              {info[nameObj[tabKey].description]}
+            </Tooltip>
           </p>
           <span
             style={{
@@ -94,6 +97,7 @@ const Card = ({ idx, history, info, tabKey }) => {
               position: "absolute",
               bottom: 2,
               right: 2,
+              fontSize:12
             }}
           >
             已安装{info[nameObj[tabKey].instance_number]}个实例
@@ -101,14 +105,29 @@ const Card = ({ idx, history, info, tabKey }) => {
         </div>
       </div>
       <div className={styles.cardBtn}>
-        <div style={{ borderRight: "1px solid #e7e7e7" }}
-           onClick={()=>{
+        <div
+          style={{ borderRight: "1px solid #e7e7e7" }}
+          onClick={() => {
             history?.push({
-              pathname: `/application_management/app_store/app-${tabKey}-detail/${info[nameObj[tabKey].name]}/${info[nameObj[tabKey].version]}`,
+              pathname: `/application_management/app_store/app-${tabKey}-detail/${
+                info[nameObj[tabKey].name]
+              }/${info[nameObj[tabKey].version]}`,
             });
           }}
-        >查看</div>
-        <div>安装</div>
+        >
+          查看
+        </div>
+        <div
+          onClick={() => {
+            history?.push({
+              pathname: `${nameObj[tabKey].install_url}/${
+                info[nameObj[tabKey].name]
+              }`,
+            });
+          }}
+        >
+          安装
+        </div>
       </div>
     </div>
   );
