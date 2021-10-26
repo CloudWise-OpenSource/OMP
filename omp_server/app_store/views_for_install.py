@@ -8,7 +8,7 @@
 
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import (
-    ListModelMixin
+    ListModelMixin, CreateModelMixin
 )
 from django_filters.rest_framework.backends import DjangoFilterBackend
 
@@ -18,7 +18,8 @@ from db_models.models import (
 
 from app_store.app_store_serializers import (
     ComponentEntranceSerializer,
-    ProductEntranceSerializer
+    ProductEntranceSerializer,
+    ExecuteInstallSerializer
 )
 
 from app_store.app_store_filters import (
@@ -54,3 +55,9 @@ class ProductEntranceView(GenericViewSet, ListModelMixin):
     filter_backends = (DjangoFilterBackend, )
     filter_class = ProductEntranceFilter
     get_description = "获取产品应用安装数据入口"
+
+
+class ExecuteInstallView(GenericViewSet, CreateModelMixin):
+
+    serializer_class = ExecuteInstallSerializer
+    post_description = "执行安装入口接口"
