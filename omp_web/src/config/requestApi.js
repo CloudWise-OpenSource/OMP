@@ -86,7 +86,7 @@ export const apiRequest = {
     // 模版下载
     applicationTemplate: "/api/appStore/applicationTemplate/",
     // 组件安装查询接口
-    componentEntranc: "/api/appStore/componentEntrance/",
+    componentEntrance: "/api/appStore/componentEntrance/",
     // 产品安装查询接口
     productEntrance: "/api/appStore/productEntrance/",
   },
