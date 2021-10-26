@@ -7,7 +7,8 @@ from rest_framework.reverse import reverse
 
 from tests.base import AutoLoginTest
 from tests.mixin import (
-    HostsResourceMixin, HostBatchRequestMixin
+    HostsResourceMixin, HostBatchRequestMixin,
+    GrafanaMainPageResourceMixin
 )
 from hosts.views import HostListView
 from hosts.tasks import (
@@ -15,7 +16,7 @@ from hosts.tasks import (
 )
 from hosts.hosts_serializers import HostSerializer
 from db_models.models import (
-    Host, HostOperateLog, GrafanaMainPage
+    Host, HostOperateLog
 )
 from utils.plugin.ssh import SSH
 from utils.plugin.crypto import AESCryptor
@@ -343,7 +344,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
         host_info = resp.get("data")
-        self.assertTrue(host_info is not None)
+        self.assertIsNotNone(host_info)
         for k, v in self.correct_host_data.items():
             # 密码字段加密处理，不相等
             if k == "password":
@@ -366,8 +367,7 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
 
         # 数据库 -> 主机存在
         host_obj = Host.objects.filter(id=host_info.get("id")).first()
-        self.assertTrue(host_obj is not None)
-
+        self.assertIsNotNone(host_obj)
         # 密码字段 -> 加密处理
         self.assertNotEqual(
             host_obj.password,
@@ -386,24 +386,19 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
         host_obj.delete(soft=False)
 
 
-class ListHostTest(AutoLoginTest, HostsResourceMixin):
+class ListHostTest(AutoLoginTest, HostsResourceMixin, GrafanaMainPageResourceMixin):
     """ 主机列表测试类 """
 
     def setUp(self):
         super(ListHostTest, self).setUp()
         self.create_host_url = reverse("hosts-list")
         self.list_host_url = reverse("hosts-list")
-        grafana_list = [
-            GrafanaMainPage(id="1", instance_name="node",
-                            instance_url="/proxy/v1/grafana/d/9CWBz0bik/zhu-ji-xin-xi-mian-ban"),
-            GrafanaMainPage(id="2", instance_name="service",
-                            instance_url="/proxy/v1/grafana/d/9CSxoPAGz/fu-wu-zhuang-tai-xin-xi-mian-ban"),
-            GrafanaMainPage(id="3", instance_name="log",
-                            instance_url="/proxy/v1/grafana/d/liz0yRCZz/applogs"),
-            GrafanaMainPage(id="4", instance_name="mysql",
-                            instance_url="/proxy/v1/grafana/d/MQWgroiiz/mysql-xin-xi-mian-ban")
-        ]
-        GrafanaMainPage.objects.bulk_create(grafana_list)
+        self.get_grafana_main_pages()
+        self.host_obj_ls = self.get_hosts(50)
+
+    def tearDown(self):
+        super(ListHostTest, self).tearDown()
+        self.destroy_hosts()
 
     @staticmethod
     def mock_prometheus_info(host_obj_ls):
@@ -431,15 +426,14 @@ class ListHostTest(AutoLoginTest, HostsResourceMixin):
 
     def test_hosts_list_filter(self):
         """ 测试主机列表过滤 """
-        host_obj_ls = self.get_hosts(50)
 
         # 查询主机列表 -> 展示所有主机
         resp = self.get(self.list_host_url).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
-        self.assertTrue(resp.get("data") is not None)
+        self.assertIsNotNone(resp.get("data"))
         # 数据总量为所有主机数
-        self.assertEqual(resp.get("data").get("count"), len(host_obj_ls))
+        self.assertEqual(resp.get("data").get("count"), len(self.host_obj_ls))
 
         # IP 过滤主机 -> 展示 IP 模糊匹配项
         ip_field = str(random.randint(1, 50))
@@ -448,15 +442,12 @@ class ListHostTest(AutoLoginTest, HostsResourceMixin):
         }).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
-        self.assertTrue(resp.get("data") is not None)
+        self.assertIsNotNone(resp.get("data"))
         count_number = Host.objects.filter(ip__contains=ip_field).count()
         self.assertEqual(resp.get("data").get("count"), count_number)
-        # 删除主机
-        self.destroy_hosts()
 
     def test_hosts_list_order(self):
         """ 测试主机列表排序 """
-        self.get_hosts(50)
 
         # 不传递排序字段 -> 默认按照主机创建时间排序
         resp = self.get(self.list_host_url).json()
@@ -512,12 +503,17 @@ class ListHostTest(AutoLoginTest, HostsResourceMixin):
                 reverse=True if reverse_flag else False)
             self.assertEqual(res_ls, sorted_res_ls)
 
-        # 删除主机
-        self.destroy_hosts()
-
 
 class UpdateHostTest(AutoLoginTest, HostsResourceMixin):
     """ 更新主机测试类 """
+
+    def setUp(self):
+        super(UpdateHostTest, self).setUp()
+        self.host_obj_ls = self.get_hosts()
+
+    def tearDown(self):
+        super(UpdateHostTest, self).tearDown()
+        self.destroy_hosts()
 
     @mock.patch.object(SSH, "check", return_value=(True, ""))
     @mock.patch.object(SSH, "is_sudo", return_value=(True, "is sudo"))
@@ -526,7 +522,7 @@ class UpdateHostTest(AutoLoginTest, HostsResourceMixin):
         """ 测试更新一个主机 """
 
         # 更新不存在主机 -> 更新失败
-        resp = self.put(reverse("hosts-detail", [99]), {
+        resp = self.put(reverse("hosts-detail", [9999]), {
             "instance_name": "mysql_instance_1",
             "ip": "127.0.0.255",
             "port": 36000,
@@ -541,9 +537,8 @@ class UpdateHostTest(AutoLoginTest, HostsResourceMixin):
             "data": None
         })
 
-        host_obj_ls = self.get_hosts(10)
         # 更新已存在主机，修改主机 IP -> 更新失败
-        host_obj = host_obj_ls[0]
+        host_obj = random.choice(self.host_obj_ls)
         resp = self.put(reverse("hosts-detail", [host_obj.id]), {
             "instance_name": host_obj.instance_name,
             "ip": "127.0.0.255",
@@ -560,8 +555,12 @@ class UpdateHostTest(AutoLoginTest, HostsResourceMixin):
         })
 
         # 更新已存在主机，修改实例名为已存在 -> 更新失败
+        host_obj = random.choice(self.host_obj_ls)
+        host_queryset = Host.objects.exclude(
+            instance_name=host_obj.instance_name)
+        exists_name = random.choice(host_queryset).instance_name
         resp = self.put(reverse("hosts-detail", [host_obj.id]), {
-            "instance_name": host_obj_ls[1].instance_name,
+            "instance_name": exists_name,
             "ip": host_obj.ip,
             "port": host_obj.port,
             "username": host_obj.username,
@@ -576,6 +575,7 @@ class UpdateHostTest(AutoLoginTest, HostsResourceMixin):
         })
 
         # 正确修改数据 -> 修改成功
+        host_obj = random.choice(self.host_obj_ls)
         resp = self.put(reverse("hosts-detail", [host_obj.id]), {
             "instance_name": "new_host_name",
             "ip": host_obj.ip,
@@ -594,7 +594,6 @@ class UpdateHostTest(AutoLoginTest, HostsResourceMixin):
         self.assertNotEqual(
             host_obj.modified,
             Host.objects.filter(id=host_obj.id).first().modified)
-        self.destroy_hosts()
 
     @mock.patch.object(SSH, "check", return_value=(True, ""))
     @mock.patch.object(SSH, "is_sudo", return_value=(True, "is sudo"))
@@ -602,7 +601,7 @@ class UpdateHostTest(AutoLoginTest, HostsResourceMixin):
         """ 更新一个现有主机的一个或多个字段 """
 
         # 更新不存在主机 -> 更新失败
-        resp = self.patch(reverse("hosts-detail", [99]), {
+        resp = self.patch(reverse("hosts-detail", [9999]), {
             "instance_name": "new_host_name",
         }).json()
         self.assertDictEqual(resp, {
@@ -611,9 +610,8 @@ class UpdateHostTest(AutoLoginTest, HostsResourceMixin):
             "data": None
         })
 
-        host_obj_ls = self.get_hosts(10)
         # 更新已存在主机，修改主机 IP -> 更新失败
-        host_obj = host_obj_ls[0]
+        host_obj = random.choice(self.host_obj_ls)
         resp = self.patch(reverse("hosts-detail", [host_obj.id]), {
             "ip": "120.100.80.60",
         }).json()
@@ -624,8 +622,12 @@ class UpdateHostTest(AutoLoginTest, HostsResourceMixin):
         })
 
         # 更新已存在主机，修改实例名为已存在 -> 更新失败
+        host_obj = random.choice(self.host_obj_ls)
+        host_queryset = Host.objects.exclude(
+            instance_name=host_obj.instance_name)
+        exists_name = random.choice(host_queryset).instance_name
         resp = self.patch(reverse("hosts-detail", [host_obj.id]), {
-            "instance_name": host_obj_ls[1].instance_name,
+            "instance_name": exists_name,
         }).json()
         self.assertDictEqual(resp, {
             "code": 1,
@@ -634,6 +636,7 @@ class UpdateHostTest(AutoLoginTest, HostsResourceMixin):
         })
 
         # 正确修改数据 -> 修改成功
+        host_obj = random.choice(self.host_obj_ls)
         resp = self.patch(reverse("hosts-detail", [host_obj.id]), {
             "instance_name": "new_host_name",
             "username": "new_username",
@@ -642,14 +645,13 @@ class UpdateHostTest(AutoLoginTest, HostsResourceMixin):
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
         new_host_obj = resp.get("data")
-        self.assertTrue(new_host_obj is not None)
+        self.assertIsNotNone(new_host_obj)
         # 数据已更新
         self.assertEqual(new_host_obj.get("instance_name"), "new_host_name")
         # 更新时间变化
         self.assertNotEqual(
             host_obj.modified,
             Host.objects.filter(id=host_obj.id).first().modified)
-        self.destroy_hosts()
 
 
 class HostFieldCheckTest(AutoLoginTest, HostsResourceMixin):
@@ -658,15 +660,17 @@ class HostFieldCheckTest(AutoLoginTest, HostsResourceMixin):
     def setUp(self):
         super(HostFieldCheckTest, self).setUp()
         self.field_check_url = reverse("fields-list")
+        self.host_obj_ls = self.get_hosts()
+
+    def tearDown(self):
+        self.destroy_hosts()
 
     def test_create_host_check(self):
         """ 测试创建主机场景 """
-        host_obj_ls = self.get_hosts(2)
-        host_obj = host_obj_ls[0]
 
         # instance_name 重复 -> 验证结果 False
         resp = self.post(self.field_check_url, {
-            "instance_name": host_obj.instance_name
+            "instance_name": random.choice(self.host_obj_ls).instance_name
         }).json()
         self.assertDictEqual(resp, {
             "code": 0,
@@ -686,7 +690,7 @@ class HostFieldCheckTest(AutoLoginTest, HostsResourceMixin):
 
         # ip 重复 -> 验证结果 False
         resp = self.post(self.field_check_url, {
-            "ip": host_obj.ip
+            "ip": random.choice(self.host_obj_ls).ip
         }).json()
         self.assertDictEqual(resp, {
             "code": 0,
@@ -696,7 +700,7 @@ class HostFieldCheckTest(AutoLoginTest, HostsResourceMixin):
 
         # ip 不重复 -> 验证结果 True
         resp = self.post(self.field_check_url, {
-            "ip": "127.0.0.20"
+            "ip": "123.1.2.3"
         }).json()
         self.assertDictEqual(resp, {
             "code": 0,
@@ -704,11 +708,12 @@ class HostFieldCheckTest(AutoLoginTest, HostsResourceMixin):
             "data": True
         })
 
-        self.destroy_hosts()
-
     def test_error_host_check(self):
         """ 测试更新主机场景 """
-        host_obj_one, host_obj_two = self.get_hosts(2)
+        host_obj_one = random.choice(self.host_obj_ls)
+        host_queryset = Host.objects.exclude(
+            instance_name=host_obj_one.instance_name)
+        host_obj_two = random.choice(host_queryset)
 
         # instance_name 重复 (为主机自身 instance_name) -> 验证结果 True
         resp = self.post(self.field_check_url, {
@@ -753,7 +758,6 @@ class HostFieldCheckTest(AutoLoginTest, HostsResourceMixin):
             "message": "success",
             "data": False
         })
-        self.destroy_hosts()
 
 
 class ListIPTest(AutoLoginTest, HostsResourceMixin):
@@ -762,10 +766,14 @@ class ListIPTest(AutoLoginTest, HostsResourceMixin):
     def setUp(self):
         super(ListIPTest, self).setUp()
         self.ip_list_url = reverse("ips-list")
+        self.get_hosts()
+
+    def tearDown(self):
+        super(ListIPTest, self).tearDown()
+        self.destroy_hosts()
 
     def test_ip_list(self):
         """ 测试 IP 列表 """
-        self.get_hosts(100)
 
         # 查询主机列表 -> 返回所有主机列表数据
         resp = self.get(self.ip_list_url).json()
@@ -775,8 +783,6 @@ class ListIPTest(AutoLoginTest, HostsResourceMixin):
             set(resp.get("data")),
             set(Host.objects.all().values_list("ip", flat=True)))
 
-        self.destroy_hosts()
-
 
 class HostMaintainTest(AutoLoginTest, HostsResourceMixin):
     """ 主机维护模式测试类 """
@@ -784,14 +790,18 @@ class HostMaintainTest(AutoLoginTest, HostsResourceMixin):
     def setUp(self):
         super(HostMaintainTest, self).setUp()
         self.host_maintain_url = reverse("maintain-list")
+        self.host_obj_ls = self.get_hosts()
+
+    def tearDown(self):
+        super(HostMaintainTest, self).tearDown()
+        self.destroy_hosts()
 
     def test_error_field(self):
         """ 测试错误字段校验 """
-        host_obj_ls = self.get_hosts(20)
-        host_obj_id_ls = list(map(lambda x: x.id, host_obj_ls))
+        host_obj_id_ls = list(map(lambda x: x.id, self.host_obj_ls))
 
         # host_ids 中含不存在的 ID -> 修改失败
-        not_exists_id = 666
+        not_exists_id = 9999
         random_host_ls = random.sample(host_obj_id_ls, 5)
         random_host_ls.append(not_exists_id)
         resp = self.post(self.host_maintain_url, {
@@ -816,15 +826,11 @@ class HostMaintainTest(AutoLoginTest, HostsResourceMixin):
             "data": None
         })
 
-        self.destroy_hosts()
-
     @mock.patch.object(Alertmanager, "set_maintain_by_host_list", return_value=[1, 2, 3])
     @mock.patch.object(Alertmanager, "revoke_maintain_by_host_list", return_value=[1, 2, 3])
     def test_correct_field(self, mock_down, mock_up):
         """ 正确字段校验 """
-
-        host_obj_ls = self.get_hosts(20)
-        random_host_ls = random.sample(list(host_obj_ls), 5)
+        random_host_ls = random.sample(list(self.host_obj_ls), 5)
         random_host_id_ls = list(map(lambda x: x.id, random_host_ls))
 
         # 开启维护模式 -> 开启成功，记录操作
@@ -877,15 +883,12 @@ class HostMaintainTest(AutoLoginTest, HostsResourceMixin):
             len(operate_log_ls),
             len(operate_log_ls.filter(result="success")))
 
-        self.destroy_hosts()
-
     @mock.patch.object(Alertmanager, "set_maintain_by_host_list", return_value=None)
     @mock.patch.object(Alertmanager, "revoke_maintain_by_host_list", return_value=None)
     def test_alert_manager_error(self, mock_down, mock_up):
         """ alert manage 返回值异常 """
 
-        host_obj_ls = self.get_hosts(20)
-        random_host_ls = random.sample(list(host_obj_ls), 5)
+        random_host_ls = random.sample(list(self.host_obj_ls), 5)
         random_host_id_ls = list(map(lambda x: x.id, random_host_ls))
 
         # 开始维护模式 -> 开启失败，记录操作
@@ -913,7 +916,7 @@ class HostMaintainTest(AutoLoginTest, HostsResourceMixin):
             len(operate_log_ls.filter(result="failed")))
 
         # 关闭维护模式 -> 关闭失败，记录操作
-        random_host_ls = random.sample(list(host_obj_ls), 5)
+        random_host_ls = random.sample(list(self.host_obj_ls), 5)
         random_host_id_ls = list(map(lambda x: x.id, random_host_ls))
         Host.objects.filter(
             id__in=random_host_id_ls
@@ -941,22 +944,24 @@ class HostMaintainTest(AutoLoginTest, HostsResourceMixin):
             len(operate_log_ls),
             len(operate_log_ls.filter(result="failed")))
 
-        self.destroy_hosts()
-
 
 class HostAgentRestartTest(AutoLoginTest, HostsResourceMixin):
-    """ 主机维护模式测试类 """
+    """ 主机 agent 重启测试类 """
 
     def setUp(self):
         super(HostAgentRestartTest, self).setUp()
         self.host_restartHostAgent_url = reverse("restartHostAgent-list")
+        self.host_obj_ls = self.get_hosts(2)
+
+    def tearDown(self):
+        super(HostAgentRestartTest, self).tearDown()
+        self.destroy_hosts()
 
     @mock.patch.object(host_agent_restart, "delay", return_value=None)
     def test_success(self, host_agent_restart_mock):
         """ 请求成功测试 """
-        host_obj_ls = self.get_hosts(2)
 
-        host_obj_id_ls = list(map(lambda x: x.id, host_obj_ls))
+        host_obj_id_ls = list(map(lambda x: x.id, self.host_obj_ls))
         resp = self.post(
             self.host_restartHostAgent_url,
             data={"host_ids": host_obj_id_ls}
@@ -969,20 +974,15 @@ class HostAgentRestartTest(AutoLoginTest, HostsResourceMixin):
             }
         })
 
-        self.destroy_hosts()
-
     @mock.patch.object(host_agent_restart, "delay", return_value=None)
     def test_failed(self, host_agent_restart_mock):
         """ 请求失败测试 """
-        self.get_hosts(2)
 
         resp = self.post(
             self.host_restartHostAgent_url,
             data={"host_ids": [random.randint(10000, 20000)]}
         ).json()
         self.assertEqual(resp.get("code"), 1)
-
-        self.destroy_hosts()
 
 
 class HostBatchValidateTest(AutoLoginTest, HostsResourceMixin, HostBatchRequestMixin):
@@ -1024,7 +1024,7 @@ class HostBatchValidateTest(AutoLoginTest, HostsResourceMixin, HostBatchRequestM
         self.assertEqual(resp.status_code, 200)
         self.assertTrue(isinstance(resp, FileResponse))
         self.assertTrue(resp.streaming)
-        self.assertTrue(resp.streaming_content is not None)
+        self.assertIsNotNone(resp.streaming_content)
 
     @mock.patch.object(SSH, "check", return_value=(True, ""))
     @mock.patch.object(SSH, "is_sudo", return_value=(True, "is sudo"))

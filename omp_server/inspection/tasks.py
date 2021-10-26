@@ -15,6 +15,8 @@ from db_models.models import InspectionHistory, InspectionReport
 from utils.prometheus.target_host import HostCrawl
 from utils.prometheus.prometheus import back_fill
 from utils.prometheus.target_service import target_service_run
+from utils.prometheus.create_html_tar import create_html_tar
+from inspection.joint_json_report import joint_json_data
 
 # 屏蔽celery任务日志中的paramiko日志
 logging.getLogger("paramiko").setLevel(logging.WARNING)
@@ -95,28 +97,31 @@ def get_prometheus_data(env, hosts, services, history_id, report_id, handle):
     :handle: 巡检类型 service-服务巡检、host-主机巡检、deep-深度巡检
     """
     try:
+        file_name = ''  # 导出文件名
+        _h = InspectionHistory.objects.filter(id=history_id).first()
         kwargs = {'history_id': history_id, 'report_id': report_id}
         if handle == 'host':
             # 主机巡检
+            file_name = f"hostinspection{_h.inspection_name.split('检')[1]}"
             scan_info, scan_result, host_data = get_hosts_data(env, hosts)
             kwargs.update({
                 'scan_info': scan_info, 'scan_result': scan_result,
                 'host_data': host_data,
-                'file_name':
-                    f"hostinspection{datetime.now().strftime('%Y%m%d')}.tar.gz"}
+                'file_name': f"{file_name}.tar.gz"}
             )
         elif handle == 'service':
             # 组件巡检
+            file_name = f"serviceinspection{_h.inspection_name.split('检')[1]}"
             scan_info, scan_result, serv_data = \
                 target_service_run(env, services)
             kwargs.update({
                 'scan_info': scan_info, 'scan_result': scan_result,
                 'serv_data': serv_data,
-                'file_name':
-                    f"servinspection{datetime.now().strftime('%Y%m%d')}.tar.gz"}
+                'file_name': f"{file_name}.tar.gz"}
             )
         elif handle == 'deep':
             # 主机巡检
+            file_name = f"deepinspection{_h.inspection_name.split('检')[1]}"
             hosts = Host.objects.filter(env=env.id).values_list('ip', flat=True)
             if len(hosts) > 0:
                 h_info, h_result, host_data = get_hosts_data(env, list(hosts))
@@ -147,12 +152,16 @@ def get_prometheus_data(env, hosts, services, history_id, report_id, handle):
             kwargs.update({
                 'scan_info': scan_info, 'scan_result': scan_result,
                 'serv_data': serv_data, 'host_data': host_data,
-                'file_name':
-                    f"deepinspection{datetime.now().strftime('%Y%m%d')}.tar.gz"}
+                'file_name': f"{file_name}.tar.gz"}
             )
 
         # 反填巡检记录、巡检报告 数据
         back_fill(**kwargs)
+        # 打包html文件
+        _r = InspectionReport.objects.filter(id=report_id).first()
+        _h = InspectionHistory.objects.filter(id=history_id).first()
+        ret = joint_json_data(_h.inspection_type, _r, _h)
+        create_html_tar(file_name, ret)
     except Exception as e:
         logger.error(
             f"Inspection man task failed with error: {traceback.format_exc(e)}")

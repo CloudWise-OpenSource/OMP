@@ -8,6 +8,7 @@ import {
   kafka_partition_columns,
   kafka_topic_size_columns,
   handleResponse,
+  downloadFile
 } from "@/utils/utils";
 import { Card, Collapse, message, Table, BackTop, Drawer } from "antd";
 import * as R from "ramda";
@@ -75,36 +76,35 @@ export default function PatrolInspectionDetail() {
   return (
     <div id="reportContent" className={"reportContent"}>
       <div className={"reportTitle"}>
-        <div style={{width:"100%",display:"flex",justifyContent:"center",alignItems:"center"}}>
-          {/* <LeftOutlined
-            style={{ fontSize: 16,position:"relative",left:20}}
-            //className={styles.backIcon}
-            // onClick={() => {
-            //   keyTab
-            //     ? dispatch(getTabKeyChangeAction("component"))
-            //     : dispatch(getTabKeyChangeAction("service"));
-            //   history?.push({
-            //     pathname: `/application_management/app_store`,
-            //   });
-            // }}
-          />{" "} */}
-          {/* <img style={{ width: 30, height: 30, position:"relative",top:-3,left:-10 }} src="./logo.svg" /> */}
+        <div
+          style={{
+            width: "100%",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
           {title}
         </div>
         <div>
           <div
             className={"goBackElement"}
             id={"invisible"}
-            style={{paddingRight:10}}
-            onClick={() => history.push("/status-patrol/patrol-inspection-record")}
+            style={{ paddingRight: 10 }}
+            onClick={() =>
+              history.push("/status-patrol/patrol-inspection-record")
+            }
           >
             返回
           </div>
           <div
             id={"invisible"}
             onClick={() => {
-              message.success(`正在下载巡检报告，双击文件夹中index.html查看报告`);
+              message.success(
+                `正在下载巡检报告，双击文件夹中index.html查看报告`
+              );
               // download();
+              downloadFile(`/download-inspection/${data.file_name}`);
             }}
           >
             导出

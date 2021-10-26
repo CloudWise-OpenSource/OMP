@@ -26,7 +26,7 @@ class Prometheus(object):
             else:
                 return False, {}, 'fail'
         except Exception as e:
-            return False, {}, traceback.format_exc(e)
+            return False, {}, 'error'
 
 
 def back_fill(history_id, report_id, host_data=None, serv_data=None,
@@ -47,7 +47,8 @@ def back_fill(history_id, report_id, host_data=None, serv_data=None,
     # 反填巡检历史记录InspectionHistory表，结束时间end_time、巡检用时duration字段、巡检状态inspection_status
     now = datetime.now()
     his_obj = InspectionHistory.objects.filter(id=history_id)
-    his_obj.update(end_time=now, duration=(now - his_obj[0].start_time).seconds,
+    duration = (now - his_obj[0].start_time).seconds
+    his_obj.update(end_time=now, duration=duration if duration > 0 else 1,
                    inspection_status=2)
     if host_data:
         # 反填巡检报告InspectionReport表，主机列表host_data字段

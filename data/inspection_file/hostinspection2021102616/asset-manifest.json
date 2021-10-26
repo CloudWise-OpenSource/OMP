@@ -1,0 +1,43 @@
+{
+  "files": {
+    "main.css": "/static/css/main.041ca26a.chunk.css",
+    "main.js": "/static/js/main.e4ade54a.chunk.js",
+    "main.js.map": "/static/js/main.e4ade54a.chunk.js.map",
+    "runtime-main.js": "/static/js/runtime-main.da7bcbe2.js",
+    "runtime-main.js.map": "/static/js/runtime-main.da7bcbe2.js.map",
+    "static/css/2.8ca66de9.chunk.css": "/static/css/2.8ca66de9.chunk.css",
+    "static/js/2.0ca9bd94.chunk.js": "/static/js/2.0ca9bd94.chunk.js",
+    "static/js/2.0ca9bd94.chunk.js.map": "/static/js/2.0ca9bd94.chunk.js.map",
+    "index.html": "/index.html",
+    "static/css/2.8ca66de9.chunk.css.map": "/static/css/2.8ca66de9.chunk.css.map",
+    "static/css/main.041ca26a.chunk.css.map": "/static/css/main.041ca26a.chunk.css.map",
+    "static/js/2.0ca9bd94.chunk.js.LICENSE.txt": "/static/js/2.0ca9bd94.chunk.js.LICENSE.txt",
+    "static/media/index.02867153.less": "/static/media/index.02867153.less",
+    "static/media/index.2041a1d4.less": "/static/media/index.2041a1d4.less",
+    "static/media/index.2f186d27.less": "/static/media/index.2f186d27.less",
+    "static/media/index.32dc937e.less": "/static/media/index.32dc937e.less",
+    "static/media/index.383af9c4.less": "/static/media/index.383af9c4.less",
+    "static/media/index.51825487.less": "/static/media/index.51825487.less",
+    "static/media/index.60c6e3ea.less": "/static/media/index.60c6e3ea.less",
+    "static/media/index.67101e84.less": "/static/media/index.67101e84.less",
+    "static/media/index.68b48da1.less": "/static/media/index.68b48da1.less",
+    "static/media/index.73987a8f.less": "/static/media/index.73987a8f.less",
+    "static/media/index.8372475c.less": "/static/media/index.8372475c.less",
+    "static/media/index.85c775e4.less": "/static/media/index.85c775e4.less",
+    "static/media/index.8c12967b.less": "/static/media/index.8c12967b.less",
+    "static/media/index.976fe83e.less": "/static/media/index.976fe83e.less",
+    "static/media/index.cae8fdaf.less": "/static/media/index.cae8fdaf.less",
+    "static/media/index.d15ddbc9.less": "/static/media/index.d15ddbc9.less",
+    "static/media/index.d61ddb9a.less": "/static/media/index.d61ddb9a.less",
+    "static/media/index.e1e14bcc.less": "/static/media/index.e1e14bcc.less",
+    "static/media/index.less": "/static/media/index.e90871b5.less",
+    "static/media/index.module.b57695f6.less": "/static/media/index.module.b57695f6.less"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.da7bcbe2.js",
+    "static/css/2.8ca66de9.chunk.css",
+    "static/js/2.0ca9bd94.chunk.js",
+    "static/css/main.041ca26a.chunk.css",
+    "static/js/main.e4ade54a.chunk.js"
+  ]
+}

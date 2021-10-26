@@ -1926,3 +1926,12 @@ export function isPassword(str) {
   var reg = /[^a-zA-Z0-9\`\~\!\?\@\#\$\%\^\&\,\(\)\[\]\{\}\_\+\_\*\/\.\;\:]/g;
   return reg.test(str);
 }
+
+// 下载文件
+export const downloadFile = (url)=>{
+  let a = document.createElement("a");
+  a.href = url;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}

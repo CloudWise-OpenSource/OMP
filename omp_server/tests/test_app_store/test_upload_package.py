@@ -5,12 +5,12 @@
 
 import os
 import time
-import random
 
 from django.conf import settings
 from rest_framework.reverse import reverse
 
 from tests.base import AutoLoginTest
+from tests.mixin import UploadPackageHistoryMixin
 from db_models.models import UploadPackageHistory
 
 
@@ -37,7 +37,8 @@ class UploadPackageTest(AutoLoginTest):
         with open(file_path, "rb") as f:
             resp = self.client.post(
                 self.upload_url,
-                data={"operation_user": "admin", "file": f, "md5": "dfasdfafadfadfagagate"}
+                data={"operation_user": "admin", "file": f,
+                      "md5": "dfasdfafadfadfagagate"}
             ).json()
         self.assertDictEqual(resp, {
             "code": 1,
@@ -49,7 +50,8 @@ class UploadPackageTest(AutoLoginTest):
         with open(file_path, "rb") as f:
             resp = self.client.post(
                 self.upload_url,
-                data={"uuid": "63ece2802559e7a37d01daa686d10c4b", "file": f, "md5": "dfasdfafadfadfagagate"}
+                data={"uuid": "63ece2802559e7a37d01daa686d10c4b",
+                      "file": f, "md5": "dfasdfafadfadfagagate"}
             ).json()
         self.assertDictEqual(resp, {
             "code": 1,
@@ -61,7 +63,8 @@ class UploadPackageTest(AutoLoginTest):
         with open(file_path, "rb") as f:
             resp = self.client.post(
                 self.upload_url,
-                data={"operation_user": "admin", "uuid": "63ece2802559e7a37d01daa686d10c4b", "file": f}
+                data={"operation_user": "admin",
+                      "uuid": "63ece2802559e7a37d01daa686d10c4b", "file": f}
             ).json()
         self.assertDictEqual(resp, {
             "code": 1,
@@ -124,41 +127,8 @@ class UploadPackageTest(AutoLoginTest):
             pass
 
 
-class RemovePackageTest(AutoLoginTest):
+class RemovePackageTest(AutoLoginTest, UploadPackageHistoryMixin):
     """ 移除安装包测试类 """
-
-    @staticmethod
-    def get_upload_package_history(number=1, operation_user="admin"):
-        """
-        获取上传安装包记录
-        :param number: 创建数量
-        :param operation_user: 操作用户
-        """
-        history_ls = []
-        for index in range(number):
-            index += 1
-            # 短暂休眠，避免毫秒级时间戳重复
-            time.sleep(0.01)
-            opera_uuid = str(int(round(time.time() * 1000)))
-            # 随机模拟安装包数量
-            for package_number in range(random.randint(3, 5)):
-                package_number += 1
-                history_ls.append(UploadPackageHistory(
-                    operation_uuid=opera_uuid,
-                    operation_user=operation_user,
-                    package_name=f"t_pkg_{index}_{package_number}",
-                    package_md5=f"t_pkg_{index}_{package_number}_md5",
-                    package_path=f"/data/app/{package_number}"
-                ))
-        UploadPackageHistory.objects.bulk_create(history_ls)
-        return UploadPackageHistory.objects.filter(
-            package_name__startswith="t_pkg")
-
-    @staticmethod
-    def destroy_upload_package_history():
-        """ 销毁上传安装包记录 """
-        UploadPackageHistory.objects.filter(
-            package_name__startswith="t_pkg").delete()
 
     def setUp(self):
         super(RemovePackageTest, self).setUp()
@@ -167,7 +137,7 @@ class RemovePackageTest(AutoLoginTest):
     def test_error_field(self):
         """ 测试错误字段 """
 
-        history_objs = self.get_upload_package_history()
+        history_objs = self.get_upload_package_history(number=1)
         operation_uuid = history_objs[0].operation_uuid
         package_name_ls = list(
             history_objs.values_list("package_name", flat=True))
@@ -219,7 +189,7 @@ class RemovePackageTest(AutoLoginTest):
     def test_correct_field(self):
         """ 测试正确字段 """
 
-        history_objs = self.get_upload_package_history()
+        history_objs = self.get_upload_package_history(number=1)
         operation_uuid = history_objs[0].operation_uuid
         package_name_ls = list(
             history_objs.values_list("package_name", flat=True))

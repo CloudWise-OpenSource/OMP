@@ -12,6 +12,8 @@
 
 import os
 import json
+from copy import deepcopy
+from concurrent.futures import ThreadPoolExecutor
 
 from omp_server.settings import PROJECT_DIR
 from db_models.models import (
@@ -21,6 +23,7 @@ from db_models.models import (
     Service,
     ClusterInfo
 )
+from utils.common.exceptions import GeneralError
 
 
 def make_lst_unique(lst, key_1, key_2):
@@ -300,6 +303,12 @@ class ServiceArgsSerializer(object):
         ser = SerDependenceParseUtils(obj.app_name, obj.app_version)
         return ser.run_ser()
 
+    def get_app_port(self, obj):    # NOQA
+        """ 获取app的端口 """
+        if not obj.app_port:
+            return []
+        return json.loads(obj.app_port)
+
     def get_app_install_args(self, obj):  # NOQA
         """ 解析安装参数信息
         [
@@ -315,9 +324,9 @@ class ServiceArgsSerializer(object):
         # 给与前端提示信息，此标记对应于主机中的数据目录 data_folder
         # 在后续前端提供出安装参数后，我们应该检查其准确性
         DIR_KEY = "{data_path}"
-        # 拼接服务端口配置信息
-        if obj.app_port:
-            ret_lst.extend(json.loads(obj.app_port))
+        # TODO 暂时屏蔽拼接服务端口配置信息
+        # if obj.app_port:
+        #     ret_lst.extend(json.loads(obj.app_port))
         if obj.app_install_args:
             ret_lst.extend(json.loads(obj.app_install_args))
         for item in ret_lst:
@@ -364,3 +373,118 @@ class ServiceArgsSerializer(object):
         """ 解析能否继续进行的信息接口 """
         _, msg = self._process_continue_parse(obj)
         return msg
+
+
+class ValidateExistService(object):
+    """ 检查已存在服务信息是否准确 """
+
+    def __init__(self, data=None):
+        """
+        初始化方法
+        :param data: 要被检验的服务信息
+        """
+        if not data or not isinstance(data, list):
+            raise GeneralError(
+                "ValidateExistService __init__ arg error: data")
+        self.data = data
+
+    def check_cluster(self, dic):   # NOQA
+        """
+        校验集群信息是否准确
+        :param dic: 集群信息字典
+        :type dic: dict
+        :return:
+        """
+        if ClusterInfo.objects.filter(
+                id=dic.get("id"),
+                cluster_name=dic.get("cluster_name")
+        ).exists():
+            return True
+        return False
+
+    def check_single(self, dic):    # NOQA
+        """
+        检查服务的合法性
+        :param dic: 服务信息字典
+        :type dic: dict
+        :return:
+        """
+        if Service.objects.filter(
+            id=dic.get("id"),
+            service_instance_name=dic.get("service_instance_name")
+        ).exists():
+            return True
+        return False
+
+    def run(self):
+        """
+        运行入口
+        :return:
+        """
+        for item in self.data:
+            _type = item.get("type")
+            if _type not in ("cluster", "single"):
+                return False
+            flag = getattr(self, f"check_{_type}")(item)
+            if not flag:
+                return False
+        return True
+
+
+class ValidateInstallService(object):
+    """ 检查要安装的服务信息是否准确 """
+
+    def __init__(self, data=None):
+        """
+        初始化方法
+        :param data: 要被检验的服务信息
+        """
+        if not data or not isinstance(data, list):
+            raise GeneralError(
+                "ValidateInstallService __init__ arg error: data"
+            )
+        self.data = data
+
+    def check_single_service(self, dic):    # NOQA
+        """
+        检查单个服务的安装信息
+        :param dic: 服务安装信息
+        :type dic: dict
+        :return:
+        """
+        _dic = deepcopy(dic)
+        _dic["error_dic"] = dict()
+        # 检查实例名称是否重复
+        service_instance_name = _dic.get("service_instance_name")
+        if Service.objects.filter(
+                service_instance_name=service_instance_name).exists():
+            _dic["error_dic"]["service_instance_name"] = "实例名称重复"
+        # app_install_args = _dic.get("app_install_args", [])
+
+        return _dic
+
+    def run(self):
+        """
+        运行检查入口函数
+        :return:
+        """
+        thread_p = ThreadPoolExecutor(
+            max_workers=10, thread_name_prefix="check_install_service_"
+        )
+        # futures_list:[(item, future)]
+        futures_list = list()
+        for item in self.data:
+            future = thread_p.submit(self.check_single_service, item)
+            futures_list.append((item.get("service_instance_name"), future))
+        # result_list:[{}, ...]
+        result_list = list()
+        for f in futures_list:
+            result_list.append(f[1].result())
+        thread_p.shutdown(wait=True)
+        error_flag = False
+        for el in result_list:
+            if not el.get("check_flag"):
+                error_flag = True
+        if error_flag:
+            return False, result_list
+        return True, result_list

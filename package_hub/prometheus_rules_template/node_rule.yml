@@ -14,8 +14,7 @@ groups:
   - alert: host cpu_used alert
     annotations:
       consignee: ${EMAIL_ADDRESS}
-      description: 主机 {{ $labels.instance }} CPU 使用率为 {{ $value | humanize }}%, 大于阈值
-        90
+      description: 主机 {{ $labels.instance }} CPU使用率当前值为{{ $value | humanize }}%,高于阈值 90%
       summary: cpu_used (instance {{ $labels.instance }})
     expr: (100 - sum(avg without (cpu)(irate(node_cpu_seconds_total{mode='idle', env="${ENV}"}[2m])))
       by (instance,env) * 100) >= 90
@@ -26,8 +25,7 @@ groups:
   - alert: host cpu_used alert
     annotations:
       consignee: ${EMAIL_ADDRESS}
-      description: 主机 {{ $labels.instance }} CPU 使用率为 {{ $value | humanize }}%, 大于阈值
-        80
+      description: 主机 {{ $labels.instance }} CPU使用率当前值为{{ $value | humanize }}%,高于阈值 80%
       summary: cpu_used (instance {{ $labels.instance }})
     expr: (100 - sum(avg without (cpu)(irate(node_cpu_seconds_total{mode='idle', env="${ENV}"}[2m])))
       by (instance,env) * 100) >= 80
@@ -38,8 +36,7 @@ groups:
   - alert: host memory_used alert
     annotations:
       consignee: ${EMAIL_ADDRESS}
-      description: 主机 {{ $labels.instance }} 内存使用率高于 90%，当前值为{{ $value | humanize
-        }}%
+      description: 主机 {{ $labels.instance }} 内存使用率当前值为{{ $value | humanize }}%,高于阈值 90%
       summary: memory_used (instance {{ $labels.instance }})
     expr: (1 - (node_memory_MemAvailable_bytes{env="${ENV}"} / (node_memory_MemTotal_bytes{env="${ENV}"})))
       * 100 >= 90
@@ -50,8 +47,7 @@ groups:
   - alert: host memory_used alert
     annotations:
       consignee: ${EMAIL_ADDRESS}
-      description: 主机 {{ $labels.instance }} 内存使用率高于 80%，当前值为{{ $value | humanize
-        }}%
+      description: 主机 {{ $labels.instance }} 内存使用率当前值为{{ $value | humanize }}%,高于阈值 80%
       summary: memory_used (instance {{ $labels.instance }})
     expr: (1 - (node_memory_MemAvailable_bytes{env="${ENV}"} / (node_memory_MemTotal_bytes{env="${ENV}"})))
       * 100 >= 80
@@ -62,8 +58,7 @@ groups:
   - alert: host disk_root_used alert
     annotations:
       consignee: ${EMAIL_ADDRESS}
-      description: 主机 {{ $labels.instance }} 根分区使用率为 {{ $value | humanize }}%, 大于
-        阈值 90%
+      description: 主机 {{ $labels.instance }} 根分区使用率当前值为{{ $value | humanize }}%,高于阈值 90%
       summary: disk_root_used (instance {{ $labels.instance }})
     expr: max((node_filesystem_size_bytes{env="${ENV}",mountpoint="/"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="/"})
       *100/(node_filesystem_avail_bytes{env="${ENV}",mountpoint="/"}+(node_filesystem_size_bytes{env="${ENV}",mountpoint="/"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="/"})))by(instance,env)
@@ -75,8 +70,7 @@ groups:
   - alert: host disk_root_used alert
     annotations:
       consignee: ${EMAIL_ADDRESS}
-      description: 主机 {{ $labels.instance }} 根分区使用率为 {{ $value | humanize }}%, 大于
-        阈值 80%
+      description: 主机 {{ $labels.instance }} 根分区使用率当前值为{{ $value | humanize }}%,高于阈值 80%
       summary: disk_root_used (instance {{ $labels.instance }})
     expr: max((node_filesystem_size_bytes{env="${ENV}",mountpoint="/"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="/"})
       *100/(node_filesystem_avail_bytes{env="${ENV}",mountpoint="/"}+(node_filesystem_size_bytes{env="${ENV}",mountpoint="/"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="/"})))by(instance,env)
