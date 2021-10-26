@@ -706,7 +706,8 @@ class MainInstallHistory(TimeStampMixin):
     install_status = models.IntegerField(
         "安装状态", choices=INSTALL_STATUS_CHOICES,
         default=0, help_text="安装状态")
-    install_args = models.JSONField()
+    install_args = models.JSONField(
+        "主表安装信息", null=True, blank=True, help_text="主表安装信息")
     install_log = models.TextField("MAIN安装日志", help_text="MAIN安装日志")
 
     class Meta:
@@ -764,6 +765,8 @@ class DetailInstallHistory(TimeStampMixin):
         "启动执行状态", default=0,
         help_text="0-待启动 1-启动中 2-启动成功 3-启动失败")
     start_msg = models.TextField("启动日志", help_text="启动日志")
+    install_detail_args = models.JSONField(
+        "详情表安装信息", null=True, blank=True, help_text="详情表安装信息")
 
     class Meta:
         """元数据"""
