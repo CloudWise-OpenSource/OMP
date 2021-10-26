@@ -31,6 +31,7 @@ const Homepage = () => {
   const [externalData, setExternalData] = useState([]);
 
   useEffect(() => {
+    return 
     setLoading(true);
     Promise.allSettled([
       fetchGet(apiRequest.homepage.host),
