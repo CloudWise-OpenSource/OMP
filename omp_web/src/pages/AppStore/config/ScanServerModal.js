@@ -39,9 +39,9 @@ const ScanServerModal = ({
       },
     })
       .then((res) => {
-        timer.current = setTimeout(() => {
-          fetchData(data);
-        }, 2000);
+        // timer.current = setTimeout(() => {
+        //   fetchData(data);
+        // }, 2000);
         if (res)
           handleResponse(res, (res) => {
             if (res.data.stage_status.includes("check")) {
@@ -128,6 +128,7 @@ const ScanServerModal = ({
         </span>
       }
       afterClose={() => {
+        setStepNum(0);
         clearTimeout(timer.current);
         refresh();
       }}
