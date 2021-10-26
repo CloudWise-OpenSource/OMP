@@ -212,9 +212,9 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
             explain_service_yml[1]['package_name'] = service_pk_name
             explain_service_list.append(explain_service_yml[1])
         explain_yml[1]['product_service'] = explain_service_list
-        tmp_dir = f"{tmp_dir}-{versions}"
+        tmp_dir = [tmp_dir, versions]
     else:
-        tmp_dir = file_name
+        tmp_dir = [file_name]
     explain_yml[1]['image'] = image
     explain_yml[1]['package_name'] = package_name
     explain_yml[1]['tmp_dir'] = tmp_dir
@@ -518,14 +518,16 @@ def publish_entry(uuid):
         else:
             CreateDatabase(line).create_component()
         tmp_dir = line.get('tmp_dir')
-        if len(tmp_dir) <= 28:
+        if len(tmp_dir[0]) <= 28:
             line['package_name'].package_status = 4
             line['package_name'].save()
-            logger.error('{tmp_dir}路径异常')
+            logger.error(f'{tmp_dir[0]}路径异常')
             return None
+        valid_name = tmp_dir[0].rsplit('/', 1)
+        valid_pk = f"{valid_name[1]}-{tmp_dir[1]}" if len(tmp_dir) == 2 else valid_name[1]
         valid_dir = os.path.join(project_dir, 'package_hub',
-                                 'verified', tmp_dir.rsplit('/', 1)[1])
-        move_tmp = tmp_dir if os.path.isfile(tmp_dir) else tmp_dir.rsplit("-", 1)[0]
+                                 'verified', valid_pk)
+        move_tmp = "/".join(valid_name)
         move_out = public_utils.local_cmd(
             f'rm -rf {valid_dir} && mv {move_tmp} {valid_dir}')
         if move_out[2] != 0:
@@ -534,8 +536,8 @@ def publish_entry(uuid):
             logger.error('移动或删除失败')
             return None
         valid_packages_obj.append(line['package_name'].id)
-    clear_dir = os.path.dirname(tmp_dir) if os.path.isfile(valid_dir) else \
-        os.path.dirname(os.path.dirname(tmp_dir))
+    clear_dir = tmp_dir[0] if os.path.isfile(valid_dir) else \
+        os.path.dirname(tmp_dir[0])
     UploadPackageHistory.objects.filter(id__in=valid_packages_obj).update(
         package_status=3)
     exec_clear(clear_dir)
