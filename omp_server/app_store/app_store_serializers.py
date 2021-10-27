@@ -21,7 +21,8 @@ from db_models.models import (
 from app_store.install_utils import (
     make_lst_unique, ServiceArgsSerializer,
     SerDependenceParseUtils, ProDependenceParseUtils,
-    ValidateExistService, ValidateInstallService
+    ValidateExistService, ValidateInstallService,
+    CreateInstallPlan
 )
 
 logger = logging.getLogger("server")
@@ -392,6 +393,14 @@ class ExecuteInstallSerializer(Serializer):
             "empty": "必须包含将要安装的服务信息"
         }
     )
+    is_valid_flag = serializers.BooleanField(
+        read_only=True, required=False,
+        help_text="数据准确性校验返回标志"
+    )
+    is_valid_msg = serializers.CharField(
+        read_only=True, required=False, max_length=4096,
+        help_text="数据准确性校验结果信息"
+    )
 
     def validate_use_exist_services(self, data):    # NOQA
         """
@@ -401,10 +410,7 @@ class ExecuteInstallSerializer(Serializer):
         """
         if not data:
             return data
-        _val = ValidateExistService(data=data)
-        if not _val.run():
-            raise ValidationError("复用已存在的服务信息有误")
-        return data
+        return ValidateExistService(data=data).run()
 
     def validate_install_services(self, data):  # NOQA
         """
@@ -412,18 +418,50 @@ class ExecuteInstallSerializer(Serializer):
         :param data:
         :return:
         """
-        _val = ValidateInstallService(data=data)
-        _flag, _data = _val.run()
-        if not _flag:
-            raise ValidationError("error")
-        return data
+        return ValidateInstallService(data=data).run()
 
-    def create(self, validated_data):   # NOQA
+    def check_lst_valid(self, lst):     # NOQA
         """
-        生成部署计划，调用异步任务
-        :param validated_data:
+        根据列表、字典格式确定安装参数是否符合要求
+        :param lst:
         :return:
         """
-        # TODO 生成部署计划
-        print(validated_data)
-        return validated_data
+        for el in lst:
+            if not isinstance(el, dict):
+                return False
+            if "check_flag" in el and not el["check_flag"]:
+                return False
+        return True
+
+    def validate(self, attrs):
+        """
+        安装校验最终要执行的方法，根据安装参数解析结果决定如下操作：
+            安装参数解析成功：调用安装参数入库方法
+            安装参数解析失败：直接返回相关安装参数
+        :param attrs:
+        :return:
+        """
+        valid_lst = list()
+        use_exist_services = attrs.get("use_exist_services", [])
+        valid_lst.append(self.check_lst_valid(use_exist_services))
+        install_services = attrs.get("install_services", [])
+        valid_lst.append(self.check_lst_valid(install_services))
+        for item in install_services:
+            app_install_args = item.get("app_install_args", [])
+            valid_lst.append(self.check_lst_valid(app_install_args))
+            app_port = item.get("app_install_args", [])
+            valid_lst.append(self.check_lst_valid(app_port))
+        if len(set(valid_lst)) != 1 or valid_lst[0] is False:
+            attrs["is_valid_flag"] = False
+            attrs["is_valid_msg"] = "数据校验出错"
+            return attrs
+        # TODO 数据入库逻辑
+        _create_data_obj = CreateInstallPlan(install_data=attrs)
+        flag, msg = _create_data_obj.run()
+        if not flag:
+            attrs["is_valid_flag"] = False
+            attrs["is_valid_msg"] = msg
+            return attrs
+        attrs["is_valid_flag"] = True
+        attrs["is_valid_msg"] = ""
+        return attrs

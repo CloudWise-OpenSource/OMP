@@ -17,6 +17,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from omp_server.settings import PROJECT_DIR
 from db_models.models import (
+    Host,
     ApplicationHub,
     ProductHub,
     Product,
@@ -24,6 +25,10 @@ from db_models.models import (
     ClusterInfo
 )
 from utils.common.exceptions import GeneralError
+from utils.plugin.public_utils import check_ip_port
+from utils.plugin.salt_client import SaltClient
+
+DIR_KEY = "{data_path}"
 
 
 def make_lst_unique(lst, key_1, key_2):
@@ -45,6 +50,15 @@ def make_lst_unique(lst, key_1, key_2):
         ret_lst.append(el)
         unique_dic[_unique] = True
     return ret_lst
+
+
+def make_app_install_args(app_install_args):
+    for el in app_install_args:
+        if isinstance(el.get("default"), str) and \
+                DIR_KEY in el.get("default"):
+            el["default"] = el["default"].replace(DIR_KEY, "")
+            el["dir_key"] = DIR_KEY
+    return app_install_args
 
 
 class SerDependenceParseUtils(object):
@@ -129,6 +143,16 @@ class SerDependenceParseUtils(object):
             ret_lst.extend(deploy_info["complex"])
         return ret_lst
 
+    def get_is_base_env(self, obj):     # NOQA
+        """
+        确定当前服务是否为基础环境：如 jdk 等
+        :param obj:
+        :return:
+        """
+        if not obj.extend_fields:
+            return False
+        return obj.extend_fields.get("base_env", False)
+
     def get_dependence(self, lst, dep):
         """
         解决服务依赖关系核心方法
@@ -155,7 +179,10 @@ class SerDependenceParseUtils(object):
             if not _app:
                 inner["cluster_info"] = list()
                 inner["instance_info"] = list()
+                inner["app_port"] = list()
+                inner["app_install_args"] = list()
                 inner["is_in_hub"] = False
+                inner["is_base_env"] = False
                 inner["is_pack_exist"] = False
                 inner["ser_deploy_mode"] = list()
                 inner["process_continue"] = False
@@ -168,7 +195,17 @@ class SerDependenceParseUtils(object):
             # 获取依赖服务的相关信息
             inner["cluster_info"] = cluster_info
             inner["instance_info"] = instance_info
+            # 获取依赖服务端口及其他参数信息
+            inner["app_port"] = \
+                json.loads(_app.app_port) if _app.app_port else list()
+            if _app.app_install_args:
+                _app_install_args = json.loads(_app.app_install_args)
+                inner["app_install_args"] = \
+                    make_app_install_args(_app_install_args)
+            else:
+                inner["app_install_args"] = list()
             inner["is_in_hub"] = True
+            inner["is_base_env"] = self.get_is_base_env(obj=_app)
             inner["is_pack_exist"] = is_pack_exist
             inner["ser_deploy_mode"] = self.get_deploy_mode(obj=_app)
             if cluster_info or instance_info or is_pack_exist:
@@ -310,31 +347,13 @@ class ServiceArgsSerializer(object):
         return json.loads(obj.app_port)
 
     def get_app_install_args(self, obj):  # NOQA
-        """ 解析安装参数信息
-        [
-          {
-            "default": 18080,
-            "key": "http_port",
-            "name": "服务端口"
-          }
-        ]
-        """
-        ret_lst = list()
+        """ 解析安装参数信息 """
         # 标记安装过程中涉及到的数据目录，通过此标记给前端
         # 给与前端提示信息，此标记对应于主机中的数据目录 data_folder
         # 在后续前端提供出安装参数后，我们应该检查其准确性
-        DIR_KEY = "{data_path}"
-        # TODO 暂时屏蔽拼接服务端口配置信息
-        # if obj.app_port:
-        #     ret_lst.extend(json.loads(obj.app_port))
-        if obj.app_install_args:
-            ret_lst.extend(json.loads(obj.app_install_args))
-        for item in ret_lst:
-            if isinstance(item.get("default"), str) and \
-                    DIR_KEY in item.get("default"):
-                item["default"] = item["default"].replace(DIR_KEY, "")
-                item["dir_key"] = DIR_KEY
-        return ret_lst
+        if not obj.app_install_args:
+            return list()
+        return make_app_install_args(json.loads(obj.app_install_args))
 
     def get_deploy_mode(self, obj):  # NOQA
         """ 解析部署模式信息
@@ -399,8 +418,12 @@ class ValidateExistService(object):
                 id=dic.get("id"),
                 cluster_name=dic.get("cluster_name")
         ).exists():
-            return True
-        return False
+            dic["check_flag"] = True
+            dic["check_msg"] = "success"
+            return dic
+        dic["check_flag"] = False
+        dic["check_msg"] = "此集群不存在"
+        return dic
 
     def check_single(self, dic):    # NOQA
         """
@@ -413,8 +436,12 @@ class ValidateExistService(object):
             id=dic.get("id"),
             service_instance_name=dic.get("service_instance_name")
         ).exists():
-            return True
-        return False
+            dic["check_flag"] = True
+            dic["check_msg"] = "success"
+            return dic
+        dic["check_flag"] = False
+        dic["check_msg"] = "此服务不存在"
+        return dic
 
     def run(self):
         """
@@ -424,11 +451,12 @@ class ValidateExistService(object):
         for item in self.data:
             _type = item.get("type")
             if _type not in ("cluster", "single"):
-                return False
-            flag = getattr(self, f"check_{_type}")(item)
-            if not flag:
-                return False
-        return True
+                item["check_flag"] = False
+                item["check_msg"] = "已存在的服务信息必须在single和cluster内"
+                continue
+            _recheck_item = getattr(self, f"check_{_type}")(item)
+            item.update(_recheck_item)
+        return self.data
 
 
 class ValidateInstallService(object):
@@ -453,14 +481,47 @@ class ValidateInstallService(object):
         :return:
         """
         _dic = deepcopy(dic)
-        _dic["error_dic"] = dict()
+        _ip = _dic.get("ip")
+        _host_obj = Host.objects.filter(ip=_ip).last()
+        if not _host_obj:
+            _dic["check_flag"] = False
+            _dic["check_msg"] = f"主机 {_ip} 不存在"
+            return _dic
+        _data_path = _host_obj.data_folder
         # 检查实例名称是否重复
         service_instance_name = _dic.get("service_instance_name")
         if Service.objects.filter(
                 service_instance_name=service_instance_name).exists():
-            _dic["error_dic"]["service_instance_name"] = "实例名称重复"
-        # app_install_args = _dic.get("app_install_args", [])
-
+            _dic["check_flag"] = False
+            _dic["check_msg"] = "实例名称重复"
+        # 检查端口是否被占用
+        app_port = _dic.get("app_port", [])
+        for el in app_port:
+            _port = el.get("default", "")
+            _flag, _msg = check_ip_port(ip=_ip, port=_port)
+            if _flag:
+                el["check_flag"] = False
+                el["check_msg"] = f"主机 {_ip} 上的端口 {_port} 已被占用"
+        # 校验安装参数
+        app_install_args = _dic.get("app_install_args", [])
+        _salt_obj = SaltClient()
+        for el in app_install_args:
+            if "dir_key" not in el:
+                continue
+            _tobe_check_path = os.path.join(
+                _data_path, el.get("default", "").lstrip("/"))
+            _flag, _msg = _salt_obj.cmd(
+                target=_ip,
+                command=f"test -d {_tobe_check_path} && echo 'PATH EXISTS'",
+                timeout=10
+            )
+            if not _flag:
+                el["check_flag"] = False
+                el["check_msg"] = f"无法确定该路径状态: {_tobe_check_path}"
+                continue
+            if "PATH EXISTS" not in _msg:
+                el["check_flag"] = False
+                el["check_msg"] = f"{_tobe_check_path} 在目标主机 {_ip} 上已存在"
         return _dic
 
     def run(self):
@@ -481,10 +542,14 @@ class ValidateInstallService(object):
         for f in futures_list:
             result_list.append(f[1].result())
         thread_p.shutdown(wait=True)
-        error_flag = False
-        for el in result_list:
-            if not el.get("check_flag"):
-                error_flag = True
-        if error_flag:
-            return False, result_list
-        return True, result_list
+        return result_list
+
+
+class CreateInstallPlan(object):
+    """ 生成部署计划相关数据 """
+
+    def __init__(self, install_data):
+        self.install_data = install_data
+
+    def run(self):
+        return False, "success"

@@ -6,6 +6,8 @@
 # Version: 1.0
 # Introduction:
 
+from rest_framework import status
+from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import (
     ListModelMixin, CreateModelMixin
@@ -61,3 +63,17 @@ class ExecuteInstallView(GenericViewSet, CreateModelMixin):
 
     serializer_class = ExecuteInstallSerializer
     post_description = "执行安装入口接口"
+
+    def create(self, request, *args, **kwargs):
+        """
+            post:
+            执行安装按钮接口
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            serializer.data,
+            status=status.HTTP_201_CREATED,
+            headers=headers
+        )
