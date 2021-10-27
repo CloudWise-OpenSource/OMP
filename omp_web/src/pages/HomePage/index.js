@@ -1,7 +1,7 @@
 import { apiRequest } from "@/config/requestApi";
 import { fetchGet } from "@/utils/request";
 import { handleResponse } from "@/utils/utils";
-import { Progress, Spin, message } from "antd";
+import { Progress, Spin, message, Anchor } from "antd";
 import React, { useEffect, useState } from "react";
 import { useHistory } from "react-router-dom";
 import styles from "./index.module.less";
@@ -12,569 +12,388 @@ import WarningList from "./warningList";
 import { useSelector, useDispatch } from "react-redux";
 import { OmpContentWrapper } from "@/components";
 
-function calcPercentage(abnormal = 0, total = 1) {
-  const percent = (((total - abnormal) / total) * 100).toFixed(0);
+function calcPercentage(normal = 0, total = 1) {
+  const percent = ((normal / total) * 100).toFixed(0);
   return isNaN(Number(percent)) ? 100 : Number(percent);
 }
 
 const Homepage = () => {
-  //const appContext = useContext(context);
-  const a = useSelector((state) => state.layouts.a);
-  console.log(a)
   const history = useHistory();
 
   const [isLoading, setLoading] = useState(false);
-  const [hostData, setHostData] = useState([]);
-  const [serviceData, setServiceData] = useState([]);
-  const [componentData, setComponentData] = useState([]);
-  const [databaseData, setDatabaseData] = useState([]);
-  const [externalData, setExternalData] = useState([]);
 
-  useEffect(() => {
-    return 
+  const [dataSource, setDataSource] = useState({});
+
+  const queryData = () => {
+    setDataSource({
+      host: {
+        host_info_all_count: 2,
+        host_info_exc_count: 0,
+        host_info_no_monitor_count: 0,
+        host_info_list: [
+          {
+            ip: "192.168.0.1",
+            instance_name: "dosm1",
+            severity: "warning",
+            data: "2021-09-03 12:34:56",
+            describe: "cpu崩了",
+            monitor_url: "/grafana/v1/xxx",
+            log_url: "/grafana/v1/xxx",
+          },
+          {
+            ip: "192.168.0.2",
+            instance_name: "dosm2",
+            severity: "warning",
+            data: "2021-09-03 12:34:56",
+            describe: "cpu崩了",
+            monitor_url: "/grafana/v1/xxx",
+            log_url: "/grafana/v1/xxx",
+          },
+        ],
+      },
+      database: {
+        database_info_all_count: 0,
+        database_info_exc_count: 0,
+        database_info_no_monitor_count: 0,
+        database_info_list: [
+          {
+            ip: "192.168.0.3",
+            instance_name: "mysql1",
+            severity: "critical",
+            data: "2021-09-03 12:34:56",
+            describe: "mysql 挂了",
+            monitor_url: "/grafana/v1/xxx",
+            log_url: "/grafana/v1/xxx",
+          },
+          {
+            ip: "192.168.0.4",
+            instance_name: "redis2",
+            severity: "critical",
+            data: "2021-09-03 12:34:56",
+            describe: "redis 挂了",
+            monitor_url: "/grafana/v1/xxx",
+            log_url: "/grafana/v1/xxx",
+          },
+        ],
+      },
+      service: {
+        service_info_all_count: 0,
+        service_info_exc_count: 0,
+        service_info_no_monitor_count: 0,
+        service_info_list: [],
+      },
+      component: {
+        component_info_all_count: 0,
+        component_info_exc_count: 0,
+        component_info_no_monitor_count: 0,
+        component_info_list: [],
+      },
+      third: {
+        third_info_all_count: 0,
+        third_info_exc_count: 0,
+        third_info_no_monitor_count: 0,
+        third_info_list: [],
+      },
+    });
+    return;
     setLoading(true);
-    Promise.allSettled([
-      fetchGet(apiRequest.homepage.host),
-      fetchGet(apiRequest.homepage.service),
-      fetchGet(apiRequest.homepage.component),
-      fetchGet(apiRequest.homepage.database),
-      fetchGet(apiRequest.homepage.external),
-    ])
-      .then(
-        ([
-          hostDataRes,
-          serviceDataRes,
-          componentDataRes,
-          databaseDataRes,
-          externalDataRes,
-        ]) => {
-          console.log(hostDataRes, "hostDataRes.");
-          if (hostDataRes.status === "fulfilled") {
-            console.log("hostDataRes.status ");
-            // 当登陆过期时，不再执行后续几个请求，防止弹多次错误提示
-            // 出现此问题的原因是项目中所有的接口都没有错误返回，目的就是让客户不看见错误。。。？
-            // 约定了code值不为0时代表有问题，3代表登陆过期
-            // 这样的话所有的catch其实没啥用，代码也不会在遇到第一个错误时退出执行
-            //console.log(hostDataRes.value)
-            if (hostDataRes.value.data.code === 3) {
-              message.warn("登录已过期，请重新登录");
-
-              localStorage.clear();
-              window.__history__.replace("/login");
-              return;
-            }
-            // 当用户配置了错误的prometheus地址时，首页接口都会报错
-            // 为了只弹一次错误，增加此判断
-            hostDataRes.value = hostDataRes.value.data;
-            serviceDataRes.value = serviceDataRes.value.data;
-            componentDataRes.value = componentDataRes.value.data;
-            databaseDataRes.value = databaseDataRes.value.data;
-            externalDataRes.value = externalDataRes.value.data;
-            if (
-              hostDataRes.value.code === 1 &&
-              hostDataRes.value.message.includes("请确定Prometheus")
-            ) {
-              //   if(!appContext.state.value){
-              //     message.warn(hostDataRes.value.message);
-              //   }
-              return;
-            }
-            handleResponse(hostDataRes.value, () => {
-              console.log(hostDataRes.value.data, "hostDataRes.value.data");
-              setHostData(hostDataRes.value.data);
-            });
-          }
-          if (serviceDataRes.status === "fulfilled") {
-            handleResponse(serviceDataRes.value, () => {
-              console.log(
-                serviceDataRes.value.data,
-                "serviceDataRes.value.data"
-              );
-              setServiceData(serviceDataRes.value.data);
-            });
-          }
-          if (componentDataRes.status === "fulfilled") {
-            handleResponse(componentDataRes.value, () => {
-              setComponentData(componentDataRes.value.data);
-            });
-          }
-          if (databaseDataRes.status === "fulfilled") {
-            handleResponse(databaseDataRes.value, () => {
-              setDatabaseData(databaseDataRes.value.data);
-            });
-          }
-          if (externalDataRes.status === "fulfilled") {
-            //外部组件数据请求成功
-            //console.log("新接口请求成功",externalDataRes);
-            setExternalData(externalDataRes.value.data);
-          }
-        }
-      )
+    fetchGet(apiRequest.machineManagement.hosts)
+      .then((res) => {
+        handleResponse(res, (res) => {
+          setDataSource(res.data.results);
+        });
+      })
       .catch((e) => console.log(e))
       .finally(() => {
         setLoading(false);
       });
-  }, [a]);
+  };
 
+  useEffect(() => {
+    queryData();
+  }, []);
+  console.log();
   return (
-    <OmpContentWrapper wrapperStyle={{ width: "100%", height: "calc(100% - 40px)" }}>
-    <div className={styles.homepageWrapper}>
-      {/* <OmpProgress /> */}
-      <Spin spinning={isLoading}>
-        <div
-          className={styles.pageBlock}
-          style={{
-            borderRadius: 4,
-            //border:"1px solid  #DCDEE5",
-            marginBottom: "15px",
-            backgroundColor: "white",
-          }}
-        >
-          <div className={styles.blockTitle}>状态概览</div>
+    <OmpContentWrapper
+      wrapperStyle={{ width: "100%", height: "calc(100% - 40px)",backgroundColor:"#edf0f3" }}
+    >
+      <div className={styles.homepageWrapper}>
+        {/* <OmpProgress /> */}
+        <Spin spinning={isLoading}>
           <div
+            className={styles.pageBlock}
             style={{
-              display: "flex",
-              flexFlow: "row wrap",
-              justifyContent: "space-around",
-              //border: "1px solid  #DCDEE5"
+              borderRadius: 4,
+              //border:"1px solid  #DCDEE5",
+              marginBottom: "15px",
+              backgroundColor: "white",
             }}
-            className={styles.blockContent}
           >
-            <div className={styles.blockOverviewItem}>
-              <OmpProgress
-                percent={
-                  serviceData.service_num == serviceData.abnormal_num &&
-                  serviceData.abnormal_num == 0
-                    ? Infinity
-                    : (
-                        ((serviceData.service_num -
-                          serviceData.unmonitored -
-                          serviceData.abnormal_num) /
-                          serviceData.service_num) *
-                        100
-                      ).toFixed(0)
-                }
-                trafficWay={[
-                  {
-                    name: "异常",
-                    value: serviceData.abnormal_num,
-                  },
-                  {
-                    name: "未监控",
-                    value: serviceData.unmonitored,
-                  },
-                  {
-                    name: "正常",
-                    value:
-                      serviceData.service_num == serviceData.abnormal_num &&
-                      serviceData.abnormal_num == 0
-                        ? 1
-                        : serviceData.service_num -
-                            serviceData.unmonitored -
-                            serviceData.abnormal_num ==
-                          0
-                        ? null
-                        : serviceData.service_num -
-                          serviceData.unmonitored -
-                          serviceData.abnormal_num,
-                  },
-                ]}
-              />
-              <div className={styles.progressInfo}>
-                <div>自有服务状态</div>
-                <div
-                  onClick={() =>
-                    serviceData.service_num &&
-                    history.push({
-                      pathname: "/products-management/service",
-                      state: {
-                        key: "all",
-                      },
-                    })
-                  }
-                  style={serviceData.service_num ? { cursor: "pointer" } : {}}
-                >
-                  服务总数：
-                  <span
-                    style={serviceData.service_num ? { color: "#1890ff" } : {}}
-                  >
-                    {serviceData.service_num}个
-                  </span>
-                </div>
-                <div
-                  style={
-                    serviceData.abnormal_num > 0 ? { cursor: "pointer" } : {}
-                  }
-                  onClick={() =>
-                    serviceData.abnormal_num > 0 &&
-                    history.push({
-                      pathname: "/operation-management/warnings",
-                      state: {
-                        defaultList: "service",
-                        key: "all",
-                      },
-                    })
-                  }
-                >
-                  异常服务：
-                  <span
-                    style={
-                      serviceData.abnormal_num > 0 ? { color: "#cf1322" } : {}
-                    }
-                  >
-                    {serviceData.abnormal_num}个
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className={styles.blockOverviewItem}>
-              <OmpProgress
-                percent={
-                  componentData.service_num == componentData.abnormal_num &&
-                  componentData.abnormal_num == 0
-                    ? Infinity
-                    : (
-                        ((componentData.service_num -
-                          componentData.unmonitored -
-                          componentData.abnormal_num) /
-                          componentData.service_num) *
-                        100
-                      ).toFixed(0)
-                }
-                trafficWay={[
-                  {
-                    name: "异常",
-                    value: componentData.abnormal_num,
-                  },
-                  {
-                    name: "未监控",
-                    value: componentData.unmonitored,
-                  },
-                  {
-                    name: "正常",
-                    value:
-                      componentData.service_num == componentData.abnormal_num &&
-                      componentData.abnormal_num == 0
-                        ? 1
-                        : componentData.service_num -
-                            componentData.unmonitored -
-                            componentData.abnormal_num ==
-                          0
-                        ? null
-                        : componentData.service_num -
-                          componentData.unmonitored -
-                          componentData.abnormal_num,
-                  },
-                ]}
-              />
-              <div className={styles.progressInfo}>
-                <div>自有组件状态</div>
-                <div
-                  onClick={() =>
-                    componentData.service_num &&
-                    history.push({
-                      pathname: "/products-management/service",
-                      state: {
-                        key: "basic",
-                      },
-                    })
-                  }
-                  style={componentData.service_num ? { cursor: "pointer" } : {}}
-                >
-                  组件实例：
-                  <span
-                    style={
-                      componentData.service_num ? { color: "#1890ff" } : {}
-                    }
-                  >
-                    {componentData.service_num}个
-                  </span>
-                </div>
-                <div
-                  style={
-                    componentData.abnormal_num > 0 ? { cursor: "pointer" } : {}
-                  }
-                  onClick={() =>
-                    componentData.abnormal_num > 0 &&
-                    history.push({
-                      pathname: "/operation-management/warnings",
-                      state: {
-                        defaultList: "service",
-                        key: "basic",
-                      },
-                    })
-                  }
-                >
-                  异常实例：
-                  <span
-                    style={
-                      componentData.abnormal_num > 0 ? { color: "#cf1322" } : {}
-                    }
-                  >
-                    {componentData.abnormal_num}个
-                  </span>
-                </div>
-              </div>
-            </div>
+            <div className={styles.blockTitle}>状态概览</div>
             <div
-              style={{ marginRight: 0 }}
-              className={styles.blockOverviewItem}
+              style={{
+                display: "flex",
+                flexFlow: "row wrap",
+                justifyContent: "space-around",
+                //border: "1px solid  #DCDEE5"
+              }}
+              className={styles.blockContent}
             >
-              <OmpProgress
-                percent={
-                  externalData.abnormal_num == externalData.service_num &&
-                  externalData.service_num == 0
-                    ? Infinity
-                    : (
-                        ((externalData.service_num -
-                          //serviceData.unmonitored -
-                          externalData.abnormal_num) /
-                          externalData.service_num) *
-                        100
-                      ).toFixed(0)
-                }
-                trafficWay={[
-                  {
-                    name: "异常",
-                    value: externalData.abnormal_num,
-                  },
-                  {
-                    name: "未监控",
-                    value: externalData.unmonitored,
-                  },
-                  {
-                    name: "正常",
-                    value:
-                      externalData.abnormal_num == externalData.service_num &&
-                      externalData.service_num == 0
-                        ? 1
-                        : externalData.service_num -
-                            //serviceData.unmonitored -
-                            externalData.abnormal_num ==
-                          0
-                        ? null
-                        : externalData.service_num -
-                          //serviceData.unmonitored -
-                          externalData.abnormal_num,
-                  },
-                ]}
-              />
-              <div className={styles.progressInfo}>
-                <div>三方组件状态</div>
-                <div
-                  style={
-                    externalData.service_num > 0 ? { cursor: "pointer" } : {}
-                  }
-                  onClick={() =>
-                    externalData.service_num &&
-                    history.push({
-                      pathname: "/products-management/service",
-                      state: {
-                        key: "thirdParty",
-                      },
-                    })
-                  } //带替换
-                >
-                  组件实例：
-                  <span
+              {/* 主机状态 */}
+              <div className={styles.blockOverviewItem}>
+                <OmpProgress
+                  percent={calcPercentage(
+                    dataSource.host?.host_info_all_count -
+                      dataSource.host?.host_info_exc_count -
+                      dataSource.host?.host_info_no_monitor_count,
+                    dataSource.host?.host_info_all_count
+                  )}
+                  trafficWay={[
+                    {
+                      name: "异常",
+                      value: dataSource.host?.host_info_exc_count,
+                    },
+                    {
+                      name: "未监控",
+                      value: dataSource.host?.host_info_no_monitor_count,
+                    },
+                    {
+                      name: "正常",
+                      value:
+                        dataSource.host?.host_info_all_count -
+                        dataSource.host?.host_info_exc_count -
+                        dataSource.host?.host_info_no_monitor_count,
+                    },
+                  ]}
+                />
+                <div className={styles.progressInfo}>
+                  <div>主机状态</div>
+                  <div
+                    onClick={() =>
+                      dataSource.host?.host_info_all_count &&
+                      history.push({
+                        pathname: "/resource-management/machine-management",
+                      })
+                    }
                     style={
-                      externalData.service_num > 0 ? { color: "#1890ff" } : {}
+                      dataSource.host?.host_info_all_count
+                        ? { cursor: "pointer" }
+                        : {}
                     }
                   >
-                    {externalData.service_num}个
-                  </span>
-                </div>
-                <div
-                  style={
-                    externalData.abnormal_num > 0 ? { cursor: "pointer" } : {}
-                  }
-                  onClick={() =>
-                    externalData.abnormal_num > 0 &&
-                    history.push({
-                      pathname: "/operation-management/warnings",
-                      state: {
-                        key: "thirdParty",
-                      },
-                    })
-                  }
-                >
-                  异常个数：
-                  <span
+                    主机总数：
+                    <span
+                      style={
+                        dataSource.host?.host_info_all_count
+                          ? { color: "#1890ff" }
+                          : {}
+                      }
+                    >
+                      {dataSource.host?.host_info_all_count}个
+                    </span>
+                  </div>
+                  <div
                     style={
-                      externalData.abnormal_num > 0 ? { color: "#cf1322" } : {}
+                      dataSource.host?.host_info_exc_count > 0
+                        ? { cursor: "pointer" }
+                        : {}
+                    }
+                    onClick={() =>
+                      dataSource.host?.host_info_exc_count &&
+                      history.push({
+                        pathname: "/application-monitoring/exception-list",
+                      })
                     }
                   >
-                    {externalData.abnormal_num}个
-                  </span>
+                    异常主机：
+                    <span
+                      style={
+                        dataSource.host?.host_info_exc_count > 0
+                          ? { color: "#cf1322" }
+                          : {}
+                      }
+                    >
+                      {dataSource.host?.host_info_exc_count}个
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className={styles.blockOverviewItem}>
-              <OmpProgress
-                percent={
-                  databaseData.service_num == databaseData.abnormal_num &&
-                  databaseData.service_num == 0
-                    ? Infinity
-                    : (
-                        ((databaseData.service_num -
-                          databaseData.unmonitored -
-                          databaseData.abnormal_num) /
-                          databaseData.service_num) *
-                        100
-                      ).toFixed(0)
-                }
-                trafficWay={[
-                  {
-                    name: "异常",
-                    value: databaseData.abnormal_num,
-                  },
-                  {
-                    name: "未监控",
-                    value: databaseData.unmonitored,
-                  },
-                  {
-                    name: "正常",
-                    value:
-                      databaseData.service_num == databaseData.abnormal_num &&
-                      databaseData.service_num == 0
-                        ? 1
-                        : databaseData.service_num -
-                            databaseData.unmonitored -
-                            databaseData.abnormal_num ==
-                          0
-                        ? null
-                        : databaseData.service_num -
-                          databaseData.unmonitored -
-                          databaseData.abnormal_num,
-                  },
-                ]}
-              />
-              <div className={styles.progressInfo}>
-                <div>数据库状态</div>
-                <div
-                  style={databaseData.service_num ? { cursor: "pointer" } : {}}
-                  onClick={() =>
-                    databaseData.service_num &&
-                    history.push({
-                      pathname: "/products-management/service",
-                      state: {
-                        key: "database",
-                      },
-                    })
-                  }
-                >
-                  数据库实例：
-                  <span
-                    style={databaseData.service_num ? { color: "#1890ff" } : {}}
-                  >
-                    {databaseData.service_num}个
-                  </span>
-                </div>
-                <div
-                  style={
-                    databaseData.abnormal_num > 0 ? { cursor: "pointer" } : {}
-                  }
-                  onClick={() =>
-                    databaseData.abnormal_num > 0 &&
-                    history.push({
-                      pathname: "/operation-management/warnings",
-                      state: {
-                        defaultList: "service",
-                        key: "database",
-                      },
-                    })
-                  }
-                >
-                  异常实例：
-                  <span
+
+              {/* 应用服务 */}
+              <div className={styles.blockOverviewItem}>
+                <OmpProgress
+                  percent={calcPercentage(
+                    dataSource.service?.service_info_all_count -
+                      dataSource.service?.service_info_exc_count -
+                      dataSource.service?.service_info_no_monitor_count,
+                    dataSource.service?.service_info_all_count
+                  )}
+                  trafficWay={[
+                    {
+                      name: "异常",
+                      value: dataSource.service?.service_info_exc_count,
+                    },
+                    {
+                      name: "未监控",
+                      value: dataSource.service?.service_info_no_monitor_count,
+                    },
+                    {
+                      name: "正常",
+                      value:
+                        dataSource.service?.service_info_all_count -
+                        dataSource.service?.service_info_exc_count -
+                        dataSource.service?.service_info_no_monitor_count,
+                    },
+                  ]}
+                />
+                <div className={styles.progressInfo}>
+                  <div style={{ marginBottom: 8 }}>应用服务状态</div>
+                  <div
+                    onClick={() =>
+                      dataSource.service?.service_info_all_count &&
+                      history.push({
+                        pathname: "/application_management/service_management",
+                      })
+                    }
                     style={
-                      databaseData.abnormal_num > 0 ? { color: "#cf1322" } : {}
+                      dataSource.service?.service_info_all_count
+                        ? { cursor: "pointer", marginBottom: 2 }
+                        : { marginBottom: 2 }
                     }
                   >
-                    {databaseData.abnormal_num}个
-                  </span>
+                    服务总数：
+                    <span
+                      style={
+                        dataSource.service?.service_info_all_count
+                          ? { color: "#1890ff" }
+                          : {}
+                      }
+                    >
+                      {dataSource.service?.service_info_all_count}个
+                    </span>
+                  </div>
+                  <div style={{ marginBottom: 2 }}>
+                    未监控数：
+                    <span>
+                      {dataSource.service?.service_info_no_monitor_count}个
+                    </span>
+                  </div>
+                  <div
+                    style={
+                      dataSource.service?.service_info_exc_count > 0
+                        ? { cursor: "pointer" }
+                        : {}
+                    }
+                    onClick={() =>
+                      dataSource.service?.service_info_exc_count &&
+                      history.push({
+                        pathname: "/application-monitoring/exception-list",
+                      })
+                    }
+                  >
+                    异常服务：
+                    <span
+                      style={
+                        dataSource.service?.service_info_exc_count > 0
+                          ? { color: "#cf1322" }
+                          : {}
+                      }
+                    >
+                      {dataSource.service?.service_info_exc_count}个
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div
-              style={{ marginRight: 0 }}
-              className={styles.blockOverviewItem}
-            >
-              <OmpProgress
-                percent={
-                  hostData.abnormal_num == hostData.host_num &&
-                  hostData.host_num == 0
-                    ? Infinity
-                    : (
-                        ((hostData.host_num -
-                          //serviceData.unmonitored -
-                          hostData.abnormal_num) /
-                          hostData.host_num) *
-                        100
-                      ).toFixed(0)
-                }
-                trafficWay={[
-                  {
-                    name: "异常",
-                    value: hostData.abnormal_num,
-                  },
-                  {
-                    name: "未监控",
-                    value: hostData.unmonitored,
-                  },
-                  {
-                    name: "正常",
-                    value:
-                      hostData.abnormal_num == hostData.host_num &&
-                      hostData.host_num == 0
-                        ? 1
-                        : hostData.host_num -
-                            //serviceData.unmonitored -
-                            hostData.abnormal_num ==
-                          0
-                        ? null
-                        : hostData.host_num -
-                          //serviceData.unmonitored -
-                          hostData.abnormal_num,
-                  },
-                ]}
-              />
-              <div className={styles.progressInfo}>
-                <div>主机状态</div>
-                <div
-                  style={hostData.host_num ? { cursor: "pointer" } : {}}
-                  onClick={() =>
-                    hostData.host_num &&
-                    history.push("/machine-management/list")
-                  }
-                >
-                  主机总数：
-                  <span style={hostData.host_num ? { color: "#1890ff" } : {}}>
-                    {hostData.host_num}台
-                  </span>
-                </div>
-                <div
-                  style={hostData.abnormal_num > 0 ? { cursor: "pointer" } : {}}
-                  onClick={() =>
-                    hostData.abnormal_num > 0 &&
-                    history.push("/operation-management/warnings")
-                  }
-                >
-                  异常主机：
-                  <span
+
+               {/* 基础组件 */}
+               <div className={styles.blockOverviewItem}>
+                <OmpProgress
+                  percent={calcPercentage(
+                    dataSource.database?.database_info_all_count -
+                      dataSource.database?.database_info_exc_count -
+                      dataSource.database?.database_info_no_monitor_count,
+                    dataSource.database?.database_info_all_count
+                  )}
+                  trafficWay={[
+                    {
+                      name: "异常",
+                      value: dataSource.database?.database_info_exc_count,
+                    },
+                    {
+                      name: "未监控",
+                      value: dataSource.database?.database_info_no_monitor_count,
+                    },
+                    {
+                      name: "正常",
+                      value:
+                        dataSource.database?.database_info_all_count -
+                        dataSource.database?.database_info_exc_count -
+                        dataSource.database?.database_info_no_monitor_count,
+                    },
+                  ]}
+                />
+                <div className={styles.progressInfo}>
+                  <div style={{ marginBottom: 8 }}>基础组件状态</div>
+                  <div
+                    onClick={() =>
+                      dataSource.database?.database_info_all_count &&
+                      history.push({
+                        pathname: "/application_management/service_management",
+                      })
+                    }
                     style={
-                      hostData.abnormal_num > 0 ? { color: "#cf1322" } : {}
+                      dataSource.database?.database_info_all_count
+                        ? { cursor: "pointer", marginBottom: 2 }
+                        : { marginBottom: 2 }
                     }
                   >
-                    {hostData.abnormal_num}台
-                  </span>
+                    组件实例：
+                    <span
+                      style={
+                        dataSource.database?.database_info_all_count
+                          ? { color: "#1890ff" }
+                          : {}
+                      }
+                    >
+                      {dataSource.database?.database_info_all_count}个
+                    </span>
+                  </div>
+                  <div style={{ marginBottom: 2 }}>
+                    未监控数：
+                    <span>
+                      {dataSource.database?.database_info_no_monitor_count}个
+                    </span>
+                  </div>
+                  <div
+                    style={
+                      dataSource.database?.database_info_exc_count > 0
+                        ? { cursor: "pointer" }
+                        : {}
+                    }
+                    onClick={() =>
+                      dataSource.database?.database_info_exc_count &&
+                      history.push({
+                        pathname: "/application-monitoring/exception-list",
+                      })
+                    }
+                  >
+                    异常组件：
+                    <span
+                      style={
+                        dataSource.database?.database_info_exc_count > 0
+                          ? { color: "#cf1322" }
+                          : {}
+                      }
+                    >
+                      {dataSource.database?.database_info_exc_count}个
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div style={{marginBottom:10,backgroundColor:"#fff",paddingBottom:10}}>
+          {/* <div style={{marginBottom:10,backgroundColor:"#fff",paddingBottom:10}}>
           <p style={{padding:10,paddingTop:10,margin:0,fontWeight:500}}>异常清单</p>
           <WarningList />
         </div>
@@ -589,7 +408,6 @@ const Homepage = () => {
         </div>
 
         <div className={styles.pageBlock}>
-          {/* <div className={styles.blockTitle}>自有组件状态</div> */}
           <OmpStateBlock
             key={"componentData"}
             tag={"basic"}
@@ -599,7 +417,6 @@ const Homepage = () => {
         </div>
 
         <div className={styles.pageBlock}>
-          {/* <div className={styles.blockTitle}>三方组件状态</div> */}
           <OmpStateBlock
             key={"externalData"}
             tag={"thirdParty"}
@@ -609,7 +426,6 @@ const Homepage = () => {
         </div>
 
         <div className={styles.pageBlock}>
-          {/* <div className={styles.blockTitle}>数据库状态</div> */}
           <OmpStateBlock
             key={"databaseData"}
             tag={"database"}
@@ -618,17 +434,16 @@ const Homepage = () => {
           />
         </div>
 
-        <div className={styles.pageBlock}>
-          {/* <div className={styles.blockTitle}>主机状态</div> */}
+        <div className={styles.pageBlock} >
           <OmpStateBlock
             key={"hostData"}
             tag={"hostData"}
             title={"主机状态"}
             data={hostData.host_detail}
           />
-        </div>
-      </Spin>
-    </div>
+        </div> */}
+        </Spin>
+      </div>
     </OmpContentWrapper>
   );
 };

@@ -217,7 +217,7 @@ const ScanServerModal = ({
                       return "校验中";
                       break;
                     case 1:
-                      return "检验失败";
+                      return "校验失败";
                       break;
                     case 0:
                       return "校验成功";

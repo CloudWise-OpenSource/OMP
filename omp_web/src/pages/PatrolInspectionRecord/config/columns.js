@@ -6,28 +6,32 @@ import { fetchGet } from "@/utils/request";
 
 const getColumnsConfig = (queryRequest, history, queryData) => {
   const fetchDetailData = (id) => {
-    //setLoading(true);
     fetchGet(`${apiRequest.inspection.reportDetail}/${id}/`)
       .then((res) => {
         handleResponse(res, (res) => {
-          console.log(res.data.file_name)
           downloadFile(`/download-inspection/${res.data.file_name}`);
         });
       })
       .catch((e) => console.log(e))
       .finally(() => {
-       // setLoading(false);
       });
   };
 
   return [
+    {
+      title: "序列",
+      width: 40,
+      key: "idx",
+      dataIndex: "idx",
+      align: "center",
+      fixed: "left",
+    },
     {
       title: "报告名称",
       width: 120,
       key: "inspection_name",
       dataIndex: "inspection_name",
       align: "center",
-      fixed: "left",
       render: (text, record, index) => {
         return (
           <a
