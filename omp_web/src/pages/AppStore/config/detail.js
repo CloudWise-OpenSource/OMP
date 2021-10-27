@@ -227,7 +227,7 @@ const AppStoreDetail = () => {
           <div className={styles.detailDependence}>
             <div>包含服务</div>
             {currentVersionDataSource.pro_services ? (
-              <div className={styles.detailDependenceTable}>
+              <div className={styles.detailDependenceTable} style={{width:800}}>
                 <Table
                   size="middle"
                   columns={[
@@ -241,6 +241,18 @@ const AppStoreDetail = () => {
                       title: "版本",
                       key: "version",
                       dataIndex: "version",
+                      align: "center",
+                    },
+                    {
+                      title: "MD5",
+                      key: "md5",
+                      dataIndex: "md5",
+                      align: "center",
+                    },
+                    {
+                      title: "发布时间",
+                      key: "created",
+                      dataIndex: "created",
                       align: "center",
                     },
                   ]}

@@ -3,24 +3,12 @@ import ReactEcharts from "echarts-for-react";
 import echarts from "echarts";
 
 const OmpProgress = ({ trafficWay, percent }) => {
-  // var trafficWay = [
-  //   {
-  //     name: "物理机",
-  //     value: 20,
-  //   },
-  //   {
-  //     name: "宿主机",
-  //     value: 10,
-  //   },
-  //   {
-  //     name: "云主机",
-  //     value: 30,
-  //   },
-  // ];
-  //console.log(trafficWay);
-
-  //  判断是否全是0，全是0显示100%
-  // const noData = trafficWay.filter(item=>itm)
+  // 判断trafficWay的每一项是否都是0
+  let isAllNull = trafficWay.filter((i) => i.value !== 0);
+  //console.log(isAllNull);
+  if (isAllNull.length == 0) {
+    trafficWay[2].value = 1;
+  }
 
   var data = [];
   var color = [
