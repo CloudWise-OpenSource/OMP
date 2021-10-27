@@ -362,9 +362,12 @@ def GetMemory_Top10():
     cw_ps.sort(key=lambda c: c.memory_percent, reverse=True)
     content_list = list()
     for ele in cw_ps[:10]:
-        tma_dict = dict()
-        tma_dict.update({'TOP{}'.format(cw_ps.index(ele) + 1): {
-            'PID': ele.pid, 'P_RATE': str(round(ele.memory_percent, 2)) + '%', 'P_CMD': ele.cmdline}})
+        tma_dict = {
+            'TOP': str(cw_ps.index(ele) + 1),
+            'PID': ele.pid,
+            'P_RATE': str(round(ele.memory_percent, 2)) + '%',
+            'P_CMD': ele.cmdline
+        }
         content_list.append(tma_dict)
     top10_mem_app_json = content_list
     return top10_mem_app_json
@@ -396,9 +399,12 @@ def GetCpu_Top10():
     cw_ps.sort(key=lambda c: c.cpu_percent, reverse=True)
     content_list = list()
     for ele in cw_ps[:10]:
-        tca_dict = dict()
-        tca_dict.update({'TOP{}'.format(cw_ps.index(ele) + 1): {
-            'PID': ele.pid, 'P_RATE': str(round(ele.cpu_percent, 2)) + '%', 'P_CMD': ele.cmdline}})
+        tca_dict = {
+            'TOP': str(cw_ps.index(ele) + 1),
+            'PID': ele.pid,
+            'P_RATE': str(round(ele.cpu_percent, 2)) + '%',
+            'P_CMD': ele.cmdline
+        }
         content_list.append(tca_dict)
     top10_cpu_app_json = content_list
     return top10_cpu_app_json
