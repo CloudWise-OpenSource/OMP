@@ -31,6 +31,7 @@ from db_models.models import (
     MainInstallHistory,
     DetailInstallHistory
 )
+from app_store.tasks import install_service
 from utils.common.exceptions import GeneralError
 from utils.plugin.public_utils import check_ip_port
 from utils.plugin.salt_client import SaltClient
@@ -770,5 +771,6 @@ class CreateInstallPlan(object):
                     main_install_history=main_obj,
                     install_detail_args=item
                 ).save()
-            # TODO 调用安装异步任务
+            # 调用安装异步任务
+            install_service.delay(main_obj.id)
         return True, "success"
