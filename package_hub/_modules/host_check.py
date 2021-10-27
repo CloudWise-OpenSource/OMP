@@ -498,7 +498,7 @@ def GetFirewall_Info():
 
 def main(data_path='/data', port_list=[{"name": "ssh", "ip": "127.0.0.1", "port": "36000"}], **kwargs):
     process_message = {}
-    process_message["IP"] = GetLocal_Ip()
+    # process_message["IP"] = GetLocal_Ip()
     # process_message["hostname"] = GetHostname_Info()
     process_message["release_version"] = GetRelease_Version()
     process_message["kernel_version"] = GetKernel_Version()
@@ -513,9 +513,9 @@ def main(data_path='/data', port_list=[{"name": "ssh", "ip": "127.0.0.1", "port"
     # process_message["disk_usage"] = GetDisk_Info(data_path)
     # process_message["inode_usage"] = GetInode_Info(data_path)
     # process_message["sys_load"] = GetSysLoad_Average()
-    process_message["port_connectivity"] = GetServicesPort_Connectivity(port_list)
+    # process_message["port_connectivity"] = GetServicesPort_Connectivity(port_list)
     # process_message["bandwidth"] = GetServer_Bandwidth()
-    process_message["throughput"] = GetDisK_ReadWrite()
+    # process_message["throughput"] = GetDisK_ReadWrite()
     # process_message["iowait"] = GetDisk_IoWait()
     process_message["memory_top"] = GetMemory_Top10()
     process_message["cpu_top"] = GetCpu_Top10()
