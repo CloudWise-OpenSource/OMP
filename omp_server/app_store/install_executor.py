@@ -51,7 +51,27 @@ class InstallServiceExecutor:
         detail_obj.save()
 
         try:
+            # 获取目标路径
+            target_host = Host.objects.filter(ip=target_ip).first()
+            assert target_host is not None
+
+            # 获取 json 文件路径
+            json_source_path = os.path.join(
+                settings.BASE_DIR.parent, "package_hub",
+                "data_files", f"{self.main_id}.json")
+            json_target_path = os.path.join(
+                target_host.data_folder, f"{self.main_id}.json")
+
+            # 发送 json 文件
+            is_success, message = self.salt_client.cp_file(
+                target=target_ip,
+                source_path=json_source_path,
+                target_path=json_target_path)
+            if not is_success:
+                raise Exception(f"发送 json 文件失败: {message}")
+
             # 校验服务包是否存在
+            target_path = os.path.join(target_host.data_folder, package_name)
             source_path = os.path.join(
                 detail_obj.service.service.app_package.package_path,
                 package_name)
@@ -59,11 +79,6 @@ class InstallServiceExecutor:
                 settings.BASE_DIR.parent, "package_hub", source_path)
             if not os.path.exists(package_abs_path):
                 raise Exception(f"本地未找到服务包{package_abs_path}")
-
-            # 获取目标路径
-            target_host = Host.objects.filter(ip=target_ip).first()
-            assert target_host is not None
-            target_path = os.path.join(target_host.data_folder, package_name)
 
             # 发送服务包
             is_success, message = self.salt_client.cp_file(
@@ -156,7 +171,14 @@ class InstallServiceExecutor:
             if install_script_path == "":
                 raise Exception("未找到安装脚本路径")
 
-            cmd_str = f"test -f {install_script_path} && python {install_script_path} " \
+            # 获取 json 文件路径
+            target_host = Host.objects.filter(ip=target_ip).first()
+            assert target_host is not None
+            json_path = os.path.join(
+                target_host.data_folder, f"{self.main_id}.json")
+
+            cmd_str = f"test -f {install_script_path} && " \
+                      f"python {install_script_path} {target_ip} {json_path} " \
                       f"|| echo 'NOT EXIST'"
             # 执行安装
             is_success, message = self.salt_client.cmd(
@@ -206,8 +228,15 @@ class InstallServiceExecutor:
                 detail_obj.save()
                 return True, "Init Un Do"
 
+            # 获取 json 文件路径
+            target_host = Host.objects.filter(ip=target_ip).first()
+            assert target_host is not None
+            json_path = os.path.join(
+                target_host.data_folder, f"{self.main_id}.json")
+
             cmd_str = f"test -f {init_script_path} && " \
-                      f"python {init_script_path} || echo 'NOT EXIST'"
+                      f"python {init_script_path} {target_ip} {json_path} " \
+                      f"|| echo 'NOT EXIST'"
             # 执行初始化
             is_success, message = self.salt_client.cmd(
                 target=target_ip,
@@ -260,8 +289,8 @@ class InstallServiceExecutor:
                 detail_obj.save()
                 return True, "Start Un Do"
 
-            cmd_str = f"test -f {start_script_path} && " \
-                      f"bash {start_script_path} || echo 'NOT EXIST'"
+            cmd_str = f"test -e {start_script_path} && " \
+                      f"bash {start_script_path} start || echo 'NOT EXIST'"
             # 执行启动
             is_success, message = self.salt_client.cmd(
                 target=target_ip,
@@ -305,7 +334,7 @@ class InstallServiceExecutor:
 
     def main(self):
         """ 主函数 """
-        logger.info(f"Main Install Begin , id[{self.main_id}]")
+        logger.info(f"Main Install Begin, id[{self.main_id}]")
         # 获取主表对象，更新状态为 '安装中'
         main_obj = MainInstallHistory.objects.filter(
             id=self.main_id).first()
@@ -370,7 +399,7 @@ class InstallServiceExecutor:
             # 所有子流程状态更新为 '失败'
             queryset.update(
                 install_step_status=DetailInstallHistory.INSTALL_STATUS_FAILED)
-            logger.info(f"Main Install Failed , id[{self.main_id}]")
+            logger.info(f"Main Install Failed, id[{self.main_id}]")
             return
 
         # 流程执行完整，安装成功，所有子流程成功
@@ -382,5 +411,5 @@ class InstallServiceExecutor:
             install_step_status=DetailInstallHistory.INSTALL_STATUS_SUCCESS,
             service__service_status=Service.SERVICE_STATUS_NORMAL)
         # TODO 注册监控
-        logger.info(f"Main Install Success , id[{self.main_id}]")
+        logger.info(f"Main Install Success, id[{self.main_id}]")
         return
