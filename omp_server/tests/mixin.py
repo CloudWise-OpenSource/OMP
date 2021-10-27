@@ -393,6 +393,11 @@ class ServicesResourceMixin(HostsResourceMixin, ClusterResourceMixin,
             env = Env.objects.filter(id=1).first()
         # 创建服务
         service_ls = []
+        service_controllers = json.dumps(
+            {'start': 'test1',
+             'stop': 'test1',
+             'restart': 'test1'}
+        )
         for index in range(number):
             index += 1
             # 随机构造端口字段
@@ -419,6 +424,7 @@ class ServicesResourceMixin(HostsResourceMixin, ClusterResourceMixin,
                 service=random.choice(app_ls),
                 env=env,
                 cluster=cluster,
+                service_controllers=service_controllers,
             ))
         Service.objects.bulk_create(service_ls)
 
