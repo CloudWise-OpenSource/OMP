@@ -280,10 +280,12 @@ const ReleaseModal = ({
                     let fileNameArr =
                       fileList.length == 1
                         ? [...filesList, file].map((i) => i.name)
-                        : fileList.map((i) => i.name);
+                        : [...filesList, ...fileList].map((i) => i.name);
                     let uniqueArr = [...new Set(fileNameArr)];
                     if (fileNameArr.length !== uniqueArr.length) {
-                      message.error("上传文件存在同名");
+                      if (fileList[0].uid == file.uid) {
+                        message.error("上传文件存在同名");
+                      }
                       return Upload.LIST_IGNORE;
                     }
                   }}
