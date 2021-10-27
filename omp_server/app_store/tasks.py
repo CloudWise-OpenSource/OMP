@@ -181,7 +181,7 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
             if not os.path.exists(service_dir):
                 return public_action.update_package_status(
                     1,
-                    f"安装包{file_name}:{service_dir}文件不存在")
+                    f"安装包{package_name}:{i.get('name')}.yaml文件不存在")
             explain_service_yml = ExplainYml(public_action,
                                              service_dir).explain_yml()
             if isinstance(explain_service_yml, bool):
@@ -259,7 +259,7 @@ class ExplainYml:
         kinds = ['product', 'service', 'upgrade', 'component']
         try:
             with open(self.yaml_exc, "r", encoding="utf8") as fp:
-                settings = yaml.load(fp, Loader=yaml.FullLoader)
+                settings = yaml.load(fp, Loader=yaml.BaseLoader)
         except Exception as e:
             self.db_obj.update_package_status(
                 1,
