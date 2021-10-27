@@ -576,7 +576,8 @@ class CreateInstallPlan(object):
                     "name": "jdk",
                     "version": "8u211",
                     "ip": "10.0.9.175",
-                    "cluster_name": "test_cluster_1"
+                    "cluster_name": "test_cluster_1",
+                    "product_instance_name": "aa",
                     "app_install_args": [
                         {
                             "name": "安装目录",
@@ -729,6 +730,21 @@ class CreateInstallPlan(object):
         _ser_obj.save()
         return _ser_obj
 
+    def create_product_instance(self, dic):     # NOQA
+        """
+        创建产品实例
+        :param dic:
+        :return:
+        """
+        if "product_instance_name" not in dic or \
+                not self.get_app_obj_for_service(dic):
+            return
+        product_instance_name = dic["product_instance_name"]
+        Product.objects.get_or_create(
+            product_instance_name=product_instance_name,
+            product=self.get_app_obj_for_service(dic).product
+        )
+
     def run(self):
         """
         服务部署信息入库操作
@@ -747,6 +763,8 @@ class CreateInstallPlan(object):
             for item in self.install_services:
                 # 创建服务实例对象
                 ser_obj = self.create_service(item)
+                # 创建产品实例对象
+                self.create_product_instance(item)
                 DetailInstallHistory(
                     service=ser_obj,
                     main_install_history=main_obj,
