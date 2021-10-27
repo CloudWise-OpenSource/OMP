@@ -38,42 +38,46 @@ def get_hosts_data(env, hosts):
         h_w_obj = HostCrawl(env=env.name, instance=instance)
         h_w_obj.run()
         _p = h_w_obj.ret
-        temp['host_massage'] = ''
         temp['mem_usage'] = _p.get('rate_memory')
         temp['cpu_usage'] = _p.get('rate_cpu')
-        temp['disk_usage_root'] = _p.get('rate_exchange_disk')
+        temp['disk_usage_root'] = _p.get('rate_max_disk')
         temp['sys_load'] = _p.get('load')
         temp['run_time'] = _p.get('run_time')
         temp['host_ip'] = instance
-        temp['memory_top'] = []
-        temp['cpu_top'] = []
-        temp['kernel_parameters'] = []
+        temp['memory_top'] = _p.get('_s').get('memory_top', [])
+        temp['cpu_top'] = _p.get('_s').get('cpu_top', [])
+        temp['kernel_parameters'] = _p.get('_s').get('kernel_parameters', [])
         # 总指标数/异常指标数 计算
         tag_total_num += 23     # 当前共23个
         tag_error_num += h_w_obj.tag_error_num
         # 操作系统
         _h = Host.objects.filter(ip=instance).first()
-        temp['release_version'] = _h.operate_system if _h else ''
+        temp['release_version'] = _h.operate_system if _h else ''    # 操作系统
+        temp['host_massage'] = f"{_h.cpu}C|{_h.memory}G|{_h.disk}"   # 配置信息
         temp['basic'] = [
             {"name": "IP", "name_cn": "主机IP", "value": instance},
             {"name": "hostname", "name_cn": "主机名", "value": _h.host_name},
-            {"name": "kernel_version", "name_cn": "内核版本", "value": ""},
-            {"name": "selinux", "name_cn": "SElinux 状态", "value": ""},
+            {"name": "kernel_version", "name_cn": "内核版本",
+             "value": _p.get('_s').get('kernel_version')},
+            {"name": "selinux", "name_cn": "SElinux 状态",
+             "value": _p.get('_s').get('selinux')},
             {"name": "max_openfile", "name_cn": "最大打开文件数",
              "value": _p.get('total_file_descriptor')},
             {"name": "iowait", "name_cn": "IOWait",
              "value": _p.get('rate_io_wait')},
             {"name": "inode_usage", "name_cn": "inode 使用率",
-             "value": {"/": f"{_p.get('rate_max_disk')}%"}},
+             "value": {"/": _p.get('rate_inode')}},
             {"name": "now_time", "name_cn": "当前时间",
              "value": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
-            {"name": "run_process", "name_cn": "进程数", "value": ''},
+            {"name": "run_process", "name_cn": "进程数",
+             "value": _p.get('_s').get('run_process')},
             {"name": "umask", "name_cn": "umask",
-             "value": {"user": "commonuser", "umask": ""}},
+             "value": _p.get('_s').get('umask')},
             {"name": "bandwidth", "name_cn": "带宽",
              "value": _p.get('network_bytes_total')},
             {"name": "throughput", "name_cn": "IO", "value": _p.get('disk_io')},
-            {"name": "zombies_process", "name_cn": "僵尸进程", "value": []}
+            {"name": "zombies_process", "name_cn": "僵尸进程",
+             "value": _p.get('_s').get('zombies_process')}
         ]
         temp_list.append(temp)
 
@@ -184,7 +188,7 @@ def inspection_crontab(**kwargs):
                 f"Inspection auto task failed with error: ID={env}的环境不存在")
         else:
             hosts, services = [], []
-            if job_type in ['0', '1']:
+            if job_type in [0, 1]:
                 # 2、查询环境下主机信息
                 hosts = Host.objects.filter(env=env.id).values_list(
                     'ip', flat=True)
@@ -192,7 +196,7 @@ def inspection_crontab(**kwargs):
                     logger.error(
                         f"Inspection auto task failed with error: "
                         f"ID={env.id}环境下无主机数据")
-            if job_type in ['0', '2']:
+            if job_type in [0, 2]:
                 # 2、查询环境下组件信息
                 services = Service.objects.filter(
                     env=env,
@@ -204,7 +208,7 @@ def inspection_crontab(**kwargs):
                         f"ID={env.id}环境下无组件数据")
 
             # job_type 与 inspection_type 参数对应
-            inspection_type = {'0': 'deep', '1': 'host', '2': 'service'}
+            inspection_type = {0: 'deep', 1: 'host', 2: 'service'}
             # 3、组装巡检历史表入库数据，并存储入库
             now = datetime.now()
             num = InspectionHistory.objects.filter(

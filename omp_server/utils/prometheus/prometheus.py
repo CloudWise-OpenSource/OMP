@@ -5,7 +5,6 @@
 # Description:
 import json
 import requests
-import traceback
 from datetime import datetime
 from db_models.models import MonitorUrl
 from db_models.models import InspectionHistory, InspectionReport

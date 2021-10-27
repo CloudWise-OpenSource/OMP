@@ -1,0 +1,6 @@
+master: ${MASTER_IP}
+master_port: ${MASTER_PORT}
+user: ${USER}
+id: ${AGENT_ID}
+root_dir: ${AGENT_DIR}/data/salt
+conf_file: ${AGENT_DIR}/config/salt/minion
