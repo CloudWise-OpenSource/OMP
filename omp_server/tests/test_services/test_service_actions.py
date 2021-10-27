@@ -52,7 +52,7 @@ class ListActionTest(AutoLoginTest, ServicesResourceMixin):
             4: 1
         })
 
-    @mock.patch("services.tasks.exec_action",
+    @mock.patch("services.tasks.exec_action.delay",
         return_value=True)
     def test_service_action_post(self, tasks):
         # 参数正常 -> 成功
