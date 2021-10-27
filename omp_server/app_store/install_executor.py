@@ -56,11 +56,11 @@ class InstallServiceExecutor:
             assert target_host is not None
 
             # 获取 json 文件路径
-            json_source_path = os.path.join(
-                settings.BASE_DIR.parent, "package_hub",
-                "data_files", f"{self.main_id}.json")
+            json_source_path = os.path.join("data_files",
+                                            f"{detail_obj.main_install_history.operation_uuid}.json")
             json_target_path = os.path.join(
-                target_host.data_folder, f"{self.main_id}.json")
+                target_host.data_folder,
+                f"{detail_obj.main_install_history.operation_uuid}.json")
 
             # 发送 json 文件
             is_success, message = self.salt_client.cp_file(
@@ -156,8 +156,8 @@ class InstallServiceExecutor:
         # 获取安装使用参数
         target_ip = detail_obj.service.ip
         service_name = detail_obj.service.service_instance_name
-        service_controllers_dict = json.loads(
-            detail_obj.service.service_controllers)
+        # edit by jon.liu service_controllers 为json字段，无需json.loads
+        service_controllers_dict = detail_obj.service.service_controllers
 
         # 更新状态为 '安装中'，记录日志
         logger.info(f"Install Begin -> [{service_name}]")

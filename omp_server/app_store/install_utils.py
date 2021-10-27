@@ -851,6 +851,8 @@ class CreateInstallPlan(object):
             except Exception as e:
                 return False, f"生成部署计划失败: {str(e)}"
         # TODO 生成json文件，用于应用安装
+        _json_obj = DataJson(operation_uuid=operation_uuid)
+        _json_obj.run()
         # 调用安装异步任务
         install_service.delay(main_obj.id)
         return True, "success"
