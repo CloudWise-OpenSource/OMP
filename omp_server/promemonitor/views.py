@@ -22,7 +22,7 @@ from utils.common.paginations import PageNumberPager
 
 from db_models.models import (
     Host, MonitorUrl,
-    Alert, Maintain, ApplicationHub
+    Alert, Maintain, ApplicationHub, Service
 )
 
 from promemonitor import grafana_url
@@ -186,7 +186,7 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
         请求prometheus alerts接口返回告警内容
         """
         mu = MonitorUrl.objects.filter(name="prometheus").first()
-        prometheus_url = mu.monitor_url if mu else "127.0.0.1:19013"
+        prometheus_url = mu.monitor_url if mu else "127.0.0.1:19011"
         try:
             prometheus_alerts_url = f"http://{prometheus_url}/api/v1/alerts"  # NOQA
             response = requests.get(prometheus_alerts_url, headers={}, data="")
@@ -208,15 +208,20 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
         component_info_list = []
         third_info_list = []
 
-        host_info_all_count = Host.objects.count()
-        database_info_all_count = ApplicationHub.objects.filter(app_type=ApplicationHub.APP_TYPE_COMPONENT).filter(
-            app_labels__label_name__contains="数据库").count()  # TODO 确认数据库标签名
-        service_info_all_count = ApplicationHub.objects.filter(app_type=ApplicationHub.APP_TYPE_COMPONENT).filter(
-            app_labels__label_name__contains="应用服务").count()  # TODO 确认应用服务标签名，是否包含数据库
-        component_info_all_count = ApplicationHub.objects.filter(app_type=ApplicationHub.APP_TYPE_COMPONENT).filter(
-            app_labels__label_name__contains="基础组件").count()  # TODO 确认基础组件标签名，是否包含数据库
-        third_info_all_count = ApplicationHub.objects.filter(app_type=ApplicationHub.APP_TYPE_COMPONENT).filter(
-            app_labels__label_name__contains="三方组件").count()  # TODO 确认三方组件标签名，是否包含数据库
+        host_list = Host.objects.all()
+        database_list = Service.objects.filter(service__app_type=ApplicationHub.APP_TYPE_COMPONENT).filter(
+            service__app_labels__label_name__contains="数据库")
+        service_list = Service.objects.filter(
+            service__app_type=ApplicationHub.APP_TYPE_SERVICE)
+        component_list = Service.objects.filter(
+            service__app_type=ApplicationHub.APP_TYPE_COMPONENT)
+        # third_info_all = None  # TODO 暂为空
+
+        host_info_all_count = len(host_list)
+        database_info_all_count = len(database_list)
+        service_info_all_count = len(service_list)
+        component_info_all_count = len(component_list)
+        third_info_all_count = 0  # TODO 暂为空
 
         host_info_exc_count = 0
         database_info_exc_count = 0
@@ -231,16 +236,20 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
         third_info_no_monitor_count = 0
 
         flag, alert_data = self.get_prometheus_alerts()
+        error_instance_list = []
+        error_host_list = []
         if flag:
             alerts = alert_data.get('data').get('alerts')
             for ele in alerts:
                 if not isinstance(ele, dict):
                     continue
+                if ele.get("status") == "resolved" or ele.get("state") == "resolved":
+                    continue
                 ele_dict = {
                     "ip": ele.get("labels").get("instance"),
                     "instance_name": ele.get("labels").get("instance_name"),
                     "severity": ele.get("labels").get("severity"),
-                    "data": utc_to_local(ele.get("data")),
+                    "date": utc_to_local(ele.get("activeAt")),
                     "describe": ele.get("annotations").get("description"),
                     "monitor_url": get_monitor_url([{
                         "ip": ele.get("labels").get("instance"),
@@ -266,20 +275,55 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
                     }])
                     host_info_exc_count = host_info_exc_count + 1
                     host_info_list.append(ele_dict)
+                    error_host_list.append(ele.get("labels").get("instance"))
                 elif ele.get("labels").get("service_type") == "database":
                     database_info_exc_count = database_info_exc_count + 1
                     database_info_list.append(ele_dict)
+                    error_instance_list.append(
+                        ele.get("labels").get("instance_name"))
                 elif ele.get("labels").get("service_type") == "service":
                     service_info_exc_count = service_info_exc_count + 1
                     service_info_list.append(ele_dict)
+                    error_instance_list.append(
+                        ele.get("labels").get("instance_name"))
                 elif ele.get("labels").get("service_type") == "component":
                     component_info_exc_count = component_info_exc_count + 1
                     component_info_list.append(ele_dict)
+                    error_instance_list.append(
+                        ele.get("labels").get("instance_name"))
                 elif ele.get("labels").get("service_type") == "third":
                     third_info_exc_count = third_info_exc_count + 1
                     third_info_list.append(ele_dict)
+                    error_instance_list.append(
+                        ele.get("labels").get("instance_name"))
                 else:
                     continue
+
+        for host in host_list:
+            if host.ip in error_host_list:
+                continue
+            host_dict = {
+                "ip": host.ip, "instance_name": host.instance_name, "severity": "normal"}
+            host_info_list.append(host_dict)
+        for database in database_list:
+            if database.service_instance_name in error_instance_list:
+                continue
+            database_dict = {"ip": database.ip, "instance_name": database.service_instance_name,
+                             "app_name": database.service.app_name, "severity": "normal"}
+            database_info_list.append(database_dict)
+        for service in service_list:
+            if service.service_instance_name in error_instance_list:
+                continue
+            service_dict = {"ip": service.ip, "instance_name": service.service_instance_name,
+                            "app_name": service.service.app_name, "severity": "normal"}
+            service_info_list.append(service_dict)
+        for component in component_list:
+            if component.service_instance_name in error_instance_list:
+                continue
+            component_dict = {"ip": component.ip, "instance_name": component.service_instance_name,
+                              "app_name": component.service.app_name, "severity": "normal"}
+            component_info_list.append(component_dict)
+
         host_info_dict.update({
             "host_info_all_count": host_info_all_count,
             "host_info_exc_count": host_info_exc_count,

@@ -348,6 +348,8 @@ class PrometheusUtils(object):
                 "targets": [item["ip"] + ":" + str(self.monitor_port)],
                 "labels": {
                     "instance": item["ip"],
+                    "instance_name": "{}".format(item.get("instance_name")),
+                    "service_type": "host",
                     "env": item["env"]}
             }
             node_target_list.append(node_target_ele)
@@ -491,7 +493,8 @@ class PrometheusUtils(object):
             self_target_ele = {
                 "labels": {
                     "instance": "{}".format(service_data["ip"]),
-                    "instance_name": "{}".format(service_data["instance_name"]),
+                    "instance_name": "{}".format(service_data.get("instance_name")),
+                    "service_type": "service",
                     "env": "{}".format(service_data["env"])
                 },
                 "targets": [
