@@ -576,6 +576,7 @@ class CreateInstallPlan(object):
                     "name": "jdk",
                     "version": "8u211",
                     "ip": "10.0.9.175",
+                    "cluster_name": "test_cluster_1"
                     "app_install_args": [
                         {
                             "name": "安装目录",
@@ -606,6 +607,7 @@ class CreateInstallPlan(object):
         :type install_data: dict
         """
         self.install_data = install_data
+        self.install_type = install_data["install_type"]
         self.install_services = install_data["install_services"]
 
     def get_app_obj_for_service(self, dic):     # NOQA
@@ -666,15 +668,16 @@ class CreateInstallPlan(object):
         username = password = username_enc = password_enc = ""
         _aes = AESCryptor()
         for item in dic["app_install_args"]:
-            if item["default"]:
-                if item["key"] == "username":
-                    username = _aes.encode(item["default"])
-                if item["key"] == "password":
-                    password = _aes.encode(item["default"])
-                if item["key"] == "username_enc":
-                    username_enc = _aes.encode(item["default"])
-                if item["key"] == "password_enc":
-                    password_enc = _aes.encode(item["default"])
+            if not item["default"]:
+                continue
+            if item["key"] == "username":
+                username = _aes.encode(item["default"])
+            if item["key"] == "password":
+                password = _aes.encode(item["default"])
+            if item["key"] == "username_enc":
+                username_enc = _aes.encode(item["default"])
+            if item["key"] == "password_enc":
+                password_enc = _aes.encode(item["default"])
         if username or password or username_enc or password_enc:
             _ser_conn_obj, _ = ServiceConnectInfo.objects.get_or_create(
                 service_name=dic["name"],
@@ -686,19 +689,40 @@ class CreateInstallPlan(object):
             return _ser_conn_obj
         return None
 
+    def create_cluster(self, dic):  # NOQA
+        """
+        创建集群信息
+        :param dic:
+        :return:
+        """
+        if "cluster_name" not in dic or not dic["cluster_name"]:
+            return None
+        _app_obj = self.get_app_obj_for_service(dic)
+        # 根据要安装的服务是组件还是应用，这里仅做组件级别的集群
+        if _app_obj.app_type != 0:
+            return None
+        # 如果存在则获取、如果不存在则创建
+        cluster_obj, _ = ClusterInfo.objects.get_or_create(
+            cluster_service_name=dic["name"],
+            cluster_name=dic["cluster_name"],
+            service_connect_info=self.create_connect_info(dic)
+        )
+        return cluster_obj
+
     def create_service(self, dic):
         """
         创建服务实例
         :param dic: 服务实例信息
         :return:
         """
-        # TODO 待补充集群安装模式
+        # 创建服务实例对象
         _ser_obj = Service(
             ip=dic["ip"],
             service_instance_name=dic["service_instance_name"],
             service=self.get_app_obj_for_service(dic),
             service_port=self.get_app_port_for_service(dic),
             service_controllers=self.get_controllers_for_service(dic),
+            cluster=self.create_cluster(dic),
             env=self.get_env_for_service(),
             service_connect_info=self.create_connect_info(dic)
         )
