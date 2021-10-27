@@ -235,9 +235,10 @@ class ProductDetailSerializer(ModelSerializer):  # NOQA
     def get_pro_services(self, obj):  # NOQA
         pro_services_list = []
         apps = ApplicationHub.objects.filter(product_id=obj.id)
+        if not apps:
+            pro_services_list.extend(json.loads(obj.pro_services))
+            return pro_services_list
         for app in apps:
-            if not app.product:
-                continue
             uph = UploadPackageHistory.objects.get(id=app.app_package_id)
             app_dict = {
                 "name": app.app_name,
