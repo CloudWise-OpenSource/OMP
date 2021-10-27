@@ -45,7 +45,7 @@ def exec_action(action, instance, operation_user):
         service_obj.save()
         time_array = time.localtime(int(time.time()))
         time_style = time.strftime("%Y-%m-%d %H:%M:%S", time_array)
-        status, info = salt_obj.cmd(ip, exe_action)
+        status, info = salt_obj.cmd(ip, exe_action, 600)
         result = 0 if status else 4
         service_obj.service_status = result
         service_obj.save()

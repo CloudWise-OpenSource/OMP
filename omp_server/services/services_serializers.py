@@ -140,3 +140,11 @@ class ServiceDetailSerializer(serializers.ModelSerializer):
         """ 获取历史记录 """
         return list(obj.servicehistory_set.values(
             "username", "description", "result", "created"))
+
+class ServiceActionSerializer(serializers.ModelSerializer):
+    """ 服务动作序列化类 """
+
+    class Meta:
+        """ 元数据 """
+        model = Service
+        fields = '__all__'
