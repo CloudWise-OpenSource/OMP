@@ -52,7 +52,9 @@ class ListActionTest(AutoLoginTest, ServicesResourceMixin):
             4: 1
         })
 
-    def test_service_action_post(self):
+    @mock.patch("services.tasks.exec_action",
+        return_value=True)
+    def test_service_action_post(self, tasks):
         # 参数正常 -> 成功
         resp = self.post(self.create_action_url, {
             "action": "1",
