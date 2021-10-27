@@ -360,7 +360,10 @@ const OmpLayout = (props) => {
               height: "calc(100% - 10px)",
               // 应用商店content大背景不是白色，特殊处理
               backgroundColor:
-                location.pathname == "/application_management/app_store"
+                location.pathname == "/application_management/app_store" ||
+                location.pathname.includes("/component_installation") ||
+                location.pathname.includes("/application_installation") || 
+                location.pathname.includes("/homepage")
                   ? undefined
                   : "#fff",
             }}

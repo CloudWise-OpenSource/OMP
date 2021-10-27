@@ -235,9 +235,10 @@ class ProductDetailSerializer(ModelSerializer):  # NOQA
     def get_pro_services(self, obj):  # NOQA
         pro_services_list = []
         apps = ApplicationHub.objects.filter(product_id=obj.id)
+        if not apps:
+            pro_services_list.extend(json.loads(obj.pro_services))
+            return pro_services_list
         for app in apps:
-            if not app.product:
-                continue
             uph = UploadPackageHistory.objects.get(id=app.app_package_id)
             app_dict = {
                 "name": app.app_name,
@@ -468,11 +469,12 @@ class ExecuteInstallSerializer(Serializer):
             valid_lst.append(self.check_lst_valid(app_install_args))
             app_port = item.get("app_install_args", [])
             valid_lst.append(self.check_lst_valid(app_port))
+        logger.info(f"Check install info res: {valid_lst}")
         if len(set(valid_lst)) != 1 or valid_lst[0] is False:
             attrs["is_valid_flag"] = False
             attrs["is_valid_msg"] = "数据校验出错"
             return attrs
-        # TODO 数据入库逻辑
+        # 数据入库逻辑
         _create_data_obj = CreateInstallPlan(install_data=attrs)
         flag, msg = _create_data_obj.run()
         if not flag:

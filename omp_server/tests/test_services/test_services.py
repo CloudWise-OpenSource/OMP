@@ -28,7 +28,6 @@ class ListServiceTest(AutoLoginTest, ServicesResourceMixin):
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
         self.assertEqual(resp.get("data").get("count"), len(self.service_ls))
-
         # IP 过滤 -> 模糊匹配
         ip_field = str(random.randint(1, 20))
         resp = self.get(self.list_service_url, {

@@ -12,21 +12,30 @@
 
 import os
 import json
+import uuid
 from copy import deepcopy
 from concurrent.futures import ThreadPoolExecutor
 
+from django.db import transaction
+
 from omp_server.settings import PROJECT_DIR
 from db_models.models import (
+    Env,
     Host,
     ApplicationHub,
     ProductHub,
     Product,
     Service,
-    ClusterInfo
+    ClusterInfo,
+    ServiceConnectInfo,
+    MainInstallHistory,
+    DetailInstallHistory
 )
+from app_store.tasks import install_service
 from utils.common.exceptions import GeneralError
 from utils.plugin.public_utils import check_ip_port
 from utils.plugin.salt_client import SaltClient
+from utils.plugin.crypto import AESCryptor
 
 DIR_KEY = "{data_path}"
 
@@ -414,10 +423,7 @@ class ValidateExistService(object):
         :type dic: dict
         :return:
         """
-        if ClusterInfo.objects.filter(
-                id=dic.get("id"),
-                cluster_name=dic.get("cluster_name")
-        ).exists():
+        if ClusterInfo.objects.filter(id=dic.get("id")).exists():
             dic["check_flag"] = True
             dic["check_msg"] = "success"
             return dic
@@ -432,10 +438,7 @@ class ValidateExistService(object):
         :type dic: dict
         :return:
         """
-        if Service.objects.filter(
-            id=dic.get("id"),
-            service_instance_name=dic.get("service_instance_name")
-        ).exists():
+        if Service.objects.filter(id=dic.get("id")).exists():
             dic["check_flag"] = True
             dic["check_msg"] = "success"
             return dic
@@ -510,16 +513,23 @@ class ValidateInstallService(object):
                 continue
             _tobe_check_path = os.path.join(
                 _data_path, el.get("default", "").lstrip("/"))
+            _cmd = \
+                f"test -d {_tobe_check_path} && echo 'EXISTS' || echo 'OK'"
             _flag, _msg = _salt_obj.cmd(
                 target=_ip,
-                command=f"test -d {_tobe_check_path} && echo 'PATH EXISTS'",
+                command=_cmd,
                 timeout=10
             )
             if not _flag:
                 el["check_flag"] = False
-                el["check_msg"] = f"无法确定该路径状态: {_tobe_check_path}"
+                el["check_msg"] = \
+                    f"无法确定该路径状态: {_tobe_check_path}; " \
+                    f"请检查主机及主机Agent状态是否正常"
                 continue
-            if "PATH EXISTS" not in _msg:
+            if "OK" in _msg:
+                el["check_flag"] = True
+                el["check_msg"] = "success"
+            else:
                 el["check_flag"] = False
                 el["check_msg"] = f"{_tobe_check_path} 在目标主机 {_ip} 上已存在"
         return _dic
@@ -549,7 +559,218 @@ class CreateInstallPlan(object):
     """ 生成部署计划相关数据 """
 
     def __init__(self, install_data):
+        """
+        解析安装数据入库方法
+        {
+            "install_type": 0,
+            "use_exist_services": [
+                {
+                    "name": "a",
+                    "id": 1,
+                    "type": "cluster",
+                    "check_flag": false,
+                    "check_msg": "此集群不存在"
+                }
+            ],
+            "install_services": [
+                {
+                    "name": "jdk",
+                    "version": "8u211",
+                    "ip": "10.0.9.175",
+                    "cluster_name": "test_cluster_1",
+                    "product_instance_name": "aa",
+                    "app_install_args": [
+                        {
+                            "name": "安装目录",
+                            "key": "base_dir",
+                            "default": "/jdk",
+                            "dir_key": "{data_path}",
+                            "check_flag": false,
+                            "check_msg": "无法确定该路径状态: /data/jdk"
+                        }
+                    ],
+                    "app_port": [
+                        {
+                            "name": "服务端口",
+                            "protocol": "TCP",
+                            "key": "service_port",
+                            "default": 19001,
+                            "check_flag": false,
+                            "check_msg": "主机 10.0.9.175 上的端口 19001 已被占用"
+                        }
+                    ],
+                    "service_instance_name": "jdk-1-1"
+                }
+            ],
+            "is_valid_flag": false,
+            "is_valid_msg": "数据校验出错"
+        }
+        :param install_data: 安装解析数据
+        :type install_data: dict
+        """
         self.install_data = install_data
+        self.install_type = install_data["install_type"]
+        self.install_services = install_data["install_services"]
+
+    def get_app_obj_for_service(self, dic):     # NOQA
+        """
+        获取服务实例表中关联的app对象
+        :param dic:
+        :return:
+        """
+        return ApplicationHub.objects.filter(
+            app_name=dic["name"], app_version=dic["version"]
+        ).last()
+
+    def get_app_port_for_service(self, dic):    # NOQA
+        """
+        获取服务实例上设置的端口信息
+        :param dic:
+        :return:
+        """
+        return json.dumps(dic["app_port"]) if dic["app_port"] else None
+
+    def get_controllers_for_service(self, dic):  # NOQA
+        """
+        获取服务控制脚本信息
+        :param dic:
+        :return:
+        """
+        # 获取关联application对象
+        _app = self.get_app_obj_for_service(dic)
+        # TODO 确定application表内的app_controllers字段存储类型
+        _app_controllers = json.loads(_app.app_controllers)
+        # 获取服务家目录
+        install_args = dic["app_install_args"]
+        _home = ""
+        data_folder = Host.objects.filter(ip=dic["ip"]).last().data_folder
+        for el in install_args:
+            if "dir_key" in el and el["key"] == "base_dir":
+                _home = el["default"]
+        real_home = os.path.join(data_folder, _home.rstrip("/"))
+        _new_controller = dict()
+        for key, value in _app_controllers.items():
+            _new_controller[key] = os.path.join(real_home, value)
+        return _new_controller
+
+    def get_env_for_service(self):  # NOQA
+        """
+        获取当前环境
+        :return:
+        """
+        # TODO 暂时使用默认环境
+        return Env.objects.last()
+
+    def create_connect_info(self, dic):     # NOQA
+        """
+        创建或获取服务的用户名、密码信息
+        :param dic:
+        :return:
+        """
+        username = password = username_enc = password_enc = ""
+        _aes = AESCryptor()
+        for item in dic["app_install_args"]:
+            if not item["default"]:
+                continue
+            if item["key"] == "username":
+                username = _aes.encode(item["default"])
+            if item["key"] == "password":
+                password = _aes.encode(item["default"])
+            if item["key"] == "username_enc":
+                username_enc = _aes.encode(item["default"])
+            if item["key"] == "password_enc":
+                password_enc = _aes.encode(item["default"])
+        if username or password or username_enc or password_enc:
+            _ser_conn_obj, _ = ServiceConnectInfo.objects.get_or_create(
+                service_name=dic["name"],
+                service_username=username,
+                service_password=password,
+                service_username_enc=username_enc,
+                service_password_enc=password_enc
+            )
+            return _ser_conn_obj
+        return None
+
+    def create_cluster(self, dic):  # NOQA
+        """
+        创建集群信息
+        :param dic:
+        :return:
+        """
+        if "cluster_name" not in dic or not dic["cluster_name"]:
+            return None
+        _app_obj = self.get_app_obj_for_service(dic)
+        # 根据要安装的服务是组件还是应用，这里仅做组件级别的集群
+        if _app_obj.app_type != 0:
+            return None
+        # 如果存在则获取、如果不存在则创建
+        cluster_obj, _ = ClusterInfo.objects.get_or_create(
+            cluster_service_name=dic["name"],
+            cluster_name=dic["cluster_name"],
+            service_connect_info=self.create_connect_info(dic)
+        )
+        return cluster_obj
+
+    def create_service(self, dic):
+        """
+        创建服务实例
+        :param dic: 服务实例信息
+        :return:
+        """
+        # 创建服务实例对象
+        _ser_obj = Service(
+            ip=dic["ip"],
+            service_instance_name=dic["service_instance_name"],
+            service=self.get_app_obj_for_service(dic),
+            service_port=self.get_app_port_for_service(dic),
+            service_controllers=self.get_controllers_for_service(dic),
+            cluster=self.create_cluster(dic),
+            env=self.get_env_for_service(),
+            service_connect_info=self.create_connect_info(dic)
+        )
+        _ser_obj.save()
+        return _ser_obj
+
+    def create_product_instance(self, dic):     # NOQA
+        """
+        创建产品实例
+        :param dic:
+        :return:
+        """
+        if "product_instance_name" not in dic or \
+                not self.get_app_obj_for_service(dic):
+            return
+        product_instance_name = dic["product_instance_name"]
+        Product.objects.get_or_create(
+            product_instance_name=product_instance_name,
+            product=self.get_app_obj_for_service(dic).product
+        )
 
     def run(self):
-        return False, "success"
+        """
+        服务部署信息入库操作
+        :return:
+        """
+        with transaction.atomic():
+            # step1: 生成操作唯一uuid，创建主安装记录
+            operation_uuid = str(uuid.uuid4())
+            main_obj = MainInstallHistory(
+                operation_uuid=operation_uuid,
+                install_status=0,
+                install_args=self.install_data
+            )
+            main_obj.save()
+            # step2: 创建安装细节表
+            for item in self.install_services:
+                # 创建服务实例对象
+                ser_obj = self.create_service(item)
+                # 创建产品实例对象
+                self.create_product_instance(item)
+                DetailInstallHistory(
+                    service=ser_obj,
+                    main_install_history=main_obj,
+                    install_detail_args=item
+                ).save()
+            # 调用安装异步任务
+            install_service.delay(main_obj.id)
+        return True, "success"

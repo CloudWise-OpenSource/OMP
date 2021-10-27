@@ -71,9 +71,10 @@ const PatrolInspectionRecord = () => {
       .then((res) => {
         handleResponse(res, (res) => {
           setDataSource(
-            res.data.results.map((i) => {
+            res.data.results.map((i, idx) => {
               return {
                 ...i,
+                idx: idx + 1 + (pagination.current - 1) * pagination.pageSize,
                 key: i.id,
               };
             })

@@ -383,7 +383,7 @@ class ApplicationHub(TimeStampMixin):
     # [{"name": "安装目录", "key": "base_dir", "default": "{data_path}/abc"}]
     app_install_args = models.TextField(
         "安装参数", null=True, blank=True, help_text="安装参数")
-    # [{"start": "./start.sh", "stop": "./stop.sh"}]
+    # {"start": "./start.sh", "stop": "./stop.sh"}
     app_controllers = models.TextField(
         "应用控制脚本", null=True, blank=True, help_text="应用控制脚本")
     # 关联的安装包
@@ -507,6 +507,7 @@ class InspectionReport(models.Model):
 class ServiceConnectInfo(TimeStampMixin):
     """ 存储用户名密码信息 """
     # 服务用户名、密码信息，同一个集群公用一套用户名、密码
+    objects = None
     service_name = models.CharField(
         "服务名", max_length=32,
         null=False, blank=False, help_text="服务名")

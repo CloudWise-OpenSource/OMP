@@ -90,10 +90,10 @@ def get_hosts_data(env, hosts):
 
 
 @shared_task
-def get_prometheus_data(env, hosts, services, history_id, report_id, handle):
+def get_prometheus_data(env_id, hosts, services, history_id, report_id, handle):
     """
     异步任务：查询多巡检类型prometheus数据，组装后进行反填
-    :env: 环境，例：Env 表的 queryset 对象
+    :env_id: 环境，例：Env id
     :hosts: 主机列表，例：["主机ip"]
     :services: 组件列表，例：[8]
     :history_id: 巡检历史表id，例：1
@@ -102,6 +102,7 @@ def get_prometheus_data(env, hosts, services, history_id, report_id, handle):
     """
     try:
         file_name = ''  # 导出文件名
+        env = Env.objects.filter(id=env_id).first()
         _h = InspectionHistory.objects.filter(id=history_id).first()
         kwargs = {'history_id': history_id, 'report_id': report_id}
         if handle == 'host':
@@ -229,7 +230,7 @@ def inspection_crontab(**kwargs):
             rep_obj.save()
             # 5、查询prometheus数据，组装后进行反填
             get_prometheus_data(
-                env=env, hosts=list(hosts), services=list(services),
+                env_id=env.id, hosts=list(hosts), services=list(services),
                 history_id=his_obj.id, report_id=rep_obj.id,
                 handle=inspection_type.get(job_type))
     except Exception as e:
