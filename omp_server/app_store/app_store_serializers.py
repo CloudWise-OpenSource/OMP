@@ -227,19 +227,31 @@ class ProductDetailSerializer(ModelSerializer):  # NOQA
         return list(obj.pro_labels.all().values_list('label_name', flat=True))
 
     def get_pro_package_md5(self, obj):  # NOQA
-        return obj.pro_package.package_md5
+        try:
+            return obj.pro_package.package_md5
+        except Exception as e:
+            logger.error(e)
+            logger.error("获取服务包md5值失败！")
 
     def get_pro_operation_user(self, obj):  # NOQA
-        return obj.pro_package.operation_user
+        try:
+            return obj.pro_package.operation_user
+        except Exception as e:
+            logger.error(e)
+            logger.error("获取服务包user值失败！")
 
     def get_pro_services(self, obj):  # NOQA
         pro_services_list = []
         apps = ApplicationHub.objects.filter(product_id=obj.id)
         if not apps:
+            if not obj.pro_services:
+                return pro_services_list
             pro_services_list.extend(json.loads(obj.pro_services))
             return pro_services_list
         for app in apps:
             uph = UploadPackageHistory.objects.get(id=app.app_package_id)
+            if not uph:
+                continue
             app_dict = {
                 "name": app.app_name,
                 "version": app.app_version,
