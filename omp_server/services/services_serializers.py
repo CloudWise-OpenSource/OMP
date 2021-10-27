@@ -14,6 +14,7 @@ class ServiceSerializer(serializers.ModelSerializer):
     label_name = serializers.SerializerMethodField()
     cluster_type = serializers.SerializerMethodField()
     alert_count = serializers.SerializerMethodField()
+    operable = serializers.SerializerMethodField()
     service_status = serializers.CharField(source="get_service_status_display")
     app_type = serializers.IntegerField(source="service.app_type")
     app_name = serializers.CharField(source="service.app_name")
@@ -24,17 +25,19 @@ class ServiceSerializer(serializers.ModelSerializer):
         model = Service
         fields = (
             "id", "service_instance_name", "ip", "port", "label_name", "alert_count",
-            "app_type", "app_name", "app_version", "cluster_type", "service_status",
+            "operable", "app_type", "app_name", "app_version", "cluster_type",
+            "service_status",
         )
 
     def get_port(self, obj):
         """ 返回服务 service_port """
-        service_port_ls = json.loads(obj.service_port)
         service_port = "-"
-        for info in service_port_ls:
-            if info.get("service_port", None) is not None:
-                service_port = info.get("service_port")
-                break
+        if obj.service_port is not None:
+            service_port_ls = json.loads(obj.service_port)
+            for info in service_port_ls:
+                if info.get("service_port", None) is not None:
+                    service_port = info.get("service_port")
+                    break
         return service_port
 
     def get_label_name(self, obj):
@@ -64,6 +67,11 @@ class ServiceSerializer(serializers.ModelSerializer):
         if obj.service.extend_fields.get("base_env") in (True, "True"):
             alert_count = "-"
         return alert_count
+
+    def get_operable(self, obj):
+        """ 服务可操作 (启动、停止、重启) """
+        service_controllers_dict = json.loads(obj.service_controllers)
+        return service_controllers_dict.get("start", "") != ""
 
 
 class ServiceDetailSerializer(serializers.ModelSerializer):

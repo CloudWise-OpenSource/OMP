@@ -3,20 +3,25 @@
 """
 
 import os
-import random
 import yaml
-import logging
+import time
 import json
-
 import redis
+import logging
+
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from utils.plugin import public_utils
-from utils.parse_config import OMP_REDIS_PORT, OMP_REDIS_PASSWORD, \
-    OMP_REDIS_HOST
-from db_models.models import UploadPackageHistory, ApplicationHub, ProductHub
+from utils.parse_config import (
+    OMP_REDIS_PORT, OMP_REDIS_PASSWORD, OMP_REDIS_HOST
+)
+
+from db_models.models import (
+    UploadPackageHistory, ApplicationHub, ProductHub,
+    MainInstallHistory, DetailInstallHistory
+)
 from app_store.upload_task import CreateDatabase
-import time
+from app_store.install_executor import InstallServiceExecutor
 
 # 屏蔽celery任务日志中的paramiko日志
 logging.getLogger("paramiko").setLevel(logging.WARNING)
@@ -126,8 +131,8 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
     upload_obj.package_md5 = md5
     upload_obj.save()
     public_action = PublicAction(md5)
-    touch_name = file_name[:-7] if file_name[-7:] == ".tar.gz" else file_name[
-                                                                    :-3]
+    touch_name = file_name[:-7] if \
+        file_name[-7:] == ".tar.gz" else file_name[:-3]
     tmp_dir = os.path.join(package_path, touch_name + random_str)
     os.mkdir(tmp_dir)
     tar_out = public_utils.local_cmd(f'tar -xvf {file_name} -C {tmp_dir}')
@@ -194,8 +199,7 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
             md5_ser = public_utils.local_cmd(f'md5sum {service_pk}')
             if md5_ser[2] != 0:
                 return public_action.update_package_status(
-                    1,
-                    f"md5sum命令执行失败")
+                    1, "md5sum命令执行失败")
             md5_service = md5_ser[0].split()[0]
             UploadPackageHistory.objects.create(
                 operation_uuid=uuid,
@@ -524,7 +528,8 @@ def publish_entry(uuid):
             logger.error(f'{tmp_dir[0]}路径异常')
             return None
         valid_name = tmp_dir[0].rsplit('/', 1)
-        valid_pk = f"{valid_name[1]}-{tmp_dir[1]}" if len(tmp_dir) == 2 else valid_name[1]
+        valid_pk = f"{valid_name[1]}-{tmp_dir[1]}" if len(
+            tmp_dir) == 2 else valid_name[1]
         valid_dir = os.path.join(project_dir, 'package_hub',
                                  'verified', valid_pk)
         move_tmp = "/".join(valid_name)
@@ -541,3 +546,26 @@ def publish_entry(uuid):
     UploadPackageHistory.objects.filter(id__in=valid_packages_obj).update(
         package_status=3)
     exec_clear(clear_dir)
+
+
+@shared_task
+def install_service(main_history_id):
+    """
+    安装服务
+    :param main_history_id: MainInstallHistory 主表 id
+    :return:
+    """
+    try:
+        executor = InstallServiceExecutor(main_history_id)
+        executor.main()
+    except Exception as err:
+        import traceback
+        logger.error(f"Install Service Failed: {err}")
+        logger.error(traceback.format_exc())
+        # 更新主表和细节表记录为失败
+        MainInstallHistory.objects.filter(
+            id=main_history_id).update(
+            install_status=MainInstallHistory.INSTALL_STATUS_FAILED)
+        DetailInstallHistory.objects.filter(
+            main_install_history_id=main_history_id).update(
+            install_step_status=DetailInstallHistory.INSTALL_STATUS_FAILED)
