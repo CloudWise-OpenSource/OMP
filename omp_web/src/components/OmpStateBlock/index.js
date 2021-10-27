@@ -128,12 +128,15 @@ function OmpStateBlock(props) {
         >
           {currentData.map((item, idx) => {
             return (
-              <div key={`${title}-${idx}`} onClick={() => {
-                item.severity == "critical"?
-                props.criticalLink(item):
-                props.link(item)
-              }}>
-                <Popover content={popContent(item || {})} title={"信息"}>
+              <div
+                key={`${title}-${idx}`}
+                onClick={() => {
+                  item.severity == "critical"
+                    ? props.criticalLink(item)
+                    : props.link(item);
+                }}
+              >
+                <Popover content={popContent(item || {})} title={"相关信息"}>
                   <Button
                     className={styles.stateButton}
                     style={colorObj[item.severity]}
@@ -166,7 +169,15 @@ function popContent(item) {
             {item.ip}
           </span>
         )}
-        <span>{item.data}</span>
+        <span>
+          {item.date ? (
+            item.date
+          ) : (
+            <span style={{ color: colorObj[item.severity]?.borderColor }}>
+              正常
+            </span>
+          )}
+        </span>
         {item.describe && (
           <span>
             {item.describe.length > 100
