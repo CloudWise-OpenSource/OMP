@@ -31,6 +31,7 @@ from db_models.models import (
     MainInstallHistory,
     DetailInstallHistory
 )
+from app_store.tasks import install_service
 from utils.common.exceptions import GeneralError
 from utils.plugin.public_utils import check_ip_port
 from utils.plugin.salt_client import SaltClient
@@ -576,6 +577,8 @@ class CreateInstallPlan(object):
                     "name": "jdk",
                     "version": "8u211",
                     "ip": "10.0.9.175",
+                    "cluster_name": "test_cluster_1",
+                    "product_instance_name": "aa",
                     "app_install_args": [
                         {
                             "name": "安装目录",
@@ -606,6 +609,7 @@ class CreateInstallPlan(object):
         :type install_data: dict
         """
         self.install_data = install_data
+        self.install_type = install_data["install_type"]
         self.install_services = install_data["install_services"]
 
     def get_app_obj_for_service(self, dic):     # NOQA
@@ -666,15 +670,16 @@ class CreateInstallPlan(object):
         username = password = username_enc = password_enc = ""
         _aes = AESCryptor()
         for item in dic["app_install_args"]:
-            if item["default"]:
-                if item["key"] == "username":
-                    username = _aes.encode(item["default"])
-                if item["key"] == "password":
-                    password = _aes.encode(item["default"])
-                if item["key"] == "username_enc":
-                    username_enc = _aes.encode(item["default"])
-                if item["key"] == "password_enc":
-                    password_enc = _aes.encode(item["default"])
+            if not item["default"]:
+                continue
+            if item["key"] == "username":
+                username = _aes.encode(item["default"])
+            if item["key"] == "password":
+                password = _aes.encode(item["default"])
+            if item["key"] == "username_enc":
+                username_enc = _aes.encode(item["default"])
+            if item["key"] == "password_enc":
+                password_enc = _aes.encode(item["default"])
         if username or password or username_enc or password_enc:
             _ser_conn_obj, _ = ServiceConnectInfo.objects.get_or_create(
                 service_name=dic["name"],
@@ -686,24 +691,60 @@ class CreateInstallPlan(object):
             return _ser_conn_obj
         return None
 
+    def create_cluster(self, dic):  # NOQA
+        """
+        创建集群信息
+        :param dic:
+        :return:
+        """
+        if "cluster_name" not in dic or not dic["cluster_name"]:
+            return None
+        _app_obj = self.get_app_obj_for_service(dic)
+        # 根据要安装的服务是组件还是应用，这里仅做组件级别的集群
+        if _app_obj.app_type != 0:
+            return None
+        # 如果存在则获取、如果不存在则创建
+        cluster_obj, _ = ClusterInfo.objects.get_or_create(
+            cluster_service_name=dic["name"],
+            cluster_name=dic["cluster_name"],
+            service_connect_info=self.create_connect_info(dic)
+        )
+        return cluster_obj
+
     def create_service(self, dic):
         """
         创建服务实例
         :param dic: 服务实例信息
         :return:
         """
-        # TODO 待补充集群安装模式
+        # 创建服务实例对象
         _ser_obj = Service(
             ip=dic["ip"],
             service_instance_name=dic["service_instance_name"],
             service=self.get_app_obj_for_service(dic),
             service_port=self.get_app_port_for_service(dic),
             service_controllers=self.get_controllers_for_service(dic),
+            cluster=self.create_cluster(dic),
             env=self.get_env_for_service(),
             service_connect_info=self.create_connect_info(dic)
         )
         _ser_obj.save()
         return _ser_obj
+
+    def create_product_instance(self, dic):     # NOQA
+        """
+        创建产品实例
+        :param dic:
+        :return:
+        """
+        if "product_instance_name" not in dic or \
+                not self.get_app_obj_for_service(dic):
+            return
+        product_instance_name = dic["product_instance_name"]
+        Product.objects.get_or_create(
+            product_instance_name=product_instance_name,
+            product=self.get_app_obj_for_service(dic).product
+        )
 
     def run(self):
         """
@@ -723,10 +764,13 @@ class CreateInstallPlan(object):
             for item in self.install_services:
                 # 创建服务实例对象
                 ser_obj = self.create_service(item)
+                # 创建产品实例对象
+                self.create_product_instance(item)
                 DetailInstallHistory(
                     service=ser_obj,
                     main_install_history=main_obj,
                     install_detail_args=item
                 ).save()
-            # TODO 调用安装异步任务
+            # 调用安装异步任务
+            install_service.delay(main_obj.id)
         return True, "success"
