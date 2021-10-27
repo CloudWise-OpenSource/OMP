@@ -4,6 +4,21 @@ import { Button, Checkbox, Popover } from "antd";
 import styles from "./index.module.less";
 import * as R from "ramda";
 
+const colorObj = {
+  normal: {
+    background: "#eefaf4",
+    borderColor: "#54bba6",
+  },
+  critical: {
+    background: "#fbe7e6",
+    borderColor: "#da4e48",
+  },
+  warning: {
+    background: "rgba(247, 231, 24, 0.2)",
+    borderColor: "rgb(245, 199, 115)",
+  },
+};
+
 function OmpStateBlock(props) {
   const history = useHistory();
   const { title, data = [] } = props;
@@ -13,9 +28,18 @@ function OmpStateBlock(props) {
 
   useEffect(() => {
     if (data && data.length > 0) {
-      setCurrentData(data);
+      setCurrentData(sortData(data));
     }
   }, [data]);
+
+  const sortData = (data) => {
+    let normalArr = data.filter((i) => i.severity == "normal");
+    let warningArr = data.filter((i) => i.severity == "warning");
+    let criticalArr = data.filter((i) => i.severity == "critical");
+
+    let result = criticalArr.concat(normalArr).concat(warningArr);
+    return result;
+  };
 
   return (
     <div className={styles.blockContent}>
@@ -25,16 +49,19 @@ function OmpStateBlock(props) {
           <Checkbox
             defaultChecked={true}
             onChange={(e) => {
-              // if (e.target.checked) {
-              //   setCurrentData(
-              //     R.defaultTo(
-              //       [],
-              //       data.filter((item) => !item.is_ok)
-              //     ).concat(currentData)
-              //   );
-              // } else {
-              //   setCurrentData(currentData.filter((item) => item.is_ok));
-              // }
+              if (e.target.checked) {
+                setCurrentData(
+                  sortData(
+                    currentData.concat(
+                      data.filter((i) => i.severity == "critical")
+                    )
+                  )
+                );
+              } else {
+                setCurrentData(
+                  sortData(currentData.filter((i) => i.severity !== "critical"))
+                );
+              }
             }}
           >
             异常
@@ -42,17 +69,48 @@ function OmpStateBlock(props) {
           <Checkbox
             defaultChecked={true}
             onChange={(e) => {
-              // if (e.target.checked) {
-              //   setCurrentData(
-              //     currentData.concat(data.filter((item) => item.is_ok))
-              //   );
-              // } else {
-              //   setCurrentData(currentData.filter((item) => !item.is_ok));
-              // }
+              if (e.target.checked) {
+                setCurrentData(
+                  sortData(
+                    currentData.concat(
+                      data.filter((i) => i.severity == "normal")
+                    )
+                  )
+                );
+              } else {
+                setCurrentData(
+                  sortData(currentData.filter((i) => i.severity !== "normal"))
+                );
+              }
             }}
           >
             正常
           </Checkbox>
+
+          {props.hasNotMonitored && (
+            <Checkbox
+              defaultChecked={true}
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setCurrentData(
+                    sortData(
+                      currentData.concat(
+                        data.filter((i) => i.severity == "warning")
+                      )
+                    )
+                  );
+                } else {
+                  setCurrentData(
+                    sortData(
+                      currentData.filter((i) => i.severity !== "warning")
+                    )
+                  );
+                }
+              }}
+            >
+              未监控
+            </Checkbox>
+          )}
 
           <Button
             className={styles.dropBtn}
@@ -70,29 +128,18 @@ function OmpStateBlock(props) {
         >
           {currentData.map((item, idx) => {
             return (
-              <div key={`${title}-${idx}`} onClick={() => {}}>
-                <Popover
-                  // content={popContent(
-                  //   R.sortWith([R.ascend(R.prop("is_ok"))])(
-                  //     item.service_info
-                  //   )
-                  // )}
-                  title={"信息"}
-                >
+              <div
+                key={`${title}-${idx}`}
+                onClick={() => {
+                  item.severity == "critical"
+                    ? props.criticalLink(item)
+                    : props.link(item);
+                }}
+              >
+                <Popover content={popContent(item || {})} title={"相关信息"}>
                   <Button
                     className={styles.stateButton}
-                    // style={
-                    //   item.is_ok
-                    //     ? {
-                    //         background: "#eefaf4",
-                    //         borderColor: "#54bba6",
-                    //       }
-                    //     : {
-                    //         background: "#fbe7e6",
-                    //         borderColor: "#da4e48",
-                    //       }
-                    // }
-                    //type={"danger"}
+                    style={colorObj[item.severity]}
                   >
                     <div>{item.instance_name}</div>
                   </Button>
@@ -110,29 +157,35 @@ function OmpStateBlock(props) {
 
 export default OmpStateBlock;
 
-function popContent(info) {
+function popContent(item) {
   return (
     <div>
-      {info.map((item, idx) => (
-        <div className={styles.popContent} key={idx}>
-          {item.ip && (
-            <span
-              className={styles.ip}
-              style={item.is_ok ? { color: "#54bba6" } : { color: "#df7071" }}
-            >
-              {item.ip}
+      <div className={styles.popContent}>
+        {item.ip && (
+          <span
+            className={styles.ip}
+            style={{ color: colorObj[item.severity]?.borderColor }}
+          >
+            {item.ip}
+          </span>
+        )}
+        <span>
+          {item.date ? (
+            item.date
+          ) : (
+            <span style={{ color: colorObj[item.severity]?.borderColor }}>
+              正常
             </span>
           )}
-          <span>{item.time}</span>
-          {item.describe && (
-            <span>
-              {item.describe.length > 100
-                ? item.describe.slice(0, 100) + "..."
-                : item.describe.slice(0, 100)}
-            </span>
-          )}
-        </div>
-      ))}
+        </span>
+        {item.describe && (
+          <span>
+            {item.describe.length > 100
+              ? item.describe.slice(0, 100) + "..."
+              : item.describe.slice(0, 100)}
+          </span>
+        )}
+      </div>
     </div>
   );
 }

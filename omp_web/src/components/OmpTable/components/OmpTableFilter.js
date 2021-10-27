@@ -2,9 +2,9 @@ import { Dropdown, Menu } from "antd";
 import { FilterFilled } from "@ant-design/icons";
 import { useState } from "react";
 
-const OmpTableFilter = ({ dataIndex, filterMenuList, queryRequest }) => {
+const OmpTableFilter = ({ dataIndex, filterMenuList, queryRequest, initfilter }) => {
   // 表格的筛选控制器
-  const [filterControl, setFilterControl] = useState("");
+  const [filterControl, setFilterControl] = useState(initfilter);
 
   // 展开菜单是否
   const [dropDownIsOpen, setDropDownIsOpen] = useState(false);

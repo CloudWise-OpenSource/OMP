@@ -62,6 +62,7 @@ const ExceptionList = () => {
           border: "1px solid #ebeef2",
           backgroundColor: "white",
           marginTop: 10,
+          //fontSize:12
         }}
       >
         <OmpTable
@@ -143,7 +144,7 @@ const getColumnsConfig = (
         return (
           <Tooltip title={text}>
             <Badge dot={record.is_read === 0} offset={[5, 2]}>
-              {record.instance_name ? record.instance_name : "-"}
+              <span style={{fontSize:12}}>{record.instance_name ? record.instance_name : "-"}</span>
             </Badge>
           </Tooltip>
         );

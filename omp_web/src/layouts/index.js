@@ -127,12 +127,13 @@ const OmpLayout = (props) => {
   // 相应路由跳转，submenu打开
   useEffect(() => {
     try {
-
       let pathArr = location.pathname.split("/");
-      // console.log([location.pathname])
-      // console.log([`/${pathArr[0]}/${pathArr[1]}`])
-      setSelectedKeys([`/${pathArr[1]}/${pathArr[2]}`]);
-
+      console.log(pathArr);
+      if (pathArr[1] == "homepage") {
+        setSelectedKeys(["/homepage"]);
+      } else {
+        setSelectedKeys([`/${pathArr[1]}/${pathArr[2]}`]);
+      }
       let newPath = `/${pathArr[1]}`;
       setCurrentOpenedKeys([newPath]);
     } catch (e) {
@@ -362,7 +363,7 @@ const OmpLayout = (props) => {
               backgroundColor:
                 location.pathname == "/application_management/app_store" ||
                 location.pathname.includes("/component_installation") ||
-                location.pathname.includes("/application_installation") || 
+                location.pathname.includes("/application_installation") ||
                 location.pathname.includes("/homepage")
                   ? undefined
                   : "#fff",

@@ -27,6 +27,7 @@ const OmpTable = ({
         filterIcon: () => {
           return (
             <OmpTableFilter
+              initfilter={item?.initfilter}
               dataIndex={item.dataIndex}
               filterMenuList={item.filterMenuList}
               queryRequest={item.queryRequest}
