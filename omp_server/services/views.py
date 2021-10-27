@@ -1,6 +1,7 @@
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import (
-    ListModelMixin, RetrieveModelMixin
+    ListModelMixin, RetrieveModelMixin,
+    CreateModelMixin
 )
 from rest_framework.filters import OrderingFilter
 
@@ -13,6 +14,9 @@ from services.services_serializers import (
 )
 from utils.common.paginations import PageNumberPager
 from promemonitor.grafana_url import explain_url
+from services.tasks import exec_action
+from utils.common.exceptions import OperateError
+from rest_framework.response import Response
 
 
 class ServiceListView(GenericViewSet, ListModelMixin):
@@ -51,3 +55,18 @@ class ServiceDetailView(GenericViewSet, RetrieveModelMixin):
     serializer_class = ServiceDetailSerializer
     # 操作描述信息
     get_description = "查询服务详情"
+
+
+class ServiceActionView(GenericViewSet, CreateModelMixin):
+    queryset = Service.objects.all()
+
+    def create(self, request, *args, **kwargs):
+        data = self.request.data
+        action = data.get("action")
+        instance = data.get("id")
+        operation_user = data.get("operation_user")
+        if action and instance and operation_user:
+            exec_action.delay(action, instance, operation_user)
+        else:
+            raise OperateError("请输入action或id")
+        return Response("执行成功")
