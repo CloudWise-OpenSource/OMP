@@ -377,8 +377,8 @@ const getColumnsConfig = (
   return [
     {
       title: "实例名称",
-      key: "instance_name",
-      dataIndex: "instance_name",
+      key: "service_instance_name",
+      dataIndex: "service_instance_name",
       align: "center",
       ellipsis: true,
       fixed: "left",
@@ -429,50 +429,50 @@ const getColumnsConfig = (
     },
     {
       title: "功能模块",
-      key: "modal",
-      dataIndex: "mode",
+      key: "label_name",
+      dataIndex: "label_name",
       align: "center",
       //ellipsis: true,
     },
     {
       title: "服务类型",
-      key: "type",
-      dataIndex: "type",
+      key: "app_type",
+      dataIndex: "app_type",
       align: "center",
       //ellipsis: true,
     },
     {
       title: "服务名称",
-      key: "type",
-      dataIndex: "type",
+      key: "app_name",
+      dataIndex: "app_name",
       align: "center",
       //ellipsis: true,
     },
     {
       title: "版本",
-      key: "v",
-      dataIndex: "v",
+      key: "app_version",
+      dataIndex: "app_version",
       align: "center",
       //ellipsis: true,
     },
     {
       title: "状态",
-      key: "s",
-      dataIndex: "s",
+      key: "service_status",
+      dataIndex: "service_status",
       align: "center",
       //ellipsis: true,
     },
     {
       title: "告警次数",
-      key: "t",
-      dataIndex: "t",
+      key: "alert_count",
+      dataIndex: "alert_count",
       align: "center",
       //ellipsis: true,
     },
     {
       title: "集群模式",
-      key: "m",
-      dataIndex: "m",
+      key: "cluster_type",
+      dataIndex: "cluster_type",
       align: "center",
       //ellipsis: true,
     },
@@ -494,6 +494,7 @@ const getColumnsConfig = (
               style={{ display: "flex", justifyContent: "space-around" }}
             >
               <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
+              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>日志</span>
               <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>
                 更多 <DownOutlined style={{ position: "relative", top: 1 }} />
               </span>

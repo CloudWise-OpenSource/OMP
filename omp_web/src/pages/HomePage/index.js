@@ -44,7 +44,12 @@ const Homepage = () => {
   console.log();
   return (
     <OmpContentWrapper
-      wrapperStyle={{ width: "100%", height: "calc(100% - 40px)",backgroundColor:"#edf0f3",padding:0 }}
+      wrapperStyle={{
+        width: "100%",
+        height: "calc(100% - 40px)",
+        backgroundColor: "#edf0f3",
+        padding: 0,
+      }}
     >
       <div className={styles.homepageWrapper}>
         {/* <OmpProgress /> */}
@@ -234,8 +239,8 @@ const Homepage = () => {
                 </div>
               </div>
 
-               {/* 基础组件 */}
-               <div className={styles.blockOverviewItem}>
+              {/* 基础组件 */}
+              <div className={styles.blockOverviewItem}>
                 <OmpProgress
                   percent={calcPercentage(
                     dataSource.component?.component_info_all_count -
@@ -250,7 +255,8 @@ const Homepage = () => {
                     },
                     {
                       name: "未监控",
-                      value: dataSource.component?.component_info_no_monitor_count,
+                      value:
+                        dataSource.component?.component_info_no_monitor_count,
                     },
                     {
                       name: "正常",
@@ -320,8 +326,8 @@ const Homepage = () => {
                 </div>
               </div>
 
-                {/* 数据库 */}
-                <div className={styles.blockOverviewItem}>
+              {/* 数据库 */}
+              <div className={styles.blockOverviewItem}>
                 <OmpProgress
                   percent={calcPercentage(
                     dataSource.database?.database_info_all_count -
@@ -336,7 +342,8 @@ const Homepage = () => {
                     },
                     {
                       name: "未监控",
-                      value: dataSource.database?.database_info_no_monitor_count,
+                      value:
+                        dataSource.database?.database_info_no_monitor_count,
                     },
                     {
                       name: "正常",
@@ -406,8 +413,8 @@ const Homepage = () => {
                 </div>
               </div>
 
-               {/* 三方组件 */}
-               <div className={styles.blockOverviewItem}>
+              {/* 三方组件 */}
+              <div className={styles.blockOverviewItem}>
                 <OmpProgress
                   percent={calcPercentage(
                     dataSource.third?.third_info_all_count -
@@ -491,148 +498,163 @@ const Homepage = () => {
                   </div>
                 </div>
               </div>
-
             </div>
           </div>
-         
-          <div style={{marginBottom:10,backgroundColor:"#fff",paddingBottom:10}}>
-          <p style={{padding:10,paddingBottom:0,paddingTop:10,margin:0,fontWeight:500}}>异常清单</p>
-          < ExceptionList />
-        </div>
-        
-        <div className={styles.pageBlock}>
-          <OmpStateBlock
-            // key={"serviceData"}
-            // tag={"all"}
-            title={"主机运行状态"}
-            link={(data)=>{
-              history.push({
-                pathname: "/resource-management/machine-management",
-                state: {
-                  ip: data.ip,
-                },
-              });
-            }}
-            criticalLink={(data)=>{
-              history.push({
-                pathname: "/application-monitoring/exception-list",
-                state: {
-                  ip: data.ip,
-                  type:"host"
-                },
-              });
-            }}
-            data={dataSource.host?.host_info_list}
-          />
-        </div>
 
-        <div className={styles.pageBlock}>
-          <OmpStateBlock
-            // key={"serviceData"}
-            // tag={"all"}
-            link={(data)=>{
-              history.push({
-                pathname: "/application_management/service_management",
-                state: {
-                  ip: data.ip,
-                },
-              });
+          <div
+            style={{
+              marginBottom: 10,
+              backgroundColor: "#fff",
+              paddingBottom: 10,
             }}
-            criticalLink={(data)=>{
-              history.push({
-                pathname: "/application-monitoring/exception-list",
-                state: {
-                  ip: data.ip,
-                  type:"service"
-                },
-              });
-            }}
-            title={"应用服务状态"}
-            hasNotMonitored
-            data={dataSource.service?.service_info_list}
-          />
-        </div>
+          >
+            <p
+              style={{
+                padding: 10,
+                paddingBottom: 0,
+                paddingTop: 10,
+                margin: 0,
+                fontWeight: 500,
+              }}
+            >
+              异常清单
+            </p>
+            <ExceptionList />
+          </div>
 
-        <div className={styles.pageBlock}>
-          <OmpStateBlock
-            // key={"serviceData"}
-            // tag={"all"}
-            link={(data)=>{
-              history.push({
-                pathname: "/application_management/service_management",
-                state: {
-                  ip: data.ip,
-                },
-              });
-            }}
-            criticalLink={(data)=>{
-              history.push({
-                pathname: "/application-monitoring/exception-list",
-                state: {
-                  ip: data.ip,
-                  type:"service"
-                },
-              });
-            }}
-            hasNotMonitored
-            title={"基础组件状态"}
-            data={dataSource.component?.component_info_list}
-          />
-        </div>
+          <div className={styles.pageBlock}>
+            <OmpStateBlock
+              // key={"serviceData"}
+              // tag={"all"}
+              title={"主机运行状态"}
+              link={(data) => {
+                history.push({
+                  pathname: "/resource-management/machine-management",
+                  state: {
+                    ip: data.ip,
+                  },
+                });
+              }}
+              criticalLink={(data) => {
+                history.push({
+                  pathname: "/application-monitoring/exception-list",
+                  state: {
+                    ip: data.ip,
+                    type: "host",
+                  },
+                });
+              }}
+              data={dataSource.host?.host_info_list}
+            />
+          </div>
 
-        <div className={styles.pageBlock}>
-          <OmpStateBlock
-            // key={"serviceData"}
-            // tag={"all"}
-            link={(data)=>{
-              history.push({
-                pathname: "/application_management/service_management",
-                state: {
-                  ip: data.ip,
-                },
-              });
-            }}
-            criticalLink={(data)=>{
-              history.push({
-                pathname: "/application-monitoring/exception-list",
-                state: {
-                  ip: data.ip,
-                  type:"service"
-                },
-              });
-            }}
-            hasNotMonitored
-            title={"数据库状态"}
-            data={dataSource.database?.database_info_list}
-          />
-        </div>
+          <div className={styles.pageBlock}>
+            <OmpStateBlock
+              // key={"serviceData"}
+              // tag={"all"}
+              link={(data) => {
+                history.push({
+                  pathname: "/application_management/service_management",
+                  state: {
+                    ip: data.ip,
+                  },
+                });
+              }}
+              criticalLink={(data) => {
+                history.push({
+                  pathname: "/application-monitoring/exception-list",
+                  state: {
+                    ip: data.ip,
+                    type: "service",
+                  },
+                });
+              }}
+              title={"应用服务状态"}
+              hasNotMonitored
+              data={dataSource.service?.service_info_list}
+            />
+          </div>
 
-        <div className={styles.pageBlock}>
-          <OmpStateBlock
-            // key={"serviceData"}
-            // tag={"all"}
-            link={(data)=>{
-              history.push({
-                pathname: "/application_management/service_management",
-                state: {
-                  ip: data.ip,
-                },
-              });
-            }}
-            criticalLink={(data)=>{
-              history.push({
-                pathname: "/application-monitoring/exception-list",
-                state: {
-                  ip: data.ip,
-                  type:"service"
-                },
-              });
-            }}
-            hasNotMonitored
-            title={"三方组件状态"}
-            data={dataSource.third?.third_info_list}
-          />
-        </div>
+          <div className={styles.pageBlock}>
+            <OmpStateBlock
+              // key={"serviceData"}
+              // tag={"all"}
+              link={(data) => {
+                history.push({
+                  pathname: "/application_management/service_management",
+                  state: {
+                    ip: data.ip,
+                  },
+                });
+              }}
+              criticalLink={(data) => {
+                history.push({
+                  pathname: "/application-monitoring/exception-list",
+                  state: {
+                    ip: data.ip,
+                    type: "service",
+                  },
+                });
+              }}
+              hasNotMonitored
+              title={"基础组件状态"}
+              data={dataSource.component?.component_info_list}
+            />
+          </div>
+
+          <div className={styles.pageBlock}>
+            <OmpStateBlock
+              // key={"serviceData"}
+              // tag={"all"}
+              link={(data) => {
+                history.push({
+                  pathname: "/application_management/service_management",
+                  state: {
+                    ip: data.ip,
+                  },
+                });
+              }}
+              criticalLink={(data) => {
+                history.push({
+                  pathname: "/application-monitoring/exception-list",
+                  state: {
+                    ip: data.ip,
+                    type: "service",
+                  },
+                });
+              }}
+              hasNotMonitored
+              title={"数据库状态"}
+              data={dataSource.database?.database_info_list}
+            />
+          </div>
+
+          <div className={styles.pageBlock}>
+            <OmpStateBlock
+              // key={"serviceData"}
+              // tag={"all"}
+              link={(data) => {
+                history.push({
+                  pathname: "/application_management/service_management",
+                  state: {
+                    ip: data.ip,
+                  },
+                });
+              }}
+              criticalLink={(data) => {
+                history.push({
+                  pathname: "/application-monitoring/exception-list",
+                  state: {
+                    ip: data.ip,
+                    type: "service",
+                  },
+                });
+              }}
+              hasNotMonitored
+              title={"三方组件状态"}
+              data={dataSource.third?.third_info_list}
+            />
+          </div>
         </Spin>
       </div>
     </OmpContentWrapper>

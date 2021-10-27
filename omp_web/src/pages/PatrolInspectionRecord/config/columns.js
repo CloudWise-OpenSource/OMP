@@ -198,7 +198,8 @@ const getColumnsConfig = (queryRequest, history, queryData) => {
       render: function renderFunc(text, record, index) {
         return (
           <div style={{ display: "flex", justifyContent: "space-around" }}>
-            <a
+            {record.inspection_status == 2?
+               <a
               onClick={() => {
                 message.success(
                   `正在下载巡检报告，双击文件夹中index.html查看报告`
@@ -208,7 +209,9 @@ const getColumnsConfig = (queryRequest, history, queryData) => {
               }}
             >
               导出
-            </a>
+            </a>:<span style={{color:"rgba(0, 0, 0, 0.25"}}>导出</span>
+      }
+           
           </div>
         );
       },
