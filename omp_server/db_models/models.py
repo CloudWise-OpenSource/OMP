@@ -723,6 +723,7 @@ class DetailInstallHistory(TimeStampMixin):
     在下发安装任务之前，需要对安装顺序进行排序确定
     """
 
+    objects = None
     INSTALL_STATUS_READY = 0
     INSTALL_STATUS_INSTALLING = 1
     INSTALL_STATUS_SUCCESS = 2
