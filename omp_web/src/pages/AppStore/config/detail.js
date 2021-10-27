@@ -257,7 +257,7 @@ const AppStoreDetail = () => {
                     },
                   ]}
                   pagination={false}
-                  dataSource={JSON.parse(currentVersionDataSource.pro_services)}
+                  dataSource={currentVersionDataSource.pro_services}
                 />
               </div>
             ) : (

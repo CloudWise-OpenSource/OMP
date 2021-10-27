@@ -1,402 +1,329 @@
-//import { TableRowButton } from "@/components";
+import {
+  OmpContentWrapper,
+  OmpTable,
+  OmpMessageModal,
+  OmpSelect,
+  OmpDatePicker,
+  OmpDrawer,
+} from "@/components";
+import { Button, Select, message, Menu, Dropdown, Modal, Input,  Tooltip, Badge, } from "antd";
+import { useState, useEffect, useRef } from "react";
+import { handleResponse, _idxInit, refreshTime, colorConfig } from "@/utils/utils";
+import { fetchGet, fetchPost, fetchPatch } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-//import ContentNav from "@/layouts/ContentNav";
-//import ContentWrapper from "@/layouts/ContentWrapper";
-import { fetchGet } from "@/utils/request";
-import {
-  columnsConfig,
-  handleResponse,
-  paginationConfig,
-  tableButtonHandler,
-  _idxInit,
-  newTableButtonHandler,
-} from "@/utils/utils";
-import {
-  AutoComplete,
-  Icon,
-  Input,
-  Spin,
-  Table,
-  Button,
-  Select,
-  Tooltip,
-  Drawer,
-} from "antd";
-import * as R from "ramda";
-import React, { useEffect, useState } from "react";
-import { useHistory, useLocation } from "react-router-dom";
-//import OmpIframe from "@/components/OmpIframe";
-/*eslint-disable*/
-function WarningList() {
-  const location = useLocation();
+import { SearchOutlined } from "@ant-design/icons";
+import moment from "moment";
+import { useHistory } from "react-router-dom";
+
+const ExceptionList = () => {
   const history = useHistory();
-
-  const locationIpState = R.call(() => {
-    if (!location.state) return "";
-
-    // 路由携带IP、服务名称作为查询条件，不会存在两种查询同时存在
-    const { host_ip, service_name } = location.state;
-
-    if (host_ip) {
-      return host_ip;
-    }
-    // else if (service_name) {
-    //   return service_name;
-    // }
-    else {
-      return "";
-    }
-  });
-
-  const locationState = R.call(() => {
-    if (!location.state) return "";
-
-    // 路由携带IP、服务名称作为查询条件，不会存在两种查询同时存在
-    const { host_ip, service_name } = location.state;
-
-    // if (host_ip) {
-    //   return host_ip;
-    // } else
-    if (service_name) {
-      return service_name;
-    } else {
-      return "";
-    }
-  });
-
-  const [isLoading, setLoading] = useState(false);
-
-  // 表格数据
+  const [loading, setLoading] = useState(false);
+  //table表格数据
   const [dataSource, setDataSource] = useState([]);
 
-  const [searchData, setSearchData] = useState([]);
-  const [searchIpValue, setSearchIpValue] = useState(locationIpState);
-  const [searchNameValue, setSearchNameValue] = useState(locationState);
-  const [searchTypeValue, setSearchTypeValue] = useState("");
-  const [searchLevelValue, setSearchLevelValue] = useState("");
-  //功能模块筛选
-  const [searchModalValue, setSearchModalValue] = useState("");
+  const [searchParams, setSearchParams] = useState({});
 
-  // const [searchValue, setSearchValue] = useState(locationState);
+  const [showIframe, setShowIframe] = useState({});
 
-  //筛选框label
-  const [searchBarController, setSearchBarController] = useState("ip");
+  const [pageSize, setPageSize] = useState(5)
 
-  const columns = [
-    columnsConfig.service_idx,
-    columnsConfig.alert_host_ip,
-    {
-      title: "告警类型",
-      width: 120,
-      key: "alert_service_type_frontend",
-      dataIndex: "alert_service_type_frontend",
-      //ellipsis: true,
-      sorter: (a, b) => {
-        const str1 = R.defaultTo(" ", a.alert_service_type_frontend);
-        const str2 = R.defaultTo(" ", b.alert_service_type);
-        return (
-          str1.toLowerCase().charCodeAt(0) - str2.toLowerCase().charCodeAt(0)
-        );
-      },
-      sortDirections: ["descend", "ascend"],
-      align: "center",
-      // render: (text,record)=>{
-      //   if(text){
-      //     if(text == "host")return "主机异常"
-      //     if(text == "service"){
-      //       if(record.alert_service_en_type == "external"){
-      //         return "三方组件"
-      //       }
-      //       return record.alert_service_type
-      //     }
-      //     return text
-      //   }else{
-      //     return "-"
-      //   }
-      // },
-    },
-    columnsConfig.alert_service_name,
-    columnsConfig.alert_level,
-    columnsConfig.alert_time,
-    columnsConfig.alert_describe,
-    // {
-    //   title: "操作",
-    //   key: "操作",
-    //   dataIndex: "",
-    //   render: function renderFunc(text, record, index) {
-    //     if (record.alert_service_type_frontend == "三方组件") {
-    //       return "-";
-    //     }
-    //     return (
-    //       <TableRowButton
-    //         buttonsArr={[
-    //           {
-    //             btnText: "监控",
-    //             btnHandler: () => {
-    //               if (typeof newTableButtonHandler(record) !== "function") {
-    //                 setIsShowIsframe({
-    //                   isOpen: true,
-    //                   src: newTableButtonHandler(record),
-    //                   record: record,
-    //                 });
-    //               }
-    //             },
-    //           },
-    //           {
-    //             btnText:
-    //               record.alert_service_type_frontend == "主机异常" ? "分析" : "日志",
-    //             btnHandler: () => {
-    //               if (record.alert_service_type_frontend == "主机异常") {
-    //                 history.push("/operation-management/report");
-    //               } else {
-    //                 if (
-    //                   typeof newTableButtonHandler(record, "log") !== "function"
-    //                 ) {
-    //                   setIsShowIsframe({
-    //                     isOpen: true,
-    //                     src: newTableButtonHandler(record, "log"),
-    //                     record: record,
-    //                     isLog:true
-    //                   });
-    //                 }
-    //               }
-    //             },
-    //           },
-    //         ]}
-    //       />
-    //     );
-    //   },
-    //   width: 100,
-    //   align: "center",
-    //   fixed: "right",
-    // },
-  ];
-
-  const queryData = () => {
-    return
+  function fetchData(searchParams = {}) {
     setLoading(true);
-    fetchGet(apiRequest.operationManagement.alertList)
+    fetchGet(apiRequest.ExceptionList.exceptionList, {
+      params: {
+        ...searchParams,
+      },
+    })
       .then((res) => {
-        if(res.code == 0){
-          if (res.data) {
-            let arr = res.data.map((item) => {
-              // console.log(item)
-              if (item.alert_service_en_type) {
-                if (item.alert_service_en_type == "self_dev") {
-                  item.alert_service_type_frontend = "自有服务";
-                } else if (item.alert_service_en_type == "component") {
-                  item.alert_service_type_frontend = "自有组件";
-                } else if (item.alert_service_en_type == "database") {
-                  item.alert_service_type_frontend = "数据库";
-                } else if (item.alert_service_en_type == "external") {
-                  item.alert_service_type_frontend = "三方组件";
-                  item.alert_host_ip = item.ip;
-                  item.alert_service_name = item.service_name;
-                  item.alert_describe = item.state_info[0]?.describe;
-                  /// ===============================
-                  let arr = item.ip?.split(",");
-                  let ipStr = "";
-                  arr.map((i,idx)=>{
-                    if(idx == 0){
-                      let a = i.split(":");
-                      ipStr+=`${a[0]}`;
-                    }else{
-                      let b = i.split(":");
-                      ipStr+=`, ${b[0]}`;
-                    }
-                  });
-                  item.alert_host_ip = ipStr
-                }
-              } else {
-                item.alert_service_type_frontend = "主机异常";
-              }
-              return item;
-            });
-            // console.log(arr)
-            // eslint-disable-next-line max-nested-callbacks
-            setDataSource(_idxInit(arr));
-            //console.log(location)
-            if (location.state && location.state.key) {
-              //setSearchBarController("type");
-              if (location.state.key == "all") {
-                setSearchTypeValue("自有服务");
-                const result = R.filter(
-                  R.propEq("alert_service_type_frontend", "自有服务"),
-                  _idxInit(arr)
-                );
-                if(location.state.service_name){
-                  setSearchBarController("name")
-                  setSearchNameValue(location.state.service_name)
-                  const resultFinally = R.filter(
-                    R.propEq("alert_service_name", location.state.service_name),
-                    result
-                  );
-                  setSearchData(resultFinally);
-                  return
-                }
-                setSearchData(result);
-              }
-
-              if (location.state.key == "basic") {
-                setSearchTypeValue("自有组件");
-                const result = R.filter(
-                  R.propEq("alert_service_type_frontend", "自有组件"),
-                  _idxInit(arr)
-                );
-                if(location.state.service_name){
-                  setSearchBarController("name")
-                  setSearchNameValue(location.state.service_name)
-                  const resultFinally = R.filter(
-                    R.propEq("alert_service_name", location.state.service_name),
-                    result
-                  );
-                  setSearchData(resultFinally);
-                  return
-                }
-                setSearchData(result);
-              }
-
-              if (location.state.key == "thirdParty") {
-                setSearchTypeValue("三方组件");
-                const result = R.filter(
-                  R.propEq("alert_service_type_frontend", "三方组件"),
-                  _idxInit(arr)
-                );
-                if(location.state.service_name){
-                  setSearchBarController("name")
-                  setSearchNameValue(location.state.service_name)
-                  const resultFinally = R.filter(
-                    R.propEq("alert_service_name", location.state.service_name),
-                    result
-                  );
-                  setSearchData(resultFinally);
-                  return
-                }
-                setSearchData(result);
-              }
-
-              if (location.state.key == "database") {
-                setSearchTypeValue("数据库");
-                const result = R.filter(
-                  R.propEq("alert_service_type_frontend", "数据库"),
-                  _idxInit(arr)
-                );
-                if(location.state.service_name){
-                  setSearchBarController("name")
-                  setSearchNameValue(location.state.service_name)
-                  const resultFinally = R.filter(
-                    R.propEq("alert_service_name", location.state.service_name),
-                    result
-                  );
-                  setSearchData(resultFinally);
-                  return
-                }
-                setSearchData(result);
-              }
-
-              if (location.state.key == "host") {
-                //console.log("主机")
-                setSearchTypeValue("主机异常");
-                const result = R.filter(
-                  R.propEq("alert_service_type_frontend", "主机异常"),
-                  _idxInit(arr)
-                );
-                setSearchData(result);
-              }
-
-              if (location.state.key == "hostData") {
-                setSearchTypeValue("主机异常");
-                setSearchIpValue(location.state.host_ip)
-                const result = R.filter(
-                  R.propEq("alert_service_type_frontend", "主机异常"),
-                  _idxInit(arr)
-                );
-                const resultFinally =  R.filter(
-                  R.propEq( "alert_host_ip",location.state.host_ip),
-                  result
-                );
-                setSearchData(resultFinally);
-              }
-            }
-          }
-        };
+        handleResponse(res, (res) => {
+          setSearchParams(searchParams)
+          setDataSource(
+            res.data.map((item, idx) => ({
+              ...item,
+              key: idx + item.ip,
+            }))
+          );
+        });
       })
       .catch((e) => console.log(e))
       .finally(() => {
         setLoading(false);
       });
-  };
+  }
 
   useEffect(() => {
-    queryData();
+    fetchData();
   }, []);
 
-  const [isShowIframe, setIsShowIsframe] = useState({
-    isOpen: false,
-    src: "",
-    record: {},
-    isLog:false
-  });
-
-  console.log(location);
-
   return (
-    <div style={{margin:10,border:"1px solid #e8e8e8"}}>
-      <Spin spinning={isLoading}>
-        {/* <ContentNav data={contentNavData} currentFocus={currentList} /> */}
-        <Table
-          size={"small"}
-          rowKey={(record, index) => index}
-          // scroll={{ x: 1200 }}
-          columns={columns}
+    <OmpContentWrapper>
+      <div
+        style={{
+          border: "1px solid #ebeef2",
+          backgroundColor: "white",
+          marginTop: 10,
+        }}
+      >
+        <OmpTable
+          size="small"
+          loading={loading}
+          //scroll={{ x: 1400 }}
+          onChange={(e, filters, sorter) => {
+            setPageSize(e.pageSize)
+            if (sorter.columnKey) {
+              let sort = sorter.order == "descend" ? 0 : 1;
+              setTimeout(() => {
+                fetchData({
+                  ...searchParams,
+                  ordering: sorter.column ? sorter.columnKey : null,
+                  asc: sorter.column ? sort : null,
+                });
+              }, 200);
+            }
+          }}
+          columns={getColumnsConfig(
+            (params) => {
+              fetchData({ ...searchParams, ...params });
+            },
+            setShowIframe,
+            history
+          )}
+          dataSource={dataSource}
           pagination={{
             showSizeChanger: true,
             pageSizeOptions: ["5", "10", "20", "50"],
-            defaultPageSize:5,
-            showTotal: () => <span style={{color:"rgb(152, 157, 171)"}}>共计 <span style={{color:"rgb(63, 64, 70)"}}>{dataSource.length}</span> 条</span>,
-            total: dataSource.length,
+            showTotal: () => (
+              <div
+                style={{
+                  display: "flex",
+                  width: "200px",
+                  //justifyContent: "space-between",
+                  flexDirection: "row-reverse",
+                  lineHeight: 2.8,
+                }}
+              >
+                <p style={{ color: "rgb(152, 157, 171)" }}>
+                  共计{" "}
+                  <span style={{ color: "rgb(63, 64, 70)" }}>
+                    {dataSource?.length}
+                  </span>{" "}
+                  条
+                </p>
+              </div>
+            ),
+            pageSize:pageSize
           }}
-          dataSource={searchTypeValue ? searchData : dataSource}
+          //rowKey={(record) => record.ip}
+          //checkedState={[checkedList, setCheckedList]}
         />
-      </Spin>
-      {/* <Drawer
-        title={
-          <div style={{ display: "flex" }}>
-            <Icon
-              type="desktop"
-              style={{ position: "relative", top: 3, left: -5 }}
-            />
-            信息面板
-            <span style={{ paddingLeft: 30, fontWeight: 400, fontSize: 15 }}>
-              IP: {isShowIframe.record.alert_host_ip}
-            </span>
-          </div>
-        }
-        placement="right"
-        closable={true}
-        width={`calc(100%)`}
-        onClose={() => {
-          setIsShowIsframe({
-            ...isShowIframe,
-            isOpen: false,
-          });
-        }}
-        visible={isShowIframe.isOpen}
-        bodyStyle={{
-          padding: 0,
-          //paddingLeft: 50,
-          backgroundColor: "#f4f6f8",
-        }}
-        destroyOnClose={true}
-      >
-        <OmpIframe
-          isShowIframe={isShowIframe}
-          setIsShowIsframe={setIsShowIsframe}
-        />
-      </Drawer> */}
-    </div>
+      </div>
+      <OmpDrawer showIframe={showIframe} setShowIframe={setShowIframe} />
+    </OmpContentWrapper>
   );
-}
+};
 
-export default WarningList;
-/*eslint-disable*/
+const getColumnsConfig = (
+  queryRequest,
+  setShowIframe,
+  //updateAlertRead,
+  history
+) => {
+  return [
+    {
+      title: "实例名称",
+      key: "instance_name",
+      dataIndex: "instance_name",
+      align: "center",
+      width: 200,
+      ellipsis: true,
+      fixed: "left",
+      sorter: (a, b) => a.instance_name - b.instance_name,
+      sortDirections: ["descend", "ascend"],
+      render: (text, record) => {
+        return (
+          <Tooltip title={text}>
+            <Badge dot={record.is_read === 0} offset={[5, 2]}>
+              {record.instance_name ? record.instance_name : "-"}
+            </Badge>
+          </Tooltip>
+        );
+      },
+    },
+    {
+      title: "IP地址",
+      key: "ip",
+      dataIndex: "ip",
+      ellipsis: true,
+      sorter: (a, b) => a.ip - b.ip,
+      sortDirections: ["descend", "ascend"],
+      align: "center",
+      render: (text, record) => {
+        return (
+          <a
+            onClick={() => {
+              text &&
+                history.push({
+                  pathname: "/resource-management/machine-management",
+                  state: {
+                    ip: text,
+                  },
+                });
+            }}
+          >
+            {text}
+          </a>
+        );
+      },
+    },
+    {
+      title: "级别",
+      key: "severity",
+      dataIndex: "severity",
+      align: "center",
+      width: 120,
+      // sorter: (a, b) => a.severity - b.severity,
+      // sortDirections: ["descend", "ascend"],
+      //ellipsis: true,
+      //width:120,
+      usefilter: true,
+      queryRequest: queryRequest,
+      filterMenuList: [
+        {
+          value: "critical",
+          text: "严重",
+        },
+        {
+          value: "warning",
+          text: "警告",
+        },
+      ],
+      render: (text) => {
+        switch (text) {
+          case "critical":
+            return <span style={{ color: colorConfig[text] }}>严重</span>;
+          case "warning":
+            return <span style={{ color: colorConfig[text] }}>警告</span>;
+          case "info":
+            return <span style={{ color: colorConfig[text] }}>警告</span>;
+          default:
+            return "-";
+        }
+      },
+    },
+    {
+      title: "告警类型",
+      key: "type",
+      dataIndex: "type",
+      usefilter: true,
+      queryRequest: queryRequest,
+      filterMenuList: [
+        {
+          value: "service",
+          text: "服务",
+        },
+        {
+          value: "host",
+          text: "主机",
+        },
+      ],
+      align: "center",
+      //ellipsis: true,
+      width: 150,
+      render: (text) => {
+        if (text == "host") {
+          return "主机";
+        } else if (text == "service") {
+          return "服务";
+        }
+      },
+    },
+    {
+      title: "告警描述",
+      key: "description",
+      dataIndex: "description",
+      align: "center",
+      width: 420,
+      ellipsis: true,
+      render: (text) => {
+        return (
+          <Tooltip title={text}>
+            <span>{text ? text : "-"}</span>
+          </Tooltip>
+        );
+      },
+    },
+    {
+      title: "告警时间",
+      //width:180,
+      key: "date",
+      dataIndex: "date",
+      align: "center",
+      //ellipsis: true,
+      sorter: (a, b) => a.date - b.date,
+      sortDirections: ["descend", "ascend"],
+      render: (text) => {
+        let str = moment(text).format("YYYY-MM-DD HH:mm:ss");
+        return str;
+      },
+    },
+    {
+      title: "操作",
+      width: 100,
+      key: "",
+      dataIndex: "",
+      fixed: "right",
+      align: "center",
+      render: function renderFunc(text, record, index) {
+        return (
+          <div style={{ display: "flex", justifyContent: "space-around" }}>
+            {record.monitor_url ? (
+              <a
+                onClick={() => {
+                  //record.is_read == 0 && updateAlertRead([record.id]);
+                  setShowIframe({
+                    isOpen: true,
+                    src: record.monitor_url,
+                    record: {
+                      ...record,
+                      ip: record.ip,
+                    },
+                    isLog: false,
+                  });
+                }}
+              >
+                监控
+              </a>
+            ) : (
+              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
+            )}
+
+            {record.type == "host" ? (
+              ""
+            ) : record.log_url ? (
+              <a
+                onClick={() => {
+                  //record.is_read == 0 && updateAlertRead([record.id]);
+                  setShowIframe({
+                    isOpen: true,
+                    src: record.log_url,
+                    record: {
+                      ...record,
+                      ip: record.ip,
+                    },
+                    isLog: true,
+                  });
+                }}
+              >
+                日志
+              </a>
+            ) : (
+              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>日志</span>
+            )}
+          </div>
+        );
+      },
+    },
+  ];
+};
+
+export default ExceptionList;
