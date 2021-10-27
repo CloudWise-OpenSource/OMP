@@ -111,7 +111,7 @@ class InspectionHistoryView(ListModelMixin, GenericViewSet, CreateModelMixin):
         handle = data_dict.get('inspection_type')
         # 异步下发
         get_prometheus_data.delay(
-            env=env_obj, hosts=his_obj.hosts, services=his_obj.services,
+            env_id=env_obj.id, hosts=his_obj.hosts, services=his_obj.services,
             history_id=his_obj.id, report_id=rep_obj.id, handle=handle)
         return Response(data_dict, status=status.HTTP_200_OK)
 
