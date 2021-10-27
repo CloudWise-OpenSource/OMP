@@ -6,7 +6,7 @@ from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer, ListSerializer, Serializer
 from rest_framework.exceptions import ValidationError
 
-from db_models.models import Host, MonitorUrl, Alert, Maintain
+from db_models.models import Host, MonitorUrl, Alert, Maintain, Service
 from promemonitor.tasks import monitor_agent_restart
 from promemonitor.alertmanager import Alertmanager
 from promemonitor.alert_util import AlertAnalysis
@@ -238,6 +238,10 @@ class ReceiveAlertSerializer(Serializer):
             if alert_info.get('alert_type') == 'host':
                 Host.objects.filter(ip=alert_info.get('alert_host_ip')).update(
                     alert_num=F("alert_num") + 1)
+            if alert_info.get('alert_type') == 'service':
+                Service.objects.filter(service_instance_name=alert_info.get('alert_instance_name')).filter(
+                    ip=alert_info.get('alert_host_ip')).update(
+                    service_status=Service.SERVICE_STATUS_STOP)  # TODO 后续在模型中增加异常字段
         Alert.objects.bulk_create(alert_obj_list)
         return validated_data
 
