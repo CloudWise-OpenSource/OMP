@@ -468,11 +468,12 @@ class ExecuteInstallSerializer(Serializer):
             valid_lst.append(self.check_lst_valid(app_install_args))
             app_port = item.get("app_install_args", [])
             valid_lst.append(self.check_lst_valid(app_port))
+        logger.info(f"Check install info res: {valid_lst}")
         if len(set(valid_lst)) != 1 or valid_lst[0] is False:
             attrs["is_valid_flag"] = False
             attrs["is_valid_msg"] = "数据校验出错"
             return attrs
-        # TODO 数据入库逻辑
+        # 数据入库逻辑
         _create_data_obj = CreateInstallPlan(install_data=attrs)
         flag, msg = _create_data_obj.run()
         if not flag:
