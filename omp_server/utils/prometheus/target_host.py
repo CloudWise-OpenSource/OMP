@@ -3,7 +3,9 @@
 # Author: len chen
 # CreateDate: 2021/10/14 6:26 下午
 # Description: 主机指标
+import json
 from utils.prometheus.prometheus import Prometheus
+from utils.plugin.salt_client import SaltClient
 
 
 class HostCrawl(Prometheus):
@@ -15,6 +17,7 @@ class HostCrawl(Prometheus):
         self.env = env  # 环境
         self.tag_error_num = 0      # 异常指标数
         self.instance = instance    # 主机ip
+        self._obj = SaltClient()
         Prometheus.__init__(self)
 
     def unified_job(self, is_success, ret, msg):
@@ -43,82 +46,95 @@ class HostCrawl(Prometheus):
         """运行时间"""
         expr = f"avg(time() - node_boot_time_seconds{{env='{self.env}'," \
                f"instance=~'{self.instance}'}})"
-        self.ret['run_time'] = self.unified_job(*self.query(expr))
+        _ = float(self.unified_job(*self.query(expr)))
+        self.ret['run_time'] = f"{int(_ // 3600 % 24)}天{int(_ // 86400)}小时" \
+                               f"{int((_ % 3600) // 60)}分钟{round(_ % 60, 2)}秒"
 
-    def cpu_num(self):
-        """cpu 核数"""
-        expr = f"count(node_cpu_seconds_total{{env='{self.env}'," \
-               f"instance=~'{self.instance}', mode='system'}})"
-        self.ret['cpu_num'] = self.unified_job(*self.query(expr))
+    # def cpu_num(self):
+    #     """cpu 核数"""
+    #     expr = f"count(node_cpu_seconds_total{{env='{self.env}'," \
+    #            f"instance=~'{self.instance}', mode='system'}})"
+    #     self.ret['cpu_num'] = self.unified_job(*self.query(expr))
 
-    def total_memory(self):
-        """总内存"""
-        expr = f"sum(node_memory_MemTotal_bytes{{env='{self.env}'," \
-               f"instance=~'{self.instance}'}})"
-        self.ret['total_memory'] = self.unified_job(*self.query(expr))
+    # def total_memory(self):
+    #     """总内存"""
+    #     expr = f"sum(node_memory_MemTotal_bytes{{env='{self.env}'," \
+    #            f"instance=~'{self.instance}'}})"
+    #     self.ret['total_memory'] = self.unified_job(*self.query(expr))
 
     def rate_cpu(self):
         """总cpu使用率"""
-        expr = f"round(100 - (avg(rate(node_cpu_seconds_total" \
+        expr = f"100 - (avg(rate(node_cpu_seconds_total" \
                f"{{env='{self.env}'," \
                f"instance=~'{self.instance}'," \
-               f"mode='idle'}}[5m])) * 100))"
-        self.ret['rate_cpu'] = self.unified_job(*self.query(expr))
+               f"mode='idle'}}[5m])) * 100)"
+        self.ret['rate_cpu'] = \
+            f"{round(float(self.unified_job(*self.query(expr))), 2)}%"
 
     def rate_io_wait(self):
         """IO wait使用率"""
-        expr = f"round(avg(rate(node_cpu_seconds_total{{env='{self.env}'," \
-               f"instance=~'{self.instance}',mode='iowait'}}[5m])) * 100)"
-        self.ret['rate_io_wait'] = self.unified_job(*self.query(expr))
+        expr = f"avg(rate(node_cpu_seconds_total{{env='{self.env}'," \
+               f"instance=~'{self.instance}',mode='iowait'}}[5m])) * 100"
+        self.ret['rate_io_wait'] = \
+            f"{round(float(self.unified_job(*self.query(expr))), 2)}%"
 
     def rate_memory(self):
         """内存使用率"""
-        expr = f"round((1 - (node_memory_MemAvailable_bytes" \
+        expr = f"(1 - (node_memory_MemAvailable_bytes" \
                f"{{env='{self.env}'," \
                f"instance=~'{self.instance}'}} / " \
                f"(node_memory_MemTotal_bytes{{env='{self.env}'," \
-               f"instance=~'{self.instance}'}})))* 100)"
-        self.ret['rate_memory'] = self.unified_job(*self.query(expr))
+               f"instance=~'{self.instance}'}})))* 100"
+        self.ret['rate_memory'] = \
+            f"{round(float(self.unified_job(*self.query(expr))), 2)}%"
 
     def rate_max_disk(self):
-        """最大分区 /data 使用率"""
-        expr = f"round((node_filesystem_size_bytes{{env='{self.env}'," \
-               f"instance=~'{self.instance}',fstype=~'ext.*|xfs'," \
-               f"mountpoint='/data'}}-" \
-               f"node_filesystem_free_bytes{{env='{self.env}'," \
-               f"instance=~'{self.instance}'," \
-               f"fstype=~'ext.*|xfs',mountpoint='/data'}})*100 /" \
-               f"(node_filesystem_avail_bytes{{env='{self.env}'," \
-               f"instance=~'{self.instance}',fstype=~'ext.*|xfs'," \
-               f"mountpoint='/data'}}+" \
-               f"(node_filesystem_size_bytes{{env='{self.env}'," \
-               f"instance=~'{self.instance}',fstype=~'ext.*|xfs'," \
-               f"mountpoint='/data'}}-" \
-               f"node_filesystem_free_bytes{{env='{self.env}'," \
-               f"instance=~'{self.instance}'," \
-               f"fstype=~'ext.*|xfs',mountpoint='/data'}})))"
-        self.ret['rate_max_disk'] = self.unified_job(*self.query(expr))
+        """根分区使用率"""
+        expr = f"(node_filesystem_free_bytes{{env='{self.env}'," \
+               f"instance=~'{self.instance}',mountpoint='/', " \
+               f"fstype=~'ext.*|xfs'}}" \
+               f" / node_filesystem_size_bytes{{env='{self.env}'," \
+               f"instance=~'{self.instance}',mountpoint='/', " \
+               f"fstype=~'ext.*|xfs'}})" \
+               f" * 100"
+        self.ret['rate_max_disk'] = \
+            f"{round(float(self.unified_job(*self.query(expr))), 2)}%"
+
+    def rate_data_disk(self):
+        """数据分区使用率"""
+        expr = f"(node_filesystem_free_bytes{{env='{self.env}'," \
+               f"instance=~'{self.instance}',mountpoint='/data', " \
+               f"fstype=~'ext.*|xfs'}}" \
+               f" / node_filesystem_size_bytes{{env='{self.env}'," \
+               f"instance=~'{self.instance}',mountpoint='/data', " \
+               f"fstype=~'ext.*|xfs'}})" \
+               f" * 100"
+        _ = self.unified_job(*self.query(expr))
+        self.ret['rate_max_disk'] = f"{round(float(_), 2)}%" if _ else '_'
 
     def rate_exchange_disk(self):
         """交换分区使用率"""
-        expr = f"round((1 - (node_memory_SwapFree_bytes{{env='{self.env}'," \
+        expr = f"(1 - (node_memory_SwapFree_bytes{{env='{self.env}'," \
                f"instance=~'{self.instance}'}} / " \
                f"node_memory_SwapTotal_bytes{{env='{self.env}'," \
-               f"instance=~'{self.instance}'}})) * 100)"
+               f"instance=~'{self.instance}'}})) * 100"
         self.ret['rate_exchange_disk'] = self.unified_job(*self.query(expr))
 
     def rate_cpu_io_wait(self):
         """cpu io wait"""
-        expr = f"round(avg(rate(node_cpu_seconds_total" \
-               f"{{instance=~'{self.instance}',mode='iowait'}}[5m])) * 100)"
+        expr = f"avg(rate(node_cpu_seconds_total" \
+               f"{{instance=~'{self.instance}',mode='iowait'}}[5m])) * 100"
         self.ret['rate_cpu_io_wait'] = self.unified_job(*self.query(expr))
 
-    def rate_residue_node(self):
-        """剩余节点数"""
-        expr = f"round(avg(node_filesystem_files_free" \
-               f"{{instance=~'{self.instance}',mountpoint='/data'," \
-               f"fstype=~'ext.?|xfs'}}))"
-        self.ret['rate_residue_node'] = self.unified_job(*self.query(expr))
+    def rate_inode(self):
+        """inode使用率"""
+        expr = f"(1-node_filesystem_files_free{{fstype=~'xfs|ext4'," \
+               f"mountpoint='/', env='{self.env}'," \
+               f"instance=~'{self.instance}'}} / " \
+               f"node_filesystem_files{{fstype=~'xfs|ext4',mountpoint='/', " \
+               f"env='{self.env}',instance=~'{self.instance}'}})*100"
+        self.ret['rate_inode'] = \
+            f"{round(float(self.unified_job(*self.query(expr))), 2)}%"
 
     def total_file_descriptor(self):
         """总文件描述符"""
@@ -129,45 +145,62 @@ class HostCrawl(Prometheus):
         """系统平均负载"""
         # 1分钟负载
         expr = f"node_load1{{env='{self.env}',instance=~'{self.instance}'}}"
-        self.ret['load'] = {'load1': self.unified_job(*self.query(expr))}
+        load1 = self.unified_job(*self.query(expr))
         # 5分钟负载
         expr = f"node_load5{{env='{self.env}',instance=~'{self.instance}'}}"
-        self.ret['load']['load5'] = self.unified_job(*self.query(expr))
+        load5 = self.unified_job(*self.query(expr))
         # 15分钟负载
         expr = f"node_load15{{env='{self.env}',instance=~'{self.instance}'}}"
-        self.ret['load']['load15'] = self.unified_job(*self.query(expr))
+        load15 = self.unified_job(*self.query(expr))
+        self.ret['load'] = f"{load1} {load5} {load15}"
 
     def network_bytes_total(self):
         """网络带宽使用"""
         # eth0 下载
         expr = f"sum(rate(node_network_receive_bytes_total{{env='{self.env}'," \
                f"instance=~'{self.instance}',device=~'eth0'}}[2m])*8/1024)"
-        self.ret['network_bytes_total'] = \
-            {'receive': self.unified_job(*self.query(expr))}
+        self.ret['network_bytes_total'] = {
+            'receive': f"{round(float(self.unified_job(*self.query(expr))), 2)}"
+                       f"kb/s"}
         # eth0 上传
         expr = f"sum(rate(node_network_transmit_bytes_total" \
                f"{{env='{self.env}',instance=~'{self.instance}'," \
                f"device=~'eth0'}}[2m])*8/1024)"
-        self.ret['network_bytes_total']['transmit'] = \
-            self.unified_job(*self.query(expr))
+        self.ret['network_bytes_total']['transmit'] = {
+            'receive': f"{round(float(self.unified_job(*self.query(expr))), 2)}"
+                       f"kb/s"}
 
     def disk_io(self):
         """磁盘io"""
         # 读
-        expr = f"round(sum(rate(node_disk_read_bytes_total{{env='{self.env}'," \
-               f"instance=~'{self.instance}'}}[2m])))"
-        self.ret['disk_io'] = {'read': self.unified_job(*self.query(expr))}
+        expr = f"sum(rate(node_disk_read_bytes_total{{env='{self.env}'," \
+               f"instance=~'{self.instance}'}}[2m])) / 1024"
+        self.ret['disk_io'] = \
+            {'read': f"{round(float(self.unified_job(*self.query(expr))), 2)}"
+                     f"kb/s"}
         # 写
-        expr = f"round(sum(rate(node_disk_written_bytes_total" \
+        expr = f"sum(rate(node_disk_written_bytes_total" \
                f"{{env='{self.env}'," \
-               f"instance=~'{self.instance}'}}[2m])))"
-        self.ret['disk_io']['write'] = self.unified_job(*self.query(expr))
+               f"instance=~'{self.instance}'}}[2m])) / 1024"
+        self.ret['disk_io']['write'] = \
+            f"{round(float(self.unified_job(*self.query(expr))), 2)}kb/s"
+
+    def salt_json(self):
+        try:
+            self._obj.salt_module_update()
+            ret = self._obj.fun(self.instance, "host_check.main")
+            if ret and ret[0]:
+                self.ret['_s'] = json.loads(ret[1])
+            else:
+                self.ret['_s'] = {}
+        except:
+            self.ret['_s'] = {}
 
     def run(self):
         """统一执行实例方法"""
         # target为实例方法，目的是统一执行实例方法并统一返回值
         target = ['rate_cpu', 'rate_memory', 'rate_max_disk',
-                  'rate_exchange_disk',
+                  'rate_data_disk', 'salt_json',
                   'run_time', 'avg_load',
                   'total_file_descriptor', 'rate_io_wait',
                   'network_bytes_total', 'disk_io', 'run_status']
@@ -177,6 +210,6 @@ class HostCrawl(Prometheus):
 
 
 if __name__ == '__main__':
-    h = HostCrawl(env='demo', instance='10.0.2.113')
+    h = HostCrawl(env='default', instance='10.0.9.67')
     h.run()
     print(h.ret)
