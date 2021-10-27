@@ -109,7 +109,8 @@ class InspectionHistoryView(ListModelMixin, GenericViewSet, CreateModelMixin):
         data_dict.update({'id': his_obj.id, 'env': data_dict['env'].id})
         # 四、下发celery异步任务
         handle = data_dict.get('inspection_type')
-        get_prometheus_data(
+        # 异步下发
+        get_prometheus_data.delay(
             env=env_obj, hosts=his_obj.hosts, services=his_obj.services,
             history_id=his_obj.id, report_id=rep_obj.id, handle=handle)
         return Response(data_dict, status=status.HTTP_200_OK)
@@ -137,6 +138,7 @@ class InspectionCrontabView(RetrieveModelMixin, ListModelMixin, GenericViewSet,
     def create(self, request, *args, **kwargs):
         # 判断是否需要下发任务到celery：0-开启，1-关闭
         is_success = True
+        request.data['job_type'] = int(request.data.get('job_type'))
         if request.data.get('is_start_crontab') == 0:
             tp = {0: 'deep', 1: 'host', 2: 'service'}
             task_name = \
@@ -167,6 +169,7 @@ class InspectionCrontabView(RetrieveModelMixin, ListModelMixin, GenericViewSet,
     def update(self, request, *args, **kwargs):
         # 判断是否需要下发任务到celery：0-开启，1-关闭
         is_success = True
+        request.data['job_type'] = int(request.data.get('job_type'))
         if request.data.get('is_start_crontab') == 0:
             tp = {0: 'deep', 1: 'host', 2: 'service'}
             task_name = \
