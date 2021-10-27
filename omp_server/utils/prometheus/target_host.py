@@ -152,7 +152,7 @@ class HostCrawl(Prometheus):
         # 15分钟负载
         expr = f"node_load15{{env='{self.env}',instance=~'{self.instance}'}}"
         load15 = self.unified_job(*self.query(expr))
-        self.ret['load'] = f"{load1} {load5} {load15}"
+        self.ret['load'] = f"{load1},{load5},{load15}"
 
     def network_bytes_total(self):
         """网络带宽使用"""

@@ -53,7 +53,9 @@ def get_hosts_data(env, hosts):
         # 操作系统
         _h = Host.objects.filter(ip=instance).first()
         temp['release_version'] = _h.operate_system if _h else ''    # 操作系统
-        temp['host_massage'] = f"{_h.cpu}C|{_h.memory}G|{_h.disk}"   # 配置信息
+        # 配置信息
+        temp['host_massage'] = f"{_h.cpu}C|{_h.memory}G|" \
+                               f"{sum(_h.disk.values()) if _h.disk else '-'}G"
         temp['basic'] = [
             {"name": "IP", "name_cn": "主机IP", "value": instance},
             {"name": "hostname", "name_cn": "主机名", "value": _h.host_name},
@@ -133,13 +135,18 @@ def get_prometheus_data(env_id, hosts, services, history_id, report_id, handle):
             else:
                 h_info, host_data = {'host': 0}, []
                 h_result = {'all_target_num': 0, 'abnormal_target': 0}
+
             # 组件巡检
             services = Service.objects.filter(
                 service__app_type=ApplicationHub.APP_TYPE_COMPONENT)
             services = list(services.values_list('service__id', flat=True))
-            if len(services) == 0:
-                return
-            s_info, s_result, serv_data = target_service_run(env, services)
+            if len(services) > 0:
+                s_info, s_result, serv_data = target_service_run(env, services)
+            else:
+                s_info, serv_data = {'service': 0}, []
+                s_result = {'all_target_num': 0, 'abnormal_target': 0}
+
+            # 合并结果
             scan_info = {"host": h_info.get('host'), "component": 0,
                          "service": s_info.get('service')}
             all_target_num = \
@@ -153,6 +160,7 @@ def get_prometheus_data(env_id, hosts, services, history_id, report_id, handle):
                 "abnormal_target": abnormal_target,
                 "healthy":
                     f"{round((abnormal_target / all_target_num) * 100, 2)}%"
+                    if all_target_num > 0 else "-"
             }
             kwargs.update({
                 'scan_info': scan_info, 'scan_result': scan_result,
