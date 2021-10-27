@@ -291,7 +291,7 @@ const AppStore = () => {
                 downloadFile(apiRequest.appStore.applicationTemplate);
               }}
             >
-              <span style={{ color: "#818181" }}>下载组件模版</span>
+              <span style={{ color: "#818181" }}>下载发布说明</span>
             </Button>
             共收录 {total} 个{tabKey == "component" ? "基础组件" : "应用服务"}
           </div>
