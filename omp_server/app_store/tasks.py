@@ -176,7 +176,7 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
         service_packages_value = [
             p for p in service_name if
             os.path.isfile(p) and 'tar' in p]
-        service_packages_key = [service_package.split("-")[0].rsplit("/", 1)[1]
+        service_packages_key = [service_package.rsplit("/", 1)[1].split("-")[0]
                                 for service_package in
                                 service_packages_value]
         service_package = dict(
