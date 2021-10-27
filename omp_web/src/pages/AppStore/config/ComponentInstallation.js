@@ -90,128 +90,298 @@ const ComponentInstallation = () => {
         <div />
       </div>
 
-      <div
-        style={{
-          marginTop: 20,
-          backgroundColor: "#fff",
-          padding: 10,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            width: "100%",
-            position: "relative",
-            height: 30,
-          }}
-        >
+      {/* 第一步 */}
+      {stepNum == 0 && (
+        <>
           <div
             style={{
-              fontWeight: 500,
-              position: "absolute",
-              left: 30,
+              marginTop: 20,
               backgroundColor: "#fff",
-              paddingLeft: 20,
-              paddingRight: 20,
+              padding: 10,
             }}
           >
-            基本信息
-          </div>
-          <div
-            style={{ height: 1, backgroundColor: "#b3b2b3", width: "100%" }}
-          />
-        </div>
-        <div style={{ paddingLeft: 20, marginTop: 10, paddingBottom: 40 }}>
-          <Form
-            form={form}
-            layout="inline"
-            name="basic"
-            initialValues={{
-              clusterMode: "singleInstance",
-            }}
-          >
-            <Form.Item label="选择版本" name="version">
-              <Select
-                style={{ width: 200 }}
-                onChange={(e) => {
-                  setVersionCurrent(e);
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                width: "100%",
+                position: "relative",
+                height: 30,
+              }}
+            >
+              <div
+                style={{
+                  fontWeight: 500,
+                  position: "absolute",
+                  left: 30,
+                  backgroundColor: "#fff",
+                  paddingLeft: 20,
+                  paddingRight: 20,
                 }}
               >
-                {dataSource?.map((item) => (
-                  <Select.Option
-                    key={item.app_version}
-                    value={item.app_version}
+                基本信息
+              </div>
+              <div
+                style={{ height: 1, backgroundColor: "#b3b2b3", width: "100%" }}
+              />
+            </div>
+            <div style={{ paddingLeft: 20, marginTop: 10, paddingBottom: 40 }}>
+              <Form
+                form={form}
+                layout="inline"
+                name="basic"
+                initialValues={{
+                  clusterMode: "singleInstance",
+                }}
+              >
+                <Form.Item label="选择版本" name="version">
+                  <Select
+                    style={{ width: 200 }}
+                    onChange={(e) => {
+                      setVersionCurrent(e);
+                    }}
                   >
-                    {item.app_version}
-                  </Select.Option>
-                ))}
-              </Select>
-            </Form.Item>
-            <Form.Item
-              label="集群模式"
-              name="clusterMode"
-              style={{ marginLeft: 30 }}
-            >
-              <Select style={{ width: 200 }}>
-                <Select.Option value="singleInstance">单实例</Select.Option>
-              </Select>
-            </Form.Item>
-          </Form>
-        </div>
-      </div>
+                    {dataSource?.map((item) => (
+                      <Select.Option
+                        key={item.app_version}
+                        value={item.app_version}
+                      >
+                        {item.app_version}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+                <Form.Item
+                  label="集群模式"
+                  name="clusterMode"
+                  style={{ marginLeft: 30 }}
+                >
+                  <Select style={{ width: 200 }}>
+                    <Select.Option value="singleInstance">单实例</Select.Option>
+                  </Select>
+                </Form.Item>
+              </Form>
+            </div>
+          </div>
 
-      <div
-        style={{
-          marginTop: 20,
-          backgroundColor: "#fff",
-          padding: 10,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            width: "100%",
-            position: "relative",
-            height: 30,
-          }}
-        >
           <div
             style={{
-              fontWeight: 500,
-              position: "absolute",
-              left: 30,
+              marginTop: 20,
               backgroundColor: "#fff",
-              paddingLeft: 20,
-              paddingRight: 20,
+              padding: 10,
             }}
           >
-            依赖信息
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                width: "100%",
+                position: "relative",
+                height: 30,
+              }}
+            >
+              <div
+                style={{
+                  fontWeight: 500,
+                  position: "absolute",
+                  left: 30,
+                  backgroundColor: "#fff",
+                  paddingLeft: 20,
+                  paddingRight: 20,
+                }}
+              >
+                依赖信息
+              </div>
+              <div
+                style={{ height: 1, backgroundColor: "#b3b2b3", width: "100%" }}
+              />
+            </div>
+            <div
+              style={{
+                paddingLeft: 20,
+                marginTop: 10,
+                paddingBottom: 40,
+                paddingTop: 10,
+              }}
+            >
+              {currentAppDependenceData &&
+              currentAppDependenceData.app_dependence &&
+              currentAppDependenceData.app_dependence.length == 0 ? (
+                <div>无</div>
+              ) : (
+                currentAppDependenceData?.app_dependence?.map((item) => (
+                  <RenderComDependence
+                    key={item.name}
+                    data={item}
+                    form={form}
+                  />
+                ))
+              )}
+            </div>
           </div>
+
           <div
-            style={{ height: 1, backgroundColor: "#b3b2b3", width: "100%" }}
-          />
-        </div>
-        <div
-          style={{
-            paddingLeft: 20,
-            marginTop: 10,
-            paddingBottom: 40,
-            paddingTop: 10,
-          }}
-        >
-          {currentAppDependenceData &&
-          currentAppDependenceData.app_dependence &&
-          currentAppDependenceData.app_dependence.length == 0 ? (
-            <div>无</div>
-          ) : (
-            currentAppDependenceData?.app_dependence?.map((item) => (
-              <RenderComDependence key={item.name} data={item} form={form} />
-            ))
-          )}
-        </div>
-      </div>
+            style={{
+              marginTop: 20,
+              backgroundColor: "#fff",
+              padding: 25,
+              display: "flex",
+              justifyContent: "space-between",
+              paddingRight: 80,
+            }}
+          >
+            <div />
+            <Button
+              type="primary"
+              onClick={() => {
+                console.log(form.getFieldsValue())
+                setStepNum(1);
+              }}
+            >
+              下一步
+            </Button>
+          </div>
+        </>
+      )}
+      {/* 第二步 */}
+      {stepNum == 1 && (
+        <>
+          <div
+            style={{
+              marginTop: 20,
+              backgroundColor: "#fff",
+              padding: 10,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                width: "100%",
+                position: "relative",
+                height: 30,
+              }}
+            >
+              <div
+                style={{
+                  fontWeight: 500,
+                  position: "absolute",
+                  left: 30,
+                  backgroundColor: "#fff",
+                  paddingLeft: 20,
+                  paddingRight: 20,
+                }}
+              >
+                {name}
+              </div>
+              <div
+                style={{ height: 1, backgroundColor: "#b3b2b3", width: "100%" }}
+              />
+            </div>
+            <div style={{ paddingLeft: 20, marginTop: 10, paddingBottom: 40 }}>
+              <Form
+                form={form}
+                layout="inline"
+                name="basic"
+                initialValues={{
+                  clusterMode: "singleInstance",
+                }}
+              >
+                <Form.Item label="选择主机" name="version">
+                  <Select
+                    style={{ width: 200 }}
+                    onChange={(e) => {
+                      setVersionCurrent(e);
+                    }}
+                  >
+                    {dataSource?.map((item) => (
+                      <Select.Option
+                        key={item.app_version}
+                        value={item.app_version}
+                      >
+                        {item.app_version}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+                <Form.Item
+                  label="实例名称"
+                  name="clusterMode"
+                  style={{ marginLeft: 30 }}
+                >
+                  <Input />
+                </Form.Item>
+              </Form>
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginTop: 20,
+              backgroundColor: "#fff",
+              padding: 10,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                width: "100%",
+                position: "relative",
+                height: 30,
+              }}
+            >
+              <div
+                style={{
+                  fontWeight: 500,
+                  position: "absolute",
+                  left: 30,
+                  backgroundColor: "#fff",
+                  paddingLeft: 20,
+                  paddingRight: 20,
+                }}
+              >
+                依赖信息
+              </div>
+              <div
+                style={{ height: 1, backgroundColor: "#b3b2b3", width: "100%" }}
+              />
+            </div>
+            <div
+              style={{
+                paddingLeft: 20,
+                marginTop: 10,
+                paddingBottom: 40,
+                paddingTop: 10,
+              }}
+            >
+              123
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginTop: 20,
+              backgroundColor: "#fff",
+              padding: 25,
+              display: "flex",
+              justifyContent: "space-between",
+              paddingRight: 80,
+            }}
+          >
+            <div />
+            <Button
+              type="primary"
+              onClick={() => {
+                //console.log(form.getFieldsValue())
+                setStepNum(0);
+              }}
+            >
+              上一步
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 };
