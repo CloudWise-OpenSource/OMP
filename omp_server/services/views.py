@@ -10,7 +10,8 @@ from django_filters.rest_framework.backends import DjangoFilterBackend
 from db_models.models import Service
 from services.services_filters import ServiceFilter
 from services.services_serializers import (
-    ServiceSerializer, ServiceDetailSerializer
+    ServiceSerializer, ServiceDetailSerializer,
+    ServiceActionSerializer
 )
 from utils.common.paginations import PageNumberPager
 from promemonitor.grafana_url import explain_url
@@ -59,6 +60,7 @@ class ServiceDetailView(GenericViewSet, RetrieveModelMixin):
 
 class ServiceActionView(GenericViewSet, CreateModelMixin):
     queryset = Service.objects.all()
+    serializer_class = ServiceActionSerializer
 
     def create(self, request, *args, **kwargs):
         data = self.request.data
