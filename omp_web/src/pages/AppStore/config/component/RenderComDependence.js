@@ -42,7 +42,7 @@ const RenderComDependence = ({ data, form }) => {
         </div>
         <div
           style={{
-            flex: 14,
+            flex: 15,
           }}
         />
         <div style={{ color: "#c2c2c2", flex: 2 }}>

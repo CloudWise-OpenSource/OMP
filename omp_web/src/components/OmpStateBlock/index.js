@@ -22,6 +22,7 @@ const colorObj = {
 function OmpStateBlock(props) {
   const history = useHistory();
   const { title, data = [] } = props;
+  //console.log(data)
   const [currentData, setCurrentData] = useState([]);
 
   const [isShowAll, setIsShowAll] = useState(false);

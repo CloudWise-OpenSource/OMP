@@ -27,8 +27,8 @@ const ExceptionList = () => {
 
   const [pageSize, setPageSize] = useState(5)
 
-  function fetchData(searchParams = {}) {
-    setLoading(true);
+  function fetchData(searchParams = {},noLoading) {
+    !noLoading && setLoading(true);
     fetchGet(apiRequest.ExceptionList.exceptionList, {
       params: {
         ...searchParams,
@@ -52,7 +52,7 @@ const ExceptionList = () => {
   }
 
   useEffect(() => {
-    fetchData();
+    fetchData(null,true);
   }, []);
 
   return (
