@@ -62,12 +62,87 @@ def make_lst_unique(lst, key_1, key_2):
 
 
 def make_app_install_args(app_install_args):
+    """
+    构建安装参数
+    :param app_install_args:
+    :return:
+    """
     for el in app_install_args:
         if isinstance(el.get("default"), str) and \
                 DIR_KEY in el.get("default"):
             el["default"] = el["default"].replace(DIR_KEY, "")
             el["dir_key"] = DIR_KEY
     return app_install_args
+
+
+class DataJson(object):
+    """ 生成data.json数据 """
+
+    def __init__(self, operation_uuid):
+        self.operation_uuid = operation_uuid
+
+    def get_ser_install_args(self, obj):    # NOQA
+        """
+        获取服务的安装参数
+        :param obj: Service
+        :type obj: Service
+        :return:
+        """
+        deploy_detail = DetailInstallHistory.objects.get(service=obj)
+        install_args = \
+            deploy_detail.install_detail_args.get("app_install_args")
+        deploy_mode = \
+            deploy_detail.install_detail_args.get("deploy_mode")
+        return {
+            "install_args": install_args,
+            "deploy_mode": deploy_mode
+        }
+
+    def parse_single_service(self, obj):
+        """
+        解析单个服务数据
+        :param obj: Service
+        :type obj: Service
+        :return:
+        """
+        _ser_dic = {
+            "ip": obj.ip,
+            "instance_name": obj.service_instance_name,
+            "cluster_name": obj.cluster.cluster_name if obj.cluster else None,
+            "port": json.loads(obj.service_port) if obj.service_port else [],
+        }
+        _others = self.get_ser_install_args(obj)
+        _ser_dic.update(_others)
+        return _ser_dic
+
+    def make_data_json(self, json_lst):
+        """
+        创建data.json数据文件
+        :param json_lst:
+        :return:
+        """
+        _path = os.path.join(
+            PROJECT_DIR,
+            "package_hub/data_files",
+            f"{self.operation_uuid}-data.json"
+        )
+        if not os.path.exists(os.path.dirname(_path)):
+            os.makedirs(os.path.dirname(_path))
+        with open(_path, "w", encoding="utf8") as fp:
+            fp.write(json.dumps(json_lst, indent=2, ensure_ascii=False))
+
+    def run(self):
+        """
+        生成data.json方法入口
+        :return:
+        """
+        # step1: 获取所有的服务列表
+        all_ser_lst = Service.objects.all()
+        json_lst = list()
+        for item in all_ser_lst:
+            json_lst.append(self.parse_single_service(obj=item))
+        # step2: 生成data.json
+        self.make_data_json(json_lst=json_lst)
 
 
 class SerDependenceParseUtils(object):
@@ -752,25 +827,30 @@ class CreateInstallPlan(object):
         :return:
         """
         with transaction.atomic():
-            # step1: 生成操作唯一uuid，创建主安装记录
-            operation_uuid = str(uuid.uuid4())
-            main_obj = MainInstallHistory(
-                operation_uuid=operation_uuid,
-                install_status=0,
-                install_args=self.install_data
-            )
-            main_obj.save()
-            # step2: 创建安装细节表
-            for item in self.install_services:
-                # 创建服务实例对象
-                ser_obj = self.create_service(item)
-                # 创建产品实例对象
-                self.create_product_instance(item)
-                DetailInstallHistory(
-                    service=ser_obj,
-                    main_install_history=main_obj,
-                    install_detail_args=item
-                ).save()
-            # 调用安装异步任务
-            install_service.delay(main_obj.id)
+            try:
+                # step0: 生成
+                # step1: 生成操作唯一uuid，创建主安装记录
+                operation_uuid = str(uuid.uuid4())
+                main_obj = MainInstallHistory(
+                    operation_uuid=operation_uuid,
+                    install_status=0,
+                    install_args=self.install_data
+                )
+                main_obj.save()
+                # step2: 创建安装细节表
+                for item in self.install_services:
+                    # 创建服务实例对象
+                    ser_obj = self.create_service(item)
+                    # 创建产品实例对象
+                    self.create_product_instance(item)
+                    DetailInstallHistory(
+                        service=ser_obj,
+                        main_install_history=main_obj,
+                        install_detail_args=item
+                    ).save()
+            except Exception as e:
+                return False, f"生成部署计划失败: {str(e)}"
+        # TODO 生成json文件，用于应用安装
+        # 调用安装异步任务
+        install_service.delay(main_obj.id)
         return True, "success"
