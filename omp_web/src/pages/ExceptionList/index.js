@@ -14,10 +14,11 @@ import { apiRequest } from "@/config/requestApi";
 import getColumnsConfig from "./config/columns";
 import { SearchOutlined } from "@ant-design/icons";
 import moment from "moment";
-import { useHistory } from "react-router-dom";
+import { useHistory, useLocation } from "react-router-dom";
 
 const ExceptionList = () => {
   const history = useHistory();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
 
   const [searchLoading, setSearchLoading] = useState(false);
@@ -26,7 +27,7 @@ const ExceptionList = () => {
   const [dataSource, setDataSource] = useState([]);
   const [ipListSource, setIpListSource] = useState([]);
 
-  const [selectValue, setSelectValue] = useState();
+  const [selectValue, setSelectValue] = useState(location.state?.ip);
 
   const [instanceSelectValue, setInstanceSelectValue] = useState();
 
@@ -46,7 +47,7 @@ const ExceptionList = () => {
     })
       .then((res) => {
         handleResponse(res, (res) => {
-          setSearchParams(searchParams)
+          setSearchParams(searchParams);
           setDataSource(
             res.data.map((item, idx) => ({
               ...item,
@@ -57,6 +58,7 @@ const ExceptionList = () => {
       })
       .catch((e) => console.log(e))
       .finally(() => {
+        location.state = {};
         setLoading(false);
         fetchIPlist();
       });
@@ -77,7 +79,7 @@ const ExceptionList = () => {
   };
 
   useEffect(() => {
-    fetchData();
+    fetchData({ ip: location.state?.ip, type: location.state?.type });
   }, []);
 
   return (
@@ -131,7 +133,7 @@ const ExceptionList = () => {
                     }
                   }}
                   onBlur={() => {
-                    if(instanceSelectValue){
+                    if (instanceSelectValue) {
                       fetchData({
                         ...searchParams,
                         instance_name: instanceSelectValue,
@@ -193,7 +195,8 @@ const ExceptionList = () => {
               fetchData({ ...searchParams, ...params });
             },
             setShowIframe,
-            history
+            history,
+            location.state?.type
           )}
           dataSource={dataSource}
           pagination={{

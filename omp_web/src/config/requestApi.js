@@ -14,11 +14,7 @@ export const apiRequest = {
     changePassword: "/api/users/updatePassword/",
   },
   homepage: {
-    host: "/api/v1/home/host",
-    service: "/api/v1/home/service",
-    database: "/api/v1/home/database",
-    component: "/api/v1/home/component",
-    external: "/api/v1/home/external",
+    instrumentPanel:"/api/promemonitor/instrumentPanel/"
   },
   machineManagement: {
     // 主机管理

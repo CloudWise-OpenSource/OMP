@@ -8,7 +8,8 @@ const getColumnsConfig = (
   queryRequest,
   setShowIframe,
   //updateAlertRead,
-  history
+  history,
+  initfilter
 ) => {
   return [
     {
@@ -25,7 +26,7 @@ const getColumnsConfig = (
         return (
           <Tooltip title={text}>
             <Badge dot={record.is_read === 0} offset={[5, 2]}>
-              {record.instance_name ? record.instance_name : "-"}
+              <span style={{fontSize:12}}>{record.instance_name ? record.instance_name : "-"}</span>
             </Badge>
           </Tooltip>
         );
@@ -98,6 +99,7 @@ const getColumnsConfig = (
       dataIndex: "type",
       usefilter: true,
       queryRequest: queryRequest,
+      initfilter:initfilter,
       filterMenuList: [
         {
           value: "service",

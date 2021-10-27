@@ -74,7 +74,7 @@ const PatrolInspectionRecord = () => {
             res.data.results.map((i, idx) => {
               return {
                 ...i,
-                idx: idx + 1 + (pagination.current - 1) * pagination.pageSize,
+                idx: idx + 1 + (pageParams.current - 1) * pageParams.pageSize,
                 key: i.id,
               };
             })
