@@ -2,8 +2,10 @@
 """
 监控相关视图
 """
+import json
 import logging
 
+import requests
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -15,11 +17,12 @@ from rest_framework.mixins import (
     ListModelMixin, CreateModelMixin
 )
 
+from promemonitor.alert_util import utc_to_local, get_monitor_url, get_log_url
 from utils.common.paginations import PageNumberPager
 
 from db_models.models import (
     Host, MonitorUrl,
-    Alert, Maintain
+    Alert, Maintain, ApplicationHub
 )
 
 from promemonitor import grafana_url
@@ -97,7 +100,7 @@ class ListAlertViewSet(ListModelMixin, GenericViewSet):
     获取告警记录列表视图类
     """
     serializer_class = ListAlertSerializer
-    queryset = Alert.objects.all().order_by("-create_time")   # 分页，过滤，排序
+    queryset = Alert.objects.all().order_by("-create_time")  # 分页，过滤，排序
     pagination_class = PageNumberPager
     filter_backends = (
         DjangoFilterBackend,
@@ -168,3 +171,154 @@ class InstanceNameListView(GenericViewSet, ListModelMixin):
         alert_instance_name_list.append(host_instance_name_list)
         alert_instance_name_list.append(service_instance_name_list)
         return Response(alert_instance_name_list)
+
+
+class InstrumentPanelView(GenericViewSet, ListModelMixin):
+    """
+    返回仪表盘所需数据
+    """
+    # 操作信息描述
+    get_description = "查询仪表盘数据"
+
+    @staticmethod
+    def get_prometheus_alerts():
+        """
+        请求prometheus alerts接口返回告警内容
+        """
+        mu = MonitorUrl.objects.filter(name="prometheus").first()
+        prometheus_url = mu.monitor_url if mu else "127.0.0.1:19013"
+        try:
+            prometheus_alerts_url = f"http://{prometheus_url}/api/v1/alerts"  # NOQA
+            response = requests.get(prometheus_alerts_url, headers={}, data="")
+            return True, json.loads(response.text)
+        except Exception as e:
+            logger.error("prometheus请求alerts失败：" + str(e))
+            return False, "Failed"
+
+    def get_exc_serializer_info(self):
+        host_info_dict = {}
+        database_info_dict = {}
+        service_info_dict = {}
+        component_info_dict = {}
+        third_info_dict = {}
+
+        host_info_list = []
+        database_info_list = []
+        service_info_list = []
+        component_info_list = []
+        third_info_list = []
+
+        host_info_all_count = Host.objects.count()
+        database_info_all_count = ApplicationHub.objects.filter(app_type=ApplicationHub.APP_TYPE_COMPONENT).filter(
+            app_labels__label_name__contains="数据库").count()  # TODO 确认数据库标签名
+        service_info_all_count = ApplicationHub.objects.filter(app_type=ApplicationHub.APP_TYPE_COMPONENT).filter(
+            app_labels__label_name__contains="应用服务").count()  # TODO 确认应用服务标签名，是否包含数据库
+        component_info_all_count = ApplicationHub.objects.filter(app_type=ApplicationHub.APP_TYPE_COMPONENT).filter(
+            app_labels__label_name__contains="基础组件").count()  # TODO 确认基础组件标签名，是否包含数据库
+        third_info_all_count = ApplicationHub.objects.filter(app_type=ApplicationHub.APP_TYPE_COMPONENT).filter(
+            app_labels__label_name__contains="三方组件").count()  # TODO 确认三方组件标签名，是否包含数据库
+
+        host_info_exc_count = 0
+        database_info_exc_count = 0
+        service_info_exc_count = 0
+        component_info_exc_count = 0
+        third_info_exc_count = 0
+
+        host_info_no_monitor_count = 0
+        database_info_no_monitor_count = 0
+        service_info_no_monitor_count = 0
+        component_info_no_monitor_count = 0
+        third_info_no_monitor_count = 0
+
+        flag, alert_data = self.get_prometheus_alerts()
+        if flag:
+            alerts = alert_data.get('data').get('alerts')
+            for ele in alerts:
+                if not isinstance(ele, dict):
+                    continue
+                ele_dict = {
+                    "ip": ele.get("labels").get("instance"),
+                    "instance_name": ele.get("labels").get("instance_name"),
+                    "severity": ele.get("labels").get("severity"),
+                    "data": utc_to_local(ele.get("data")),
+                    "describe": ele.get("annotations").get("description"),
+                    "monitor_url": get_monitor_url([{
+                        "ip": ele.get("labels").get("instance"),
+                        "type": "service",
+                        "instance_name": ele.get("labels").get("service_name")
+                    }]),
+                    "log_url": get_log_url([{
+                        "ip": ele.get("labels").get("instance"),
+                        "type": "service",
+                        "instance_name": ele.get("labels").get("service_name")
+                    }])
+                }
+                if ele.get("labels").get("service_type") == "host":
+                    ele_dict["monitor_url"] = get_monitor_url([{
+                        "ip": ele.get("labels").get("instance"),
+                        "type": "host",
+                        "instance_name": "node"
+                    }])
+                    ele_dict["log_url"] = get_log_url([{
+                        "ip": ele.get("labels").get("instance"),
+                        "type": "host",
+                        "instance_name": "node"
+                    }])
+                    host_info_exc_count = host_info_exc_count + 1
+                    host_info_list.append(ele_dict)
+                elif ele.get("labels").get("service_type") == "database":
+                    database_info_exc_count = database_info_exc_count + 1
+                    database_info_list.append(ele_dict)
+                elif ele.get("labels").get("service_type") == "service":
+                    service_info_exc_count = service_info_exc_count + 1
+                    service_info_list.append(ele_dict)
+                elif ele.get("labels").get("service_type") == "component":
+                    component_info_exc_count = component_info_exc_count + 1
+                    component_info_list.append(ele_dict)
+                elif ele.get("labels").get("service_type") == "third":
+                    third_info_exc_count = third_info_exc_count + 1
+                    third_info_list.append(ele_dict)
+                else:
+                    continue
+        host_info_dict.update({
+            "host_info_all_count": host_info_all_count,
+            "host_info_exc_count": host_info_exc_count,
+            "host_info_no_monitor_count": host_info_no_monitor_count,
+            "host_info_list": host_info_list
+        })
+        database_info_dict.update({
+            "database_info_all_count": database_info_all_count,
+            "database_info_exc_count": database_info_exc_count,
+            "database_info_no_monitor_count": database_info_no_monitor_count,
+            "database_info_list": database_info_list
+        })
+        service_info_dict.update({
+            "service_info_all_count": service_info_all_count,
+            "service_info_exc_count": service_info_exc_count,
+            "service_info_no_monitor_count": service_info_no_monitor_count,
+            "service_info_list": service_info_list
+        })
+        component_info_dict.update({
+            "component_info_all_count": component_info_all_count,
+            "component_info_exc_count": component_info_exc_count,
+            "component_info_no_monitor_count": component_info_no_monitor_count,
+            "component_info_list": component_info_list
+        })
+        third_info_dict.update({
+            "third_info_all_count": third_info_all_count,
+            "third_info_exc_count": third_info_exc_count,
+            "third_info_no_monitor_count": third_info_no_monitor_count,
+            "third_info_list": third_info_list
+        })
+        serializer_info = {
+            "host": host_info_dict,
+            "database": database_info_dict,
+            "service": service_info_dict,
+            "component": component_info_dict,
+            "third": third_info_dict,
+        }
+        return serializer_info
+
+    def list(self, request, *args, **kwargs):
+        result = self.get_exc_serializer_info()
+        return Response(result)
