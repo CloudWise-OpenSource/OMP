@@ -22,10 +22,11 @@ class ListActionTest(AutoLoginTest, ServicesResourceMixin):
         return_value=(True, "success"))
     def test_service_action_true(self, action):
         exec_action("1", self.service_ls[1].id, "admin")
-        history_count = ServiceHistory.objects.filter(service=self.service_ls[1]).count()
+        history_count = ServiceHistory.objects.filter(
+            service=self.service_ls[1]).count()
         res = {self.service_ls[1].service_status: history_count}
         self.assertDictEqual(res, {
-            0: 1
+            0: 2
         })
 
     @mock.patch(
@@ -33,10 +34,11 @@ class ListActionTest(AutoLoginTest, ServicesResourceMixin):
         return_value=(False, "false"))
     def test_service_action_false(self, action):
         exec_action("1", self.service_ls[1].id, "admin")
-        history_count = ServiceHistory.objects.filter(service=self.service_ls[1]).count()
+        history_count = ServiceHistory.objects.filter(
+            service=self.service_ls[1]).count()
         res = {self.service_ls[1].service_status: history_count}
         self.assertDictEqual(res, {
-            4: 1
+            4: 2
         })
 
     def test_service_action_post(self):
