@@ -2,7 +2,6 @@
 服务相关异步任务
 """
 import json
-import os
 
 import logging
 
