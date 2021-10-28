@@ -79,6 +79,10 @@ export const apiRequest = {
 
     // 服务列表
     services: "/api/services/services/",
+    // 服务详情查询
+    servicesDetail: "/api/services/services",
+    // 服务的操作
+    servicesAction: "/services/action/",
     // 模版下载
     applicationTemplate: "/api/appStore/applicationTemplate/",
     // 组件安装查询接口

@@ -34,6 +34,7 @@ const AppStoreDetail = () => {
         type: "app_labels",
         user: "app_operation_user",
         dependence: "app_dependence",
+        instances_info: "app_instances_info",
       }
     : {
         logo: "pro_logo",
@@ -46,6 +47,7 @@ const AppStoreDetail = () => {
         user: "pro_operation_user",
         dependence: "pro_dependence",
         pro_services: "pro_services",
+        instances_info: "pro_instances_info",
       };
 
   const [loading, setLoading] = useState(false);
@@ -53,6 +55,12 @@ const AppStoreDetail = () => {
   const [dataSource, setDataSource] = useState({});
 
   const [versionValue, setVersionValue] = useState("");
+
+  // 定义全部实例信息
+  const [allInstancesInfo, setAllInstancesInfo] = useState([]);
+
+  // 是否查看全部版本
+  const [isAll, setIsAll] = useState(false);
 
   function fetchData() {
     setLoading(true);
@@ -69,6 +77,15 @@ const AppStoreDetail = () => {
       .then((res) => {
         handleResponse(res, (res) => {
           setVersionValue(verson);
+
+          setAllInstancesInfo(() => {
+            return res.data.versions
+              .map((item) => {
+                return item[nameObj.instances_info];
+              })
+              .flat();
+          });
+
           setDataSource(() => {
             let obj = {};
             res.data.versions.map((item) => {
@@ -111,8 +128,7 @@ const AppStoreDetail = () => {
                   pathname: `/application_management/app_store`,
                 });
               }}
-            />
-            {" "}
+            />{" "}
             <span style={{ paddingLeft: 20, fontSize: 16, color: "#4c4c4c" }}>
               {dataSource[nameObj.name]}
             </span>
@@ -124,6 +140,7 @@ const AppStoreDetail = () => {
               style={{ width: 160 }}
               value={versionValue}
               onChange={(e) => {
+                setIsAll(false);
                 setVersionValue(e);
               }}
             >
@@ -227,7 +244,10 @@ const AppStoreDetail = () => {
           <div className={styles.detailDependence}>
             <div>包含服务</div>
             {currentVersionDataSource.pro_services ? (
-              <div className={styles.detailDependenceTable} style={{width:800}}>
+              <div
+                className={styles.detailDependenceTable}
+                style={{ width: 800 }}
+              >
                 <Table
                   size="middle"
                   columns={[
@@ -242,18 +262,27 @@ const AppStoreDetail = () => {
                       key: "version",
                       dataIndex: "version",
                       align: "center",
+                      render: (text) => {
+                        return text || "-";
+                      },
                     },
                     {
                       title: "MD5",
                       key: "md5",
                       dataIndex: "md5",
                       align: "center",
+                      render: (text) => {
+                        return text || "-";
+                      },
                     },
                     {
                       title: "发布时间",
                       key: "created",
                       dataIndex: "created",
                       align: "center",
+                      render: (text) => {
+                        return text || "-";
+                      },
                     },
                   ]}
                   pagination={false}
@@ -265,70 +294,175 @@ const AppStoreDetail = () => {
             )}
           </div>
         )}
-
-        {/* <div className={styles.detailDependence}>
-          <div>
-            实例信息{" "}
-            <span style={{ paddingLeft: 20, fontSize: 14, color: "#1f8aee" }}>
-              查看全部版本
-            </span>
+        {keyTab ? (
+          <div className={styles.detailDependence}>
+            <div>
+              {isAll ? "全部" : ""}实例信息{" "}
+              <span style={{ paddingLeft: 20, fontSize: 14, color: "#1f8aee" }}>
+                {isAll ? (
+                  ""
+                ) : (
+                  <span
+                    style={{ cursor: "pointer" }}
+                    onClick={() => {
+                      setIsAll(true);
+                    }}
+                  >
+                    查看全部版本
+                  </span>
+                )}
+              </span>
+            </div>
+            <div
+              className={styles.detailDependenceTable}
+              style={{ width: 800 }}
+            >
+              <Table
+                size="middle"
+                columns={[
+                  {
+                    title: "实例名称",
+                    key: "instance_name",
+                    dataIndex: "instance_name",
+                    align: "center",
+                  },
+                  {
+                    title: "主机IP",
+                    key: "host_ip",
+                    dataIndex: "host_ip",
+                    align: "center",
+                  },
+                  {
+                    title: "端口",
+                    key: "service_port",
+                    dataIndex: "service_port",
+                    align: "center",
+                    render: (text) => {
+                      if (!text) {
+                        return "-";
+                      }
+                      return text.map((i) => i.default).join(", ");
+                    },
+                  },
+                  {
+                    title: "版本",
+                    key: "app_version",
+                    dataIndex: "app_version",
+                    align: "center",
+                  },
+                  {
+                    title: "模式",
+                    key: "mode",
+                    dataIndex: "mode",
+                    align: "center",
+                  },
+                  {
+                    title: "安装时间",
+                    key: "created",
+                    dataIndex: "created",
+                    align: "center",
+                    render: (text) => {
+                      return moment(text).format("YYYY-MM-DD HH:mm:ss");
+                    },
+                  },
+                ]}
+                //pagination={false}
+                dataSource={
+                  isAll
+                    ? allInstancesInfo
+                    : currentVersionDataSource[nameObj.instances_info]
+                }
+              />
+            </div>
           </div>
-          <div className={styles.detailDependenceTable} style={{ width: 800 }}>
-            <Table
-              size="middle"
-              columns={[
-                {
-                  title: "实例名称",
-                  key: "name",
-                  dataIndex: "name",
-                  align: "center",
-                },
-                {
-                  title: "主机IP",
-                  key: "ip",
-                  dataIndex: "ip",
-                  align: "center",
-                },
-                {
-                  title: "端口",
-                  key: "port",
-                  dataIndex: "port",
-                  align: "center",
-                },
-                {
-                  title: "版本",
-                  key: "verson",
-                  dataIndex: "verson",
-                  align: "center",
-                },
-                {
-                  title: "模式",
-                  key: "mode",
-                  dataIndex: "mode",
-                  align: "center",
-                },
-                {
-                  title: "安装时间",
-                  key: "time",
-                  dataIndex: "time",
-                  align: "center",
-                },
-              ]}
-              pagination={false}
-              dataSource={[
-                {
-                  name: "jdk",
-                  ip: "192.168.100.100",
-                  port: "3306",
-                  verson: "1.8",
-                  mode: "单实例",
-                  time: "2021-09-22 11:22:33",
-                  key: "192.168.100.100",
-                },
-              ]}
-            />
+        ) : (
+          <div className={styles.detailDependence}>
+            <div>
+              {isAll ? "全部" : ""}实例信息{" "}
+              <span style={{ paddingLeft: 20, fontSize: 14, color: "#1f8aee" }}>
+                {isAll ? (
+                  ""
+                ) : (
+                  <span
+                    style={{ cursor: "pointer" }}
+                    onClick={() => {
+                      setIsAll(true);
+                    }}
+                  >
+                    查看全部版本
+                  </span>
+                )}
+              </span>
+            </div>
+            <div
+              className={styles.detailDependenceTable}
+              style={{ width: 800 }}
+            >
+              <Table
+                size="middle"
+                columns={[
+                  {
+                    title: "实例名称",
+                    key: "instance_name",
+                    dataIndex: "instance_name",
+                    align: "center",
+                  },
+                  {
+                    title: "版本",
+                    key: "version",
+                    dataIndex: "version",
+                    align: "center",
+                  },
+                  {
+                    title: "服务名称",
+                    key: "app_name",
+                    dataIndex: "app_name",
+                    align: "center",
+                  },
+                  {
+                    title: "服务版本",
+                    key: "app_version",
+                    dataIndex: "app_version",
+                    align: "center",
+                  },
+                  {
+                    title: "主机IP",
+                    key: "host_ip",
+                    dataIndex: "host_ip",
+                    align: "center",
+                  },
+                  {
+                    title: "端口",
+                    key: "service_port",
+                    dataIndex: "service_port",
+                    align: "center",
+                    render: (text) => {
+                      if (!text) {
+                        return "-";
+                      }
+                      return text.map((i) => i.default).join(",");
+                    },
+                  },
+                  {
+                    title: "安装时间",
+                    key: "created",
+                    dataIndex: "created",
+                    align: "center",
+                    render: (text) => {
+                      return moment(text).format("YYYY-MM-DD HH:mm:ss");
+                    },
+                  },
+                ]}
+                //pagination={false}
+                dataSource={
+                  isAll
+                    ? allInstancesInfo
+                    : currentVersionDataSource[nameObj.instances_info]
+                }
+              />
+            </div>
           </div>
-        </div> */}
+        )}
       </Spin>
     </div>
   );
