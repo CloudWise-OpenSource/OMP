@@ -34,6 +34,8 @@ const ServiceManagement = () => {
   const [ipListSource, setIpListSource] = useState([]);
   const [selectValue, setSelectValue] = useState(location.state?.ip);
 
+  const [labelsData, setLabelsData] = useState([])
+
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -92,6 +94,7 @@ const ServiceManagement = () => {
         location.state = {};
         setLoading(false);
         fetchIPlist();
+        fetchSearchlist()
       });
   }
 
@@ -106,6 +109,22 @@ const ServiceManagement = () => {
       .catch((e) => console.log(e))
       .finally(() => {
         setSearchLoading(false);
+      });
+  };
+
+  // 功能模块筛选
+  const fetchSearchlist = () => {
+    //setSearchLoading(true);
+    fetchGet(apiRequest.appStore.queryLabels)
+      .then((res) => {
+        handleResponse(res, (res) => {
+          setLabelsData(res.data);
+          console.log(res.data)
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        //setSearchLoading(false);
       });
   };
 
