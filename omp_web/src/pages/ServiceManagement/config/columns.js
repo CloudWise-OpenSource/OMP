@@ -324,25 +324,25 @@ export const DetailHost = ({
 
 //操作
 const renderMenu = (
-  setUpdateMoadlVisible,
-  setCloseMaintainModal,
-  setOpenMaintainModal,
+  // setUpdateMoadlVisible,
+  // setCloseMaintainModal,
+  // setOpenMaintainModal,
   record
 ) => {
   return (
     <Menu>
-      <Menu.Item key="changge" onClick={() => setUpdateMoadlVisible(true)}>
-        <span style={{ fontSize: 12 }}>修改主机信息</span>
+      <Menu.Item style={{textAlign:'center'}} key="start" onClick={() => {}}>
+        <span style={{ fontSize: 12,paddingLeft:5, paddingRight:5 }}>启动</span>
       </Menu.Item>
-      {record.is_maintenance ? (
-        <Menu.Item key="close" onClick={() => setCloseMaintainModal(true)}>
-          <span style={{ fontSize: 12 }}>关闭维护模式</span>
+        <Menu.Item key="close" onClick={() => {}}>
+          <span style={{ fontSize: 12,paddingLeft:5, paddingRight:5 }}>停止</span>
         </Menu.Item>
-      ) : (
-        <Menu.Item key="open" onClick={() => setOpenMaintainModal(true)}>
-          <span style={{ fontSize: 12 }}>开启维护模式</span>
+        <Menu.Item key="reStart" onClick={() => {}}>
+          <span style={{ fontSize: 12,paddingLeft:5, paddingRight:5 }}>重启</span>
         </Menu.Item>
-      )}
+        <Menu.Item key="delete" onClick={() => {}}>
+          <span style={{ fontSize: 12,paddingLeft:5, paddingRight:5 }}>删除</span>
+        </Menu.Item>
     </Menu>
   );
 };
@@ -374,7 +374,10 @@ const getColumnsConfig = (
   //setShowIframe,
   history,
   labelsData,
-  queryRequest
+  queryRequest,
+  initfilterAppType,
+  initfilterLabelName,
+  setShowIframe
 ) => {
   return [
     {
@@ -430,7 +433,7 @@ const getColumnsConfig = (
       usefilter: true,
       queryRequest: queryRequest,
       ellipsis: true,
-      //initfilter:initfilter,
+      initfilter:initfilterLabelName,
       filterMenuList: labelsData.map((item) => ({ value: item, text: item })),
       align: "center",
       render: (text) => {
@@ -444,7 +447,7 @@ const getColumnsConfig = (
       align: "center",
       usefilter: true,
       queryRequest: queryRequest,
-      //initfilter:initfilter,
+      initfilter:initfilterAppType,
       filterMenuList: [
         {
           value: 0,
@@ -580,31 +583,31 @@ const getColumnsConfig = (
               <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
             )}
 
-            {record.monitor_url ? (
+            {record.log_url ? (
               <a
                 onClick={() => {
                   setShowIframe({
                     isOpen: true,
-                    src: record.monitor_url,
+                    src: record.log_url,
                     record: record,
-                    isLog: false,
+                    isLog: true,
                   });
                 }}
               >
                 日志
               </a>
             ) : (
-              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
+              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>日志</span>
             )}
 
             <Dropdown
               arrow
-              // overlay={renderMenu(
-              //   setUpdateMoadlVisible,
-              //   setCloseMaintainModal,
-              //   setOpenMaintainModal,
-              //   record
-              // )}
+              overlay={renderMenu(
+                // setUpdateMoadlVisible,
+                // setCloseMaintainModal,
+                // setOpenMaintainModal,
+                record
+              )}
             >
               <a>
                 更多 <DownOutlined style={{ position: "relative", top: 1 }} />
