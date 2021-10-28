@@ -12,7 +12,11 @@ import { fetchGet, fetchPost, fetchPatch } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import { useDispatch } from "react-redux";
 import getColumnsConfig, { DetailHost } from "./config/columns";
-import { DownOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
+import {
+  DownOutlined,
+  ExclamationCircleOutlined,
+  SearchOutlined,
+} from "@ant-design/icons";
 import { useHistory, useLocation } from "react-router-dom";
 
 const ServiceManagement = () => {
@@ -34,7 +38,11 @@ const ServiceManagement = () => {
   const [ipListSource, setIpListSource] = useState([]);
   const [selectValue, setSelectValue] = useState(location.state?.ip);
 
-  const [labelsData, setLabelsData] = useState([])
+  const [labelsData, setLabelsData] = useState([]);
+
+  const [instanceSelectValue, setInstanceSelectValue] = useState("");
+
+  const [labelControl, setLabelControl] = useState("ip");
 
   const [pagination, setPagination] = useState({
     current: 1,
@@ -49,6 +57,8 @@ const ServiceManagement = () => {
     src: "",
     record: {},
   });
+
+  const [showIframe, setShowIframe] = useState({});
 
   // 定义row存数据
   const [row, setRow] = useState({});
@@ -94,7 +104,7 @@ const ServiceManagement = () => {
         location.state = {};
         setLoading(false);
         fetchIPlist();
-        fetchSearchlist()
+        fetchSearchlist();
       });
   }
 
@@ -119,7 +129,7 @@ const ServiceManagement = () => {
       .then((res) => {
         handleResponse(res, (res) => {
           setLabelsData(res.data);
-          console.log(res.data)
+          //console.log(res.data);
         });
       })
       .catch((e) => console.log(e))
@@ -129,7 +139,7 @@ const ServiceManagement = () => {
   };
 
   const fetchHistoryData = (id) => {
-    return
+    return;
     setHistoryLoading(true);
     fetchGet(apiRequest.serviceManagement.operateLog, {
       params: {
@@ -150,7 +160,11 @@ const ServiceManagement = () => {
   useEffect(() => {
     fetchData(
       { current: pagination.current, pageSize: pagination.pageSize },
-      { ip: location.state?.ip }
+      {
+        ip: location.state?.ip,
+        app_type: location.state?.app_type,
+        label_name: location.state?.label_name,
+      }
     );
   }, []);
 
@@ -160,7 +174,7 @@ const ServiceManagement = () => {
         <Button
           type="primary"
           onClick={() => {
-            history.push("/application_management/app_store")
+            history.push("/application_management/app_store");
           }}
         >
           安装
@@ -241,44 +255,104 @@ const ServiceManagement = () => {
         <div style={{ display: "flex", marginLeft: "auto" }}>
           <Input.Group compact style={{ display: "flex" }}>
             <Select
-                //value={labelControl}
-                defaultValue="ip"
-                style={{ width: 100 }}
-                // onChange={(e) => {
-                //   setLabelControl(e);
-                //   fetchData({
-                //     ...searchParams,
-                //     ip: null,
-                //     instance_name: null,
-                //   });
-                //   setInstanceSelectValue();
-                //   setSelectValue();
-                // }}
-              >
-                <Select.Option value="ip"> IP地址</Select.Option>
-                <Select.Option value="instance_name">实例名称</Select.Option>
-              </Select>
+              value={labelControl}
+              defaultValue="ip"
+              style={{ width: 100 }}
+              onChange={(e) => {
+                setLabelControl(e);
+                fetchData(
+                  {
+                    current: 1,
+                    pageSize: pagination.pageSize,
+                  },
+                  {
+                    ...pagination.searchParams,
+                    ip: null,
+                    service_instance_name: null,
+                  },
+                  pagination.ordering
+                );
+                setInstanceSelectValue();
+                setSelectValue();
+              }}
+            >
+              <Select.Option value="ip"> IP地址</Select.Option>
+              <Select.Option value="instance_name">实例名称</Select.Option>
+            </Select>
+            {labelControl === "ip" && (
               <OmpSelect
-            searchLoading={searchLoading}
-            selectValue={selectValue}
-            listSource={ipListSource}
-            setSelectValue={setSelectValue}
-            // onFocus={()=>{
-            //   location.state = {}
-            // }}
-            fetchData={(value) => {
-              fetchData(
-                { current: 1, pageSize: pagination.pageSize, },
-                { ip: value },
-                pagination.ordering
-              );
-            }}
-          />
+                searchLoading={searchLoading}
+                selectValue={selectValue}
+                listSource={ipListSource}
+                setSelectValue={setSelectValue}
+                fetchData={(value) => {
+                  fetchData(
+                    { current: 1, pageSize: pagination.pageSize },
+                    { ip: value },
+                    pagination.ordering
+                  );
+                }}
+              />
+            )}
+            {labelControl === "instance_name" && (
+              <Input
+                placeholder="输入实例名称"
+                style={{ width: 200 }}
+                allowClear
+                value={instanceSelectValue}
+                onChange={(e) => {
+                  setInstanceSelectValue(e.target.value);
+                  if (!e.target.value) {
+                    fetchData(
+                      {
+                        current: 1,
+                        pageSize: pagination.pageSize,
+                      },
+                      {
+                        ...pagination.searchParams,
+                        service_instance_name: null,
+                      },
+                      pagination.ordering
+                    );
+                  }
+                }}
+                onBlur={() => {
+                  if (instanceSelectValue) {
+                    fetchData(
+                      {
+                        current: 1,
+                        pageSize: pagination.pageSize,
+                      },
+                      {
+                        ...pagination.searchParams,
+                        service_instance_name: instanceSelectValue,
+                      },
+                      pagination.ordering
+                    );
+                  }
+                }}
+                onPressEnter={() => {
+                  fetchData(
+                    {
+                      current: 1,
+                      pageSize: pagination.pageSize,
+                    },
+                    {
+                      ...pagination.searchParams,
+                      service_instance_name: instanceSelectValue,
+                    },
+                    pagination.ordering
+                  );
+                }}
+                suffix={
+                  !instanceSelectValue && (
+                    <SearchOutlined style={{ color: "#b6b6b6" }} />
+                  )
+                }
+              />
+            )}
           </Input.Group>
-          {/* <span style={{ width: 60, display: "flex", alignItems: "center" }}>
-            IP地址:
-          </span> */}
-          
+
           <Button
             style={{ marginLeft: 10 }}
             onClick={() => {
@@ -287,7 +361,7 @@ const ServiceManagement = () => {
               setCheckedList({});
               fetchData(
                 { current: pagination.current, pageSize: pagination.pageSize },
-                { ip: selectValue },
+                { ip: selectValue, service_instance_name: instanceSelectValue },
                 pagination.ordering
               );
             }}
@@ -322,15 +396,18 @@ const ServiceManagement = () => {
             labelsData,
             (params) => {
               fetchData(
-                { current: 1, pageSize: pagination.pageSize, },
+                { current: 1, pageSize: pagination.pageSize },
                 { ...pagination.searchParams, ...params },
                 pagination.ordering
               );
             },
+            location.state?.app_type,
+            location.state?.label_name,
+            setShowIframe
           )}
           notSelectable={(record) => ({
             // 部署中的不能选中
-            disabled: record?.host_agent == 3 || record?.monitor_agent == 3,
+            disabled: !record?.operable,
           })}
           dataSource={dataSource}
           pagination={{
@@ -369,6 +446,7 @@ const ServiceManagement = () => {
           checkedState={[checkedList, setCheckedList]}
         />
       </div>
+      <OmpDrawer showIframe={showIframe} setShowIframe={setShowIframe} />
     </OmpContentWrapper>
   );
 };
