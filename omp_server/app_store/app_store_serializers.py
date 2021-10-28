@@ -195,7 +195,7 @@ class ApplicationDetailSerializer(ModelSerializer):  # NOQA
             service_dict = {
                 "instance_name": so.service_instance_name,
                 "host_ip": so.ip,
-                "service_port": so.service_port,
+                "service_port": None if not so.service_port else json.loads(so.service_port),
                 "app_version": so.service.app_version,
                 "mode": "单实例",  # TODO  后续根据cluster字段是否为空来判断是单实例还是集群模式
                 "created": so.created
@@ -242,7 +242,7 @@ class ProductDetailSerializer(ModelSerializer):  # NOQA
                 "app_name": so.service.app_name,
                 "app_version": so.service.app_version,
                 "host_ip": so.ip,
-                "service_port": so.service_port,
+                "service_port": None if not so.service_port else json.loads(so.service_port),
                 "created": so.created
             }
             service_list.append(service_dict)
