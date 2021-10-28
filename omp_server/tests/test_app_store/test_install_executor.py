@@ -11,41 +11,30 @@ class TestInstallExecutor(TestCase, InstallHistoryResourceMixin):
     """ 测试安装执行器 """
 
     @mock.patch.object(SaltClient, "cp_file", return_value=(True, ""))
-    def test_send(self, cp_file):
-        """ 测试发送服务包 """
+    def test_action(self, cp_file):
+        """ 测试动作 """
         main_obj, detail_obj_ls = self.get_install_history()
 
         executor = InstallServiceExecutor(main_obj.id)
+        # 测试发送服务包
         executor.send(random.choice(detail_obj_ls))
-
-    @mock.patch.object(SaltClient, "cmd", return_value=(True, ""))
-    def test_unzip(self, cmd):
-        """ 测试解压服务包 """
-        main_obj, detail_obj_ls = self.get_install_history()
-
-        executor = InstallServiceExecutor(main_obj.id)
+        # 测试解压服务包
         executor.unzip(random.choice(detail_obj_ls))
-
-    @mock.patch.object(SaltClient, "cmd", return_value=(True, ""))
-    def test_install(self, cmd):
-        """ 测试安装 """
-        main_obj, detail_obj_ls = self.get_install_history()
-
-        executor = InstallServiceExecutor(main_obj.id)
+        # 测试安装
         executor.install(random.choice(detail_obj_ls))
-
-    @mock.patch.object(SaltClient, "cmd", return_value=(True, ""))
-    def test_init(self, cmd):
-        """ 测试初始化 """
-        main_obj, detail_obj_ls = self.get_install_history()
-
-        executor = InstallServiceExecutor(main_obj.id)
+        # 测试初始化
         executor.init(random.choice(detail_obj_ls))
+        # 测试启动
+        executor.start(random.choice(detail_obj_ls))
 
-    @mock.patch.object(SaltClient, "cmd", return_value=(True, ""))
-    def test_start(self, cmd):
-        """ 测试启动 """
+    @mock.patch.object(InstallServiceExecutor, "start", return_value=(True, ""))
+    @mock.patch.object(InstallServiceExecutor, "init", return_value=(True, ""))
+    @mock.patch.object(InstallServiceExecutor, "install", return_value=(True, ""))
+    @mock.patch.object(InstallServiceExecutor, "unzip", return_value=(True, ""))
+    @mock.patch.object(InstallServiceExecutor, "send", return_value=(True, ""))
+    def test_main(self, mock_send, mock_unzip, mock_install, mock_init, mock_start):
+        """ 测试入口函数 """
         main_obj, detail_obj_ls = self.get_install_history()
 
         executor = InstallServiceExecutor(main_obj.id)
-        executor.start(random.choice(detail_obj_ls))
+        executor.main()
