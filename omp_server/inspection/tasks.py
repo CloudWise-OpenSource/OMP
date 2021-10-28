@@ -231,7 +231,7 @@ def inspection_crontab(**kwargs):
                     f"{job_name}定时巡检-{now.strftime('%Y%m%d')}{num + 1}",
                 'inspection_type': inspection_type.get(job_type),
                 'inspection_status': 1, 'execute_type': 'auto',
-                'inspection_operator': '定时服务',
+                'inspection_operator': 'admin',
                 'hosts': list(hosts), 'services': list(services), 'env': env}
             his_obj = InspectionHistory(**his_dict)
             his_obj.save()
