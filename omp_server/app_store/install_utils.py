@@ -124,7 +124,7 @@ class DataJson(object):
         _path = os.path.join(
             PROJECT_DIR,
             "package_hub/data_files",
-            f"{self.operation_uuid}-data.json"
+            f"{self.operation_uuid}.json"
         )
         if not os.path.exists(os.path.dirname(_path)):
             os.makedirs(os.path.dirname(_path))
@@ -588,6 +588,8 @@ class ValidateInstallService(object):
                 continue
             _tobe_check_path = os.path.join(
                 _data_path, el.get("default", "").lstrip("/"))
+            # 直接封装部署数据到数据库中
+            el["default"] = _tobe_check_path
             _cmd = \
                 f"test -d {_tobe_check_path} && echo 'EXISTS' || echo 'OK'"
             _flag, _msg = _salt_obj.cmd(
@@ -607,6 +609,7 @@ class ValidateInstallService(object):
             else:
                 el["check_flag"] = False
                 el["check_msg"] = f"{_tobe_check_path} 在目标主机 {_ip} 上已存在"
+        _dic["app_install_args"] = app_install_args
         return _dic
 
     def run(self):
