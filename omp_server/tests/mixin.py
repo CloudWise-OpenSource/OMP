@@ -476,7 +476,7 @@ class InstallHistoryResourceMixin(ServicesResourceMixin):
     def destroy_install_history(self):
         """ 销毁安装历史记录 """
         DetailInstallHistory.objects.filter(
-            main_install_history__operation_uuid__startswith=self.UUID_START)
+            main_install_history__operation_uuid__startswith=self.UUID_START).delete()
         MainInstallHistory.objects.filter(
             operation_uuid__startswith=self.UUID_START).delete()
         self.destroy_services()
