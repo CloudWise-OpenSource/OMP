@@ -1262,7 +1262,7 @@ export const columnsConfig = {
     title: "数据分区使用率",
     width: 130,
     key: "report_disk_usage_data",
-    dataIndex: "disk_usage_data",
+    dataIndex: "report_disk_usage_data",
     //ellipsis: true,
     render: formatTableRenderData,
     align: "center",
