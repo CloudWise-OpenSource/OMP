@@ -95,7 +95,10 @@ class InstallServiceExecutor:
             detail_obj.send_flag = 3
             detail_obj.send_msg += f"{self.now_time()} {service_name} " \
                                    f"发送服务包失败: {err}\n"
+            detail_obj.install_step_status = DetailInstallHistory.INSTALL_STATUS_FAILED
             detail_obj.save()
+            detail_obj.service.service_status = Service.SERVICE_STATUS_INSTALL_FAILED
+            detail_obj.service.save()
             return False, err
         # 发送成功
         logger.info(
@@ -158,7 +161,10 @@ class InstallServiceExecutor:
             detail_obj.unzip_flag = 3
             detail_obj.unzip_msg += f"{self.now_time()} {service_name} " \
                                     f"解压服务包失败: {err}\n"
+            detail_obj.install_step_status = DetailInstallHistory.INSTALL_STATUS_FAILED
             detail_obj.save()
+            detail_obj.service.service_status = Service.SERVICE_STATUS_INSTALL_FAILED
+            detail_obj.service.save()
             return False, err
         # 解压成功
         logger.info(
@@ -214,7 +220,10 @@ class InstallServiceExecutor:
             detail_obj.install_flag = 3
             detail_obj.install_msg += f"{self.now_time()} {service_name} " \
                                       f"安装服务失败: {err}\n"
+            detail_obj.install_step_status = DetailInstallHistory.INSTALL_STATUS_FAILED
             detail_obj.save()
+            detail_obj.service.service_status = Service.SERVICE_STATUS_INSTALL_FAILED
+            detail_obj.service.save()
             return False, err
         # 安装成功
         logger.info(f"Install Success -> [{service_name}]")
@@ -271,7 +280,10 @@ class InstallServiceExecutor:
             detail_obj.init_flag = 3
             detail_obj.init_msg += f"{self.now_time()} {service_name} " \
                                    f"初始化服务失败: {err}\n"
+            detail_obj.install_step_status = DetailInstallHistory.INSTALL_STATUS_FAILED
             detail_obj.save()
+            detail_obj.service.service_status = Service.SERVICE_STATUS_INSTALL_FAILED
+            detail_obj.service.save()
             return False, err
         # 安装成功
         logger.info(f"Init Success -> [{service_name}]")
@@ -327,15 +339,20 @@ class InstallServiceExecutor:
             detail_obj.start_flag = 3
             detail_obj.start_msg += f"{self.now_time()} {service_name} " \
                                     f"启动服务失败: {err}\n"
+            detail_obj.install_step_status = DetailInstallHistory.INSTALL_STATUS_FAILED
             detail_obj.save()
+            detail_obj.service.service_status = Service.SERVICE_STATUS_INSTALL_FAILED
+            detail_obj.service.save()
             return False, err
         # 安装成功
         logger.info(f"Start Success -> [{service_name}]")
         detail_obj.start_flag = 2
         detail_obj.start_msg += f"{self.now_time()} {service_name} 成功启动服务\n"
-        # 完成安装流程，更新状态为 '安装成功'
+        # 完成安装流程，更新状态为 '安装成功'，服务状态为 '正常'
         detail_obj.install_step_status = \
             DetailInstallHistory.INSTALL_STATUS_SUCCESS
+        detail_obj.service.service_status = Service.SERVICE_STATUS_NORMAL
+        detail_obj.service.save()
         detail_obj.save()
         return True, "Start Success"
 
@@ -404,29 +421,22 @@ class InstallServiceExecutor:
                         break
 
         if self.is_error:
-            # 步骤失败，主流程失败，所有子流程失败
+            # 步骤失败，主流程失败
             main_obj.install_status = \
                 MainInstallHistory.INSTALL_STATUS_FAILED
             main_obj.save()
-            # 所有子流程状态更新为 '失败'，服务状态更新为 '安装失败'
-            queryset.update(
-                install_step_status=DetailInstallHistory.INSTALL_STATUS_FAILED)
-            for detail_obj in queryset:
-                detail_obj.service.service_status = Service.SERVICE_STATUS_INSTALL_FAILED
-                detail_obj.service.save()
+            # 状态为 '待安装'/'安装中' 的记录，则记为 '失败'
+            queryset.filter(install_step_status__in=(
+                DetailInstallHistory.INSTALL_STATUS_READY,
+                DetailInstallHistory.INSTALL_STATUS_INSTALLING
+            )).update(install_step_status=DetailInstallHistory.INSTALL_STATUS_FAILED)
             logger.info(f"Main Install Failed, id[{self.main_id}]")
             return
 
-        # 流程执行完整，安装成功，所有子流程成功
+        # 流程执行完整，主流程成功
         main_obj.install_status = \
             MainInstallHistory.INSTALL_STATUS_SUCCESS
         main_obj.save()
-        # 所有子流程状态更新为 '成功'，服务状态更新为 '正常'
-        queryset.update(
-            install_step_status=DetailInstallHistory.INSTALL_STATUS_SUCCESS)
-        for detail_obj in queryset:
-            detail_obj.service.service_status = Service.SERVICE_STATUS_NORMAL
-            detail_obj.service.save()
         # TODO 注册监控
         logger.info(f"Main Install Success, id[{self.main_id}]")
         return
