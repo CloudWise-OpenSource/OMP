@@ -35,7 +35,6 @@ from app_store.tasks import install_service
 from utils.common.exceptions import GeneralError
 from utils.plugin.public_utils import check_ip_port
 from utils.plugin.salt_client import SaltClient
-from utils.plugin.crypto import AESCryptor
 
 DIR_KEY = "{data_path}"
 
@@ -746,18 +745,17 @@ class CreateInstallPlan(object):
         :return:
         """
         username = password = username_enc = password_enc = ""
-        _aes = AESCryptor()
         for item in dic["app_install_args"]:
             if not item["default"]:
                 continue
             if item["key"] == "username":
-                username = _aes.encode(item["default"])
+                username = item["default"]
             if item["key"] == "password":
-                password = _aes.encode(item["default"])
+                password = item["default"]
             if item["key"] == "username_enc":
-                username_enc = _aes.encode(item["default"])
+                username_enc = item["default"]
             if item["key"] == "password_enc":
-                password_enc = _aes.encode(item["default"])
+                password_enc = item["default"]
         if username or password or username_enc or password_enc:
             _ser_conn_obj, _ = ServiceConnectInfo.objects.get_or_create(
                 service_name=dic["name"],
