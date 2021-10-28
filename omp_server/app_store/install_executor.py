@@ -430,8 +430,10 @@ class InstallServiceExecutor:
         main_obj.save()
         # 所有子流程状态更新为 '成功'，服务状态更新为 '正常'
         queryset.update(
-            install_step_status=DetailInstallHistory.INSTALL_STATUS_SUCCESS,
-            service__service_status=Service.SERVICE_STATUS_NORMAL)
+            install_step_status=DetailInstallHistory.INSTALL_STATUS_SUCCESS)
+        for detail_obj in queryset:
+            detail_obj.service.service_status = Service.SERVICE_STATUS_NORMAL
+            detail_obj.service.save()
         # TODO 注册监控
         logger.info(f"Main Install Success, id[{self.main_id}]")
         return
