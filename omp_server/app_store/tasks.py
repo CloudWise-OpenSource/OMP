@@ -350,7 +350,7 @@ class ExplainYml:
             return False
         # ports 校验
         ports = settings.pop('ports')
-        ports_strong_check = {"name", "protocol", "port", "key"}
+        ports_strong_check = {"name", "protocol", "default", "key"}
         port = self.check_obj.strong_check(
             ports, ports_strong_check,
             is_weak=True,
