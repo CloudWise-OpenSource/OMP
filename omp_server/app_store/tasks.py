@@ -22,6 +22,7 @@ from db_models.models import (
 )
 from app_store.upload_task import CreateDatabase
 from app_store.install_executor import InstallServiceExecutor
+from promemonitor.prometheus_utils import PrometheusUtils
 
 # 屏蔽celery任务日志中的paramiko日志
 logging.getLogger("paramiko").setLevel(logging.WARNING)
@@ -548,6 +549,45 @@ def publish_entry(uuid):
     exec_clear(clear_dir)
 
 
+def add_prometheus(main_history_id):
+    """ 添加服务到 Prometheus """
+    logger.info("Add Prometheus Begin")
+    prometheus = PrometheusUtils()
+    # TODO 不同类型服务添加监控方式不同，后续版本优化
+    queryset = DetailInstallHistory.objects.filter(
+        main_install_history_id=main_history_id)
+    for detail_obj in queryset:
+        # TODO 已是否具有端口作为是否需要添加监控的依据，后续版本优化
+        service_port = None
+        if detail_obj.service.service_port is not None:
+            service_port_ls = json.loads(detail_obj.service.service_port)
+            for info in service_port_ls:
+                if info.get("service_port", None) is not None:
+                    service_port = info.get("service_port")
+                    break
+        app_install_args = detail_obj.install_detail_args.get(
+            "app_install_args", [])
+        data_dir = log_dir = ""
+        for info in app_install_args:
+            if info.get("key", "") == "data_dir":
+                data_dir = info.get("default", "")
+            if info.get("key", "") == "log_dir":
+                log_dir = info.get("default", "")
+        if service_port is not None:
+            is_success, message = prometheus.add_service({
+                "service_name": detail_obj.service.service.app_name,
+                "instance_name": detail_obj.service.service_instance_name,
+                "data_path": data_dir,
+                "log_path": log_dir,
+                "env": "default",
+                "ip": detail_obj.service.ip,
+                "listen_port": service_port
+            })
+            if not is_success:
+                logger.error(f"Add Prometheus Failed: {message}")
+    logger.info("Add Prometheus End")
+
+
 @shared_task
 def install_service(main_history_id):
     """
@@ -555,6 +595,7 @@ def install_service(main_history_id):
     :param main_history_id: MainInstallHistory 主表 id
     :return:
     """
+    install_success = True
     try:
         executor = InstallServiceExecutor(main_history_id)
         executor.main()
@@ -569,3 +610,8 @@ def install_service(main_history_id):
         DetailInstallHistory.objects.filter(
             main_install_history_id=main_history_id).update(
             install_step_status=DetailInstallHistory.INSTALL_STATUS_FAILED)
+        install_success = False
+
+    # 安装成功，则注册服务至监控
+    if install_success:
+        add_prometheus(main_history_id)

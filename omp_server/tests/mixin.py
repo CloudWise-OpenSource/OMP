@@ -423,7 +423,9 @@ class ServicesResourceMixin(HostsResourceMixin, ClusterResourceMixin,
                 service_controllers={
                     "start": "start_path",
                     "stop": "stop_path",
-                    "restart": "restart_path"
+                    "restart": "restart_path",
+                    "init": "init_path",
+                    "install": "install_path",
                 },
             ))
         Service.objects.bulk_create(service_ls)
