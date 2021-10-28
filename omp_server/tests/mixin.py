@@ -394,11 +394,6 @@ class ServicesResourceMixin(HostsResourceMixin, ClusterResourceMixin,
             env = Env.objects.filter(id=1).first()
         # 创建服务
         service_ls = []
-        service_controllers = json.dumps(
-            {'start': 'test1',
-             'stop': 'test1',
-             'restart': 'test1'}
-        )
         for index in range(number):
             index += 1
             # 随机构造端口字段
@@ -425,7 +420,11 @@ class ServicesResourceMixin(HostsResourceMixin, ClusterResourceMixin,
                 service=random.choice(app_ls),
                 env=env,
                 cluster=cluster,
-                service_controllers=service_controllers,
+                service_controllers={
+                    "start": "start_path",
+                    "stop": "stop_path",
+                    "restart": "restart_path"
+                },
             ))
         Service.objects.bulk_create(service_ls)
 
@@ -456,7 +455,7 @@ class InstallHistoryResourceMixin(ServicesResourceMixin):
     """ 安装历史记录资源混入类 """
     UUID_START = "t_main"
 
-    def get_install_history(self, number=20):
+    def get_install_history(self, number=5):
         """ 获取安装历史记录 """
         main_obj = MainInstallHistory.objects.create(
             operation_uuid=f"{self.UUID_START}_"
@@ -468,10 +467,26 @@ class InstallHistoryResourceMixin(ServicesResourceMixin):
             index += 1
             detail_ls.append(DetailInstallHistory(
                 service=service,
-                main_install_history=main_obj
+                main_install_history=main_obj,
+                install_detail_args={
+                    "name": "t_name",
+                    "app_install_args": [
+                        {
+                            "key": "base_dir",
+                            "name": "安装目录",
+                            "default": "/data/t_name",
+                            "dir_key": "{data_path}",
+                            "check_msg": "success",
+                            "check_flag": True
+                        }
+                    ]
+                }
+
             ))
         DetailInstallHistory.objects.bulk_create(detail_ls)
-        return main_obj
+        detail_obj_ls = DetailInstallHistory.objects.filter(
+            main_install_history=main_obj)
+        return main_obj, detail_obj_ls
 
     def destroy_install_history(self):
         """ 销毁安装历史记录 """
