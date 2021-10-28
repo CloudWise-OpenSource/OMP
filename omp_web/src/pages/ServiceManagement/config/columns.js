@@ -379,6 +379,8 @@ const getColumnsConfig = (
       title: "实例名称",
       key: "service_instance_name",
       dataIndex: "service_instance_name",
+      sorter: (a, b) => a.service_instance_name - b.service_instance_name,
+      sortDirections: ["descend", "ascend"],
       align: "center",
       ellipsis: true,
       fixed: "left",
