@@ -143,20 +143,15 @@ class InstallServiceExecutor:
             if path_ls[1] == app_name:
                 target_path = path_ls[0]
 
-            cmd_str = f"(test -d {target_path} || mkdir -p {target_path}) && " \
-                      f"test -e {package_path} && " \
-                      f"tar -xf {package_path} -C {target_path} " \
-                      f"|| echo 'NOT EXIST'"
-
-            # 解压服务包
+            # 创建服务目录，解压服务包
+            test_path_cmd_str = f"(test -d {target_path} || mkdir -p {target_path}) && " \
+                                f"tar -xf {package_path} -C {target_path}"
             is_success, message = self.salt_client.cmd(
                 target=target_ip,
-                command=cmd_str,
+                command=test_path_cmd_str,
                 timeout=self.timeout)
             if not is_success:
                 raise Exception(message)
-            if message == "NOT EXIST":
-                raise Exception(f"{target_ip}未找到服务包{target_path}")
 
         except Exception as err:
             logger.error(f"Unzip Failed -> [{service_name}]: {err}")
@@ -200,9 +195,7 @@ class InstallServiceExecutor:
                 target_host.data_folder, "omp_packages",
                 f"{detail_obj.main_install_history.operation_uuid}.json")
 
-            cmd_str = f"test -f {install_script_path} && " \
-                      f"python {install_script_path} --local_ip {target_ip} --data_json {json_path} " \
-                      f"|| echo 'NOT EXIST'"
+            cmd_str = f"python {install_script_path} --local_ip {target_ip} --data_json {json_path}"
             # 执行安装
             is_success, message = self.salt_client.cmd(
                 target=target_ip,
@@ -210,8 +203,6 @@ class InstallServiceExecutor:
                 timeout=self.timeout)
             if not is_success:
                 raise Exception(message)
-            if message == "NOT EXIST":
-                raise Exception(f"{target_ip}未找到安装脚本{install_script_path}")
 
         except Exception as err:
             logger.error(f"Install Failed -> [{service_name}]: {err}")
@@ -257,9 +248,7 @@ class InstallServiceExecutor:
                 target_host.data_folder, "omp_packages",
                 f"{detail_obj.main_install_history.operation_uuid}.json")
 
-            cmd_str = f"test -f {init_script_path} && " \
-                      f"python {init_script_path} --local_ip {target_ip} --data_json {json_path} " \
-                      f"|| echo 'NOT EXIST'"
+            cmd_str = f"python {init_script_path} --local_ip {target_ip} --data_json {json_path}"
             # 执行初始化
             is_success, message = self.salt_client.cmd(
                 target=target_ip,
@@ -267,12 +256,6 @@ class InstallServiceExecutor:
                 timeout=self.timeout)
             if not is_success:
                 raise Exception(message)
-            if message == "NOT EXIST":
-                logger.info(f"Init Un Do -> [{service_name}]")
-                detail_obj.init_flag = 2
-                detail_obj.init_msg += f"{self.now_time()} {service_name} 无需执行初始化\n"
-                detail_obj.save()
-                return True, "Init Un Do"
 
         except Exception as err:
             logger.error(f"Init Failed -> [{service_name}]: {err}")
@@ -311,8 +294,7 @@ class InstallServiceExecutor:
                 detail_obj.save()
                 return True, "Start Un Do"
 
-            cmd_str = f"test -e {start_script_path} && " \
-                      f"bash {start_script_path} start || echo 'NOT EXIST'"
+            cmd_str = f"bash {start_script_path} start"
             # 执行启动
             is_success, message = self.salt_client.cmd(
                 target=target_ip,
@@ -320,12 +302,6 @@ class InstallServiceExecutor:
                 timeout=self.timeout)
             if not is_success:
                 raise Exception(message)
-            if message == "NOT EXIST":
-                logger.info(f"Start Un Do -> [{service_name}]")
-                detail_obj.start_flag = 2
-                detail_obj.start_msg += f"{self.now_time()} {service_name} 无需执行启动\n"
-                detail_obj.save()
-                return True, "Start Un Do"
             result_str = message.upper()
             if "FAILED" in result_str or \
                     "NO RUNNING" in result_str or \
