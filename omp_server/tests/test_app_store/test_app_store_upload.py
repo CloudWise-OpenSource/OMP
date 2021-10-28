@@ -17,6 +17,10 @@ from app_store.tasks import (
 )
 from unittest.mock import patch, mock_open
 from app_store.tmp_exec_back_task import back_end_verified_init
+import os
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_dir = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
 
 test_product = {
     "kind": "product",
@@ -202,6 +206,8 @@ class PackageUploadTest(AutoLoginTest):
                            "front_end_verified",
                            upload_obj.id)
         upload_obj.refresh_from_db()
+        clear_file = os.path.join(project_dir, 'data', "middle_data-test-uuid.json")
+        os.remove(clear_file)
         res = upload_obj.package_status
         self.assertEqual(res, 0)
 
