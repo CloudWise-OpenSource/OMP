@@ -2,7 +2,6 @@
 安装执行器
 """
 import os
-import json
 import time
 import logging
 from concurrent.futures import (
@@ -60,7 +59,7 @@ class InstallServiceExecutor:
                 "data_files",
                 f"{detail_obj.main_install_history.operation_uuid}.json")
             json_target_path = os.path.join(
-                target_host.data_folder,
+                target_host.data_folder, "omp_packages",
                 f"{detail_obj.main_install_history.operation_uuid}.json")
 
             # 发送 json 文件
@@ -72,9 +71,11 @@ class InstallServiceExecutor:
                 raise Exception(f"发送 json 文件失败: {message}")
 
             # 校验服务包是否存在
-            target_path = os.path.join(target_host.data_folder, package_name)
             source_path = os.path.join(
                 detail_obj.service.service.app_package.package_path,
+                package_name)
+            target_path = os.path.join(
+                target_host.data_folder, "omp_packages",
                 package_name)
             package_abs_path = os.path.join(
                 settings.BASE_DIR.parent, "package_hub", source_path)
@@ -122,8 +123,9 @@ class InstallServiceExecutor:
             # 解析获取目录
             target_host = Host.objects.filter(ip=target_ip).first()
             assert target_host is not None
-            data_folder = target_host.data_folder
-            package_path = os.path.join(data_folder, package_name)
+            package_path = os.path.join(
+                target_host.data_folder, "omp_packages",
+                package_name)
             # 获取解压目标路径
             detail_args = detail_obj.install_detail_args
             assert detail_args is not None
@@ -141,7 +143,7 @@ class InstallServiceExecutor:
             if path_ls[1] == app_name:
                 target_path = path_ls[0]
 
-            cmd_str = f"(test -d {target_path} || mkdir {target_path}) && " \
+            cmd_str = f"(test -d {target_path} || mkdir -p {target_path}) && " \
                       f"test -e {package_path} && " \
                       f"tar -xf {package_path} -C {target_path} " \
                       f"|| echo 'NOT EXIST'"
@@ -195,7 +197,7 @@ class InstallServiceExecutor:
             target_host = Host.objects.filter(ip=target_ip).first()
             assert target_host is not None
             json_path = os.path.join(
-                target_host.data_folder,
+                target_host.data_folder, "omp_packages",
                 f"{detail_obj.main_install_history.operation_uuid}.json")
 
             cmd_str = f"test -f {install_script_path} && " \
@@ -230,8 +232,7 @@ class InstallServiceExecutor:
         # 获取初始化使用参数
         target_ip = detail_obj.service.ip
         service_name = detail_obj.service.service_instance_name
-        service_controllers_dict = json.loads(
-            detail_obj.service.service_controllers)
+        service_controllers_dict = detail_obj.service.service_controllers
 
         # 更新状态为 '初始化中'，记录日志
         logger.info(f"Init Begin -> [{service_name}]")
@@ -253,7 +254,7 @@ class InstallServiceExecutor:
             target_host = Host.objects.filter(ip=target_ip).first()
             assert target_host is not None
             json_path = os.path.join(
-                target_host.data_folder,
+                target_host.data_folder, "omp_packages",
                 f"{detail_obj.main_install_history.operation_uuid}.json")
 
             cmd_str = f"test -f {init_script_path} && " \
@@ -292,8 +293,7 @@ class InstallServiceExecutor:
         # 获取启动使用参数
         target_ip = detail_obj.service.ip
         service_name = detail_obj.service.service_instance_name
-        service_controllers_dict = json.loads(
-            detail_obj.service.service_controllers)
+        service_controllers_dict = detail_obj.service.service_controllers
 
         # 更新状态为 '启动中'，记录日志
         logger.info(f"Start Begin -> [{service_name}]")
