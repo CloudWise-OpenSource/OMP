@@ -418,9 +418,12 @@ class InstallServiceExecutor:
             main_obj.install_status = \
                 MainInstallHistory.INSTALL_STATUS_FAILED
             main_obj.save()
-            # 所有子流程状态更新为 '失败'
+            # 所有子流程状态更新为 '失败'，服务状态更新为 '安装失败'
             queryset.update(
                 install_step_status=DetailInstallHistory.INSTALL_STATUS_FAILED)
+            for detail_obj in queryset:
+                detail_obj.service.service_status = Service.SERVICE_STATUS_INSTALL_FAILED
+                detail_obj.service.save()
             logger.info(f"Main Install Failed, id[{self.main_id}]")
             return
 
