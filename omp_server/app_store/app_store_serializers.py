@@ -4,6 +4,7 @@
 import json
 import logging
 import os
+import time
 from django.conf import settings
 
 from rest_framework import serializers
@@ -248,6 +249,7 @@ class ProductDetailSerializer(ModelSerializer):  # NOQA
                 return pro_services_list
             pro_services_list.extend(json.loads(obj.pro_services))
             return pro_services_list
+        pro_app_name_list = []
         for app in apps:
             uph = UploadPackageHistory.objects.get(id=app.app_package_id)
             if not uph:
@@ -255,10 +257,15 @@ class ProductDetailSerializer(ModelSerializer):  # NOQA
             app_dict = {
                 "name": app.app_name,
                 "version": app.app_version,
-                "created": app.created,
+                "created": time.strftime("%Y-%m-%d %H:%M:%S", time.strptime(str(app.created), "%Y-%m-%d %H:%M:%S.%f")),
                 "md5": uph.package_md5
             }
             pro_services_list.append(app_dict)
+            pro_app_name_list.append(app.app_name)
+        for ps in json.loads(obj.pro_services):
+            if ps.get("name") in pro_app_name_list:
+                continue
+            pro_services_list.append(ps)
         return pro_services_list
 
 
@@ -297,7 +304,7 @@ class ComponentEntranceSerializer(serializers.ModelSerializer):
     process_continue = serializers.SerializerMethodField()
     process_message = serializers.SerializerMethodField()
 
-    def get_app_port(self, obj):    # NOQA
+    def get_app_port(self, obj):  # NOQA
         """ 获取服务端口 """
         return ServiceArgsSerializer().get_app_port(obj)
 
@@ -432,7 +439,7 @@ class ExecuteInstallSerializer(Serializer):
         help_text="数据准确性校验结果信息"
     )
 
-    def validate_use_exist_services(self, data):    # NOQA
+    def validate_use_exist_services(self, data):  # NOQA
         """
         校验已经存在的服务是否准确
         :param data:
@@ -450,7 +457,7 @@ class ExecuteInstallSerializer(Serializer):
         """
         return ValidateInstallService(data=data).run()
 
-    def check_lst_valid(self, lst):     # NOQA
+    def check_lst_valid(self, lst):  # NOQA
         """
         根据列表、字典格式确定安装参数是否符合要求
         :param lst:
