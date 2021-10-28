@@ -22,6 +22,11 @@ const OmpTableFilter = ({ dataIndex, filterMenuList, queryRequest, initfilter })
       }}
       overlay={
         <Menu
+          style={{
+            maxHeight:200,
+            overflow:"hidden",
+            overflowY: "auto",
+          }}
           selectedKeys={[filterControl]}
           onClick={(e) => {
             setFilterControl(e.key);

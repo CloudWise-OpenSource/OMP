@@ -90,27 +90,29 @@ class HostCrawl(Prometheus):
 
     def rate_max_disk(self):
         """根分区使用率"""
-        expr = f"(node_filesystem_free_bytes{{env='{self.env}'," \
-               f"instance=~'{self.instance}',mountpoint='/', " \
-               f"fstype=~'ext.*|xfs'}}" \
-               f" / node_filesystem_size_bytes{{env='{self.env}'," \
-               f"instance=~'{self.instance}',mountpoint='/', " \
-               f"fstype=~'ext.*|xfs'}})" \
-               f" * 100"
+        expr = f"(node_filesystem_size_bytes{{env='{self.env}'," \
+               f"instance=~'{self.instance}'," \
+               f"fstype=~'ext.*|xfs',mountpoint='/'}} - " \
+               f"node_filesystem_avail_bytes{{env='{self.env}'," \
+               f"instance=~'{self.instance}'," \
+               f"fstype=~'ext.*|xfs',mountpoint='/'}}) / " \
+               f"node_filesystem_size_bytes{{env='{self.env}'," \
+               f"instance=~'{self.instance}'," \
+               f"fstype=~'ext.*|xfs',mountpoint='/'}} * 100"
         self.ret['rate_max_disk'] = \
             f"{round(float(self.unified_job(*self.query(expr))), 2)}%"
 
     def rate_data_disk(self):
         """数据分区使用率"""
-        expr = f"(node_filesystem_free_bytes{{env='{self.env}'," \
+        expr = f"(1-(node_filesystem_free_bytes{{env='{self.env}'," \
                f"instance=~'{self.instance}',mountpoint='/data', " \
                f"fstype=~'ext.*|xfs'}}" \
                f" / node_filesystem_size_bytes{{env='{self.env}'," \
                f"instance=~'{self.instance}',mountpoint='/data', " \
-               f"fstype=~'ext.*|xfs'}})" \
+               f"fstype=~'ext.*|xfs'}}))" \
                f" * 100"
         _ = self.unified_job(*self.query(expr))
-        self.ret['rate_max_disk'] = f"{round(float(_), 2)}%" if _ else '_'
+        self.ret['rate_data_disk'] = f"{round(float(_), 2)}%" if _ else '_'
 
     def rate_exchange_disk(self):
         """交换分区使用率"""
@@ -201,7 +203,7 @@ class HostCrawl(Prometheus):
         # target为实例方法，目的是统一执行实例方法并统一返回值
         target = ['rate_cpu', 'rate_memory', 'rate_max_disk',
                   'rate_data_disk', 'salt_json',
-                  'run_time', 'avg_load',
+                  'run_time', 'avg_load', 'rate_inode',
                   'total_file_descriptor', 'rate_io_wait',
                   'network_bytes_total', 'disk_io', 'run_status']
         for t in target:
@@ -210,6 +212,6 @@ class HostCrawl(Prometheus):
 
 
 if __name__ == '__main__':
-    h = HostCrawl(env='default', instance='10.0.9.67')
+    h = HostCrawl(env='default', instance='10.0.14.224')
     h.run()
     print(h.ret)

@@ -35,7 +35,6 @@ from app_store.tasks import install_service
 from utils.common.exceptions import GeneralError
 from utils.plugin.public_utils import check_ip_port
 from utils.plugin.salt_client import SaltClient
-from utils.plugin.crypto import AESCryptor
 
 DIR_KEY = "{data_path}"
 
@@ -124,7 +123,7 @@ class DataJson(object):
         _path = os.path.join(
             PROJECT_DIR,
             "package_hub/data_files",
-            f"{self.operation_uuid}-data.json"
+            f"{self.operation_uuid}.json"
         )
         if not os.path.exists(os.path.dirname(_path)):
             os.makedirs(os.path.dirname(_path))
@@ -588,6 +587,8 @@ class ValidateInstallService(object):
                 continue
             _tobe_check_path = os.path.join(
                 _data_path, el.get("default", "").lstrip("/"))
+            # 直接封装部署数据到数据库中
+            el["default"] = _tobe_check_path
             _cmd = \
                 f"test -d {_tobe_check_path} && echo 'EXISTS' || echo 'OK'"
             _flag, _msg = _salt_obj.cmd(
@@ -607,6 +608,7 @@ class ValidateInstallService(object):
             else:
                 el["check_flag"] = False
                 el["check_msg"] = f"{_tobe_check_path} 在目标主机 {_ip} 上已存在"
+        _dic["app_install_args"] = app_install_args
         return _dic
 
     def run(self):
@@ -724,7 +726,10 @@ class CreateInstallPlan(object):
                 _home = el["default"]
         real_home = os.path.join(data_folder, _home.rstrip("/"))
         _new_controller = dict()
+        # 更改服务控制脚本、拼接相对路径
         for key, value in _app_controllers.items():
+            if not value:
+                continue
             _new_controller[key] = os.path.join(real_home, value)
         return _new_controller
 
@@ -743,18 +748,17 @@ class CreateInstallPlan(object):
         :return:
         """
         username = password = username_enc = password_enc = ""
-        _aes = AESCryptor()
         for item in dic["app_install_args"]:
             if not item["default"]:
                 continue
             if item["key"] == "username":
-                username = _aes.encode(item["default"])
+                username = item["default"]
             if item["key"] == "password":
-                password = _aes.encode(item["default"])
+                password = item["default"]
             if item["key"] == "username_enc":
-                username_enc = _aes.encode(item["default"])
+                username_enc = item["default"]
             if item["key"] == "password_enc":
-                password_enc = _aes.encode(item["default"])
+                password_enc = item["default"]
         if username or password or username_enc or password_enc:
             _ser_conn_obj, _ = ServiceConnectInfo.objects.get_or_create(
                 service_name=dic["name"],
@@ -855,4 +859,4 @@ class CreateInstallPlan(object):
         _json_obj.run()
         # 调用安装异步任务
         install_service.delay(main_obj.id)
-        return True, "success"
+        return True, operation_uuid

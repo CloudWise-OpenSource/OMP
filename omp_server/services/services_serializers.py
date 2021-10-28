@@ -71,8 +71,7 @@ class ServiceSerializer(serializers.ModelSerializer):
     def get_operable(self, obj):
         """ 服务可操作 (启动、停止、重启) """
         if obj.service_controllers is not None:
-            service_controllers_dict = json.loads(obj.service_controllers)
-            return service_controllers_dict.get("start", "") != ""
+            return obj.service_controllers.get("start", "") != ""
         return False
 
 
@@ -140,6 +139,7 @@ class ServiceDetailSerializer(serializers.ModelSerializer):
         """ 获取历史记录 """
         return list(obj.servicehistory_set.values(
             "username", "description", "result", "created"))
+
 
 class ServiceActionSerializer(serializers.ModelSerializer):
     """ 服务动作序列化类 """

@@ -2,7 +2,6 @@
 安装执行器
 """
 import os
-import json
 import time
 import logging
 from concurrent.futures import (
@@ -56,10 +55,11 @@ class InstallServiceExecutor:
             assert target_host is not None
 
             # 获取 json 文件路径
-            json_source_path = os.path.join("data_files",
-                                            f"{detail_obj.main_install_history.operation_uuid}.json")
+            json_source_path = os.path.join(
+                "data_files",
+                f"{detail_obj.main_install_history.operation_uuid}.json")
             json_target_path = os.path.join(
-                target_host.data_folder,
+                target_host.data_folder, "omp_packages",
                 f"{detail_obj.main_install_history.operation_uuid}.json")
 
             # 发送 json 文件
@@ -71,9 +71,11 @@ class InstallServiceExecutor:
                 raise Exception(f"发送 json 文件失败: {message}")
 
             # 校验服务包是否存在
-            target_path = os.path.join(target_host.data_folder, package_name)
             source_path = os.path.join(
                 detail_obj.service.service.app_package.package_path,
+                package_name)
+            target_path = os.path.join(
+                target_host.data_folder, "omp_packages",
                 package_name)
             package_abs_path = os.path.join(
                 settings.BASE_DIR.parent, "package_hub", source_path)
@@ -93,7 +95,10 @@ class InstallServiceExecutor:
             detail_obj.send_flag = 3
             detail_obj.send_msg += f"{self.now_time()} {service_name} " \
                                    f"发送服务包失败: {err}\n"
+            detail_obj.install_step_status = DetailInstallHistory.INSTALL_STATUS_FAILED
             detail_obj.save()
+            detail_obj.service.service_status = Service.SERVICE_STATUS_INSTALL_FAILED
+            detail_obj.service.save()
             return False, err
         # 发送成功
         logger.info(
@@ -118,30 +123,48 @@ class InstallServiceExecutor:
         detail_obj.save()
 
         try:
-            # 解析获取安装目录
+            # 解析获取目录
             target_host = Host.objects.filter(ip=target_ip).first()
             assert target_host is not None
-            data_folder = target_host.data_folder
-            target_path = os.path.join(data_folder, package_name)
-            cmd_str = f"test -e {target_path} && tar -xf {target_path} " \
-                      f"|| echo 'NOT EXIST'"
+            package_path = os.path.join(
+                target_host.data_folder, "omp_packages",
+                package_name)
+            # 获取解压目标路径
+            detail_args = detail_obj.install_detail_args
+            assert detail_args is not None
+            app_name = detail_args.get("name", None)
+            assert app_name is not None
+            target_path = None
+            for info in detail_args.get("app_install_args", []):
+                if info.get("key", "") == "base_dir":
+                    target_path = info.get("default")
+                    break
+            if target_path is None:
+                raise Exception("未获取到解压目标路径")
+            # 切分判断路径
+            path_ls = os.path.split(target_path)
+            if path_ls[1] == app_name:
+                target_path = path_ls[0]
 
-            # 解压服务包
+            # 创建服务目录，解压服务包
+            test_path_cmd_str = f"(test -d {target_path} || mkdir -p {target_path}) && " \
+                                f"tar -xf {package_path} -C {target_path}"
             is_success, message = self.salt_client.cmd(
                 target=target_ip,
-                command=cmd_str,
+                command=test_path_cmd_str,
                 timeout=self.timeout)
             if not is_success:
                 raise Exception(message)
-            if message == "NOT EXIST":
-                raise Exception(f"{target_ip}未找到服务包{target_path}")
 
         except Exception as err:
             logger.error(f"Unzip Failed -> [{service_name}]: {err}")
             detail_obj.unzip_flag = 3
             detail_obj.unzip_msg += f"{self.now_time()} {service_name} " \
                                     f"解压服务包失败: {err}\n"
+            detail_obj.install_step_status = DetailInstallHistory.INSTALL_STATUS_FAILED
             detail_obj.save()
+            detail_obj.service.service_status = Service.SERVICE_STATUS_INSTALL_FAILED
+            detail_obj.service.save()
             return False, err
         # 解压成功
         logger.info(
@@ -175,11 +198,11 @@ class InstallServiceExecutor:
             target_host = Host.objects.filter(ip=target_ip).first()
             assert target_host is not None
             json_path = os.path.join(
-                target_host.data_folder, f"{self.main_id}.json")
+                target_host.data_folder, "omp_packages",
+                f"{detail_obj.main_install_history.operation_uuid}.json")
 
-            cmd_str = f"test -f {install_script_path} && " \
-                      f"python {install_script_path} {target_ip} {json_path} " \
-                      f"|| echo 'NOT EXIST'"
+            cmd_str = f"python {install_script_path} --local_ip {target_ip} --data_json {json_path}"
+
             # 执行安装
             is_success, message = self.salt_client.cmd(
                 target=target_ip,
@@ -187,15 +210,20 @@ class InstallServiceExecutor:
                 timeout=self.timeout)
             if not is_success:
                 raise Exception(message)
-            if message == "NOT EXIST":
-                raise Exception(f"{target_ip}未找到安装脚本{install_script_path}")
-
+            # 执行成功且 message 有值，则补充至服务日志中
+            if is_success and bool(message):
+                detail_obj.install_msg += f"{self.now_time()} 安装脚本执行成功，脚本输出如下:\n" \
+                                          f"{message}\n"
+                detail_obj.save()
         except Exception as err:
             logger.error(f"Install Failed -> [{service_name}]: {err}")
             detail_obj.install_flag = 3
             detail_obj.install_msg += f"{self.now_time()} {service_name} " \
                                       f"安装服务失败: {err}\n"
+            detail_obj.install_step_status = DetailInstallHistory.INSTALL_STATUS_FAILED
             detail_obj.save()
+            detail_obj.service.service_status = Service.SERVICE_STATUS_INSTALL_FAILED
+            detail_obj.service.save()
             return False, err
         # 安装成功
         logger.info(f"Install Success -> [{service_name}]")
@@ -209,8 +237,7 @@ class InstallServiceExecutor:
         # 获取初始化使用参数
         target_ip = detail_obj.service.ip
         service_name = detail_obj.service.service_instance_name
-        service_controllers_dict = json.loads(
-            detail_obj.service.service_controllers)
+        service_controllers_dict = detail_obj.service.service_controllers
 
         # 更新状态为 '初始化中'，记录日志
         logger.info(f"Init Begin -> [{service_name}]")
@@ -232,11 +259,10 @@ class InstallServiceExecutor:
             target_host = Host.objects.filter(ip=target_ip).first()
             assert target_host is not None
             json_path = os.path.join(
-                target_host.data_folder, f"{self.main_id}.json")
+                target_host.data_folder, "omp_packages",
+                f"{detail_obj.main_install_history.operation_uuid}.json")
 
-            cmd_str = f"test -f {init_script_path} && " \
-                      f"python {init_script_path} {target_ip} {json_path} " \
-                      f"|| echo 'NOT EXIST'"
+            cmd_str = f"python {init_script_path} --local_ip {target_ip} --data_json {json_path}"
             # 执行初始化
             is_success, message = self.salt_client.cmd(
                 target=target_ip,
@@ -244,19 +270,20 @@ class InstallServiceExecutor:
                 timeout=self.timeout)
             if not is_success:
                 raise Exception(message)
-            if message == "NOT EXIST":
-                logger.info(f"Init Un Do -> [{service_name}]")
-                detail_obj.init_flag = 2
-                detail_obj.init_msg += f"{self.now_time()} {service_name} 无需执行初始化\n"
+            # 执行成功且 message 有值，则补充至服务日志中
+            if is_success and bool(message):
+                detail_obj.install_msg += f"{self.now_time()} 初始化脚本执行成功，脚本输出如下:\n" \
+                                          f"{message}\n"
                 detail_obj.save()
-                return True, "Init Un Do"
-
         except Exception as err:
             logger.error(f"Init Failed -> [{service_name}]: {err}")
             detail_obj.init_flag = 3
             detail_obj.init_msg += f"{self.now_time()} {service_name} " \
                                    f"初始化服务失败: {err}\n"
+            detail_obj.install_step_status = DetailInstallHistory.INSTALL_STATUS_FAILED
             detail_obj.save()
+            detail_obj.service.service_status = Service.SERVICE_STATUS_INSTALL_FAILED
+            detail_obj.service.save()
             return False, err
         # 安装成功
         logger.info(f"Init Success -> [{service_name}]")
@@ -270,8 +297,7 @@ class InstallServiceExecutor:
         # 获取启动使用参数
         target_ip = detail_obj.service.ip
         service_name = detail_obj.service.service_instance_name
-        service_controllers_dict = json.loads(
-            detail_obj.service.service_controllers)
+        service_controllers_dict = detail_obj.service.service_controllers
 
         # 更新状态为 '启动中'，记录日志
         logger.info(f"Start Begin -> [{service_name}]")
@@ -289,8 +315,8 @@ class InstallServiceExecutor:
                 detail_obj.save()
                 return True, "Start Un Do"
 
-            cmd_str = f"test -e {start_script_path} && " \
-                      f"bash {start_script_path} start || echo 'NOT EXIST'"
+            cmd_str = f"bash {start_script_path} start"
+
             # 执行启动
             is_success, message = self.salt_client.cmd(
                 target=target_ip,
@@ -298,32 +324,35 @@ class InstallServiceExecutor:
                 timeout=self.timeout)
             if not is_success:
                 raise Exception(message)
-            if message == "NOT EXIST":
-                logger.info(f"Start Un Do -> [{service_name}]")
-                detail_obj.start_flag = 2
-                detail_obj.start_msg += f"{self.now_time()} {service_name} 无需执行启动\n"
-                detail_obj.save()
-                return True, "Start Un Do"
             result_str = message.upper()
             if "FAILED" in result_str or \
                     "NO RUNNING" in result_str or \
                     "NOT RUNNING" in result_str:
                 raise Exception(message)
-
+            # 执行成功且 message 有值，则补充至服务日志中
+            if is_success and bool(message):
+                detail_obj.install_msg += f"{self.now_time()} 启动脚本执行成功，脚本输出如下:\n" \
+                                          f"{message}\n"
+            detail_obj.save()
         except Exception as err:
             logger.error(f"Start Failed -> [{service_name}]: {err}")
             detail_obj.start_flag = 3
             detail_obj.start_msg += f"{self.now_time()} {service_name} " \
                                     f"启动服务失败: {err}\n"
+            detail_obj.install_step_status = DetailInstallHistory.INSTALL_STATUS_FAILED
             detail_obj.save()
+            detail_obj.service.service_status = Service.SERVICE_STATUS_INSTALL_FAILED
+            detail_obj.service.save()
             return False, err
         # 安装成功
         logger.info(f"Start Success -> [{service_name}]")
         detail_obj.start_flag = 2
         detail_obj.start_msg += f"{self.now_time()} {service_name} 成功启动服务\n"
-        # 完成安装流程，更新状态为 '安装成功'
+        # 完成安装流程，更新状态为 '安装成功'，服务状态为 '正常'
         detail_obj.install_step_status = \
             DetailInstallHistory.INSTALL_STATUS_SUCCESS
+        detail_obj.service.service_status = Service.SERVICE_STATUS_NORMAL
+        detail_obj.service.save()
         detail_obj.save()
         return True, "Start Success"
 
@@ -392,24 +421,22 @@ class InstallServiceExecutor:
                         break
 
         if self.is_error:
-            # 步骤失败，主流程失败，所有子流程失败
+            # 步骤失败，主流程失败
             main_obj.install_status = \
                 MainInstallHistory.INSTALL_STATUS_FAILED
             main_obj.save()
-            # 所有子流程状态更新为 '失败'
-            queryset.update(
-                install_step_status=DetailInstallHistory.INSTALL_STATUS_FAILED)
+            # 状态为 '待安装'/'安装中' 的记录，则记为 '失败'
+            queryset.filter(install_step_status__in=(
+                DetailInstallHistory.INSTALL_STATUS_READY,
+                DetailInstallHistory.INSTALL_STATUS_INSTALLING
+            )).update(install_step_status=DetailInstallHistory.INSTALL_STATUS_FAILED)
             logger.info(f"Main Install Failed, id[{self.main_id}]")
             return
 
-        # 流程执行完整，安装成功，所有子流程成功
+        # 流程执行完整，主流程成功
         main_obj.install_status = \
             MainInstallHistory.INSTALL_STATUS_SUCCESS
         main_obj.save()
-        # 所有子流程状态更新为 '成功'，服务状态更新为 '正常'
-        queryset.update(
-            install_step_status=DetailInstallHistory.INSTALL_STATUS_SUCCESS,
-            service__service_status=Service.SERVICE_STATUS_NORMAL)
         # TODO 注册监控
         logger.info(f"Main Install Success, id[{self.main_id}]")
         return

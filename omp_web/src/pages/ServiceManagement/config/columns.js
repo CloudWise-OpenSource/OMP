@@ -324,25 +324,25 @@ export const DetailHost = ({
 
 //操作
 const renderMenu = (
-  setUpdateMoadlVisible,
-  setCloseMaintainModal,
-  setOpenMaintainModal,
+  // setUpdateMoadlVisible,
+  // setCloseMaintainModal,
+  // setOpenMaintainModal,
   record
 ) => {
   return (
     <Menu>
-      <Menu.Item key="changge" onClick={() => setUpdateMoadlVisible(true)}>
-        <span style={{ fontSize: 12 }}>修改主机信息</span>
+      <Menu.Item style={{textAlign:'center'}} key="start" onClick={() => {}}>
+        <span style={{ fontSize: 12,paddingLeft:5, paddingRight:5 }}>启动</span>
       </Menu.Item>
-      {record.is_maintenance ? (
-        <Menu.Item key="close" onClick={() => setCloseMaintainModal(true)}>
-          <span style={{ fontSize: 12 }}>关闭维护模式</span>
+        <Menu.Item key="close" onClick={() => {}}>
+          <span style={{ fontSize: 12,paddingLeft:5, paddingRight:5 }}>停止</span>
         </Menu.Item>
-      ) : (
-        <Menu.Item key="open" onClick={() => setOpenMaintainModal(true)}>
-          <span style={{ fontSize: 12 }}>开启维护模式</span>
+        <Menu.Item key="reStart" onClick={() => {}}>
+          <span style={{ fontSize: 12,paddingLeft:5, paddingRight:5 }}>重启</span>
         </Menu.Item>
-      )}
+        <Menu.Item key="delete" onClick={() => {}}>
+          <span style={{ fontSize: 12,paddingLeft:5, paddingRight:5 }}>删除</span>
+        </Menu.Item>
     </Menu>
   );
 };
@@ -372,13 +372,20 @@ const getColumnsConfig = (
   // setCloseMaintainModal,
   // setOpenMaintainModal,
   //setShowIframe,
-  history
+  history,
+  labelsData,
+  queryRequest,
+  initfilterAppType,
+  initfilterLabelName,
+  setShowIframe
 ) => {
   return [
     {
       title: "实例名称",
       key: "service_instance_name",
       dataIndex: "service_instance_name",
+      sorter: (a, b) => a.service_instance_name - b.service_instance_name,
+      sortDirections: ["descend", "ascend"],
       align: "center",
       ellipsis: true,
       fixed: "left",
@@ -403,19 +410,7 @@ const getColumnsConfig = (
         if (str == "-") {
           return "-";
         } else {
-          return (
-            <a
-              onClick={() => {
-                fetchHistoryData(record.id);
-                setIsShowDrawer({
-                  isOpen: true,
-                  record: record,
-                });
-              }}
-            >
-              {str}
-            </a>
-          );
+          return <span>{str}</span>;
         }
       },
       //ellipsis: true,
@@ -425,20 +420,47 @@ const getColumnsConfig = (
       key: "port",
       dataIndex: "port",
       align: "center",
-      //ellipsis: true,
+      ellipsis: true,
+      render: (text) => {
+        return <Tooltip title={text}>{text ? text : "-"}</Tooltip>;
+      },
     },
     {
       title: "功能模块",
       key: "label_name",
       dataIndex: "label_name",
       align: "center",
-      //ellipsis: true,
+      usefilter: true,
+      queryRequest: queryRequest,
+      ellipsis: true,
+      initfilter:initfilterLabelName,
+      filterMenuList: labelsData.map((item) => ({ value: item, text: item })),
+      align: "center",
+      render: (text) => {
+        return <Tooltip title={text}>{text ? text : "-"}</Tooltip>;
+      },
     },
     {
       title: "服务类型",
       key: "app_type",
       dataIndex: "app_type",
       align: "center",
+      usefilter: true,
+      queryRequest: queryRequest,
+      initfilter:initfilterAppType,
+      filterMenuList: [
+        {
+          value: 0,
+          text: "基础组件",
+        },
+        {
+          value: 1,
+          text: "应用服务",
+        },
+      ],
+      render: (text) => {
+        return text ? "应用服务" : "基础组件";
+      },
       //ellipsis: true,
     },
     {
@@ -446,14 +468,14 @@ const getColumnsConfig = (
       key: "app_name",
       dataIndex: "app_name",
       align: "center",
-      //ellipsis: true,
+      ellipsis: true,
     },
     {
       title: "版本",
       key: "app_version",
       dataIndex: "app_version",
       align: "center",
-      //ellipsis: true,
+      ellipsis: true,
     },
     {
       title: "状态",
@@ -461,12 +483,48 @@ const getColumnsConfig = (
       dataIndex: "service_status",
       align: "center",
       //ellipsis: true,
+      render: (text) => {
+        let level = "normal";
+        if (
+          text == "启动中" ||
+          text == "停止中" ||
+          text == "重启中" ||
+          text == "未知" ||
+          text == "安装中"
+        ) {
+          level = "warning";
+        } else if (text == "停止" || text == "安装失败") {
+          level = "critical";
+        }
+        return <span style={{ color: colorConfig[level]}}>{text}</span>;
+      },
     },
     {
       title: "告警次数",
       key: "alert_count",
       dataIndex: "alert_count",
       align: "center",
+      render: (text, record) => {
+        if (text == "-" || text == "0次") {
+          return text;
+        } else {
+          return (
+            <a
+              onClick={() => {
+                text &&
+                  history.push({
+                    pathname: "/application-monitoring/alarm-log",
+                    state: {
+                      ip: record.ip,
+                    },
+                  });
+              }}
+            >
+              {text}
+            </a>
+          );
+        }
+      },
       //ellipsis: true,
     },
     {
@@ -479,7 +537,7 @@ const getColumnsConfig = (
     {
       title: "操作",
       //width: 100,
-      width: 100,
+      width: 140,
       key: "",
       dataIndex: "",
       align: "center",
@@ -525,14 +583,31 @@ const getColumnsConfig = (
               <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
             )}
 
+            {record.log_url ? (
+              <a
+                onClick={() => {
+                  setShowIframe({
+                    isOpen: true,
+                    src: record.log_url,
+                    record: record,
+                    isLog: true,
+                  });
+                }}
+              >
+                日志
+              </a>
+            ) : (
+              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>日志</span>
+            )}
+
             <Dropdown
               arrow
-              // overlay={renderMenu(
-              //   setUpdateMoadlVisible,
-              //   setCloseMaintainModal,
-              //   setOpenMaintainModal,
-              //   record
-              // )}
+              overlay={renderMenu(
+                // setUpdateMoadlVisible,
+                // setCloseMaintainModal,
+                // setOpenMaintainModal,
+                record
+              )}
             >
               <a>
                 更多 <DownOutlined style={{ position: "relative", top: 1 }} />

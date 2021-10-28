@@ -4,6 +4,7 @@
 import json
 import logging
 import os
+import time
 from django.conf import settings
 
 from rest_framework import serializers
@@ -15,7 +16,7 @@ from app_store.tmp_exec_back_task import front_end_verified_init
 
 from db_models.models import (
     ApplicationHub, ProductHub, UploadPackageHistory,
-    Service
+    Service, MainInstallHistory, DetailInstallHistory
 )
 
 from app_store.install_utils import (
@@ -188,8 +189,19 @@ class ApplicationDetailSerializer(ModelSerializer):  # NOQA
 
     def get_app_instances_info(self, obj):  # NOQA
         """ 获取服务安装实例信息 """
-        # TODO 获取组件的已安装实例信息
-        return {}
+        service_objs = Service.objects.filter(service__app_name=obj.app_name)
+        service_list = []
+        for so in service_objs:
+            service_dict = {
+                "instance_name": so.service_instance_name,
+                "host_ip": so.ip,
+                "service_port": so.service_port,
+                "app_version": so.service.app_version,
+                "mode": "单实例",  # TODO  后续根据cluster字段是否为空来判断是单实例还是集群模式
+                "created": so.created
+            }
+            service_list.append(service_dict)
+        return service_list
 
     def get_app_labels(self, obj):  # NOQA
         return list(obj.app_labels.all().values_list('label_name', flat=True))
@@ -220,8 +232,21 @@ class ProductDetailSerializer(ModelSerializer):  # NOQA
 
     def get_pro_instances_info(self, obj):  # NOQA
         """ 获取服务安装实例信息 """
-        # TODO 获取服务的已安装实例信息
-        return {}
+        service_objs = Service.objects.filter(
+            service__product__pro_name=obj.pro_name)
+        service_list = []
+        for so in service_objs:
+            service_dict = {
+                "instance_name": so.service_instance_name,
+                "version": so.service.product.pro_version,
+                "app_name": so.service.app_name,
+                "app_version": so.service.app_version,
+                "host_ip": so.ip,
+                "service_port": so.service_port,
+                "created": so.created
+            }
+            service_list.append(service_dict)
+        return service_list
 
     def get_pro_labels(self, obj):  # NOQA
         return list(obj.pro_labels.all().values_list('label_name', flat=True))
@@ -248,6 +273,7 @@ class ProductDetailSerializer(ModelSerializer):  # NOQA
                 return pro_services_list
             pro_services_list.extend(json.loads(obj.pro_services))
             return pro_services_list
+        pro_app_name_list = []
         for app in apps:
             uph = UploadPackageHistory.objects.get(id=app.app_package_id)
             if not uph:
@@ -255,10 +281,15 @@ class ProductDetailSerializer(ModelSerializer):  # NOQA
             app_dict = {
                 "name": app.app_name,
                 "version": app.app_version,
-                "created": app.created,
+                "created": time.strftime("%Y-%m-%d %H:%M:%S", time.strptime(str(app.created), "%Y-%m-%d %H:%M:%S.%f")),
                 "md5": uph.package_md5
             }
             pro_services_list.append(app_dict)
+            pro_app_name_list.append(app.app_name)
+        for ps in json.loads(obj.pro_services):
+            if ps.get("name") in pro_app_name_list:
+                continue
+            pro_services_list.append(ps)
         return pro_services_list
 
 
@@ -297,7 +328,7 @@ class ComponentEntranceSerializer(serializers.ModelSerializer):
     process_continue = serializers.SerializerMethodField()
     process_message = serializers.SerializerMethodField()
 
-    def get_app_port(self, obj):    # NOQA
+    def get_app_port(self, obj):  # NOQA
         """ 获取服务端口 """
         return ServiceArgsSerializer().get_app_port(obj)
 
@@ -431,8 +462,12 @@ class ExecuteInstallSerializer(Serializer):
         read_only=True, required=False, max_length=4096,
         help_text="数据准确性校验结果信息"
     )
+    operation_uuid = serializers.CharField(
+        read_only=True, required=False, max_length=128,
+        help_text="成功下发部署计划后返回的uuid"
+    )
 
-    def validate_use_exist_services(self, data):    # NOQA
+    def validate_use_exist_services(self, data):  # NOQA
         """
         校验已经存在的服务是否准确
         :param data:
@@ -450,7 +485,7 @@ class ExecuteInstallSerializer(Serializer):
         """
         return ValidateInstallService(data=data).run()
 
-    def check_lst_valid(self, lst):     # NOQA
+    def check_lst_valid(self, lst):  # NOQA
         """
         根据列表、字典格式确定安装参数是否符合要求
         :param lst:
@@ -495,4 +530,58 @@ class ExecuteInstallSerializer(Serializer):
             return attrs
         attrs["is_valid_flag"] = True
         attrs["is_valid_msg"] = ""
+        attrs["operation_uuid"] = msg
         return attrs
+
+
+class InstallHistorySerializer(ModelSerializer):
+    """ 安装历史记录序列化类 """
+    install_status_msg = serializers.CharField(
+        source="get_install_status_display")
+    detail_lst = serializers.SerializerMethodField()
+
+    def parse_single_obj(self, obj):    # NOQA
+        """
+        解析单个服务安装记录信息
+        :param obj:
+        :type obj: DetailInstallHistory
+        :return:
+        """
+        _status = obj.install_step_status
+        # 拼接日志
+        _log = ""
+        if obj.send_flag != 0 and obj.send_msg:
+            _log += obj.send_msg
+        if obj.unzip_flag != 0 and obj.unzip_msg:
+            _log += obj.unzip_msg
+        if obj.install_flag != 0 and obj.install_msg:
+            _log += obj.install_msg
+        if obj.init_flag != 0 and obj.init_msg:
+            _log += obj.init_msg
+        if obj.start_flag != 0 and obj.start_msg:
+            _log += obj.start_msg
+        return {
+            "status": _status,
+            "log": _log,
+            "service_name": obj.service.service.app_name,
+            "service_instance_name": obj.service.service_instance_name
+        }
+
+    def get_detail_lst(self, obj):  # NOQA
+        """
+        获取安装细节表
+        :param obj:
+        :return:
+        """
+        lst = DetailInstallHistory.objects.filter(
+            main_install_history=obj
+        )
+        return [self.parse_single_obj(el) for el in lst]
+
+    class Meta:
+        """ 元数据 """
+        model = MainInstallHistory
+        fields = (
+            "operation_uuid", "install_status", "install_status_msg",
+            "install_args", "install_log", "detail_lst"
+        )

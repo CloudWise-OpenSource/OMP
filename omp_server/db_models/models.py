@@ -689,6 +689,7 @@ class ServiceHistory(models.Model):
 class MainInstallHistory(TimeStampMixin):
     """ 主安装记录表 """
 
+    objects = None
     INSTALL_STATUS_READY = 0
     INSTALL_STATUS_INSTALLING = 1
     INSTALL_STATUS_SUCCESS = 2

@@ -151,7 +151,7 @@ export default function PatrolInspectionDetail() {
                     bordered={true}
                     size={"small"}
                     pagination={false}
-                    rowKey={(record, index) => index}
+                    rowKey={(record, index) => record.id}
                     columns={[
                       {
                         ...columnsConfig.report_idx,
@@ -202,7 +202,7 @@ export default function PatrolInspectionDetail() {
                     style={{ marginTop: 20 }}
                     size={"small"}
                     pagination={false}
-                    rowKey={(record, index) => index}
+                    rowKey={(record, index) => record.id}
                     columns={[
                       {
                         ...columnsConfig.report_idx,
@@ -282,7 +282,7 @@ export default function PatrolInspectionDetail() {
                 style={{ marginTop: 20 }}
                 scroll={{ x: 1100 }}
                 pagination={false}
-                rowKey={(record) => record.id}
+                rowKey={(record,index) => record.id}
                 // defaultExpandAllRows
                 columns={[
                   {
@@ -682,7 +682,7 @@ function RenderExpandedContent(
                   {currentContent.columns.length > 0 ? (
                     <Table
                       bordered={true}
-                      rowKey={(record, index) => index}
+                      rowKey={(record, index) => record.id}
                       size={"small"}
                       columns={currentContent.columns}
                       dataSource={currentContent.dataSource}

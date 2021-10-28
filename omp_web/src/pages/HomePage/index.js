@@ -187,6 +187,9 @@ const Homepage = () => {
                       dataSource.service?.service_info_all_count &&
                       history.push({
                         pathname: "/application_management/service_management",
+                        state: {
+                          app_type: "1",
+                        },
                       })
                     }
                     style={
@@ -274,6 +277,9 @@ const Homepage = () => {
                       dataSource.component?.component_info_all_count &&
                       history.push({
                         pathname: "/application_management/service_management",
+                        state: {
+                          app_type: "0",
+                        },
                       })
                     }
                     style={
@@ -361,6 +367,9 @@ const Homepage = () => {
                       dataSource.database?.database_info_all_count &&
                       history.push({
                         pathname: "/application_management/service_management",
+                        state:{
+                          label_name:"数据库"
+                        }
                       })
                     }
                     style={
@@ -414,7 +423,7 @@ const Homepage = () => {
               </div>
 
               {/* 三方组件 */}
-              <div className={styles.blockOverviewItem}>
+              {/* <div className={styles.blockOverviewItem}>
                 <OmpProgress
                   percent={calcPercentage(
                     dataSource.third?.third_info_all_count -
@@ -497,7 +506,7 @@ const Homepage = () => {
                     </span>
                   </div>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
 
@@ -557,6 +566,7 @@ const Homepage = () => {
                   pathname: "/application_management/service_management",
                   state: {
                     ip: data.ip,
+                    app_type: "1",
                   },
                 });
               }}
@@ -584,6 +594,7 @@ const Homepage = () => {
                   pathname: "/application_management/service_management",
                   state: {
                     ip: data.ip,
+                    app_type: "0",
                   },
                 });
               }}
@@ -611,6 +622,7 @@ const Homepage = () => {
                   pathname: "/application_management/service_management",
                   state: {
                     ip: data.ip,
+                    label_name:"数据库"
                   },
                 });
               }}
@@ -629,7 +641,7 @@ const Homepage = () => {
             />
           </div>
 
-          <div className={styles.pageBlock}>
+          {/* <div className={styles.pageBlock}>
             <OmpStateBlock
               // key={"serviceData"}
               // tag={"all"}
@@ -654,7 +666,7 @@ const Homepage = () => {
               title={"三方组件状态"}
               data={dataSource.third?.third_info_list}
             />
-          </div>
+          </div> */}
         </Spin>
       </div>
     </OmpContentWrapper>

@@ -9,11 +9,11 @@ const colorObj = {
     background: "#eefaf4",
     borderColor: "#54bba6",
   },
-  critical: {
+  abnormal: {
     background: "#fbe7e6",
     borderColor: "#da4e48",
   },
-  warning: {
+  noMonitored: {
     background: "rgba(247, 231, 24, 0.2)",
     borderColor: "rgb(245, 199, 115)",
   },
@@ -22,6 +22,7 @@ const colorObj = {
 function OmpStateBlock(props) {
   const history = useHistory();
   const { title, data = [] } = props;
+  const [allData, setAllData] = useState([])
   //console.log(data)
   const [currentData, setCurrentData] = useState([]);
 
@@ -29,16 +30,30 @@ function OmpStateBlock(props) {
 
   useEffect(() => {
     if (data && data.length > 0) {
-      setCurrentData(sortData(data));
+      let handleData = data.map((item) => {
+        //后端的critical和warning都渲染成红色，在前端对数据进行处理 noMonitored:"未监控" abnormal:"异常" normal:"正常"
+        let status = "noMonitored";
+        if (item.severity == "warning" || item.severity == "critical") {
+          status = "abnormal";
+        } else if (item.severity == "normal") {
+          status = "normal";
+        }
+        return {
+          ...item,
+          frontendStatus: status,
+        };
+      });
+      setCurrentData(sortData(handleData));
+      setAllData(sortData(handleData))
     }
   }, [data]);
 
   const sortData = (data) => {
-    let normalArr = data.filter((i) => i.severity == "normal");
-    let warningArr = data.filter((i) => i.severity == "warning");
-    let criticalArr = data.filter((i) => i.severity == "critical");
+    let normalArr = data.filter((i) => i.frontendStatus == "normal");
+    let noMonitoredArr = data.filter((i) => i.frontendStatus == "noMonitored");
+    let abnormalArr = data.filter((i) => i.frontendStatus == "abnormal");
 
-    let result = criticalArr.concat(normalArr).concat(warningArr);
+    let result = abnormalArr.concat(normalArr).concat(noMonitoredArr);
     return result;
   };
 
@@ -54,13 +69,15 @@ function OmpStateBlock(props) {
                 setCurrentData(
                   sortData(
                     currentData.concat(
-                      data.filter((i) => i.severity == "critical")
+                      allData.filter((i) => i.frontendStatus == "abnormal")
                     )
                   )
                 );
               } else {
                 setCurrentData(
-                  sortData(currentData.filter((i) => i.severity !== "critical"))
+                  sortData(
+                    currentData.filter((i) => i.frontendStatus !== "abnormal")
+                  )
                 );
               }
             }}
@@ -74,13 +91,15 @@ function OmpStateBlock(props) {
                 setCurrentData(
                   sortData(
                     currentData.concat(
-                      data.filter((i) => i.severity == "normal")
+                      allData.filter((i) => i.frontendStatus == "normal")
                     )
                   )
                 );
               } else {
                 setCurrentData(
-                  sortData(currentData.filter((i) => i.severity !== "normal"))
+                  sortData(
+                    currentData.filter((i) => i.frontendStatus !== "normal")
+                  )
                 );
               }
             }}
@@ -96,14 +115,16 @@ function OmpStateBlock(props) {
                   setCurrentData(
                     sortData(
                       currentData.concat(
-                        data.filter((i) => i.severity == "warning")
+                        allData.filter((i) => i.frontendStatus == "noMonitored")
                       )
                     )
                   );
                 } else {
                   setCurrentData(
                     sortData(
-                      currentData.filter((i) => i.severity !== "warning")
+                      currentData.filter(
+                        (i) => i.frontendStatus !== "noMonitored"
+                      )
                     )
                   );
                 }
@@ -132,7 +153,7 @@ function OmpStateBlock(props) {
               <div
                 key={`${title}-${idx}`}
                 onClick={() => {
-                  item.severity == "critical"
+                  item.frontendStatus == "abnormal"
                     ? props.criticalLink(item)
                     : props.link(item);
                 }}
@@ -140,9 +161,9 @@ function OmpStateBlock(props) {
                 <Popover content={popContent(item || {})} title={"相关信息"}>
                   <Button
                     className={styles.stateButton}
-                    style={colorObj[item.severity]}
+                    style={colorObj[item.frontendStatus]}
                   >
-                    <div>{item.instance_name}</div>
+                    <div>{item.instance_name || item.ip}</div>
                   </Button>
                 </Popover>
               </div>
@@ -165,7 +186,7 @@ function popContent(item) {
         {item.ip && (
           <span
             className={styles.ip}
-            style={{ color: colorObj[item.severity]?.borderColor }}
+            style={{ color: colorObj[item.frontendStatus]?.borderColor }}
           >
             {item.ip}
           </span>
@@ -174,7 +195,7 @@ function popContent(item) {
           {item.date ? (
             item.date
           ) : (
-            <span style={{ color: colorObj[item.severity]?.borderColor }}>
+            <span style={{ color: colorObj[item.frontendStatus]?.borderColor }}>
               正常
             </span>
           )}
