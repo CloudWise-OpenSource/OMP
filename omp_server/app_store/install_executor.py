@@ -56,8 +56,9 @@ class InstallServiceExecutor:
             assert target_host is not None
 
             # 获取 json 文件路径
-            json_source_path = os.path.join("data_files",
-                                            f"{detail_obj.main_install_history.operation_uuid}.json")
+            json_source_path = os.path.join(
+                "data_files",
+                f"{detail_obj.main_install_history.operation_uuid}.json")
             json_target_path = os.path.join(
                 target_host.data_folder,
                 f"{detail_obj.main_install_history.operation_uuid}.json")
@@ -118,12 +119,31 @@ class InstallServiceExecutor:
         detail_obj.save()
 
         try:
-            # 解析获取安装目录
+            # 解析获取目录
             target_host = Host.objects.filter(ip=target_ip).first()
             assert target_host is not None
             data_folder = target_host.data_folder
-            target_path = os.path.join(data_folder, package_name)
-            cmd_str = f"test -e {target_path} && tar -xf {target_path} " \
+            package_path = os.path.join(data_folder, package_name)
+            # 获取解压目标路径
+            detail_args = detail_obj.install_detail_args
+            assert detail_args is not None
+            app_name = detail_args.get("name", None)
+            assert app_name is not None
+            target_path = None
+            for info in detail_args.get("app_install_args", []):
+                if info.get("key", "") == "base_dir":
+                    target_path = info.get("default")
+                    break
+            if target_path is None:
+                raise Exception("未获取到解压目标路径")
+            # 切分判断路径
+            path_ls = os.path.split(target_path)
+            if path_ls[1] == app_name:
+                target_path = path_ls[0]
+
+            cmd_str = f"(test -d {target_path} || mkdir {target_path}) && " \
+                      f"test -e {package_path} && " \
+                      f"tar -xf {package_path} -C {target_path} " \
                       f"|| echo 'NOT EXIST'"
 
             # 解压服务包
@@ -175,7 +195,8 @@ class InstallServiceExecutor:
             target_host = Host.objects.filter(ip=target_ip).first()
             assert target_host is not None
             json_path = os.path.join(
-                target_host.data_folder, f"{self.main_id}.json")
+                target_host.data_folder,
+                f"{detail_obj.main_install_history.operation_uuid}.json")
 
             cmd_str = f"test -f {install_script_path} && " \
                       f"python {install_script_path} {target_ip} {json_path} " \
@@ -232,7 +253,8 @@ class InstallServiceExecutor:
             target_host = Host.objects.filter(ip=target_ip).first()
             assert target_host is not None
             json_path = os.path.join(
-                target_host.data_folder, f"{self.main_id}.json")
+                target_host.data_folder,
+                f"{detail_obj.main_install_history.operation_uuid}.json")
 
             cmd_str = f"test -f {init_script_path} && " \
                       f"python {init_script_path} {target_ip} {json_path} " \
