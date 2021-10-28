@@ -262,7 +262,7 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
                         "instance_name": ele.get("labels").get("service_name")
                     }])
                 }
-                if ele.get("labels").get("service_type") == "host":
+                if ele.get("labels").get("job") == "nodeExporter":
                     ele_dict["monitor_url"] = get_monitor_url([{
                         "ip": ele.get("labels").get("instance"),
                         "type": "host",
@@ -276,24 +276,22 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
                     host_info_exc_count = host_info_exc_count + 1
                     host_info_list.append(ele_dict)
                     error_host_list.append(ele.get("labels").get("instance"))
-                elif ele.get("labels").get("service_type") == "database":
+                service_name_str = ele.get("labels").get("app")
+                if not service_name_str:
+                    continue
+                if list(filter(lambda x: x.app_name == service_name_str, list(database_list))):
                     database_info_exc_count = database_info_exc_count + 1
                     database_info_list.append(ele_dict)
                     error_instance_list.append(
                         ele.get("labels").get("instance_name"))
-                elif ele.get("labels").get("service_type") == "service":
+                elif list(filter(lambda x: x.app_name == service_name_str, list(service_list))):
                     service_info_exc_count = service_info_exc_count + 1
                     service_info_list.append(ele_dict)
                     error_instance_list.append(
                         ele.get("labels").get("instance_name"))
-                elif ele.get("labels").get("service_type") == "component":
+                elif list(filter(lambda x: x.app_name == service_name_str, list(component_list))):
                     component_info_exc_count = component_info_exc_count + 1
                     component_info_list.append(ele_dict)
-                    error_instance_list.append(
-                        ele.get("labels").get("instance_name"))
-                elif ele.get("labels").get("service_type") == "third":
-                    third_info_exc_count = third_info_exc_count + 1
-                    third_info_list.append(ele_dict)
                     error_instance_list.append(
                         ele.get("labels").get("instance_name"))
                 else:
