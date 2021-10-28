@@ -90,13 +90,15 @@ class HostCrawl(Prometheus):
 
     def rate_max_disk(self):
         """根分区使用率"""
-        expr = f"(1-(node_filesystem_free_bytes{{env='{self.env}'," \
-               f"instance=~'{self.instance}',mountpoint='/', " \
-               f"fstype=~'ext.*|xfs'}}" \
-               f" / node_filesystem_size_bytes{{env='{self.env}'," \
-               f"instance=~'{self.instance}',mountpoint='/', " \
-               f"fstype=~'ext.*|xfs'}}))" \
-               f" * 100"
+        expr = f"(node_filesystem_size_bytes{{env='{self.env}'," \
+               f"instance=~'{self.instance}'," \
+               f"fstype=~'ext.*|xfs',mountpoint='/'}} - " \
+               f"node_filesystem_avail_bytes{{env='{self.env}'," \
+               f"instance=~'{self.instance}'," \
+               f"fstype=~'ext.*|xfs',mountpoint='/'}}) / " \
+               f"node_filesystem_size_bytes{{env='{self.env}'," \
+               f"instance=~'{self.instance}'," \
+               f"fstype=~'ext.*|xfs',mountpoint='/'}} * 100"
         self.ret['rate_max_disk'] = \
             f"{round(float(self.unified_job(*self.query(expr))), 2)}%"
 
@@ -210,6 +212,6 @@ class HostCrawl(Prometheus):
 
 
 if __name__ == '__main__':
-    h = HostCrawl(env='default', instance='10.0.14.226')
+    h = HostCrawl(env='default', instance='10.0.14.224')
     h.run()
     print(h.ret)

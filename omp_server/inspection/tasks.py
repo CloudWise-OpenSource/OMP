@@ -5,6 +5,7 @@
 # Description: 巡检异步任务及定时任务
 
 import logging
+import random
 import traceback
 from datetime import datetime
 from celery import shared_task
@@ -38,6 +39,7 @@ def get_hosts_data(env, hosts):
         h_w_obj = HostCrawl(env=env.name, instance=instance)
         h_w_obj.run()
         _p = h_w_obj.ret
+        temp['id'] = random.randint(1, 99999999)
         temp['mem_usage'] = _p.get('rate_memory')
         temp['cpu_usage'] = _p.get('rate_cpu')
         temp['disk_usage_root'] = _p.get('rate_max_disk')
