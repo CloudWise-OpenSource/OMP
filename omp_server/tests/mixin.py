@@ -6,7 +6,8 @@ import json
 import random
 from db_models.models import (
     Host, Env, Labels, Service, ServiceHistory, GrafanaMainPage,
-    ClusterInfo, ApplicationHub, ProductHub, UploadPackageHistory
+    ClusterInfo, ApplicationHub, ProductHub, UploadPackageHistory,
+    MainInstallHistory, DetailInstallHistory
 )
 from utils.plugin.crypto import AESCryptor
 
@@ -449,3 +450,33 @@ class ServicesResourceMixin(HostsResourceMixin, ClusterResourceMixin,
         self.destroy_application()
         self.destroy_hosts()
         self.destroy_cluster()
+
+
+class InstallHistoryResourceMixin(ServicesResourceMixin):
+    """ 安装历史记录资源混入类 """
+    UUID_START = "t_main"
+
+    def get_install_history(self, number=20):
+        """ 获取安装历史记录 """
+        main_obj = MainInstallHistory.objects.create(
+            operation_uuid=f"{self.UUID_START}_"
+                           f"{int(round(time.time() * 1000))}")
+        service_ls = self.get_services(number=number)
+        detail_ls = []
+        for index in range(number):
+            service = service_ls[index]
+            index += 1
+            detail_ls.append(DetailInstallHistory(
+                service=service,
+                main_install_history=main_obj
+            ))
+        DetailInstallHistory.objects.bulk_create(detail_ls)
+        return main_obj
+
+    def destroy_install_history(self):
+        """ 销毁安装历史记录 """
+        DetailInstallHistory.objects.filter(
+            main_install_history__operation_uuid__startswith=self.UUID_START)
+        MainInstallHistory.objects.filter(
+            operation_uuid__startswith=self.UUID_START).delete()
+        self.destroy_services()
