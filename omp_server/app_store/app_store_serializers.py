@@ -15,7 +15,7 @@ from app_store.tmp_exec_back_task import front_end_verified_init
 
 from db_models.models import (
     ApplicationHub, ProductHub, UploadPackageHistory,
-    Service
+    Service, MainInstallHistory, DetailInstallHistory
 )
 
 from app_store.install_utils import (
@@ -496,3 +496,28 @@ class ExecuteInstallSerializer(Serializer):
         attrs["is_valid_flag"] = True
         attrs["is_valid_msg"] = ""
         return attrs
+
+
+class InstallHistorySerializer(ModelSerializer):
+    """ 安装历史记录序列化类 """
+    install_status = serializers.CharField(source="get_install_status_display")
+    detail_lst = serializers.SerializerMethodField()
+
+    def get_detail_lst(self, obj):  # NOQA
+        """
+        获取安装细节表
+        :param obj:
+        :return:
+        """
+        lst = DetailInstallHistory.objects.filter(
+            main_install_history=obj
+        ).values()
+        return list(lst)
+
+    class Meta:
+        """ 元数据 """
+        model = MainInstallHistory
+        fields = (
+            "operation_uuid", "install_status", "install_args",
+            "install_log", "detail_lst"
+        )
