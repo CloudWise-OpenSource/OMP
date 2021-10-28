@@ -68,7 +68,7 @@ export const DetailHost = ({
             padding: 20,
           }}
         >
-          <div style={{ paddingBottom: 35, fontSize: 16 }}>基本信息</div>
+          <div style={{ paddingBottom: 35, fontSize: 15, fontWeight:500 }}>基本信息</div>
           <div
             style={{
               display: "flex",
@@ -241,7 +241,7 @@ export const DetailHost = ({
               padding: 20,
             }}
           >
-            <div style={{ paddingBottom: 35, fontSize: 16 }}>Agent状态</div>
+            <div style={{ paddingBottom: 35, fontSize: 15, fontWeight:500 }}>Agent状态</div>
             <div style={{ display: "flex", paddingTop: 15, paddingBottom: 15 }}>
               <div style={{ flex: 1 }}>主机Agent</div>
               <div style={{ flex: 1 }}>
@@ -267,7 +267,7 @@ export const DetailHost = ({
               padding: 20,
             }}
           >
-            <div style={{ paddingBottom: 35, fontSize: 16 }}>部署组件信息</div>
+            <div style={{ paddingBottom: 35, fontSize: 15, fontWeight:500 }}>部署组件信息</div>
             <div style={{ display: "flex", paddingTop: 15, paddingBottom: 15 }}>
               <div style={{ flex: 1 }}>部署组件</div>
               <div style={{ flex: 1 }}>
@@ -290,7 +290,7 @@ export const DetailHost = ({
               //overflow:"hidden"
             }}
           >
-            <div style={{ paddingBottom: 20, fontSize: 16 }}>历史记录</div>
+            <div style={{ paddingBottom: 20, fontSize: 15, fontWeight:500 }}>历史记录</div>
             <Spin spinning={loading} wrapperClassName={styles.omp_spin_wrapper}>
               <Timeline
                 style={{

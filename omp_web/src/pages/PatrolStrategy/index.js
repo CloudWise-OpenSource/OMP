@@ -235,12 +235,12 @@ const PatrolStrategy = () => {
                   <Select.Option value="0" key="0">
                     深度分析
                   </Select.Option>
-                  <Select.Option value="1" key="1">
+                  {/* <Select.Option value="1" key="1">
                     主机巡检
                   </Select.Option>
                   <Select.Option value="2" key="2">
                     组件巡检
-                  </Select.Option>
+                  </Select.Option> */}
                 </Select>
               </Form.Item>
               <Form.Item name={["type", "icon"]} noStyle>

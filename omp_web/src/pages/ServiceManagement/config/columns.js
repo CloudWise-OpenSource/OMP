@@ -26,9 +26,9 @@ export const DetailHost = ({
       title={
         <div style={{ display: "flex" }}>
           <DesktopOutlined style={{ position: "relative", top: 3, left: -5 }} />
-          主机详细信息面板
+          服务信息面板
           <span style={{ paddingLeft: 30, fontWeight: 400, fontSize: 15 }}>
-            IP: {isShowDrawer.record.ip}
+            服务名称: {isShowDrawer.record?.service_instance_name}
           </span>
         </div>
       }
@@ -57,43 +57,46 @@ export const DetailHost = ({
       <div
         style={{ height: "calc(100% - 65px)", width: "100%", display: "flex" }}
       >
-        <div
-          style={{
-            height: "100%",
-            width: "100%",
-            //border: "solid 1px rgb(220,220,220)",
-            borderRadius: "5px",
-            backgroundColor: "#fff",
-            flex: 4,
-            padding: 20,
-          }}
-        >
-          <div style={{ paddingBottom: 35, fontSize: 16 }}>基本信息</div>
+        <div style={{ flex: 4 }}>
           <div
             style={{
-              display: "flex",
-              //paddingTop: 15,
-              paddingBottom: 5,
-              borderBottom: "solid 1px rgb(220,220,220)",
+              height: "calc(50%)",
+              width: "100%",
+              //border: "solid 1px rgb(220,220,220)",
+              borderRadius: "5px",
+              backgroundColor: "#fff",
+              //flex: 4,
+              padding: 20,
             }}
           >
-            <div style={{ flex: 1 }}>实例名称</div>
-            <div style={{ flex: 1 }}>{isShowDrawer.record.instance_name}</div>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              paddingTop: 15,
-              paddingBottom: 5,
-              borderBottom: "solid 1px rgb(220,220,220)",
-            }}
-          >
-            <div style={{ flex: 1 }}>HOSTNAME</div>
-            <div style={{ flex: 1 }}>
-              {nonEmptyProcessing(isShowDrawer.record.host_name)}
+            <div style={{ paddingBottom: 15, fontSize: 15, fontWeight: 500 }}>
+              基本信息
             </div>
-          </div>
-          <div
+            <div
+              style={{
+                display: "flex",
+                //paddingTop: 15,
+                paddingBottom: 5,
+                borderBottom: "solid 1px rgb(220,220,220)",
+              }}
+            >
+              <div style={{ flex: 1 }}>实例名称</div>
+              <div style={{ flex: 1 }}>{isShowDrawer.record?.app_name}</div>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                paddingTop: 15,
+                paddingBottom: 5,
+                borderBottom: "solid 1px rgb(220,220,220)",
+              }}
+            >
+              <div style={{ flex: 1 }}>服务名称</div>
+              <div style={{ flex: 1 }}>
+                {nonEmptyProcessing(isShowDrawer.record?.service_instance_name)}
+              </div>
+            </div>
+            {/* <div
             style={{
               display: "flex",
               paddingTop: 15,
@@ -103,123 +106,145 @@ export const DetailHost = ({
           >
             <div style={{ flex: 1 }}>IP地址</div>
             <div style={{ flex: 1 }}>{isShowDrawer.record.ip}</div>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              paddingTop: 15,
-              paddingBottom: 5,
-              borderBottom: "solid 1px rgb(220,220,220)",
-            }}
-          >
-            <div style={{ flex: 1 }}>SSH端口</div>
-            <div style={{ flex: 1 }}>{isShowDrawer.record.port}</div>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              paddingTop: 15,
-              paddingBottom: 5,
-              borderBottom: "solid 1px rgb(220,220,220)",
-            }}
-          >
-            <div style={{ flex: 1 }}>用户名</div>
-            <div style={{ flex: 1 }}>{isShowDrawer.record.username}</div>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              paddingTop: 15,
-              paddingBottom: 5,
-              borderBottom: "solid 1px rgb(220,220,220)",
-            }}
-          >
-            <div style={{ flex: 1 }}>系统</div>
-            <div style={{ flex: 1 }}>{isShowDrawer.record.operate_system}</div>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              paddingTop: 15,
-              paddingBottom: 5,
-              borderBottom: "solid 1px rgb(220,220,220)",
-            }}
-          >
-            <div style={{ flex: 1 }}>CPU</div>
-            <div style={{ flex: 1 }}>
-              {nonEmptyProcessing(isShowDrawer.record.cpu)} c
+          </div> */}
+            <div
+              style={{
+                display: "flex",
+                paddingTop: 15,
+                paddingBottom: 5,
+                borderBottom: "solid 1px rgb(220,220,220)",
+              }}
+            >
+              <div style={{ flex: 1 }}>版本</div>
+              <div style={{ flex: 1 }}>{isShowDrawer.record?.app_version}</div>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                paddingTop: 15,
+                paddingBottom: 5,
+                borderBottom: "solid 1px rgb(220,220,220)",
+              }}
+            >
+              <div style={{ flex: 1 }}>服务分类</div>
+              <div style={{ flex: 1 }}>{isShowDrawer.record?.label_name}</div>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                paddingTop: 15,
+                paddingBottom: 5,
+                borderBottom: "solid 1px rgb(220,220,220)",
+              }}
+            >
+              <div style={{ flex: 1 }}>集群模式</div>
+              <div style={{ flex: 1 }}>{isShowDrawer.record?.cluster_type}</div>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                paddingTop: 15,
+                paddingBottom: 5,
+                borderBottom: "solid 1px rgb(220,220,220)",
+              }}
+            >
+              <div style={{ flex: 1 }}>IP地址</div>
+              <div style={{ flex: 1 }}>{isShowDrawer.record?.ip}</div>
             </div>
           </div>
           <div
             style={{
-              display: "flex",
-              paddingTop: 15,
-              paddingBottom: 5,
-              borderBottom: "solid 1px rgb(220,220,220)",
+              marginTop: "3%",
+              height: "calc(48%)",
+              width: "100%",
+              //border: "solid 1px rgb(220,220,220)",
+              borderRadius: "5px",
+              backgroundColor: "#fff",
+              //flex: 4,
+              padding: 20,
             }}
           >
-            <div style={{ flex: 1 }}>内存</div>
-            <div style={{ flex: 1 }}>
-              {nonEmptyProcessing(isShowDrawer.record.memory)} G
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                paddingBottom: 15,
+                fontSize: 15,
+                fontWeight: 500,
+              }}
+            >
+              安装信息
+              <a style={{ fontSize: 13, fontWeight: 400 }}>查看安装记录</a>
             </div>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              paddingTop: 15,
-              paddingBottom: 5,
-              borderBottom: "solid 1px rgb(220,220,220)",
-            }}
-          >
-            <div style={{ flex: 1 }}>硬盘</div>
-            <div style={{ flex: 1 }}>
-              {isShowDrawer.record.disk
-                ? Object.keys(isShowDrawer.record.disk).map((item) => (
-                    <div
-                      key={item}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      <span style={{ width: "65%" }}>{item}</span>
-                      <span style={{ width: "35%" }}>
-                        {isShowDrawer.record.disk[item]} G
-                      </span>
-                    </div>
-                  ))
-                : "-"}
+            <div
+              style={{
+                display: "flex",
+                //paddingTop: 15,
+                paddingBottom: 5,
+                borderBottom: "solid 1px rgb(220,220,220)",
+              }}
+            >
+              <div style={{ flex: 1 }}>安装目录</div>
+              <div style={{ flex: 1 }}>{data.install_info?.base_dir}</div>
             </div>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              paddingTop: 15,
-              paddingBottom: 5,
-              borderBottom: "solid 1px rgb(220,220,220)",
-            }}
-          >
-            <div style={{ flex: 1 }}>创建时间</div>
-            <div style={{ flex: 1 }}>
-              {moment(isShowDrawer.record.created).format(
-                "YYYY-MM-DD HH:mm:ss"
-              )}
+            <div
+              style={{
+                display: "flex",
+                paddingTop: 15,
+                paddingBottom: 5,
+                borderBottom: "solid 1px rgb(220,220,220)",
+              }}
+            >
+              <div style={{ flex: 1 }}>数据目录</div>
+              <div style={{ flex: 1 }}>{data.install_info?.data_dir}</div>
             </div>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              paddingTop: 15,
-              paddingBottom: 5,
-              borderBottom: "solid 1px rgb(220,220,220)",
-            }}
-          >
-            <div style={{ flex: 1 }}>维护模式</div>
-            <div style={{ flex: 1 }}>
-              {isShowDrawer.record.is_maintenance ? "是" : "否"}
+            <div
+              style={{
+                display: "flex",
+                paddingTop: 15,
+                paddingBottom: 5,
+                borderBottom: "solid 1px rgb(220,220,220)",
+              }}
+            >
+              <div style={{ flex: 1 }}>日志目录</div>
+              <div style={{ flex: 1 }}>{data.install_info?.log_dir}</div>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                paddingTop: 15,
+                paddingBottom: 5,
+                borderBottom: "solid 1px rgb(220,220,220)",
+              }}
+            >
+              <div style={{ flex: 1 }}>端口号</div>
+              <div style={{ flex: 1 }}>{data.install_info?.service_port}</div>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                paddingTop: 15,
+                paddingBottom: 5,
+                borderBottom: "solid 1px rgb(220,220,220)",
+              }}
+            >
+              <div style={{ flex: 1 }}>用户名</div>
+              <div style={{ flex: 1 }}>{data.install_info?.username}</div>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                paddingTop: 15,
+                paddingBottom: 5,
+                borderBottom: "solid 1px rgb(220,220,220)",
+              }}
+            >
+              <div style={{ flex: 1 }}>密码</div>
+              <div style={{ flex: 1 }}>{data.install_info?.password}</div>
             </div>
           </div>
         </div>
+
         <div
           style={{
             height: "100%",
@@ -231,56 +256,10 @@ export const DetailHost = ({
           }}
         >
           <div
-            style={{
-              height: "100%",
-              width: "49%",
-              //border: "solid 1px rgb(220,220,220)",
-              borderRadius: "5px",
-              backgroundColor: "#fff",
-              height: 200,
-              padding: 20,
-            }}
-          >
-            <div style={{ paddingBottom: 35, fontSize: 16 }}>Agent状态</div>
-            <div style={{ display: "flex", paddingTop: 15, paddingBottom: 15 }}>
-              <div style={{ flex: 1 }}>主机Agent</div>
-              <div style={{ flex: 1 }}>
-                {renderStatus(isShowDrawer.record.host_agent)}
-              </div>
-            </div>
-            <div style={{ display: "flex", paddingTop: 15, paddingBottom: 15 }}>
-              <div style={{ flex: 1 }}>监控Agent</div>
-              <div style={{ flex: 1 }}>
-                {renderStatus(isShowDrawer.record.monitor_agent)}
-              </div>
-            </div>
-          </div>
-          <div
-            style={{
-              height: "100%",
-              width: "48%",
-              //border: "solid 1px rgb(220,220,220)",
-              borderRadius: "5px",
-              backgroundColor: "#fff",
-              marginLeft: "2%",
-              height: 200,
-              padding: 20,
-            }}
-          >
-            <div style={{ paddingBottom: 35, fontSize: 16 }}>部署组件信息</div>
-            <div style={{ display: "flex", paddingTop: 15, paddingBottom: 15 }}>
-              <div style={{ flex: 1 }}>部署组件</div>
-              <div style={{ flex: 1 }}>
-                {isShowDrawer.record.service_num} 个
-              </div>
-            </div>
-          </div>
-
-          <div
             ref={wrapperRef}
             style={{
-              height: "calc(100% - 220px)",
-              marginTop: 20,
+              height: "calc(100%)",
+              marginTop: 0,
               width: "99%",
               //border: "solid 1px rgb(220,220,220)",
               borderRadius: "5px",
@@ -290,20 +269,23 @@ export const DetailHost = ({
               //overflow:"hidden"
             }}
           >
-            <div style={{ paddingBottom: 20, fontSize: 16 }}>历史记录</div>
+            <div style={{ paddingBottom: 20, fontSize: 15, fontWeight: 500 }}>
+              历史记录
+            </div>
             <Spin spinning={loading} wrapperClassName={styles.omp_spin_wrapper}>
               <Timeline
                 style={{
                   overflowY: "scroll",
                   paddingTop: 10,
-                  height: wrapperRef.current
-                    ? wrapperRef.current?.offsetHeight - 100
-                    : 100,
+                  height: "100%",
+                  // height: wrapperRef.current
+                  //   ? wrapperRef.current?.offsetHeight - 100
+                  //   : 100,
                 }}
               >
-                {data.map((item) => {
+                {data.history?.map((item) => {
                   return (
-                    <Timeline.Item key={item.id}>
+                    <Timeline.Item key={item.created}>
                       <p style={{ color: "#595959" }}>
                         {item.username} {item.description}
                       </p>
@@ -327,22 +309,62 @@ const renderMenu = (
   // setUpdateMoadlVisible,
   // setCloseMaintainModal,
   // setOpenMaintainModal,
-  record
+  
+  record,
+  setOperateAciton,
+  setServiceAcitonModal
 ) => {
   return (
     <Menu>
-      <Menu.Item style={{textAlign:'center'}} key="start" onClick={() => {}}>
-        <span style={{ fontSize: 12,paddingLeft:5, paddingRight:5 }}>启动</span>
+      <Menu.Item
+        disabled={!record.operable}
+        style={{ textAlign: "center" }}
+        key="start"
+        onClick={() => {
+          setOperateAciton(1);
+          setServiceAcitonModal(true);
+        }}
+      >
+        <span style={{ fontSize: 12, paddingLeft: 5, paddingRight: 5 }}>
+          启动
+        </span>
       </Menu.Item>
-        <Menu.Item key="close" onClick={() => {}}>
-          <span style={{ fontSize: 12,paddingLeft:5, paddingRight:5 }}>停止</span>
-        </Menu.Item>
-        <Menu.Item key="reStart" onClick={() => {}}>
-          <span style={{ fontSize: 12,paddingLeft:5, paddingRight:5 }}>重启</span>
-        </Menu.Item>
-        <Menu.Item key="delete" onClick={() => {}}>
-          <span style={{ fontSize: 12,paddingLeft:5, paddingRight:5 }}>删除</span>
-        </Menu.Item>
+      <Menu.Item
+        disabled={!record.operable}
+        key="close"
+        onClick={() => {
+          setOperateAciton(2);
+          setServiceAcitonModal(true);
+        }}
+      >
+        <span style={{ fontSize: 12, paddingLeft: 5, paddingRight: 5 }}>
+          停止
+        </span>
+      </Menu.Item>
+      <Menu.Item
+        disabled={!record.operable}
+        key="reStart"
+        onClick={() => {
+          setOperateAciton(3);
+          setServiceAcitonModal(true);
+        }}
+      >
+        <span style={{ fontSize: 12, paddingLeft: 5, paddingRight: 5 }}>
+          重启
+        </span>
+      </Menu.Item>
+      <Menu.Item
+        disabled={!record.operable}
+        key="delete"
+        onClick={() => {
+          setOperateAciton(4);
+          setServiceAcitonModal(true);
+        }}
+      >
+        <span style={{ fontSize: 12, paddingLeft: 5, paddingRight: 5 }}>
+          删除
+        </span>
+      </Menu.Item>
     </Menu>
   );
 };
@@ -377,7 +399,9 @@ const getColumnsConfig = (
   queryRequest,
   initfilterAppType,
   initfilterLabelName,
-  setShowIframe
+  setShowIframe,
+  setOperateAciton,
+  setServiceAcitonModal
 ) => {
   return [
     {
@@ -389,10 +413,20 @@ const getColumnsConfig = (
       align: "center",
       ellipsis: true,
       fixed: "left",
-      render: (text) => {
+      render: (text, record) => {
         return (
           <Tooltip title={text}>
-            <a>{text ? text : "-"}</a>
+            <a
+              onClick={() => {
+                fetchHistoryData(record.id);
+                setIsShowDrawer({
+                  isOpen: true,
+                  record: record,
+                });
+              }}
+            >
+              {text ? text : "-"}
+            </a>
           </Tooltip>
         );
       },
@@ -433,7 +467,7 @@ const getColumnsConfig = (
       usefilter: true,
       queryRequest: queryRequest,
       ellipsis: true,
-      initfilter:initfilterLabelName,
+      initfilter: initfilterLabelName,
       filterMenuList: labelsData.map((item) => ({ value: item, text: item })),
       align: "center",
       render: (text) => {
@@ -447,7 +481,7 @@ const getColumnsConfig = (
       align: "center",
       usefilter: true,
       queryRequest: queryRequest,
-      initfilter:initfilterAppType,
+      initfilter: initfilterAppType,
       filterMenuList: [
         {
           value: 0,
@@ -496,7 +530,7 @@ const getColumnsConfig = (
         } else if (text == "停止" || text == "安装失败") {
           level = "critical";
         }
-        return <span style={{ color: colorConfig[level]}}>{text}</span>;
+        return <span style={{ color: colorConfig[level] }}>{text}</span>;
       },
     },
     {
@@ -543,22 +577,6 @@ const getColumnsConfig = (
       align: "center",
       fixed: "right",
       render: function renderFunc(text, record, index) {
-        if (record?.host_agent == 3 || record?.monitor_agent == 3) {
-          return (
-            <div
-              onClick={() => {
-                setRow(record);
-              }}
-              style={{ display: "flex", justifyContent: "space-around" }}
-            >
-              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
-              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>日志</span>
-              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>
-                更多 <DownOutlined style={{ position: "relative", top: 1 }} />
-              </span>
-            </div>
-          );
-        }
         return (
           <div
             onClick={() => {
@@ -606,7 +624,9 @@ const getColumnsConfig = (
                 // setUpdateMoadlVisible,
                 // setCloseMaintainModal,
                 // setOpenMaintainModal,
-                record
+                record,
+                setOperateAciton,
+                setServiceAcitonModal
               )}
             >
               <a>

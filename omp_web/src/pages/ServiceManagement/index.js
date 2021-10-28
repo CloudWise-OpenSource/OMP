@@ -71,6 +71,18 @@ const ServiceManagement = () => {
 
   //const [showIframe, setShowIframe] = useState({});
 
+  const [serviceAcitonModal, setServiceAcitonModal] = useState(false);
+  const [currentSerAcitonModal, setCurrentSerAcitonModal] = useState(false)
+
+  // 1启动，2停止，3重启，4删除
+  let operateObj = {
+    1:"启动",
+    2:"停止",
+    3:"重启",
+    4:"删除"
+  }
+  const [operateAciton, setOperateAciton] = useState(1)
+
   // 列表查询
   function fetchData(
     pageParams = { current: 1, pageSize: 10 },
@@ -139,12 +151,11 @@ const ServiceManagement = () => {
   };
 
   const fetchHistoryData = (id) => {
-    return;
     setHistoryLoading(true);
-    fetchGet(apiRequest.serviceManagement.operateLog, {
-      params: {
-        host_id: id,
-      },
+    fetchGet(`${apiRequest.appStore.servicesDetail}/${id}/`, {
+      // params: {
+      //   id: id,
+      // },
     })
       .then((res) => {
         handleResponse(res, (res) => {
@@ -154,6 +165,44 @@ const ServiceManagement = () => {
       .catch((e) => console.log(e))
       .finally(() => {
         setHistoryLoading(false);
+      });
+  };
+
+  // 服务的启动｜停止｜重启
+  const operateService = (data,operate) => {
+    setLoading(true);
+    fetchPost(apiRequest.appStore.servicesAction, {
+      body: {
+        data:data.map(i=>({
+          action:operate,
+          id:i.id,
+          operation_user:localStorage.getItem("username")
+        }))
+      },
+    })
+      .then((res) => {
+        //console.log(operateObj[operateAciton])
+        handleResponse(res, (res) => {
+          message.success(`${operateObj[operateAciton]}操作下发成功`)
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setLoading(false);
+        setServiceAcitonModal(false);
+        setCurrentSerAcitonModal(false)
+        // setRestartHostAgentModal(false);
+        setCheckedList({});
+        setRow({})
+        fetchData(
+          { current: pagination.current, pageSize: pagination.pageSize },
+          {
+            ...pagination.searchParams,
+            ip: selectValue,
+            service_instance_name: instanceSelectValue,
+          },
+          pagination.ordering
+        );
       });
   };
 
@@ -187,58 +236,64 @@ const ServiceManagement = () => {
               <Menu.Item
                 key="openMaintain"
                 style={{ textAlign: "center" }}
-                // onClick={() => setOpenMaintainModal(true)}
-                // disabled={
-                //   Object.keys(checkedList)
-                //     .map((k) => checkedList[k])
-                //     .flat(1)
-                //     .map((item) => item.id).length == 0
-                // }
+                onClick={() => {
+                  setOperateAciton(1)
+                  setServiceAcitonModal(true)}
+                }
+                disabled={
+                  Object.keys(checkedList)
+                    .map((k) => checkedList[k])
+                    .flat(1)
+                    .map((item) => item.id).length == 0
+                }
               >
                 启动
               </Menu.Item>
               <Menu.Item
                 key="closeMaintain"
                 style={{ textAlign: "center" }}
-                // disabled={
-                //   Object.keys(checkedList)
-                //     .map((k) => checkedList[k])
-                //     .flat(1)
-                //     .map((item) => item.id).length == 0
-                // }
-                // onClick={() => {
-                //   setCloseMaintainModal(true);
-                // }}
+                disabled={
+                  Object.keys(checkedList)
+                    .map((k) => checkedList[k])
+                    .flat(1)
+                    .map((item) => item.id).length == 0
+                }
+                onClick={() => {
+                  setOperateAciton(2)
+                  setServiceAcitonModal(true)
+                }}
               >
                 停止
               </Menu.Item>
               <Menu.Item
                 key="reStartHost"
                 style={{ textAlign: "center" }}
-                // disabled={
-                //   Object.keys(checkedList)
-                //     .map((k) => checkedList[k])
-                //     .flat(1)
-                //     .map((item) => item.id).length == 0
-                // }
-                // onClick={() => {
-                //   setRestartHostAgentModal(true);
-                // }}
+                disabled={
+                  Object.keys(checkedList)
+                    .map((k) => checkedList[k])
+                    .flat(1)
+                    .map((item) => item.id).length == 0
+                }
+                onClick={() => {
+                  setOperateAciton(3)
+                  setServiceAcitonModal(true)
+                }}
               >
                 重启
               </Menu.Item>
               <Menu.Item
                 key="reStartMonitor"
                 style={{ textAlign: "center" }}
-                // disabled={
-                //   Object.keys(checkedList)
-                //     .map((k) => checkedList[k])
-                //     .flat(1)
-                //     .map((item) => item.id).length == 0
-                // }
-                // onClick={() => {
-                //   setRestartMonterAgentModal(true);
-                // }}
+                disabled={
+                  Object.keys(checkedList)
+                    .map((k) => checkedList[k])
+                    .flat(1)
+                    .map((item) => item.id).length == 0
+                }
+                onClick={() => {
+                  setOperateAciton(4)
+                  setServiceAcitonModal(true)
+                }}
               >
                 删除
               </Menu.Item>
@@ -361,7 +416,11 @@ const ServiceManagement = () => {
               setCheckedList({});
               fetchData(
                 { current: pagination.current, pageSize: pagination.pageSize },
-                { ip: selectValue, service_instance_name: instanceSelectValue },
+                {
+                  ...pagination.searchParams,
+                  ip: selectValue,
+                  service_instance_name: instanceSelectValue,
+                },
                 pagination.ordering
               );
             }}
@@ -403,7 +462,9 @@ const ServiceManagement = () => {
             },
             location.state?.app_type,
             location.state?.label_name,
-            setShowIframe
+            setShowIframe,
+            setOperateAciton,
+            setCurrentSerAcitonModal
           )}
           notSelectable={(record) => ({
             // 部署中的不能选中
@@ -447,6 +508,74 @@ const ServiceManagement = () => {
         />
       </div>
       <OmpDrawer showIframe={showIframe} setShowIframe={setShowIframe} />
+      <DetailHost
+        isShowDrawer={isShowDrawer}
+        setIsShowDrawer={setIsShowDrawer}
+        loading={historyLoading}
+        data={historyData}
+      />
+      <OmpMessageModal
+        visibleHandle={[serviceAcitonModal, setServiceAcitonModal]}
+        title={
+          <span>
+            <ExclamationCircleOutlined
+              style={{
+                fontSize: 20,
+                color: "#f0a441",
+                paddingRight: "10px",
+                position: "relative",
+                top: 2,
+              }}
+            />
+            提示
+          </span>
+        }
+        loading={loading}
+        onFinish={() => {
+          operateService(Object.keys(checkedList)
+          .map((k) => checkedList[k])
+          .flat(1), operateAciton)
+          //fetchMaintainChange(false, [row]);
+        }}
+      >
+        <div style={{ padding: "20px" }}>
+          确定要对{" "}
+          <span style={{ fontWeight: 500 }}>
+            {" "}
+            {Object.keys(checkedList)
+              .map((k) => checkedList[k])
+              .flat(1).length
+          }
+          </span>{" "}
+        个 服务下发 <span style={{ fontWeight: 500 }}>{operateObj[operateAciton]}</span> 操作？
+        </div>
+      </OmpMessageModal>
+      <OmpMessageModal
+        visibleHandle={[currentSerAcitonModal, setCurrentSerAcitonModal]}
+        title={
+          <span>
+            <ExclamationCircleOutlined
+              style={{
+                fontSize: 20,
+                color: "#f0a441",
+                paddingRight: "10px",
+                position: "relative",
+                top: 2,
+              }}
+            />
+            提示
+          </span>
+        }
+        loading={loading}
+        onFinish={() => {
+          operateService([row], operateAciton)
+        }}
+      >
+        <div style={{ padding: "20px" }}>
+          确定要对{" "}
+          <span style={{ fontWeight: 500 }}>当前</span> 服务下发 <span style={{ fontWeight: 500 }}>{operateObj[operateAciton]}</span> 操作？
+        </div>
+      </OmpMessageModal>
     </OmpContentWrapper>
   );
 };
