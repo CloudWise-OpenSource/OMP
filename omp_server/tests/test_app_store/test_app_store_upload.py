@@ -12,9 +12,11 @@ from app_store.tasks import front_end_verified
 from utils.plugin import public_utils
 from app_store.tasks import (
     ExplainYml, PublicAction,
-    publish_bak_end, publish_entry
+    publish_bak_end, publish_entry,
+    exec_clear
 )
 from unittest.mock import patch, mock_open
+from app_store.tmp_exec_back_task import back_end_verified_init
 
 test_product = {
     "kind": "product",
@@ -234,6 +236,20 @@ class PackageUploadTest(AutoLoginTest):
         self.assertEqual(explain[1].get('version'), "5.2.0")
 
 
+class SimulationRedis(object):
+    def exists(self, key):
+        return 0
+
+    def lpush(self, key, *args):
+        return True
+
+    def expire(self, key, expire):
+        return True
+
+    def lindex(self, key, index):
+        return 'test_redis'
+
+
 publish_info = """\
 {"kind": "product", "name": "jenkins", "version": "1.0.0", "description": "描述",\
 "dependencies": [{"name": "jdk1.88", "version": "1.88"},\
@@ -302,7 +318,8 @@ class PackagePublishTest(AutoLoginTest):
         "os.path.isfile",
         return_value=False
     )
-    def test_app_store_publish(self, isfile, local_cmd, exec_clear, with_open):
+    def test_app_store_publish(self, isfile, local_cmd, exe_clear, with_open):
+        # 正向发布产品，包含服务，前端
         upload_obj = UploadPackageHistory.objects.get(operation_uuid='test-uuid',
                                                       package_parent__isnull=True
                                                       )
@@ -322,6 +339,38 @@ class PackagePublishTest(AutoLoginTest):
         self.assertEqual(app_count, 1)
         self.assertEqual(pro_count, 1)
         self.assertEqual(label_count, 1)
+
+    @mock.patch(
+        "redis.Redis.delete",
+        return_value=""
+    )
+    @mock.patch(
+        "app_store.tasks.publish_entry",
+        return_value=""
+    )
+    def test_app_store_publish_back_true(self, publish, redis):
+        # 正向后端发布等待
+
+        res = publish_bak_end('test-uuid', 1)
+        self.assertEqual(res, None)
+
+    @mock.patch(
+        "app_store.tasks.exec_clear",
+        return_value=""
+    )
+    @mock.patch(
+        "redis.Redis.delete",
+        return_value=""
+    )
+    def test_app_store_publish_back(self, redis, exe_clear):
+        # 反向后端发布等待
+        upload_obj = UploadPackageHistory.objects.get(operation_uuid='test-uuid',
+                                                      package_parent__isnull=True
+                                                      )
+        upload_obj.package_status = 1
+        upload_obj.save()
+        res = publish_bak_end('test-uuid', 1)
+        self.assertEqual(res, None)
 
     @mock.patch(
         "app_store.tasks.publish_entry.delay",
@@ -352,3 +401,39 @@ class PackagePublishTest(AutoLoginTest):
                 'data': []
             }
         )
+
+    @mock.patch.object(
+        public_utils,
+        "local_cmd",
+        return_value=("", "", 0)
+    )
+    def test_app_store_publish_clear(self, local_cmd):
+        # 正向删除
+        upload_obj1 = UploadPackageHistory.objects.get(operation_uuid='test-uuid',
+                                                       package_parent__isnull=True
+                                                       )
+        upload_obj1.package_status = 3
+        upload_obj1.save()
+        resp = exec_clear('/data/omp/package_hub/front_end_verified')
+        self.assertEqual(resp, None)
+
+    @mock.patch(
+        "redis.Redis",
+        return_value=SimulationRedis())
+    @mock.patch(
+        "os.listdir",
+        return_value=["jdk-1.8.1.tar.gz"])
+    @mock.patch(
+        "os.path.isfile",
+        return_value=True)
+    @mock.patch(
+        "app_store.tasks.front_end_verified.delay",
+        return_value="")
+    @mock.patch(
+        "app_store.tasks.publish_bak_end.delay",
+        return_value="")
+    def test_app_store_scan(self, bak, front, isfile, listdir, redis):
+        uuid, exec_name = back_end_verified_init('admin')
+        count = UploadPackageHistory.objects.filter(operation_uuid=uuid).count()
+        self.assertEqual(count, 1)
+        self.assertEqual(exec_name[0], "jdk-1.8.1.tar.gz")
