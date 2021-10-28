@@ -160,7 +160,7 @@ const ServiceManagement = () => {
         <Button
           type="primary"
           onClick={() => {
-           // setAddMoadlVisible(true);
+            history.push("/application_management/app_store")
           }}
         >
           安装
@@ -318,7 +318,15 @@ const ServiceManagement = () => {
             setIsShowDrawer,
             setRow,
             fetchHistoryData,
-            history
+            history,
+            labelsData,
+            (params) => {
+              fetchData(
+                { current: 1, pageSize: pagination.pageSize, },
+                { ...pagination.searchParams, ...params },
+                pagination.ordering
+              );
+            },
           )}
           notSelectable={(record) => ({
             // 部署中的不能选中

@@ -33,7 +33,7 @@ function OmpStateBlock(props) {
       let handleData = data.map((item) => {
         //后端的critical和warning都渲染成红色，在前端对数据进行处理 noMonitored:"未监控" abnormal:"异常" normal:"正常"
         let status = "noMonitored";
-        if (item.severity == "warning" || "critical") {
+        if (item.severity == "warning" || item.severity == "critical") {
           status = "abnormal";
         } else if (item.severity == "normal") {
           status = "normal";

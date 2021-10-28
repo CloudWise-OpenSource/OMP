@@ -547,13 +547,19 @@ const getColumnsConfig = (
       },
     },
     {
-      title: "服务个数",
+      title: "服务总数",
       key: "service_num",
       dataIndex: "service_num",
       align: "center",
       // ellipsis: true,
       sorter: (a, b) => a.service_num - b.service_num,
       sortDirections: ["descend", "ascend"],
+      render: (text) => {
+        if((!text || text=="-" )&& (text!==0)){
+          return "-"
+        }
+        return `${text}个`
+      },
     },
     {
       title: "告警总数",
@@ -564,7 +570,7 @@ const getColumnsConfig = (
       sorter: (a, b) => a.alert_num - b.alert_num,
       sortDirections: ["descend", "ascend"],
       render: (text, record) => {
-        if (text && text !== 0) {
+        if (text && text !== 0 && text!=="-") {
           return (
             <a
               onClick={() => {
@@ -577,11 +583,14 @@ const getColumnsConfig = (
                   });
               }}
             >
-              {text}
+              {text}次
             </a>
           );
         } else {
-          return text
+          if((!text || text=="-" )&& (text!==0)){
+            return "-"
+          }
+          return `${text}次`
         }
       },
     },
