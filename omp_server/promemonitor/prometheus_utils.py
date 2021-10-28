@@ -472,7 +472,7 @@ class PrometheusUtils(object):
         :return:
         """
         if not service_data:
-            return None
+            return False, "args cant be null"
 
         with open(self.prometheus_conf_path, 'r') as fr:
             fr_content = fr.read()
@@ -535,7 +535,7 @@ class PrometheusUtils(object):
         :return:
         """
         if not service_data:
-            return None
+            return False, "args cant be null"
 
         self_exporter_target_file = os.path.join(self.prometheus_targets_path,
                                                  "{}Exporter_all.json".format(service_data["service_name"]))
@@ -548,7 +548,7 @@ class PrometheusUtils(object):
                     self_target_list = json.loads(content)
         else:
             logger.error("{}不存在！".format(self_exporter_target_file))
-            return None
+            return False, "Failed"
         try:
             instance = service_data['ip']
             env = service_data['env']
