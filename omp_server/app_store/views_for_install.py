@@ -28,7 +28,8 @@ from app_store.app_store_serializers import (
 
 from app_store.app_store_filters import (
     ComponentEntranceFilter,
-    ProductEntranceFilter
+    ProductEntranceFilter,
+    InstallHistoryFilter
 )
 
 
@@ -88,4 +89,6 @@ class InstallHistoryView(GenericViewSet, ListModelMixin):
     """
     queryset = MainInstallHistory.objects.all().order_by("-created")
     serializer_class = InstallHistorySerializer
+    filter_backends = (DjangoFilterBackend,)
+    filter_class = InstallHistoryFilter
     get_description = "获取安装历史数据入口"

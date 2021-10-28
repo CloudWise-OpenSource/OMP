@@ -462,6 +462,10 @@ class ExecuteInstallSerializer(Serializer):
         read_only=True, required=False, max_length=4096,
         help_text="数据准确性校验结果信息"
     )
+    operation_uuid = serializers.CharField(
+        read_only=True, required=False, max_length=128,
+        help_text="成功下发部署计划后返回的uuid"
+    )
 
     def validate_use_exist_services(self, data):  # NOQA
         """
@@ -526,13 +530,42 @@ class ExecuteInstallSerializer(Serializer):
             return attrs
         attrs["is_valid_flag"] = True
         attrs["is_valid_msg"] = ""
+        attrs["operation_uuid"] = msg
         return attrs
 
 
 class InstallHistorySerializer(ModelSerializer):
     """ 安装历史记录序列化类 """
-    install_status = serializers.CharField(source="get_install_status_display")
+    install_status_msg = serializers.CharField(
+        source="get_install_status_display")
     detail_lst = serializers.SerializerMethodField()
+
+    def parse_single_obj(self, obj):    # NOQA
+        """
+        解析单个服务安装记录信息
+        :param obj:
+        :type obj: DetailInstallHistory
+        :return:
+        """
+        _status = obj.install_step_status
+        # 拼接日志
+        _log = ""
+        if obj.send_flag != 0 and obj.send_msg:
+            _log += obj.send_msg
+        if obj.unzip_flag != 0 and obj.unzip_msg:
+            _log += obj.unzip_msg
+        if obj.install_flag != 0 and obj.install_msg:
+            _log += obj.install_msg
+        if obj.init_flag != 0 and obj.init_msg:
+            _log += obj.init_msg
+        if obj.start_flag != 0 and obj.start_msg:
+            _log += obj.start_msg
+        return {
+            "status": _status,
+            "log": _log,
+            "service_name": obj.service.service.app_name,
+            "service_instance_name": obj.service.service_instance_name
+        }
 
     def get_detail_lst(self, obj):  # NOQA
         """
@@ -542,13 +575,13 @@ class InstallHistorySerializer(ModelSerializer):
         """
         lst = DetailInstallHistory.objects.filter(
             main_install_history=obj
-        ).values()
-        return list(lst)
+        )
+        return [self.parse_single_obj(el) for el in lst]
 
     class Meta:
         """ 元数据 """
         model = MainInstallHistory
         fields = (
-            "operation_uuid", "install_status", "install_args",
-            "install_log", "detail_lst"
+            "operation_uuid", "install_status", "install_status_msg",
+            "install_args", "install_log", "detail_lst"
         )
