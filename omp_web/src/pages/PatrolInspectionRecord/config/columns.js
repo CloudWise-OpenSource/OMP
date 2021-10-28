@@ -1,4 +1,9 @@
-import { nonEmptyProcessing, renderDisc, downloadFile, handleResponse } from "@/utils/utils";
+import {
+  nonEmptyProcessing,
+  renderDisc,
+  downloadFile,
+  handleResponse,
+} from "@/utils/utils";
 import { Tooltip, Badge, Menu, Dropdown, message } from "antd";
 import moment from "moment";
 import { apiRequest } from "src/config/requestApi";
@@ -13,8 +18,7 @@ const getColumnsConfig = (queryRequest, history, queryData) => {
         });
       })
       .catch((e) => console.log(e))
-      .finally(() => {
-      });
+      .finally(() => {});
   };
 
   return [
@@ -32,22 +36,25 @@ const getColumnsConfig = (queryRequest, history, queryData) => {
       key: "inspection_name",
       dataIndex: "inspection_name",
       align: "center",
+      fixed: "left",
       render: (text, record, index) => {
-        return (
-          <a
-            style={{
-              fontSize: 12,
-            }}
-            onClick={() => {
-              //queryData(record.id)
-              history?.push({
-                pathname: `/status-patrol/patrol-inspection-record/status-patrol-detail/${record.id}`,
-              });
-            }}
-          >
-            {text}
-          </a>
-        );
+        if (record.inspection_status == 2) {
+          return (
+            <a
+              style={{
+                fontSize: 12,
+              }}
+              onClick={() => {
+                history?.push({
+                  pathname: `/status-patrol/patrol-inspection-record/status-patrol-detail/${record.id}`,
+                });
+              }}
+            >
+              {text}
+            </a>
+          );
+        }
+        return text;
       },
     },
     {
@@ -198,20 +205,20 @@ const getColumnsConfig = (queryRequest, history, queryData) => {
       render: function renderFunc(text, record, index) {
         return (
           <div style={{ display: "flex", justifyContent: "space-around" }}>
-            {record.inspection_status == 2?
-               <a
-              onClick={() => {
-                message.success(
-                  `正在下载巡检报告，双击文件夹中index.html查看报告`
-                );
-                //downloadFile(`/download-inspection/${record.inspection_name}`)
-                fetchDetailData(record.id);
-              }}
-            >
-              导出
-            </a>:<span style={{color:"rgba(0, 0, 0, 0.25"}}>导出</span>
-      }
-           
+            {record.inspection_status == 2 ? (
+              <a
+                onClick={() => {
+                  message.success(
+                    `正在下载巡检报告，双击文件夹中index.html查看报告`
+                  );
+                  fetchDetailData(record.id);
+                }}
+              >
+                导出
+              </a>
+            ) : (
+              <span style={{ color: "rgba(0, 0, 0, 0.25" }}>导出</span>
+            )}
           </div>
         );
       },
