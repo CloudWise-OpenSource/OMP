@@ -4,13 +4,16 @@ from rest_framework.reverse import reverse
 
 from db_models.models import (
     ApplicationHub, ProductHub,
-    UploadPackageHistory
+    UploadPackageHistory, Labels
 )
 from tests.base import AutoLoginTest
 from unittest import mock
 from app_store.tasks import front_end_verified
 from utils.plugin import public_utils
-from app_store.tasks import ExplainYml,PublicAction
+from app_store.tasks import (
+    ExplainYml, PublicAction,
+    publish_bak_end, publish_entry
+)
 from unittest.mock import patch, mock_open
 
 test_product = {
@@ -53,23 +56,6 @@ test_service = {
         "resources": {"cpu": "2c", "memory": "2g"}
     }
 }
-"""
-product_yml = {
-    'kind': 'product', 'name': 'jenkins', 'version': '5.2.0',
-    'description':
-        'Jenkins是开源CI&CD软件领导者，提供超过1000个插件来支持构建、部署、自动化， 满足任何项目的需要。',
-    'labels': ['CI&CD'],
-    'dependencies': '', 'service': [{'name': 'jenkins', 'version': '2.303.2'}]}
-
-service_yml = {'kind': 'service', 'name': 'jenkins', 'version': '2.303.2', 'description': 'jenkins服务',
-               'auto_launch': 'true', 'base_env': 'false',
-               'monitor': {'process_name': 'jenkins', 'metrics_port': {'service_port': ''}}, 'deploy': '',
-               'ports': [{'name': '服务端', 'protocol': 'TCP', 'default': '8080', 'key': 'service_port'}],
-               'dependencies': [{'name': 'jdk', 'version': '1.8'}], 'resources': {'cpu': '1000m', 'memory': '2000m'},
-               'install': [{'name': '安装目录', 'key': 'base_dir', 'default': '{data_path}/jeknins'}],
-               'control': {'start': './bin/start.sh', 'stop': './bin/stop.sh', 'restart': './bin/restart.sh',
-                           'reload': './bin/reload.sh', 'install': './scripts/install.sh', 'init': './scripts/init.sh'}}
-"""
 
 service_yml = """
 kind: service
@@ -106,13 +92,68 @@ control:
   init: "./scripts/init.sh"
 """
 
+component_yml = """
+kind: component
+name: tengine  
+version: 2.3.3
+description: "服务tengine" 
+labels:          
+  - WEB服务
+auto_launch: true 
+base_env: false
+monitor:
+  process_name: "nginx"  
+  metrics_port: {service_port}
+ports:
+  - name: 服务端口      
+    protocol: TCP     
+    key: service_port 
+    default: 80 
+deploy:    
+dependencies:
+resources:
+  cpu: 1000m
+  memory: 500m      
+install:        
+  - name: "安装目录"
+    key: base_dir
+    default: "{data_path}/tengine"
+  - name: "日志目录"
+    key: log_dir
+    default: "{data_path}/tengine/logs"
+  - name: "vhosts"
+    key: vhosts_dir
+    default: "{data_path}/tengine/vhosts"
+control: 
+  start: "./bin/start.sh"
+  stop: "./bin/stop.sh"
+  restart: "./bin/restart.sh"
+  reload: "./bin/reload.sh"
+  install: "./scripts/install.sh"
+  init:  "./scripts/init.sh"
+"""
+
+product_yml = """
+kind: product
+name: jenkins
+version: 5.2.0
+description: "Jenkins开源"
+labels:
+  - CI&CD
+dependencies:
+service:
+  - name: jenkins
+    version: 2.303.2
+"""
+
 
 class PackageUploadTest(AutoLoginTest):
+    # 上传逻辑
     def setUp(self):
         super(PackageUploadTest, self).setUp()
         self.upload_url = reverse(
             "upload-list")
-        self.upload_obj = UploadPackageHistory(
+        UploadPackageHistory(
             operation_uuid='test-uuid',
             operation_user='admin',
             package_name='jenkins-1.0.0-test-md5.tar.gz',
@@ -140,7 +181,7 @@ class PackageUploadTest(AutoLoginTest):
         return_value=True
     )
     def test_app_store_upload(self, isfile, listdir, explain, exists, mkdir, local_cmd):
-        # 正向校验
+        # 正向前端发布
         upload_obj = UploadPackageHistory.objects.get(operation_uuid='test-uuid')
         local_cmd.side_effect = [
             ("test-md5 jenkins-1.0.0-test-md5.tar.gz", "", 0),
@@ -163,11 +204,151 @@ class PackageUploadTest(AutoLoginTest):
         self.assertEqual(res, 0)
 
     @patch("builtins.open", new_callable=mock_open, read_data=service_yml)
-    def test_app_store_explain(self, with_open):
-        # 正向解析
+    def test_app_store_explain_service(self, with_open):
+        # 正向解析服务
         upload_obj = UploadPackageHistory.objects.get(operation_uuid='test-uuid')
         public_action = PublicAction(upload_obj.package_md5)
         explain = ExplainYml(public_action, '/data/test').explain_yml()
         upload_obj.refresh_from_db()
         self.assertEqual(explain[0], True)
         self.assertEqual(explain[1].get('version'), "2.303.2")
+
+    @patch("builtins.open", new_callable=mock_open, read_data=component_yml)
+    def test_app_store_explain_component(self, with_open):
+        # 正向解析组件
+        upload_obj = UploadPackageHistory.objects.get(operation_uuid='test-uuid')
+        public_action = PublicAction(upload_obj.package_md5)
+        explain = ExplainYml(public_action, '/data/test').explain_yml()
+        upload_obj.refresh_from_db()
+        self.assertEqual(explain[0], True)
+        self.assertEqual(explain[1].get('version'), "2.3.3")
+
+    @patch("builtins.open", new_callable=mock_open, read_data=product_yml)
+    def test_app_store_explain_product(self, with_open):
+        # 正向解析产品
+        upload_obj = UploadPackageHistory.objects.get(operation_uuid='test-uuid')
+        public_action = PublicAction(upload_obj.package_md5)
+        explain = ExplainYml(public_action, '/data/test').explain_yml()
+        upload_obj.refresh_from_db()
+        self.assertEqual(explain[0], True)
+        self.assertEqual(explain[1].get('version'), "5.2.0")
+
+
+publish_info = """\
+{"kind": "product", "name": "jenkins", "version": "1.0.0", "description": "描述",\
+"dependencies": [{"name": "jdk1.88", "version": "1.88"},\
+{"name": "tomcat1.88", "version": "1.88"},\
+{"name": "home1.99", "version": "1.99"}],\
+"extend_fields": {},\
+"service": [{"name": "jenkinss01", "version": "010101"},\
+{"name": "jenkinsss01", "version": "010101-01.01"},\
+{"name": "jenkinssss01", "version": "01010101"},\
+{"name": "qqqqqqqqqq01", "version": "11011"},\
+{"name": "jenkins", "version": "111111111"}],\
+"labels": ["mysql_db"],\
+"product_service":\
+[{"kind": "service", "name": "jenkins", "version": "123", "description": "jenkins服务",\
+"dependencies": [{"name": "jdk", "version": "8u211"}],\
+"extend_fields": {"auto_launch": "true", "base_env": "false",\
+"monitor": {"process_name": "jenkins"},\
+"resources": {"cpu": "1000m", "memory": "2000m"}},\
+"ports": [{"name": "服务端口", "protocol": "TCP", "key": "service_port", "port": "8080"}],\
+"control": {"start": "./bin/start.sh", "stop": "./bin/stop.sh",\
+"restart": "./bin/restart.sh", "reload": "./bin/reload.sh", "install": "./scripts/install.sh",\
+"init": "./scripts/init.sh"},\
+"install": [{"name": "安装目录", "key": "base_dir", "default": "{data_path}/jeknins"}],\
+"package_name": "jenkins-1.0.0-service.tar.gz"}],\
+"image": null, "package_name": "jenkins-1.0.0-test-md5.tar.gz",\
+"tmp_dir": ["/data/omp/package_hub/front_end_verified/jenkins-test40yp18cfwbz/jenkins", "00011123"]}\
+"""
+
+
+class PackagePublishTest(AutoLoginTest):
+    # 发布逻辑
+    def setUp(self):
+        super(PackagePublishTest, self).setUp()
+        self.publish_url = reverse(
+            "publish-list")
+        upload_obj = UploadPackageHistory(
+            operation_uuid='test-uuid',
+            operation_user='admin',
+            package_name='jenkins-1.0.0-test-md5.tar.gz',
+            package_md5='test-md5',
+            package_path="verified",
+            package_status=0
+        )
+        upload_obj.save()
+        UploadPackageHistory.objects.create(
+            operation_uuid='test-uuid',
+            operation_user='admin',
+            package_name='jenkins-1.0.0-service.tar.gz',
+            package_md5='test-md5-service',
+            package_path="verified/jenkins-1.0.0",
+            package_status=0,
+            package_parent=upload_obj
+        )
+
+    @patch("builtins.open", new_callable=mock_open, read_data=publish_info)
+    @mock.patch(
+        "app_store.tasks.exec_clear",
+        return_value=""
+    )
+    @mock.patch.object(
+        public_utils,
+        "local_cmd",
+        return_value=("", "", 0)
+    )
+    @mock.patch(
+        "os.path.isfile",
+        return_value=False
+    )
+    def test_app_store_publish(self, isfile, local_cmd, exec_clear, with_open):
+        upload_obj = UploadPackageHistory.objects.get(operation_uuid='test-uuid',
+                                                      package_parent__isnull=True
+                                                      )
+        publish_entry(upload_obj.operation_uuid)
+        upload_obj.refresh_from_db()
+        app_count = ApplicationHub.objects.filter(
+            app_name="jenkins",
+            app_version="123"
+        ).count()
+        pro_count = ProductHub.objects.filter(
+            pro_name="jenkins",
+            pro_version="1.0.0"
+        ).count()
+        label_count = Labels.objects.filter(
+            label_name="mysql_db"
+        ).count()
+        self.assertEqual(app_count, 1)
+        self.assertEqual(pro_count, 1)
+        self.assertEqual(label_count, 1)
+
+    @mock.patch(
+        "app_store.tasks.publish_entry.delay",
+        return_value=""
+    )
+    def test_app_store_publish_api(self, delay):
+        # 正向post发布接口
+        resp = self.post(self.publish_url, {
+            "uuid": 'test-uuid',
+        }).json()
+        self.assertDictEqual(resp.get('data'), {
+            "status": "发布任务下发成功"
+        })
+
+        # 正向get请求,过滤状态3，4，5
+        upload_obj1 = UploadPackageHistory.objects.get(operation_uuid='test-uuid',
+                                                       package_parent__isnull=True
+                                                       )
+        upload_obj1.package_status = 0
+        upload_obj1.save()
+        resp = self.get(self.publish_url, data={
+            "operation_uuid": 'test-uuid',
+        }).json()
+        self.assertDictEqual(
+            resp, {
+                'code': 0,
+                'message': 'success',
+                'data': []
+            }
+        )
