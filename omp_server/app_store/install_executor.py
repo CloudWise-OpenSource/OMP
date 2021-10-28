@@ -201,7 +201,7 @@ class InstallServiceExecutor:
                 f"{detail_obj.main_install_history.operation_uuid}.json")
 
             cmd_str = f"test -f {install_script_path} && " \
-                      f"python {install_script_path} {target_ip} {json_path} " \
+                      f"python {install_script_path} --local_ip {target_ip} --data_json {json_path} " \
                       f"|| echo 'NOT EXIST'"
             # 执行安装
             is_success, message = self.salt_client.cmd(
@@ -258,7 +258,7 @@ class InstallServiceExecutor:
                 f"{detail_obj.main_install_history.operation_uuid}.json")
 
             cmd_str = f"test -f {init_script_path} && " \
-                      f"python {init_script_path} {target_ip} {json_path} " \
+                      f"python {init_script_path} --local_ip {target_ip} --data_json {json_path} " \
                       f"|| echo 'NOT EXIST'"
             # 执行初始化
             is_success, message = self.salt_client.cmd(
