@@ -726,7 +726,10 @@ class CreateInstallPlan(object):
                 _home = el["default"]
         real_home = os.path.join(data_folder, _home.rstrip("/"))
         _new_controller = dict()
+        # 更改服务控制脚本、拼接相对路径
         for key, value in _app_controllers.items():
+            if not value:
+                continue
             _new_controller[key] = os.path.join(real_home, value)
         return _new_controller
 
@@ -856,4 +859,4 @@ class CreateInstallPlan(object):
         _json_obj.run()
         # 调用安装异步任务
         install_service.delay(main_obj.id)
-        return True, "success"
+        return True, operation_uuid

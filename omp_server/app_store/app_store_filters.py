@@ -5,7 +5,8 @@ import django_filters
 from django_filters.rest_framework import FilterSet
 
 from db_models.models import (
-    Labels, ApplicationHub, ProductHub, UploadPackageHistory
+    Labels, ApplicationHub, ProductHub, UploadPackageHistory,
+    MainInstallHistory
 )
 
 
@@ -85,3 +86,15 @@ class ProductEntranceFilter(FilterSet):
         """ 元数据 """
         model = ProductHub
         fields = ("pro_name", )
+
+
+class InstallHistoryFilter(FilterSet):
+    """ 基础组件安装入口过滤类 """
+    operation_uuid = django_filters.CharFilter(
+        help_text="唯一操作的uuid",
+        field_name="operation_uuid", lookup_expr="exact")
+
+    class Meta:
+        """ 元数据 """
+        model = MainInstallHistory
+        fields = ("operation_uuid", )
