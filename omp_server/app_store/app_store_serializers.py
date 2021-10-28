@@ -189,8 +189,19 @@ class ApplicationDetailSerializer(ModelSerializer):  # NOQA
 
     def get_app_instances_info(self, obj):  # NOQA
         """ 获取服务安装实例信息 """
-        # TODO 获取组件的已安装实例信息
-        return {}
+        service_objs = Service.objects.filter(service__app_name=obj.app_name)
+        service_list = []
+        for so in service_objs:
+            service_dict = {
+                "instance_name": so.service_instance_name,
+                "host_ip": so.ip,
+                "service_port": so.service_port,
+                "app_version": so.service.app_version,
+                "mode": "单实例",  # TODO  后续根据cluster字段是否为空来判断是单实例还是集群模式
+                "created": so.created
+            }
+            service_list.append(service_dict)
+        return service_list
 
     def get_app_labels(self, obj):  # NOQA
         return list(obj.app_labels.all().values_list('label_name', flat=True))
@@ -221,8 +232,21 @@ class ProductDetailSerializer(ModelSerializer):  # NOQA
 
     def get_pro_instances_info(self, obj):  # NOQA
         """ 获取服务安装实例信息 """
-        # TODO 获取服务的已安装实例信息
-        return {}
+        service_objs = Service.objects.filter(
+            service__product__pro_name=obj.pro_name)
+        service_list = []
+        for so in service_objs:
+            service_dict = {
+                "instance_name": so.service_instance_name,
+                "version": so.service.product.pro_version,
+                "app_name": so.service.app_name,
+                "app_version": so.service.app_version,
+                "host_ip": so.ip,
+                "service_port": so.service_port,
+                "created": so.created
+            }
+            service_list.append(service_dict)
+        return service_list
 
     def get_pro_labels(self, obj):  # NOQA
         return list(obj.pro_labels.all().values_list('label_name', flat=True))
