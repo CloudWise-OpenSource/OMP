@@ -15,13 +15,15 @@ from rest_framework.mixins import (
 from django_filters.rest_framework.backends import DjangoFilterBackend
 
 from db_models.models import (
-    ApplicationHub, ProductHub
+    ApplicationHub, ProductHub,
+    MainInstallHistory
 )
 
 from app_store.app_store_serializers import (
     ComponentEntranceSerializer,
     ProductEntranceSerializer,
-    ExecuteInstallSerializer
+    ExecuteInstallSerializer,
+    InstallHistorySerializer
 )
 
 from app_store.app_store_filters import (
@@ -77,3 +79,13 @@ class ExecuteInstallView(GenericViewSet, CreateModelMixin):
             status=status.HTTP_201_CREATED,
             headers=headers
         )
+
+
+class InstallHistoryView(GenericViewSet, ListModelMixin):
+    """
+        list:
+        获取安装记录
+    """
+    queryset = MainInstallHistory.objects.all().order_by("-created")
+    serializer_class = InstallHistorySerializer
+    get_description = "获取安装历史数据入口"
