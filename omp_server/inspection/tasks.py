@@ -41,6 +41,7 @@ def get_hosts_data(env, hosts):
         temp['mem_usage'] = _p.get('rate_memory')
         temp['cpu_usage'] = _p.get('rate_cpu')
         temp['disk_usage_root'] = _p.get('rate_max_disk')
+        temp['report_disk_usage_data'] = _p.get('rate_data_disk')
         temp['sys_load'] = _p.get('load')
         temp['run_time'] = _p.get('run_time')
         temp['host_ip'] = instance
@@ -109,7 +110,7 @@ def get_prometheus_data(env_id, hosts, services, history_id, report_id, handle):
         kwargs = {'history_id': history_id, 'report_id': report_id}
         if handle == 'host':
             # 主机巡检
-            file_name = f"hostinspection{_h.inspection_name.split('检')[1]}"
+            file_name = f"hostinspection{_h.inspection_name.split('-')[1]}"
             scan_info, scan_result, host_data = get_hosts_data(env, hosts)
             kwargs.update({
                 'scan_info': scan_info, 'scan_result': scan_result,
@@ -118,7 +119,7 @@ def get_prometheus_data(env_id, hosts, services, history_id, report_id, handle):
             )
         elif handle == 'service':
             # 组件巡检
-            file_name = f"serviceinspection{_h.inspection_name.split('检')[1]}"
+            file_name = f"serviceinspection{_h.inspection_name.split('-')[1]}"
             scan_info, scan_result, serv_data = \
                 target_service_run(env, services)
             kwargs.update({
@@ -128,7 +129,7 @@ def get_prometheus_data(env_id, hosts, services, history_id, report_id, handle):
             )
         elif handle == 'deep':
             # 主机巡检
-            file_name = f"deepinspection{_h.inspection_name.split('检')[1]}"
+            file_name = f"deepinspection{_h.inspection_name.split('-')[1]}"
             hosts = Host.objects.filter(env=env.id).values_list('ip', flat=True)
             if len(hosts) > 0:
                 h_info, h_result, host_data = get_hosts_data(env, list(hosts))
@@ -225,7 +226,7 @@ def inspection_crontab(**kwargs):
                 start_time__day=now.day).count()
             his_dict = {
                 'inspection_name':
-                    f"{job_name}定时巡检{now.strftime('%Y%m%d')}{num + 1}",
+                    f"{job_name}定时巡检-{now.strftime('%Y%m%d')}{num + 1}",
                 'inspection_type': inspection_type.get(job_type),
                 'inspection_status': 1, 'execute_type': 'auto',
                 'inspection_operator': '定时服务',

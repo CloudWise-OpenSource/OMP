@@ -89,7 +89,7 @@ class InspectionHistoryView(ListModelMixin, GenericViewSet, CreateModelMixin):
             start_time__year=now.year, start_time__month=now.month,
             start_time__day=now.day).count()
         tp = {'deep': '深度巡检', 'host': '主机巡检', 'service': '组件巡检'}
-        name = f"{tp.get(data_dict.get('inspection_type'))}" \
+        name = f"{tp.get(data_dict.get('inspection_type'))}-" \
                f"{now.strftime('%Y%m%d')}{num+1}"
         return name
 
