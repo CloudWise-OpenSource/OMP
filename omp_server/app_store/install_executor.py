@@ -196,6 +196,7 @@ class InstallServiceExecutor:
                 f"{detail_obj.main_install_history.operation_uuid}.json")
 
             cmd_str = f"python {install_script_path} --local_ip {target_ip} --data_json {json_path}"
+
             # 执行安装
             is_success, message = self.salt_client.cmd(
                 target=target_ip,
@@ -203,7 +204,11 @@ class InstallServiceExecutor:
                 timeout=self.timeout)
             if not is_success:
                 raise Exception(message)
-
+            # 执行成功且 message 有值，则补充至服务日志中
+            if is_success and bool(message):
+                detail_obj.install_msg += f"{self.now_time()} 安装脚本执行成功，脚本输出如下:\n" \
+                                          f"{message}\n"
+                detail_obj.save()
         except Exception as err:
             logger.error(f"Install Failed -> [{service_name}]: {err}")
             detail_obj.install_flag = 3
@@ -256,7 +261,11 @@ class InstallServiceExecutor:
                 timeout=self.timeout)
             if not is_success:
                 raise Exception(message)
-
+            # 执行成功且 message 有值，则补充至服务日志中
+            if is_success and bool(message):
+                detail_obj.install_msg += f"{self.now_time()} 初始化脚本执行成功，脚本输出如下:\n" \
+                                          f"{message}\n"
+                detail_obj.save()
         except Exception as err:
             logger.error(f"Init Failed -> [{service_name}]: {err}")
             detail_obj.init_flag = 3
@@ -295,6 +304,7 @@ class InstallServiceExecutor:
                 return True, "Start Un Do"
 
             cmd_str = f"bash {start_script_path} start"
+
             # 执行启动
             is_success, message = self.salt_client.cmd(
                 target=target_ip,
@@ -307,7 +317,11 @@ class InstallServiceExecutor:
                     "NO RUNNING" in result_str or \
                     "NOT RUNNING" in result_str:
                 raise Exception(message)
-
+            # 执行成功且 message 有值，则补充至服务日志中
+            if is_success and bool(message):
+                detail_obj.install_msg += f"{self.now_time()} 启动脚本执行成功，脚本输出如下:\n" \
+                                          f"{message}\n"
+            detail_obj.save()
         except Exception as err:
             logger.error(f"Start Failed -> [{service_name}]: {err}")
             detail_obj.start_flag = 3
