@@ -306,6 +306,11 @@ class InstallServiceExecutor:
                 logger.info(f"Start Un Do -> [{service_name}]")
                 detail_obj.start_flag = 2
                 detail_obj.start_msg += f"{self.now_time()} {service_name} 无需执行启动\n"
+                # 完成安装流程，更新状态为 '安装成功'，服务状态为 '正常'
+                detail_obj.install_step_status = \
+                    DetailInstallHistory.INSTALL_STATUS_SUCCESS
+                detail_obj.service.service_status = Service.SERVICE_STATUS_NORMAL
+                detail_obj.service.save()
                 detail_obj.save()
                 return True, "Start Un Do"
 
