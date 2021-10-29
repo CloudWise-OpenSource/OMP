@@ -123,9 +123,9 @@ class UpdateAlertSerializer(Serializer):
         error_messages={"required": "必须包含是否已读字段"}
     )
 
-    def validate(self, attrs):
-        # TODO 做校验
-        return attrs
+    # def validate(self, attrs):
+    #     # TODO 做校验
+    #     return attrs
 
     def create(self, validated_data):
         Alert.objects.filter(id__in=validated_data.get('ids')).update(

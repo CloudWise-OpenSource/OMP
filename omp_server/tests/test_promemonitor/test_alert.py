@@ -50,9 +50,21 @@ class AlertTest(AutoLoginTest):
 
     def test_get_alerts(self):
         """ 测试获取告警记录 """
-        resp = self.get(self.list_alert_url).json()
+        resp = self.get(self.list_alert_url,
+                        data={"start_alert_time": "2021-09-11 12:34:56",
+                              "end_alert_time": "2021-09-11 12:34:57"}).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
+
+        resp = self.get(self.list_alert_url,
+                        data={"start_alert_time": "2021-09-11 12:34:56"}).json()
+        self.assertEqual(resp.get("code"), 0)
+        self.assertEqual(resp.get("message"), "success")
+
+        error_time_resp = self.get(self.list_alert_url,
+                                   data={"start_alert_time": "2021-09-11 12:34:56", "end_alert_time": "123456"}).json()
+        self.assertEqual(error_time_resp.get("code"), 0)
+        self.assertEqual(error_time_resp.get("message"), "success")
 
     request_post_response = {
         "code": 0,

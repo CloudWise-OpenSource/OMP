@@ -207,7 +207,10 @@ class ApplicationDetailSerializer(ModelSerializer):  # NOQA
         return list(obj.app_labels.all().values_list('label_name', flat=True))
 
     def get_app_package_md5(self, obj):  # NOQA
-        return obj.app_package.package_md5
+        md5 = "-"
+        if obj.app_package is not None:
+            md5 = obj.app_package.package_md5
+        return md5
 
     def get_app_operation_user(self, obj):  # NOQA
         return obj.app_package.operation_user
@@ -252,11 +255,10 @@ class ProductDetailSerializer(ModelSerializer):  # NOQA
         return list(obj.pro_labels.all().values_list('label_name', flat=True))
 
     def get_pro_package_md5(self, obj):  # NOQA
-        try:
-            return obj.pro_package.package_md5
-        except Exception as e:
-            logger.error(e)
-            logger.error("获取服务包md5值失败！")
+        md5 = "-"
+        if obj.pro_package is not None:
+            md5 = obj.pro_package.package_md5
+        return md5
 
     def get_pro_operation_user(self, obj):  # NOQA
         try:

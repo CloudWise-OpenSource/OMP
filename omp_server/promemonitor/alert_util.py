@@ -102,13 +102,13 @@ class AlertAnalysis:
     def _get(items, key):
         return items.get(key, "DEFAULT_DATA")
 
-    @property
-    def is_resolved(self):
-        return self.item.get("status") == 'resolved'
+    # @property
+    # def is_resolved(self):
+    #     return self.item.get("status") == 'resolved'
 
-    @property
-    def is_alert(self):
-        return self._get(self.labels, "severity") in ["critical", "warning"]
+    # @property
+    # def is_alert(self):
+    #     return self._get(self.labels, "severity") in ["critical", "warning"]
 
     def node_exporter(self):
         return dict(
@@ -133,18 +133,18 @@ class AlertAnalysis:
             alert_service_en_type=alert_service_en_type
         )
 
-    def other(self):
-        alert_host_ip = self._get(self.labels, "ip")
-        alert_service_name = self._get(self.labels, "app").strip()
-        alert_service_type, alert_service_en_type = get_service_type(
-            alert_host_ip, alert_service_name)
-        return dict(
-            alert_type="service",
-            alert_host_ip=alert_host_ip,
-            alert_service_name=alert_service_name,
-            alert_service_type=alert_service_type,
-            alert_service_en_type=alert_service_en_type
-        )
+    # def other(self):
+    #     alert_host_ip = self._get(self.labels, "ip")
+    #     alert_service_name = self._get(self.labels, "app").strip()
+    #     alert_service_type, alert_service_en_type = get_service_type(
+    #         alert_host_ip, alert_service_name)
+    #     return dict(
+    #         alert_type="service",
+    #         alert_host_ip=alert_host_ip,
+    #         alert_service_name=alert_service_name,
+    #         alert_service_type=alert_service_type,
+    #         alert_service_en_type=alert_service_en_type
+    #     )
 
     def get_alert_time(self):
         start_time = self.item.get("startsAt", "")
@@ -159,7 +159,8 @@ class AlertAnalysis:
         elif "Exporter" in old_alert_type:
             kwargs = self.exporter()
         else:
-            kwargs = self.other()
+            # kwargs = self.other()
+            kwargs = self.exporter()  # TODO 有other场景出现再换
         kwargs["status"] = self.item.get("status", "firing")
         kwargs["alert_level"] = self._get(self.labels, "severity")
         kwargs["alertname"] = self._get(self.labels, "alertname")

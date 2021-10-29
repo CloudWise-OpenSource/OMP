@@ -127,6 +127,18 @@ class ReceiveAlertTest(AutoLoginTest):
         self.assertEqual(resp.get("message"), "success")
         self.assertIsNotNone(resp.get('data'))
 
+    def test_alert_util_exception(self):
+        """测试alert_util中的异常处理"""
+        from promemonitor.alert_util import get_monitor_url, get_log_url, utc_to_local
+        gmu_result = get_monitor_url(1)
+        self.assertIsNone(gmu_result)
+
+        glu_result = get_log_url(1)
+        self.assertIsNone(glu_result)
+
+        utl_result = utc_to_local("123")
+        self.assertIsNotNone(utl_result)
+
     def tearDown(self):
         Alert.objects.filter(alert_host_ip='10.0.7.146').delete()
         Host.objects.filter(ip='10.0.7.146').delete()
