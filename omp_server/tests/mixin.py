@@ -398,7 +398,8 @@ class ServicesResourceMixin(HostsResourceMixin, ClusterResourceMixin,
             index += 1
             # 随机构造端口字段
             service_port_ls = [{
-                "service_port": 18080
+                "key": "service_port",
+                "port": 18080,
             }]
             for port_index in range(random.randint(0, 2)):
                 service_port_ls.append({
@@ -472,19 +473,15 @@ class InstallHistoryResourceMixin(ServicesResourceMixin):
                 main_install_history=main_obj,
                 install_detail_args={
                     "name": "t_name",
-                    "app_install_args": [
-                        {
-                            "key": "base_dir",
-                            "name": "安装目录",
-                            "default": "/data/t_name",
-                            "dir_key": "{data_path}",
-                            "check_msg": "success",
-                            "check_flag": True
-                        }
-                    ]
-                }
-
-            ))
+                    "app_install_args": [{
+                        "key": key,
+                        "name": "安装目录",
+                        "default": "/data/t_name",
+                        "dir_key": "{data_path}",
+                        "check_msg": "success",
+                        "check_flag": True
+                    } for key in ("base_dir", "data_dir", "log_dir")]
+                }))
         DetailInstallHistory.objects.bulk_create(detail_ls)
         detail_obj_ls = DetailInstallHistory.objects.filter(
             main_install_history=main_obj)

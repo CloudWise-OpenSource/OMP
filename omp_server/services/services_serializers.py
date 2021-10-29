@@ -35,8 +35,8 @@ class ServiceSerializer(serializers.ModelSerializer):
         if obj.service_port is not None:
             service_port_ls = json.loads(obj.service_port)
             for info in service_port_ls:
-                if info.get("service_port", None) is not None:
-                    service_port = info.get("service_port")
+                if info.get("key", "") == "service_port":
+                    service_port = info.get("port", "")
                     break
         return service_port
 
@@ -106,8 +106,8 @@ class ServiceDetailSerializer(serializers.ModelSerializer):
         # 端口号
         service_port_ls = json.loads(obj.service_port)
         for info in service_port_ls:
-            if info.get("service_port", None) is not None:
-                result["service_port"] = info.get("service_port", "-")
+            if info.get("key", "") == "service_port":
+                result["service_port"] = info.get("port", "-")
                 break
         # 应用安装参数
         app_install_args = "[]"

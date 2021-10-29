@@ -8,8 +8,6 @@ from concurrent.futures import (
     ThreadPoolExecutor, as_completed
 )
 
-from django.conf import settings
-
 from db_models.models import (
     Host, Service,
     MainInstallHistory, DetailInstallHistory
@@ -70,17 +68,13 @@ class InstallServiceExecutor:
             if not is_success:
                 raise Exception(f"发送 json 文件失败: {message}")
 
-            # 校验服务包是否存在
+            # 获取服务包路径
             source_path = os.path.join(
                 detail_obj.service.service.app_package.package_path,
                 package_name)
             target_path = os.path.join(
                 target_host.data_folder, "omp_packages",
                 package_name)
-            package_abs_path = os.path.join(
-                settings.BASE_DIR.parent, "package_hub", source_path)
-            if not os.path.exists(package_abs_path):
-                raise Exception(f"本地未找到服务包{package_abs_path}")
 
             # 发送服务包
             is_success, message = self.salt_client.cp_file(
@@ -312,6 +306,11 @@ class InstallServiceExecutor:
                 logger.info(f"Start Un Do -> [{service_name}]")
                 detail_obj.start_flag = 2
                 detail_obj.start_msg += f"{self.now_time()} {service_name} 无需执行启动\n"
+                # 完成安装流程，更新状态为 '安装成功'，服务状态为 '正常'
+                detail_obj.install_step_status = \
+                    DetailInstallHistory.INSTALL_STATUS_SUCCESS
+                detail_obj.service.service_status = Service.SERVICE_STATUS_NORMAL
+                detail_obj.service.save()
                 detail_obj.save()
                 return True, "Start Un Do"
 
@@ -431,7 +430,7 @@ class InstallServiceExecutor:
                 DetailInstallHistory.INSTALL_STATUS_INSTALLING
             )).update(install_step_status=DetailInstallHistory.INSTALL_STATUS_FAILED)
             logger.info(f"Main Install Failed, id[{self.main_id}]")
-            return
+            return self.is_error
 
         # 流程执行完整，主流程成功
         main_obj.install_status = \
@@ -439,4 +438,4 @@ class InstallServiceExecutor:
         main_obj.save()
         # TODO 注册监控
         logger.info(f"Main Install Success, id[{self.main_id}]")
-        return
+        return self.is_error

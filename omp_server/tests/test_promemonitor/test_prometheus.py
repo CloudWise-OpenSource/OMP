@@ -40,16 +40,16 @@ class TestPrometheus(TestCase):
     @staticmethod
     def return_host_info_data():
         correct_host_info_data = [
-            {'ip': '10.0.3.71', 'data_folder': '/boot', 'cpu_usage': None, 'mem_usage': None, 'root_disk_usage': None,
-             'data_disk_usage': None, 'cpu_status': None, 'mem_status': None, 'root_disk_status': None,
-             'data_disk_status': None}
+            {'ip': '10.0.3.71', 'data_folder': '/boot', 'cpu_usage': 12, 'mem_usage': 12, 'root_disk_usage': 12,
+             'data_disk_usage': 12, 'cpu_status': "normal", 'mem_status': "normal", 'root_disk_status': "normal",
+             'data_disk_status': "normal"}
         ]
         return correct_host_info_data
 
     request_get_response = {"status": "success", "data": {"resultType": "vector", "result": [
-        {"metric": {"instance": "10.0.3.20"}, "value": [
+        {"metric": {"instance": "10.0.3.71"}, "value": [
             1633782875.771, "11.360416666623973"]},
-        {"metric": {"instance": "10.0.3.21"}, "value": [
+        {"metric": {"instance": "10.0.3.72"}, "value": [
             1633782875.771, "11.04166666666666"]}
     ]}}
 

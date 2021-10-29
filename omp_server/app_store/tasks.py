@@ -558,25 +558,28 @@ def add_prometheus(main_history_id):
         main_install_history_id=main_history_id)
     for detail_obj in queryset:
         # TODO 已是否具有端口作为是否需要添加监控的依据，后续版本优化
+        instance_name = detail_obj.service.service_instance_name
         service_port = None
         if detail_obj.service.service_port is not None:
             service_port_ls = json.loads(detail_obj.service.service_port)
             for info in service_port_ls:
-                if info.get("service_port", None) is not None:
-                    service_port = info.get("service_port")
+                if info.get("key", "") == "service_port":
+                    service_port = info.get("port", "")
                     break
-        app_install_args = detail_obj.install_detail_args.get(
-            "app_install_args", [])
-        data_dir = log_dir = ""
-        for info in app_install_args:
-            if info.get("key", "") == "data_dir":
-                data_dir = info.get("default", "")
-            if info.get("key", "") == "log_dir":
-                log_dir = info.get("default", "")
         if service_port is not None:
+            # 获取数据目录、日志目录
+            app_install_args = detail_obj.install_detail_args.get(
+                "app_install_args", [])
+            data_dir = log_dir = ""
+            for info in app_install_args:
+                if info.get("key", "") == "data_dir":
+                    data_dir = info.get("default", "")
+                if info.get("key", "") == "log_dir":
+                    log_dir = info.get("default", "")
+            # 添加服务到 prometheus
             is_success, message = prometheus.add_service({
                 "service_name": detail_obj.service.service.app_name,
-                "instance_name": detail_obj.service.service_instance_name,
+                "instance_name": instance_name,
                 "data_path": data_dir,
                 "log_path": log_dir,
                 "env": "default",
@@ -584,7 +587,10 @@ def add_prometheus(main_history_id):
                 "listen_port": service_port
             })
             if not is_success:
-                logger.error(f"Add Prometheus Failed: {message}")
+                logger.error(
+                    f"Add Prometheus Failed {instance_name}, error: {message}")
+                continue
+        logger.info(f"Add Prometheus Success {instance_name}")
     logger.info("Add Prometheus End")
 
 
@@ -595,22 +601,20 @@ def install_service(main_history_id):
     :param main_history_id: MainInstallHistory 主表 id
     :return:
     """
-    install_success = True
     try:
         executor = InstallServiceExecutor(main_history_id)
-        executor.main()
+        install_success = executor.main()
+        logger.error(f"Install Service Task Success [{main_history_id}]")
     except Exception as err:
+        install_success = False
         import traceback
-        logger.error(f"Install Service Failed: {err}")
+        logger.error(f"Install Service Task Failed [{main_history_id}], "
+                     f"err: {err}")
         logger.error(traceback.format_exc())
-        # 更新主表和细节表记录为失败
+        # 更新主表记录为失败
         MainInstallHistory.objects.filter(
             id=main_history_id).update(
             install_status=MainInstallHistory.INSTALL_STATUS_FAILED)
-        DetailInstallHistory.objects.filter(
-            main_install_history_id=main_history_id).update(
-            install_step_status=DetailInstallHistory.INSTALL_STATUS_FAILED)
-        install_success = False
 
     # 安装成功，则注册服务至监控
     if install_success:
