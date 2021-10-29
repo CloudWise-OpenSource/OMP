@@ -78,17 +78,47 @@ class TestInstallExecutor(TestCase, InstallHistoryResourceMixin):
             self.assertFalse(is_success)
             self.assertEqual(detail_obj.start_flag, 3)
 
+        # 服务无 init、start 脚本
+        detail_obj = random.choice(detail_obj_ls)
+        detail_obj.service.service_controllers.pop("init")
+        detail_obj.service.service_controllers.pop("start")
+        detail_obj.service.save()
+        # 初始化 -> 成功 (跳过)
+        is_success, _ = executor.init(detail_obj)
+        self.assertTrue(is_success)
+        self.assertEqual(detail_obj.init_flag, 2)
+        # 启动 -> 成功 (跳过)
+        is_success, _ = executor.start(detail_obj)
+        self.assertTrue(is_success)
+        self.assertEqual(detail_obj.start_flag, 2)
+
     @mock.patch.object(InstallServiceExecutor, "start", return_value=(True, ""))
     @mock.patch.object(InstallServiceExecutor, "init", return_value=(True, ""))
     @mock.patch.object(InstallServiceExecutor, "install", return_value=(True, ""))
     @mock.patch.object(InstallServiceExecutor, "unzip", return_value=(True, ""))
     @mock.patch.object(InstallServiceExecutor, "send", return_value=(True, ""))
     def test_main(self, mock_send, mock_unzip, mock_install, mock_init, mock_start):
-        """ 测试入口函数 """
+        """ 测试主流程函数 """
         main_obj, detail_obj_ls = self.get_install_history()
+        action_ls = (mock_send, mock_unzip,
+                     mock_install, mock_init, mock_start)
 
         executor = InstallServiceExecutor(main_obj.id)
+        # 所有动作执行成功 -> 主流程执行成功
         executor.main()
+        main_obj.refresh_from_db()
+        self.assertEqual(
+            main_obj.install_status,
+            MainInstallHistory.INSTALL_STATUS_SUCCESS)
+
+        # 任意动作执行失败 -> 主流程执行失败
+        action = random.choice(action_ls)
+        action.return_value = False, "failed"
+        executor.main()
+        main_obj.refresh_from_db()
+        self.assertEqual(
+            main_obj.install_status,
+            MainInstallHistory.INSTALL_STATUS_FAILED)
 
 
 class TestInstallServiceTask(TestCase, InstallHistoryResourceMixin):
@@ -100,7 +130,7 @@ class TestInstallServiceTask(TestCase, InstallHistoryResourceMixin):
         main_obj, detail_obj_ls = self.get_install_history()
 
         with mock.patch.object(InstallServiceExecutor, "main") as mock_executor:
-            mock_executor.return_value = random.choice((True, False))
+            mock_executor.return_value = True
             # 正常状态
             install_service(main_obj.id)
 
