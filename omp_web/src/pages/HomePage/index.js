@@ -24,6 +24,41 @@ const Homepage = () => {
 
   const [dataSource, setDataSource] = useState({});
 
+  // data数据源，key聚合数据的唯一值
+  const dataAggregation = (data, key)=>{
+    let arr = []
+    data?.map((i,d)=>{
+      let isExistenceArr = arr.filter(e=>e[key] == i[key])
+      console.log(isExistenceArr)
+      if(isExistenceArr.length == 0){
+        arr.push({
+          [key]:i[key],
+          severity:i.severity,
+          info:[
+            {
+              ...i
+            }
+          ]
+        })
+      }else{
+        let m = data[d]
+        console.log(m)
+      let idx = arr.indexOf(isExistenceArr[0])
+       arr[idx] = {
+        [key]:i[key],
+        severity:i.severity,
+        info:[
+          ...arr[idx].info,
+          {
+            ...m,
+          }
+        ]
+       }
+      }
+    })
+    return arr
+  }
+
   const queryData = () => {
     setLoading(true);
     fetchGet(apiRequest.homepage.instrumentPanel)
@@ -530,7 +565,6 @@ const Homepage = () => {
             </p>
             <ExceptionList />
           </div>
-
           <div className={styles.pageBlock}>
             <OmpStateBlock
               // key={"serviceData"}
@@ -553,7 +587,7 @@ const Homepage = () => {
                   },
                 });
               }}
-              data={dataSource.host?.host_info_list}
+              data={dataAggregation(dataSource.host?.host_info_list,"ip")}
             />
           </div>
 
@@ -581,7 +615,7 @@ const Homepage = () => {
               }}
               title={"应用服务状态"}
               hasNotMonitored
-              data={dataSource.service?.service_info_list}
+              data={dataAggregation(dataSource.service?.service_info_list,"instance_name")}
             />
           </div>
 
@@ -609,7 +643,7 @@ const Homepage = () => {
               }}
               hasNotMonitored
               title={"基础组件状态"}
-              data={dataSource.component?.component_info_list}
+              data={dataAggregation(dataSource.component?.component_info_list,"instance_name")}
             />
           </div>
 
@@ -637,7 +671,7 @@ const Homepage = () => {
               }}
               hasNotMonitored
               title={"数据库状态"}
-              data={dataSource.database?.database_info_list}
+              data={dataAggregation(dataSource.database?.database_info_list,"instance_name")}
             />
           </div>
 

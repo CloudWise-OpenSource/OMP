@@ -182,32 +182,34 @@ export default OmpStateBlock;
 function popContent(item) {
   return (
     <div>
-      <div className={styles.popContent}>
-        {item.ip && (
+      {item.info.map(i=>
+        <div className={styles.popContent}>
+        {i.ip && (
           <span
             className={styles.ip}
             style={{ color: colorObj[item.frontendStatus]?.borderColor }}
           >
-            {item.ip}
+            {i.ip}
           </span>
         )}
         <span>
-          {item.date ? (
-            item.date
+          {i.date ? (
+           <span>{i.date}</span>
           ) : (
             <span style={{ color: colorObj[item.frontendStatus]?.borderColor }}>
               正常
             </span>
           )}
         </span>
-        {item.describe && (
+        {i.describe && (
           <span>
-            {item.describe.length > 100
-              ? item.describe.slice(0, 100) + "..."
-              : item.describe.slice(0, 100)}
+            {i.describe.length > 100
+              ? i.describe.slice(0, 100) + "..."
+              : i.describe.slice(0, 100)}
           </span>
         )}
       </div>
+      )}
     </div>
   );
 }
