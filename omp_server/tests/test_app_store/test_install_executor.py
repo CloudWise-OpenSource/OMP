@@ -3,12 +3,14 @@ from unittest import mock
 from django.test import TestCase
 
 from app_store.install_executor import InstallServiceExecutor
-from tests.mixin import InstallHistoryResourceMixin
+from app_store.tasks import install_service
 from utils.plugin.salt_client import SaltClient
+from promemonitor.prometheus_utils import PrometheusUtils
+from tests.mixin import InstallHistoryResourceMixin
 
 
 class TestInstallExecutor(TestCase, InstallHistoryResourceMixin):
-    """ 测试安装执行器 """
+    """ 安装执行器测试类 """
 
     @mock.patch.object(SaltClient, "cp_file", return_value=(True, ""))
     def test_action(self, cp_file):
@@ -38,3 +40,25 @@ class TestInstallExecutor(TestCase, InstallHistoryResourceMixin):
 
         executor = InstallServiceExecutor(main_obj.id)
         executor.main()
+
+
+class TestInstallServiceTask(TestCase, InstallHistoryResourceMixin):
+    """ 安装服务任务测试类 """
+
+    @mock.patch.object(PrometheusUtils, "add_service", return_value=(True, "success"))
+    @mock.patch.object(InstallServiceExecutor, "main", return_value=None)
+    def test_executor_success(self, mock_executor, mock_add_service):
+        """ 测试执行成功 """
+        main_obj, detail_obj_ls = self.get_install_history()
+
+        # 正常状态 -> 安装成功
+        install_service(main_obj.id)
+
+    @mock.patch.object(PrometheusUtils, "add_service", return_value=(True, "success"))
+    @mock.patch.object(InstallServiceExecutor, "main", side_effect=Exception("install err"))
+    def test_executor_failed(self, mock_executor, mock_add_service):
+        """ 测试安装服务任务 """
+        main_obj, detail_obj_ls = self.get_install_history()
+
+        # 异常状态 -> 安装失败
+        install_service(main_obj.id)
