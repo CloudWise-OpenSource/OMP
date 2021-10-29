@@ -248,6 +248,7 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
                 ele_dict = {
                     "ip": ele.get("labels").get("instance"),
                     "instance_name": ele.get("labels").get("instance_name"),
+                    "alert_name": ele.get("labels").get("alert_name"),
                     "severity": ele.get("labels").get("severity"),
                     "date": utc_to_local(ele.get("activeAt")),
                     "describe": ele.get("annotations").get("description"),
@@ -296,6 +297,20 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
                         ele.get("labels").get("instance_name"))
                 else:
                     continue
+
+        try:
+            temp_host_info_list = []
+            for index, hil in enumerate(host_info_list.copy()):
+                ip_alert_name = str(hil.get("ip")) + str(hil.get("alert_name"))
+                new_hil = {ip_alert_name: hil.get("severity")}
+
+                if new_hil in temp_host_info_list and hil.get("severity") == "warning":
+                    host_info_list.pop(index)
+                    continue
+
+                temp_host_info_list.append(new_hil)
+        except Exception as e:
+            logger.error(e)
 
         for host in host_list:
             if host.ip in error_host_list:
