@@ -28,7 +28,7 @@ $ tree ./mysql -L 2
 │   ├── mysql_backup.py	# 其他动作脚本，如备份等
 ```
 
-**备注:**  
+**备注:**
 
 1. 组件图标请使用svg格式图片，如不添加会显示平台缺省图标；
 2. 确保目录名称(mysql)、配置文件(mysql.yaml) 、图标(mysql.svg) 名称统一, 上传安装包时，平台将根据名称校验对应文件合法性，如名称不一致，可能会导致校验不通过等问题；
@@ -52,7 +52,7 @@ $ md5sum mysql-5.7.31.tar.gz
 $ mv mysql-5.7.31.tar.gz mysql-5.7.31-8e955b24fefe7061eb79cfc61a9a02a1.tar.gz
 ```
 
-### 2.3.  配置文件(yaml)说明 
+### 2.3.  配置文件(yaml)说明
 
 平台预留KEY值（该KEY值存在指定定义，请准确使用）：
 
@@ -73,9 +73,9 @@ name: mysql
 # 上传后显示的组件版本，建议字符： 数字、字母、_ 、. （类型：string）
 version: 5.7.31
 # 组件描述信息，建议长度256字符之内，请针对组件书写贴切的描述文字 （类型：string）
-description: "MySQL是一个关系型数据库管理系统，由瑞典MySQL AB 公司开发，属于 Oracle 旗下产品。MySQL 是最流行的关系型数据库管理系统之一，在 WEB 应用方面，MySQL是最好的 RDBMS (Relational Database Management System，关系数据库管理系统) 应用软件之一。" 
+description: "MySQL是一个关系型数据库管理系统，由瑞典MySQL AB 公司开发，属于 Oracle 旗下产品。MySQL 是最流行的关系型数据库管理系统之一，在 WEB 应用方面，MySQL是最好的 RDBMS (Relational Database Management System，关系数据库管理系统) 应用软件之一。"
 # 组件所属标签，请针对组件功能设置准确标签，平台会针对该标签对组件进行分类，（类型：list[string,string...]）
-labels:          
+labels:
   - 数据库
 # 指定该服务安装后是否需要启动 （类型：boolean)
 auto_launch: false
@@ -84,20 +84,20 @@ base_env: flase
 # 定义组件所需端口号，如不启用端口，可留空 （类型：list[map,map...])
 ports:
     # 端口描述名称，用户在安装时会以该名称显示表单内容（类型：string)
-  - name: 服务端口      
+  - name: 服务端口
     # 端口协议，支持 TCP/UDP
-    protocol: TCP 
+    protocol: TCP
     # 端口英文描述名称，该key会传入到安装脚本中 （类型： string）支持（英文、数字、_)
     key: service_port  # 注：service_port 为保留关键词，表示 为 提供服务的端口
     # 组件的默认端口号，在安装时，会以该值填入表单中（类型： int）
-    default: 3306 
+    default: 3306
 # 组件监控相关配置，定义该组件在安装后如何监控 ，如果不需要监控可留空 （类型： map）
 monitor:
   # 监控进程名称，如“mysqld”，平台在发现mysqld进程不存在后，会发送告警提醒 ，不需要监控可留空（类型：string）
   process_name:  "mysqld"
   # 监控端口号，请根据 ports 中的变量设置，不需要监控可留空 （类型： {string}）
   metric_port: {service_port}
---- 
+---
 # 设置集群模式方式，如果组件需要支持多种方式安装，可以在该字段中定义，如只支持单个实例安装，可留空（类型：map[list[map,map...]])
 deploy:
 	# 定义单实例模式安装 （类型：list[map,map...])
@@ -111,7 +111,7 @@ deploy:
   		# 部署方式的中文描述名称，该值会在表单中选择集群模式时显示 （类型：string）
     - name: 主从模式
     	# 该模式的key值 （类型：string）
-      key: master_slave    
+      key: master_slave
       # 集群节点设置 （类型： map）
       nodes:
         # 初始节点数量 （类型：int）
@@ -129,11 +129,11 @@ resources:
 	# cpu最小需求 ，1000m 表示 1核  （类型：string）
   cpu: 1000m
   # 内存最小需求， 500m 表示 500兆内存 （类型：string）
-  memory: 500m      
+  memory: 500m
 
 ---
 # 定义安装组件时所需参数，该参数会传入到 安装脚本中 （类型：list[map,map...]）
-install:        
+install:
 		# 传入参数中文描述名称，该名称会在用户安装组件时显示到表单中 （类型： string）
   - name: "安装目录"
   	# 传入参数key值，会将该key与值 传入到安装脚本中 （类型：string）
@@ -153,7 +153,7 @@ install:
     key: password
     default: "123456"
 # 程序控制脚本与服务目录的相对路径 （类型：map）
-control: 
+control:
 	# 启动脚本路径，如没有可留空 （类型：string）
   start: "./scripts/mysql start"
   # 停止脚本路径，如没有可留空 （类型：stirng）
@@ -161,7 +161,7 @@ control:
   # 重启脚本路径，如没有可留空 （类型：stirng）
   restart: "./scripts/mysql restart"
   # 重载脚本路径，如没有可留空 （类型：stirng）
-  reload: 
+  reload:
   # 安装脚本路径，必填 （类型：stirng）
   install: "./scripts/install.py"
   # 初始化脚本路径，必填 （类型：stirng）
@@ -341,15 +341,15 @@ omp_server    # 服务包解压后目录名称，与服务名一致
 
 ```yaml
 # 类型定义，发布应用服务时,产品指定类型为 product （类型：string）
-kind: product  
+kind: product
 # 定义产品名称，此名称需要与产品目录名称、产品配置文件名称保持一致，建议字符：英文、数字、_  （类型: string)
-name: omp     
+name: omp
 # 上传后显示的产品版本，建议字符： 数字、字母、_ 、. （类型：string）
-version: 
+version:
 # 产品描述信息，建议长度256字符之内，请针对产品书写贴切的描述文字 （类型：string）
 description: "运维管理平台（OperationManagementPlatform，以下简称OMP）以管理服务为中心，为服务的安装、管理提供便捷可靠的方式。"
 # 组件所属标签，请针对组件功能设置准确标签，平台会针对该标签对组件进行分类，（类型：list[string,string...]）
-labels:          
+labels:
   - omp
 # 定义该产品安装所需依赖产品名称与版本,如不需其他产品依赖，可留空 （类型： list[map,map..])
 dependencies:
@@ -378,26 +378,26 @@ version: 0.1.0
 # 服务描述信息，建议长度256字符之内，请针对组件书写贴切的描述文字 （类型：string）
 description: "服务描述内容..."
 # 指定该服务安装后是否需要启动 （类型：boolean)
-auto_launch: true 
+auto_launch: true
 # 指定服务是否为基础环境组件，如 jdk, 该类组件以基础环境方式安装 （类型：boolean)
 base_env: flase
 # 定义服务所需端口号，如不启用端口，可留空 （类型：list[map,map...])
 ports:
     # 端口描述名称，用户在安装时会以该名称显示表单内容（类型：string)
-  - name: 服务端口      
+  - name: 服务端口
     # 端口协议，支持 TCP/UDP
-    protocol: TCP 
+    protocol: TCP
     # 端口英文描述名称，该key会传入到安装脚本中 （类型： string）支持（英文、数字、_)
     key: service_port  # 注：service_port 为保留关键词，表示 为 提供服务的端口
     # 组件的默认端口号，在安装时，会以该值填入表单中（类型： int）
-    default: 19001 
+    default: 19001
 # 服务监控相关配置，定义该服务在安装后如何监控 ，如果不需要监控可留空 （类型： map）
 monitor:
   # 监控进程名称，如“service_a”，平台在发现service_a进程不存在后，会发送告警提醒,不需要监控可留空（类型：string）
   process_name:  ""
   # 监控端口号，请根据 ports 中的变量设置，不需要监控可留空 （类型： {string}）
   metric_port: {service_port}
---- 
+---
 # 定义该组件安装所需依赖组件名称与版本,如不需其他组件依赖，可留空 （类型： list[map,map..])
 dependencies:
   - name: mysql
@@ -411,10 +411,10 @@ resources:
   # cpu最小需求 ，1000m 表示 1核  （类型：string）
   cpu: 1000m
   # 内存最小需求， 500m 表示 500兆内存 （类型：string）
-  memory: 500m      
+  memory: 500m
 ---
 # 定义安装组件时所需参数，该参数会传入到 安装脚本中 （类型：list[map,map...]）
-install:        
+install:
     # 传入参数中文描述名称，该名称会在用户安装组件时显示到表单中 （类型： string）
   - name: "安装目录"
     # 传入参数key值，会将该key与值 传入到安装脚本中 （类型：string）
@@ -425,7 +425,7 @@ install:
 #    key: jvm
 #    default: "-XX:MaxPermSize=512m -Djava.awt.headless=true"
 # 程序控制脚本与服务目录的相对路径 （类型：map）
-control: 
+control:
         # 启动脚本路径，如没有可留空,脚本名称建议与服务名称一致  （类型：string）
   start: "./bin/omp_server start"
   # 停止脚本路径，如没有可留空，脚本名称建议与服务名称一致 （类型：stirng）
@@ -433,7 +433,7 @@ control:
   # 重启脚本路径，如没有可留空，脚本名称建议与服务名称一致 （类型：stirng）
   restart: "./bin/omp_server restart"
   # 重载脚本路径，如没有可留空 （类型：stirng）
-  reload: 
+  reload:
   # 安装脚本路径，必填 （类型：stirng）
   install: "./scripts/install.py"
   # 初始化脚本路径，必填 （类型：stirng）
