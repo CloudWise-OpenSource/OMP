@@ -1,5 +1,3 @@
-import json
-
 from rest_framework.reverse import reverse
 
 from db_models.models import (
@@ -210,6 +208,177 @@ class PackageUploadTest(AutoLoginTest):
         os.remove(clear_file)
         res = upload_obj.package_status
         self.assertEqual(res, 0)
+
+    @mock.patch.object(public_utils, "local_cmd",
+                       return_value=("test-md5 jenkins-1.0.0-test-md5.tar.gz", "", 1))
+    def test_app_store_upload_md5(self, local_cmd):
+        # 反向md5校验失败
+        upload_obj = UploadPackageHistory.objects.get(operation_uuid='test-uuid')
+        front_end_verified(upload_obj.operation_uuid,
+                           upload_obj.operation_user,
+                           upload_obj.package_name,
+                           upload_obj.package_md5,
+                           "RandomStr",
+                           "front_end_verified",
+                           upload_obj.id)
+        upload_obj.refresh_from_db()
+        res = upload_obj.package_status
+        self.assertEqual(res, 1)
+
+    @mock.patch.object(public_utils, "local_cmd",
+                       return_value="")
+    @mock.patch(
+        "os.mkdir",
+        return_value=None)
+    def test_app_store_upload_tar(self, mkdir, local_cmd):
+        # 反向tar解压失败
+        upload_obj = UploadPackageHistory.objects.get(operation_uuid='test-uuid')
+        local_cmd.side_effect = [
+            ("test-md5 jenkins-1.0.0-test-md5.tar.gz", "", 0),
+            ("false", "", 1)
+        ]
+        front_end_verified(upload_obj.operation_uuid,
+                           upload_obj.operation_user,
+                           upload_obj.package_name,
+                           upload_obj.package_md5,
+                           "RandomStr",
+                           "front_end_verified",
+                           upload_obj.id)
+        upload_obj.refresh_from_db()
+        res = upload_obj.package_status
+        self.assertEqual(res, 1)
+
+    @mock.patch.object(
+        public_utils,
+        "local_cmd",
+        return_value=""
+    )
+    @mock.patch(
+        "os.path.exists",
+        return_value=False)
+    @mock.patch(
+        "os.mkdir",
+        return_value=None)
+    def test_app_store_upload_file_check(self, mkdir, exists, local_cmd):
+        # 产品或组建yaml文件检测文件存在
+        upload_obj = UploadPackageHistory.objects.get(operation_uuid='test-uuid')
+        local_cmd.side_effect = [
+            ("test-md5 jenkins-1.0.0-test-md5.tar.gz", "", 0),
+            ("false", "", 0)
+        ]
+        front_end_verified(upload_obj.operation_uuid,
+                           upload_obj.operation_user,
+                           upload_obj.package_name,
+                           upload_obj.package_md5,
+                           "RandomStr",
+                           "front_end_verified",
+                           upload_obj.id)
+        upload_obj.refresh_from_db()
+        res = upload_obj.package_status
+        self.assertEqual(res, 1)
+
+    @mock.patch.object(
+        public_utils,
+        "local_cmd",
+        return_value=""
+    )
+    @mock.patch(
+        "os.path.exists",
+        return_value="")
+    @patch(
+        "builtins.open",
+        new_callable=mock_open,
+        read_data="this-is-image"
+    )
+    @mock.patch(
+        "app_store.tasks.ExplainYml.explain_yml",
+        return_value=(True, test_product)
+    )
+    @mock.patch(
+        "os.listdir",
+        return_value=["jenkins-2.303.2.tar.gz"]
+    )
+    @mock.patch(
+        "os.path.isfile",
+        return_value=True
+    )
+    @mock.patch(
+        "os.mkdir",
+        return_value=None)
+    def test_app_store_upload_file_service(self, mkdir, isfile, listdir, explain, image, exists, local_cmd):
+        # 服务yaml文件检测文件存在
+        upload_obj = UploadPackageHistory.objects.get(operation_uuid='test-uuid')
+        local_cmd.side_effect = [
+            ("test-md5 jenkins-1.0.0-test-md5.tar.gz", "", 0),
+            ("false", "", 0),
+            ("false", "", 1)
+        ]
+        exists.side_effect = [
+            True, True, False
+        ]
+        front_end_verified(upload_obj.operation_uuid,
+                           upload_obj.operation_user,
+                           upload_obj.package_name,
+                           upload_obj.package_md5,
+                           "RandomStr",
+                           "front_end_verified",
+                           upload_obj.id)
+        upload_obj.refresh_from_db()
+        res = upload_obj.package_status
+        self.assertEqual(res, 1)
+
+    @mock.patch.object(
+        public_utils,
+        "local_cmd",
+        return_value=""
+    )
+    @mock.patch(
+        "os.path.exists",
+        return_value="")
+    @patch(
+        "builtins.open",
+        new_callable=mock_open,
+        read_data="this-is-image"
+    )
+    @mock.patch(
+        "app_store.tasks.ExplainYml.explain_yml",
+        return_value=""
+    )
+    @mock.patch(
+        "os.listdir",
+        return_value=["jenkins-2.303.2.tar.gz"]
+    )
+    @mock.patch(
+        "os.path.isfile",
+        return_value=True
+    )
+    @mock.patch(
+        "os.mkdir",
+        return_value=None)
+    def test_app_store_upload_file_md5(self, mkdir, isfile, listdir, explain, image, exists, local_cmd):
+        # 服务md5sum校验失败
+        upload_obj = UploadPackageHistory.objects.get(operation_uuid='test-uuid')
+        local_cmd.side_effect = [
+            ("test-md5 jenkins-1.0.0-test-md5.tar.gz", "", 0),
+            ("false", "", 0)
+        ]
+        exists.side_effect = [
+            True, True, False
+        ]
+        explain.side_effect = [
+            (True, test_product),
+            (True, test_service)
+        ]
+        front_end_verified(upload_obj.operation_uuid,
+                           upload_obj.operation_user,
+                           upload_obj.package_name,
+                           upload_obj.package_md5,
+                           "RandomStr",
+                           "front_end_verified",
+                           upload_obj.id)
+        upload_obj.refresh_from_db()
+        res = upload_obj.package_status
+        self.assertEqual(res, 1)
 
     @patch("builtins.open", new_callable=mock_open, read_data=service_yml)
     def test_app_store_explain_service(self, with_open):
