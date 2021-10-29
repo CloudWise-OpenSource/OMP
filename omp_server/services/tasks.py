@@ -21,7 +21,8 @@ def exec_action(action, instance, operation_user):
     action_json = {
         "1": ["start", 1],
         "2": ["stop", 2],
-        "3": ["restart", 3]
+        "3": ["restart", 3],
+        "4": ["delete", 4]
     }
     result_json = {
         0: "success",
@@ -38,6 +39,12 @@ def exec_action(action, instance, operation_user):
     if not action:
         logger.error("action动作不合法")
         raise ValueError("action动作不合法")
+    if action[0] == 'delete':
+        service_history_obj = ServiceHistory.objects.filter(service=service_obj)
+        if len(service_history_obj) != 0:
+            service_history_obj.delete()
+        service_obj.delete()
+        return None
     exe_action = service_controllers.get(action[0])
     if exe_action:
         salt_obj = SaltClient()
