@@ -248,7 +248,7 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
                 ele_dict = {
                     "ip": ele.get("labels").get("instance"),
                     "instance_name": ele.get("labels").get("instance_name"),
-                    "alert_name": ele.get("labels").get("alert_name"),
+                    "alertname": ele.get("labels").get("alertname"),
                     "severity": ele.get("labels").get("severity"),
                     "date": utc_to_local(ele.get("activeAt")),
                     "describe": ele.get("annotations").get("description"),
@@ -274,7 +274,7 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
                         "type": "host",
                         "instance_name": "node"
                     }])
-                    host_info_exc_count = host_info_exc_count + 1
+                    # host_info_exc_count = host_info_exc_count + 1
                     host_info_list.append(ele_dict)
                     error_host_list.append(ele.get("labels").get("instance"))
                 service_name_str = ele.get("labels").get("app")
@@ -298,19 +298,16 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
                 else:
                     continue
 
-        try:
-            temp_host_info_list = []
-            for index, hil in enumerate(host_info_list.copy()):
-                ip_alert_name = str(hil.get("ip")) + str(hil.get("alert_name"))
-                new_hil = {ip_alert_name: hil.get("severity")}
+        temp_host_info_list = []
+        for index, hil in enumerate(host_info_list.copy()):
+            ip_alertname = str(hil.get("ip")) + str(hil.get("alertname"))
+            new_hil = {ip_alertname: hil.get("severity")}
 
-                if new_hil in temp_host_info_list and hil.get("severity") == "warning":
-                    host_info_list.pop(index)
-                    continue
+            if new_hil in temp_host_info_list and hil.get("severity") == "warning":
+                host_info_list.pop(index)
+                continue
 
-                temp_host_info_list.append(new_hil)
-        except Exception as e:
-            logger.error(e)
+            temp_host_info_list.append(new_hil)
 
         for host in host_list:
             if host.ip in error_host_list:
@@ -336,6 +333,8 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
             component_dict = {"ip": component.ip, "instance_name": component.service_instance_name,
                               "app_name": component.service.app_name, "severity": "normal"}
             component_info_list.append(component_dict)
+
+        host_info_exc_count = len(set(error_host_list))
 
         host_info_dict.update({
             "host_info_all_count": host_info_all_count,
