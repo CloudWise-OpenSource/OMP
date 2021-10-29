@@ -575,7 +575,11 @@ class ValidateInstallService(object):
         app_port = _dic.get("app_port", [])
         for el in app_port:
             _port = el.get("default", "")
-            _flag, _msg = public_utils.check_ip_port(ip=_ip, port=_port)
+            if not _port and not _port.isnumeric():
+                el["check_flag"] = False
+                el["check_msg"] = f"端口 {_port} 必须为数字"
+                continue
+            _flag, _msg = public_utils.check_ip_port(ip=_ip, port=int(_port))
             if _flag:
                 el["check_flag"] = False
                 el["check_msg"] = f"主机 {_ip} 上的端口 {_port} 已被占用"

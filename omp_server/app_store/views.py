@@ -369,7 +369,7 @@ class ApplicationTemplateView(GenericViewSet, ListModelMixin):
     get_description = "应用商店下载组件模板"
 
     def list(self, request, *args, **kwargs):
-        template_file_name = "应用商店发布说明.md"
+        template_file_name = "app_publish_readme.md"
         template_path = os.path.join(
             settings.BASE_DIR.parent,
             "package_hub", "template", template_file_name)

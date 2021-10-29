@@ -563,6 +563,7 @@ class InstallHistorySerializer(ModelSerializer):
         if obj.start_flag != 0 and obj.start_msg:
             _log += obj.start_msg
         return {
+            "ip": obj.service.ip,
             "status": _status,
             "log": _log,
             "service_name": obj.service.service.app_name,
