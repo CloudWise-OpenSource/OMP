@@ -70,5 +70,6 @@ def target_service_run(env, services):
         "all_target_num": tag_total_num,
         "abnormal_target": tag_error_num,
         "healthy": f"{round((tag_error_num / tag_total_num) * 100, 2)}%"
+        if tag_total_num > 0 else "100%"
     }
     return scan_info, scan_result, tmp_list
