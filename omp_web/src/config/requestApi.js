@@ -14,7 +14,7 @@ export const apiRequest = {
     changePassword: "/api/users/updatePassword/",
   },
   homepage: {
-    instrumentPanel:"/api/promemonitor/instrumentPanel/"
+    instrumentPanel: "/api/promemonitor/instrumentPanel/",
   },
   machineManagement: {
     // 主机管理
@@ -89,6 +89,11 @@ export const apiRequest = {
     componentEntrance: "/api/appStore/componentEntrance/",
     // 产品安装查询接口
     productEntrance: "/api/appStore/productEntrance/",
+
+    // 服务安装校验
+    executeInstall: "/api/appStore/executeInstall/",
+    // 服务校验通过后的状态查询接口
+    installHistory: "/api/appStore/installHistory/"
   },
   inspection: {
     inspectionList: "/api/inspection/history/",

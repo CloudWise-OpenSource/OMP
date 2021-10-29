@@ -63,17 +63,17 @@ const RenderHasData = ({ data, form }) => {
     return <RenderClusterDom data={data} form={form} />;
   } else {
     let dataSource = data.cluster_info.concat(data.instance_info);
-    console.log(dataSource);
+    //console.log(dataSource);
     // 因为是两个数据源拼接并且字段不一致在这里合并并统一字段
     let result = dataSource.map((item) => {
       if (item.ip) {
         return {
-          id: `single|${item.id}`,
+          id: `single|${JSON.stringify(item)}`,
           name: item.service_instance_name,
         };
       } else {
         return {
-          id: `cluster|${item.id}`,
+          id: `cluster|${JSON.stringify(item)}`,
           name: item.cluster_name,
         };
       }
@@ -134,10 +134,10 @@ const RenderClusterDom = ({ data, form }) => {
 
 // 单实例没有实例名称。其他有(单独封装为了复用)
 const ClusterComponent = ({ data, form }) => {
-  const [deploy_mode, setDeploy_mode] = useState(data.ser_deploy_mode[0].key);
+  const [deploy_mode, setDeploy_mode] = useState(JSON.stringify(data.ser_deploy_mode[0]));
   useEffect(() => {
     form.setFieldsValue({
-      [`${data.name}|deploy_mode`]: data.ser_deploy_mode[0].key,
+      [`${data.name}|deploy_mode`]: JSON.stringify(data.ser_deploy_mode[0]),
       [`${data.name}|modeName`]: `${data.name}-${randomNumber()}`,
     });
   }, []);
@@ -160,14 +160,15 @@ const ClusterComponent = ({ data, form }) => {
             }}
           >
             {data.ser_deploy_mode.map((item) => (
-              <Select.Option value={item.key} key={item.key}>
+              <Select.Option value={JSON.stringify(item)} key={item.key}>
                 {item.name}
               </Select.Option>
             ))}
           </Select>
         </Form.Item>
       </div>
-      {deploy_mode !== "single" ? (
+      {deploy_mode !== "{\"key\":\"single\",\"name\":\"单实例\"}"
+ ? (
         <div
           style={{
             flex: 6,
