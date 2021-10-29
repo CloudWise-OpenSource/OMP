@@ -3,10 +3,25 @@ import { useHistory, useLocation } from "react-router-dom";
 import { handleResponse } from "@/utils/utils";
 import { fetchGet } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-import { Steps, Form, Input, Button, Select, Checkbox } from "antd";
-import { LeftOutlined } from "@ant-design/icons";
+import { Steps, Form, Input, Button, Select, Checkbox, Tooltip } from "antd";
+import { LeftOutlined, DownOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import styles from "./index.module.less";
 import RenderComDependence from "./component/RenderComDependence";
+
+const step2Open = (num) => ({
+  minHeight: 30,
+  height: num * 60,
+  transition: "all .2s ease-in",
+  overflow: "hidden",
+  backgroundColor:"red"
+});
+
+const step2NotOpen = () => ({
+  height: 0,
+  minHeight: 0,
+  transition: "all .2s ease-in",
+  overflow: "hidden",
+});
 
 const ComponentInstallation = () => {
   const [form] = Form.useForm();
@@ -20,6 +35,9 @@ const ComponentInstallation = () => {
   const [dataSource, setDataSource] = useState([]);
 
   const [stepNum, setStepNum] = useState(0);
+
+  // setp2的查看更多配置是否是展开状态
+  const [isOpen, setIsOpen] = useState(false);
 
   const [versionCurrent, setVersionCurrent] = useState("");
 
@@ -51,8 +69,33 @@ const ComponentInstallation = () => {
     (item) => item.app_version == versionCurrent
   )[0];
 
+  const [ipListSource, setIpListSource] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  const fetchIPlist = () => {
+    setSearchLoading(true);
+    fetchGet(apiRequest.machineManagement.ipList)
+      .then((res) => {
+        handleResponse(res, (res) => {
+          setIpListSource([res.data[0], "19.202.304.0", "19.202.34.10"]);
+          const firstIP = res.data[0].split(".");
+          form.setFieldsValue({
+            ip: res.data[0],
+            instanceName: `${name}-${firstIP[firstIP.length - 2]}-${
+              firstIP[firstIP.length - 1]
+            }`,
+          });
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setSearchLoading(false);
+      });
+  };
+
   useEffect(() => {
     fetchData();
+    fetchIPlist();
   }, []);
 
   return (
@@ -234,7 +277,7 @@ const ComponentInstallation = () => {
             <Button
               type="primary"
               onClick={() => {
-                console.log(form.getFieldsValue())
+                console.log(form.getFieldsValue());
                 setStepNum(1);
               }}
             >
@@ -283,79 +326,101 @@ const ComponentInstallation = () => {
                 form={form}
                 layout="inline"
                 name="basic"
-                initialValues={{
-                  clusterMode: "singleInstance",
-                }}
+                // initialValues={{
+                //   clusterMode: "singleInstance",
+                // }}
               >
-                <Form.Item label="选择主机" name="version">
+                <Form.Item label="选择主机" name="ip">
                   <Select
                     style={{ width: 200 }}
                     onChange={(e) => {
-                      setVersionCurrent(e);
+                      const IpArr = e.split(".");
+                      form.setFieldsValue({
+                        instanceName: `${name}-${IpArr[IpArr.length - 2]}-${
+                          IpArr[IpArr.length - 1]
+                        }`,
+                      });
                     }}
                   >
-                    {dataSource?.map((item) => (
-                      <Select.Option
-                        key={item.app_version}
-                        value={item.app_version}
-                      >
-                        {item.app_version}
+                    {ipListSource?.map((item) => (
+                      <Select.Option key={item} value={item}>
+                        {item}
                       </Select.Option>
                     ))}
                   </Select>
                 </Form.Item>
                 <Form.Item
                   label="实例名称"
-                  name="clusterMode"
+                  name="instanceName"
                   style={{ marginLeft: 30 }}
+                  rules={[
+                    {
+                      required: true,
+                      message: "请填写实例名称",
+                    },
+                  ]}
                 >
                   <Input />
                 </Form.Item>
-              </Form>
-            </div>
-          </div>
 
-          <div
-            style={{
-              marginTop: 20,
-              backgroundColor: "#fff",
-              padding: 10,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                width: "100%",
-                position: "relative",
-                height: 30,
-              }}
-            >
+                <a
+                  style={{
+                    fontSize: 13,
+                    display: "flex",
+                    alignItems: "center",
+                    flexDirection: "row-reverse",
+                    paddingLeft: 200,
+                  }}
+                  onClick={() => {
+                    setIsOpen(!isOpen);
+                  }}
+                >
+                  <DownOutlined
+                    style={{
+                      transform: `rotate(${isOpen ? 180 : 0}deg)`,
+                      position: "relative",
+                      top: isOpen ? -1 : 1,
+                      left: 3,
+                    }}
+                  />
+                  查看更多配置
+                </a>
+              </Form>
               <div
-                style={{
-                  fontWeight: 500,
-                  position: "absolute",
-                  left: 30,
-                  backgroundColor: "#fff",
-                  paddingLeft: 20,
-                  paddingRight: 20,
-                }}
+                //className={styles.backIcon}
+                style={
+                  isOpen
+                    ? step2Open(
+                        currentAppDependenceData.app_install_args.length
+                      )
+                    : step2NotOpen()
+                }
               >
-                依赖信息
+                <Form
+                  form={form}
+                  layout="inline"
+                  name="basic"
+                  style={{
+                    marginTop:20
+                  }}
+                  rules={[
+                    {
+                      required: true,
+                      message: "请填写安装目录",
+                    },
+                  ]}
+                >
+                  <Form.Item label="安装目录" name="ip">
+                    <Input addonBefore={123} style={{ width: 400 }} 
+                    suffix={
+                      <Tooltip title="请使用root或具有sudo免密码权限的用户">
+                        <InfoCircleOutlined style={{ color: "rgba(0,0,0,.45)" }} />
+                      </Tooltip>
+                    }
+                    />
+                  </Form.Item>
+                </Form>
               </div>
-              <div
-                style={{ height: 1, backgroundColor: "#b3b2b3", width: "100%" }}
-              />
-            </div>
-            <div
-              style={{
-                paddingLeft: 20,
-                marginTop: 10,
-                paddingBottom: 40,
-                paddingTop: 10,
-              }}
-            >
-              123
             </div>
           </div>
 
@@ -366,19 +431,35 @@ const ComponentInstallation = () => {
               padding: 25,
               display: "flex",
               justifyContent: "space-between",
-              paddingRight: 80,
+              paddingRight: 40,
             }}
           >
-            <div />
-            <Button
-              type="primary"
-              onClick={() => {
-                //console.log(form.getFieldsValue())
-                setStepNum(0);
-              }}
-            >
-              上一步
-            </Button>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              分布主机数量: 1台
+            </div>
+            <div>
+              <Button
+                style={{
+                  marginRight: 10,
+                }}
+                type="primary"
+                onClick={() => {
+                  //console.log(form.getFieldsValue())
+                  setStepNum(0);
+                }}
+              >
+                上一步
+              </Button>
+              <Button
+                type="primary"
+                onClick={() => {
+                  //console.log(form.getFieldsValue())
+                  setStepNum(2);
+                }}
+              >
+                开始安装
+              </Button>
+            </div>
           </div>
         </>
       )}

@@ -33,7 +33,7 @@ from db_models.models import (
 )
 from app_store.tasks import install_service
 from utils.common.exceptions import GeneralError
-from utils.plugin.public_utils import check_ip_port
+from utils.plugin import public_utils
 from utils.plugin.salt_client import SaltClient
 
 DIR_KEY = "{data_path}"
@@ -575,7 +575,7 @@ class ValidateInstallService(object):
         app_port = _dic.get("app_port", [])
         for el in app_port:
             _port = el.get("default", "")
-            _flag, _msg = check_ip_port(ip=_ip, port=_port)
+            _flag, _msg = public_utils.check_ip_port(ip=_ip, port=_port)
             if _flag:
                 el["check_flag"] = False
                 el["check_msg"] = f"主机 {_ip} 上的端口 {_port} 已被占用"
