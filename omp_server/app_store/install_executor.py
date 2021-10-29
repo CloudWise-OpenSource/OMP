@@ -431,7 +431,7 @@ class InstallServiceExecutor:
                 DetailInstallHistory.INSTALL_STATUS_INSTALLING
             )).update(install_step_status=DetailInstallHistory.INSTALL_STATUS_FAILED)
             logger.info(f"Main Install Failed, id[{self.main_id}]")
-            return
+            return self.is_error
 
         # 流程执行完整，主流程成功
         main_obj.install_status = \
@@ -439,4 +439,4 @@ class InstallServiceExecutor:
         main_obj.save()
         # TODO 注册监控
         logger.info(f"Main Install Success, id[{self.main_id}]")
-        return
+        return self.is_error

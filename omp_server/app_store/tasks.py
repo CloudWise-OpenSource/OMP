@@ -601,22 +601,20 @@ def install_service(main_history_id):
     :param main_history_id: MainInstallHistory 主表 id
     :return:
     """
-    install_success = True
     try:
         executor = InstallServiceExecutor(main_history_id)
-        executor.main()
+        install_success = executor.main()
+        logger.error(f"Install Service Task Success [{main_history_id}]")
     except Exception as err:
+        install_success = False
         import traceback
-        logger.error(f"Install Service Failed: {err}")
+        logger.error(f"Install Service Task Failed [{main_history_id}], "
+                     f"err: {err}")
         logger.error(traceback.format_exc())
-        # 更新主表和细节表记录为失败
+        # 更新主表记录为失败
         MainInstallHistory.objects.filter(
             id=main_history_id).update(
             install_status=MainInstallHistory.INSTALL_STATUS_FAILED)
-        DetailInstallHistory.objects.filter(
-            main_install_history_id=main_history_id).update(
-            install_step_status=DetailInstallHistory.INSTALL_STATUS_FAILED)
-        install_success = False
 
     # 安装成功，则注册服务至监控
     if install_success:
