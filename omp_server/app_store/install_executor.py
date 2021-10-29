@@ -8,8 +8,6 @@ from concurrent.futures import (
     ThreadPoolExecutor, as_completed
 )
 
-from django.conf import settings
-
 from db_models.models import (
     Host, Service,
     MainInstallHistory, DetailInstallHistory
@@ -70,17 +68,13 @@ class InstallServiceExecutor:
             if not is_success:
                 raise Exception(f"发送 json 文件失败: {message}")
 
-            # 校验服务包是否存在
+            # 获取服务包路径
             source_path = os.path.join(
                 detail_obj.service.service.app_package.package_path,
                 package_name)
             target_path = os.path.join(
                 target_host.data_folder, "omp_packages",
                 package_name)
-            package_abs_path = os.path.join(
-                settings.BASE_DIR.parent, "package_hub", source_path)
-            if not os.path.exists(package_abs_path):
-                raise Exception(f"本地未找到服务包{package_abs_path}")
 
             # 发送服务包
             is_success, message = self.salt_client.cp_file(
