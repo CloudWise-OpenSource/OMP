@@ -63,12 +63,13 @@ class ServiceActionView(GenericViewSet, CreateModelMixin):
     serializer_class = ServiceActionSerializer
 
     def create(self, request, *args, **kwargs):
-        data = self.request.data
-        action = data.get("action")
-        instance = data.get("id")
-        operation_user = data.get("operation_user")
-        if action and instance and operation_user:
-            exec_action.delay(action, instance, operation_user)
-        else:
-            raise OperateError("请输入action或id")
+        many_data = self.request.data.get('data')
+        for data in many_data:
+            action = data.get("action")
+            instance = data.get("id")
+            operation_user = data.get("operation_user")
+            if action and instance and operation_user:
+                exec_action.delay(action, instance, operation_user)
+            else:
+                raise OperateError("请输入action或id")
         return Response("执行成功")

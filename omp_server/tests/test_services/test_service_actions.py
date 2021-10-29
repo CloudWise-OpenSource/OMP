@@ -1,6 +1,6 @@
 from rest_framework.reverse import reverse
 
-from db_models.models import ServiceHistory,Service
+from db_models.models import ServiceHistory, Service
 from tests.base import AutoLoginTest
 from tests.mixin import (
     ServicesResourceMixin
@@ -8,6 +8,8 @@ from tests.mixin import (
 from services.tasks import exec_action
 from unittest import mock
 import json
+import time
+
 
 class ListActionTest(AutoLoginTest, ServicesResourceMixin):
     """ 服务动作测试类 """
@@ -24,7 +26,6 @@ class ListActionTest(AutoLoginTest, ServicesResourceMixin):
             service_controllers=json.dumps({"start": "1.txt", "stop": "2.txt"}),
         )
         self.create_action_url = reverse("action-list")
-
 
     @mock.patch(
         "utils.plugin.salt_client.SaltClient.cmd",
@@ -52,20 +53,41 @@ class ListActionTest(AutoLoginTest, ServicesResourceMixin):
             4: 1
         })
 
+    @mock.patch(
+        "utils.plugin.salt_client.SaltClient.cmd",
+        return_value=(True, "success"))
+    def test_service_action_delete(self, status):
+        service_obj = Service.objects.get(ip="192.168.0.110")
+        time_array = time.localtime(int(time.time()))
+        time_style = time.strftime("%Y-%m-%d %H:%M:%S", time_array)
+        service_history = ServiceHistory(
+            username='admin',
+            description='测试',
+            result=0,
+            created=time_style,
+            service=service_obj
+        )
+        service_history.save()
+        exec_action("4", service_obj.id, "admin")
+        history_count = ServiceHistory.objects.filter(service=service_obj).count()
+        new_service = Service.objects.filter(ip="192.168.0.110").count()
+        self.assertEqual(history_count, 0)
+        self.assertEqual(new_service, 0)
+
     @mock.patch("services.tasks.exec_action.delay",
-        return_value=True)
+                return_value=True)
     def test_service_action_post(self, tasks):
         # 参数正常 -> 成功
-        resp = self.post(self.create_action_url, {
+        resp = self.post(self.create_action_url, {"data": [{
             "action": "1",
             "id": "1",
             "operation_user": "admin",
-        }).json()
+        }]}).json()
         self.assertEqual(resp.get("code"), 0)
         # 参数缺失 -> 失败
-        resp = self.post(self.create_action_url, {
+        resp = self.post(self.create_action_url, {"data": [{
             "action": "1",
-        }).json()
+        }]}).json()
         self.assertDictEqual(resp, {
             "code": 1,
             "message": "请输入action或id",
