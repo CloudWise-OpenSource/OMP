@@ -63,7 +63,8 @@ def make_lst_unique(lst, key_1, key_2):
 def make_app_install_args(app_install_args):
     """
     构建安装参数
-    :param app_install_args:
+    :param app_install_args: 服务安装参数
+    :type app_install_args: list
     :return:
     """
     for el in app_install_args:
@@ -78,6 +79,11 @@ class DataJson(object):
     """ 生成data.json数据 """
 
     def __init__(self, operation_uuid):
+        """
+        data.json数据生成方法
+        :param operation_uuid: 唯一操作uuid
+        :type operation_uuid: str
+        """
         self.operation_uuid = operation_uuid
 
     def get_ser_install_args(self, obj):    # NOQA
@@ -117,7 +123,8 @@ class DataJson(object):
     def make_data_json(self, json_lst):
         """
         创建data.json数据文件
-        :param json_lst:
+        :param json_lst: 服务及分布信息组成的列表
+        :type json_lst: list
         :return:
         """
         _path = os.path.join(
@@ -153,7 +160,9 @@ class SerDependenceParseUtils(object):
         """
         初始化对象, 服务级别的解析，包含自研服务和基础组件服务
         :param parse_name: 要解析的名称，服务
+        :type parse_name: str
         :param parse_version: 要解析的版本
+        :type parse_version: str
         """
         self.parse_name = parse_name
         self.parse_version = parse_version
@@ -229,7 +238,8 @@ class SerDependenceParseUtils(object):
     def get_is_base_env(self, obj):     # NOQA
         """
         确定当前服务是否为基础环境：如 jdk 等
-        :param obj:
+        :param obj: 服务对象
+        :type obj: ApplicationHub
         :return:
         """
         if not obj.extend_fields:
@@ -267,7 +277,7 @@ class SerDependenceParseUtils(object):
                 inner["is_in_hub"] = False
                 inner["is_base_env"] = False
                 inner["is_pack_exist"] = False
-                inner["ser_deploy_mode"] = list()
+                inner["deploy_mode"] = list()
                 inner["process_continue"] = False
                 inner["process_message"] = f"应用商店内未包含{_name}服务"
                 lst.append(inner)
@@ -290,7 +300,7 @@ class SerDependenceParseUtils(object):
             inner["is_in_hub"] = True
             inner["is_base_env"] = self.get_is_base_env(obj=_app)
             inner["is_pack_exist"] = is_pack_exist
-            inner["ser_deploy_mode"] = self.get_deploy_mode(obj=_app)
+            inner["deploy_mode"] = self.get_deploy_mode(obj=_app)
             if cluster_info or instance_info or is_pack_exist:
                 inner["process_continue"] = True
             else:
@@ -350,7 +360,9 @@ class ProDependenceParseUtils(object):
         """
         解决产品依赖关系核心方法
         :param lst: 存储结果的列表
+        :type lst: list
         :param dep: 服务依赖关系列表
+        :type dep: list
         :return: list()
         """
         unique_key_lst = list()
@@ -419,18 +431,33 @@ class ServiceArgsSerializer(object):
     """ 服务安装过程中参数解析类 """
 
     def get_app_dependence(self, obj):  # NOQA
-        """ 解析服务级别的依赖关系 """
+        """
+        解析服务级别的依赖关系
+        :param obj: 服务对象
+        :type obj: ApplicationHub
+        :return:
+        """
         ser = SerDependenceParseUtils(obj.app_name, obj.app_version)
         return ser.run_ser()
 
     def get_app_port(self, obj):    # NOQA
-        """ 获取app的端口 """
+        """
+        获取app的端口
+        :param obj: 服务对象
+        :type obj: ApplicationHub
+        :return: list()
+        """
         if not obj.app_port:
             return []
         return json.loads(obj.app_port)
 
     def get_app_install_args(self, obj):  # NOQA
-        """ 解析安装参数信息 """
+        """
+        解析安装参数信息
+        :param obj: 服务对象
+        :type obj: ApplicationHub
+        :return: list()
+        """
         # 标记安装过程中涉及到的数据目录，通过此标记给前端
         # 给与前端提示信息，此标记对应于主机中的数据目录 data_folder
         # 在后续前端提供出安装参数后，我们应该检查其准确性
@@ -439,20 +466,29 @@ class ServiceArgsSerializer(object):
         return make_app_install_args(json.loads(obj.app_install_args))
 
     def get_deploy_mode(self, obj):  # NOQA
-        """ 解析部署模式信息
+        """
+        解析部署模式信息
         [
           {
             "key": "single",
             "name": "单实例"
           }
         ]
+        :param obj: 服务对象
+        :type obj: ApplicationHub
+        :return:
         """
         # 如果服务未配置部署模式相关信息，那么默认为单实例模式
         ser = SerDependenceParseUtils(obj.app_name, obj.app_version)
         return ser.get_deploy_mode(obj)
 
     def _process_continue_parse(self, obj):  # NOQA
-        """ 解析是否能够进行的核心接口 """
+        """
+        解析是否能够进行的核心接口
+        :param obj: 服务对象
+        :type obj: ApplicationHub
+        :return: (bool, str)
+        """
         if not obj.app_package:
             return False, f"服务{obj.app_name}无安装包"
         # 服务级别的安装包均存在于 verified 目录内，使用 package_name 即可拼接完成
@@ -467,12 +503,22 @@ class ServiceArgsSerializer(object):
         return True, "success"
 
     def get_process_continue(self, obj):    # NOQA
-        """ 解析能否继续进行的标志接口 """
+        """
+        解析能否继续进行的标志接口
+        :param obj: 服务对象
+        :type obj: ApplicationHub
+        :return: bool
+        """
         flag, _ = self._process_continue_parse(obj)
         return flag
 
     def get_process_message(self, obj):    # NOQA
-        """ 解析能否继续进行的信息接口 """
+        """
+        解析能否继续进行的信息接口
+        :param obj: 服务对象
+        :type obj: ApplicationHub
+        :return:
+        """
         _, msg = self._process_continue_parse(obj)
         return msg
 
@@ -484,6 +530,7 @@ class ValidateExistService(object):
         """
         初始化方法
         :param data: 要被检验的服务信息
+        :type data: list
         """
         if not data or not isinstance(data, list):
             raise GeneralError(
@@ -543,12 +590,74 @@ class ValidateInstallService(object):
         """
         初始化方法
         :param data: 要被检验的服务信息
+        :type data: list
         """
         if not data or not isinstance(data, list):
             raise GeneralError(
                 "ValidateInstallService __init__ arg error: data"
             )
         self.data = data
+
+    def check_service_port(self, app_port, ip):     # NOQA
+        """
+        检查服务端口
+        :param app_port: 服务端口列表
+        :type app_port: list
+        :param ip: 主机ip地址
+        :type ip: str
+        :return:
+        """
+        for el in app_port:
+            _port = el.get("default", "")
+            if not _port and not _port.isnumeric():
+                el["check_flag"] = False
+                el["check_msg"] = f"端口 {_port} 必须为数字"
+                continue
+            _flag, _msg = public_utils.check_ip_port(ip=ip, port=int(_port))
+            if _flag:
+                el["check_flag"] = False
+                el["check_msg"] = f"主机 {ip} 上的端口 {_port} 已被占用"
+        return app_port
+
+    def check_service_args(self, app_install_args, data_path, ip):  # NOQA
+        """
+        检查服务的安装参数，路径检查
+        :param app_install_args: 服务安装参数
+        :type app_install_args: list
+        :param data_path: 主机数据目录
+        :type data_path: str
+        :param ip: 主机ip地址
+        :type ip: str
+        :return:
+        """
+        _salt_obj = SaltClient()
+        for el in app_install_args:
+            if "dir_key" not in el:
+                continue
+            _tobe_check_path = os.path.join(
+                data_path, el.get("default", "").lstrip("/"))
+            # 直接封装部署数据到数据库中
+            el["default"] = _tobe_check_path
+            _cmd = \
+                f"test -d {_tobe_check_path} && echo 'EXISTS' || echo 'OK'"
+            _flag, _msg = _salt_obj.cmd(
+                target=ip,
+                command=_cmd,
+                timeout=10
+            )
+            if not _flag:
+                el["check_flag"] = False
+                el["check_msg"] = \
+                    f"无法确定该路径状态: {_tobe_check_path}; " \
+                    f"请检查主机及主机Agent状态是否正常"
+                continue
+            if "OK" in _msg:
+                el["check_flag"] = True
+                el["check_msg"] = "success"
+            else:
+                el["check_flag"] = False
+                el["check_msg"] = f"{_tobe_check_path} 在目标主机 {ip} 上已存在"
+        return app_install_args
 
     def check_single_service(self, dic):    # NOQA
         """
@@ -565,6 +674,13 @@ class ValidateInstallService(object):
             _dic["check_msg"] = f"主机 {_ip} 不存在"
             return _dic
         _data_path = _host_obj.data_folder
+        service_name = _dic.get("name")
+        # 检查服务是否已在该主机上安装
+        if Service.objects.filter(
+                service__app_name=service_name, ip=_ip).exists():
+            _dic["check_flag"] = False
+            _dic["check_msg"] = f"该主机 {_ip} 已安装过 {service_name}, 请勿重复安装"
+            return _dic
         # 检查实例名称是否重复
         service_instance_name = _dic.get("service_instance_name")
         if Service.objects.filter(
@@ -572,46 +688,17 @@ class ValidateInstallService(object):
             _dic["check_flag"] = False
             _dic["check_msg"] = "实例名称重复"
         # 检查端口是否被占用
-        app_port = _dic.get("app_port", [])
-        for el in app_port:
-            _port = el.get("default", "")
-            if not _port and not _port.isnumeric():
-                el["check_flag"] = False
-                el["check_msg"] = f"端口 {_port} 必须为数字"
-                continue
-            _flag, _msg = public_utils.check_ip_port(ip=_ip, port=int(_port))
-            if _flag:
-                el["check_flag"] = False
-                el["check_msg"] = f"主机 {_ip} 上的端口 {_port} 已被占用"
+        app_port = self.check_service_port(
+            app_port=_dic.get("app_port", []),
+            ip=_ip
+        )
         # 校验安装参数
-        app_install_args = _dic.get("app_install_args", [])
-        _salt_obj = SaltClient()
-        for el in app_install_args:
-            if "dir_key" not in el:
-                continue
-            _tobe_check_path = os.path.join(
-                _data_path, el.get("default", "").lstrip("/"))
-            # 直接封装部署数据到数据库中
-            el["default"] = _tobe_check_path
-            _cmd = \
-                f"test -d {_tobe_check_path} && echo 'EXISTS' || echo 'OK'"
-            _flag, _msg = _salt_obj.cmd(
-                target=_ip,
-                command=_cmd,
-                timeout=10
-            )
-            if not _flag:
-                el["check_flag"] = False
-                el["check_msg"] = \
-                    f"无法确定该路径状态: {_tobe_check_path}; " \
-                    f"请检查主机及主机Agent状态是否正常"
-                continue
-            if "OK" in _msg:
-                el["check_flag"] = True
-                el["check_msg"] = "success"
-            else:
-                el["check_flag"] = False
-                el["check_msg"] = f"{_tobe_check_path} 在目标主机 {_ip} 上已存在"
+        app_install_args = self.check_service_args(
+            app_install_args=_dic.get("app_install_args", []),
+            data_path=_data_path,
+            ip=_ip
+        )
+        _dic["app_port"] = app_port
         _dic["app_install_args"] = app_install_args
         return _dic
 
@@ -696,7 +783,8 @@ class CreateInstallPlan(object):
     def get_app_obj_for_service(self, dic):     # NOQA
         """
         获取服务实例表中关联的app对象
-        :param dic:
+        :param dic: 服务数据
+        :type dic: dict
         :return:
         """
         return ApplicationHub.objects.filter(
@@ -706,7 +794,8 @@ class CreateInstallPlan(object):
     def get_app_port_for_service(self, dic):    # NOQA
         """
         获取服务实例上设置的端口信息
-        :param dic:
+        :param dic: 服务数据
+        :type dic: dict
         :return:
         """
         return json.dumps(dic["app_port"]) if dic["app_port"] else None
@@ -714,7 +803,8 @@ class CreateInstallPlan(object):
     def get_controllers_for_service(self, dic):  # NOQA
         """
         获取服务控制脚本信息
-        :param dic:
+        :param dic: 服务数据
+        :type dic: dict
         :return:
         """
         # 获取关联application对象
@@ -748,7 +838,8 @@ class CreateInstallPlan(object):
     def create_connect_info(self, dic):     # NOQA
         """
         创建或获取服务的用户名、密码信息
-        :param dic:
+        :param dic: 服务数据
+        :type dic: dict
         :return:
         """
         username = password = username_enc = password_enc = ""
@@ -777,7 +868,8 @@ class CreateInstallPlan(object):
     def create_cluster(self, dic):  # NOQA
         """
         创建集群信息
-        :param dic:
+        :param dic: 服务数据
+        :type dic: dict
         :return:
         """
         if "cluster_name" not in dic or not dic["cluster_name"]:
@@ -797,7 +889,8 @@ class CreateInstallPlan(object):
     def create_service(self, dic):
         """
         创建服务实例
-        :param dic: 服务实例信息
+        :param dic: 服务数据
+        :type dic: dict
         :return:
         """
         # 创建服务实例对象
@@ -817,7 +910,8 @@ class CreateInstallPlan(object):
     def create_product_instance(self, dic):     # NOQA
         """
         创建产品实例
-        :param dic:
+        :param dic: 服务数据
+        :type dic: dict
         :return:
         """
         if "product_instance_name" not in dic or \
