@@ -298,16 +298,14 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
                 else:
                     continue
 
-        temp_host_info_list = []
+        temp_ip_alertname_list = []
         for index, hil in enumerate(host_info_list.copy()):
             ip_alertname = str(hil.get("ip")) + str(hil.get("alertname"))
-            new_hil = {ip_alertname: hil.get("severity")}
-
-            if new_hil in temp_host_info_list and hil.get("severity") == "warning":
+            if ip_alertname in temp_ip_alertname_list and hil.get("severity") == "warning":
                 host_info_list.pop(index)
                 continue
 
-            temp_host_info_list.append(new_hil)
+            temp_ip_alertname_list.append(ip_alertname)
 
         for host in host_list:
             if host.ip in error_host_list:
