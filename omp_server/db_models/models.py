@@ -310,6 +310,7 @@ class UploadPackageHistory(TimeStampMixin, DeleteMixin):
 class ProductHub(TimeStampMixin):
     """ 存储产品级别模型类 (应用) """
     # 使用is_release标识此条数据是否已发布，是否可用
+    objects = None
     is_release = models.BooleanField(
         "是否发布", default=False, help_text="是否发布")
     pro_name = models.CharField(
@@ -349,6 +350,7 @@ class ProductHub(TimeStampMixin):
 
 class ApplicationHub(TimeStampMixin):
     """ 服务级别模型类 (组件) """
+    objects = None
     APP_TYPE_COMPONENT = 0
     APP_TYPE_SERVICE = 1
     APP_TYPE_CHOICES = (
@@ -591,6 +593,7 @@ class Product(TimeStampMixin):
 class Service(TimeStampMixin):
     """ 服务表 """
 
+    objects = None
     SERVICE_STATUS_NORMAL = 0
     SERVICE_STATUS_STARTING = 1
     SERVICE_STATUS_STOPPING = 2
