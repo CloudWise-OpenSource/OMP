@@ -609,7 +609,7 @@ class ValidateInstallService(object):
         """
         for el in app_port:
             _port = el.get("default", "")
-            if not _port and not _port.isnumeric():
+            if not _port or not _port.isnumeric():
                 el["check_flag"] = False
                 el["check_msg"] = f"端口 {_port} 必须为数字"
                 continue

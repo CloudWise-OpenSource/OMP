@@ -516,7 +516,7 @@ class ExecuteInstallSerializer(Serializer):
         for item in install_services:
             app_install_args = item.get("app_install_args", [])
             valid_lst.append(self.check_lst_valid(app_install_args))
-            app_port = item.get("app_install_args", [])
+            app_port = item.get("app_port", [])
             valid_lst.append(self.check_lst_valid(app_port))
         logger.info(f"Check install info res: {valid_lst}")
         if len(set(valid_lst)) != 1 or valid_lst[0] is False:
