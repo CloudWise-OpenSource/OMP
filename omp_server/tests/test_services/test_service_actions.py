@@ -7,7 +7,6 @@ from tests.mixin import (
 )
 from services.tasks import exec_action
 from unittest import mock
-import json
 import time
 
 
@@ -23,7 +22,7 @@ class ListActionTest(AutoLoginTest, ServicesResourceMixin):
             service_status=5,
             alert_count=6,
             self_healing_count=6,
-            service_controllers=json.dumps({"start": "1.txt", "stop": "2.txt"}),
+            service_controllers={"start": "1.txt", "stop": "2.txt"},
         )
         self.create_action_url = reverse("action-list")
 
@@ -33,7 +32,8 @@ class ListActionTest(AutoLoginTest, ServicesResourceMixin):
     def test_service_action_true(self, status):
         service_obj = Service.objects.get(ip="192.168.0.110")
         exec_action("1", service_obj.id, "admin")
-        history_count = ServiceHistory.objects.filter(service=service_obj).count()
+        history_count = ServiceHistory.objects.filter(
+            service=service_obj).count()
         service_obj.refresh_from_db()
         res = {service_obj.service_status: history_count}
         self.assertDictEqual(res, {
@@ -46,7 +46,8 @@ class ListActionTest(AutoLoginTest, ServicesResourceMixin):
     def test_service_action_false(self, status):
         service_obj = Service.objects.get(ip="192.168.0.110")
         exec_action("1", service_obj.id, "admin")
-        history_count = ServiceHistory.objects.filter(service=service_obj).count()
+        history_count = ServiceHistory.objects.filter(
+            service=service_obj).count()
         service_obj.refresh_from_db()
         res = {service_obj.service_status: history_count}
         self.assertDictEqual(res, {
@@ -69,7 +70,8 @@ class ListActionTest(AutoLoginTest, ServicesResourceMixin):
         )
         service_history.save()
         exec_action("4", service_obj.id, "admin")
-        history_count = ServiceHistory.objects.filter(service=service_obj).count()
+        history_count = ServiceHistory.objects.filter(
+            service=service_obj).count()
         new_service = Service.objects.filter(ip="192.168.0.110").count()
         self.assertEqual(history_count, 0)
         self.assertEqual(new_service, 0)

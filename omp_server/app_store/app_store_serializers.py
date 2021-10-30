@@ -16,7 +16,7 @@ from app_store.tmp_exec_back_task import front_end_verified_init
 
 from db_models.models import (
     ApplicationHub, ProductHub, UploadPackageHistory,
-    Service, DetailInstallHistory
+    Service, DetailInstallHistory, MainInstallHistory
 )
 
 from app_store.install_utils import (
@@ -584,7 +584,7 @@ class InstallHistorySerializer(ModelSerializer):
 
     class Meta:
         """ 元数据 """
-        model = Service
+        model = MainInstallHistory
         fields = (
             "operation_uuid", "install_status", "install_status_msg",
             "install_args", "install_log", "detail_lst"
