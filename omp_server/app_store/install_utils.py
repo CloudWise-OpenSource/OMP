@@ -112,9 +112,10 @@ class DataJson(object):
         """
         _ser_dic = {
             "ip": obj.ip,
+            "name": obj.service.app_name,
             "instance_name": obj.service_instance_name,
             "cluster_name": obj.cluster.cluster_name if obj.cluster else None,
-            "port": json.loads(obj.service_port) if obj.service_port else [],
+            "ports": json.loads(obj.service_port) if obj.service_port else [],
         }
         _others = self.get_ser_install_args(obj)
         _ser_dic.update(_others)
