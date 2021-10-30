@@ -562,10 +562,8 @@ def add_prometheus(main_history_id):
         service_port = None
         if detail_obj.service.service_port is not None:
             service_port_ls = json.loads(detail_obj.service.service_port)
-            for info in service_port_ls:
-                if info.get("key", "") == "service_port":
-                    service_port = info.get("port", "")
-                    break
+            if len(service_port_ls) > 0:
+                service_port = service_port_ls[0].get("port", "")
         if service_port is not None:
             # 获取数据目录、日志目录
             app_install_args = detail_obj.install_detail_args.get(
