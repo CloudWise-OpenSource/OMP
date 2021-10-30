@@ -4,9 +4,8 @@
 # CreateDate: 2021/10/29 10:26 上午
 # Description:
 import random
-from rest_framework.reverse import reverse
-from tests.mixin import ServicesResourceMixin
-from db_models.models import InspectionHistory, InspectionCrontab
+from db_models.models import (
+    InspectionHistory, InspectionCrontab, InspectionReport)
 
 
 class InspectionHistoryMixin:
@@ -50,3 +49,22 @@ class InspectionHistoryMixin:
     def get_inspection_crontab():
         _ = InspectionCrontab.objects.filter(job_type=0).first()
         return _
+
+
+class InspectionReportMixin:
+    @staticmethod
+    def create_inspection_report(env):
+        h_dict = {'inspection_name': '深度巡检202110271',
+                  'inspection_type': 'deep',
+                  'inspection_status': '2',
+                  'execute_type': 'man', 'inspection_operator': 'admin',
+                  'hosts': ["10.0.7.146"], 'env': env}
+        _obj = InspectionHistory.objects.create(**h_dict)
+        InspectionReport(inst_id=_obj).save()
+        return _obj.id
+
+    @staticmethod
+    def update_inspection_report(inst_id):
+        InspectionReport.objects.filter(inst_id=inst_id).update(
+            risk_data={'host_list': [], 'service': []}
+        )

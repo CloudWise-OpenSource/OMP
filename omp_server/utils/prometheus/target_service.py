@@ -3,6 +3,7 @@
 # Author: len chen
 # CreateDate: 2021/10/22 10:04 下午
 # Description:
+import json
 from db_models.models import Service
 from utils.prometheus.target_service_mysql import ServiceMysqlCrawl
 
@@ -26,7 +27,8 @@ def target_service_run(env, services):
         # 组装端口
         service_port = ''
         service_ports = []
-        ports = i.get('service_port') if i.get('service_port') else []
+        ports = json.loads(i.get('service_port'))\
+            if i.get('service_port') else []
         for p in ports:
             service_ports.append(p.get('port'))
             if p.get('key') == 'service_port':
