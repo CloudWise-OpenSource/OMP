@@ -18,11 +18,22 @@ def target_service_run(env, services):
     services = services.values('service_instance_name', 'ip',
                                'service_port', 'service__app_name',
                                'service__app_install_args',
-                               'service__app_controllers')
+                               'service__app_controllers', 'service_status')
     tmp_list = list()
     tag_total_num = tag_error_num = 0  # 总指标数、异常指标数
     for i in services:
         tmp = {}
+        # 组装端口
+        service_port = ''
+        service_ports = []
+        ports = i.get('service_port') if i.get('service_port') else []
+        for p in ports:
+            service_ports.append(p.get('port'))
+            if p.get('key') == 'service_port':
+                service_port = p.get('port')
+        # 组装服务状态
+        serv_status = {0: "正常", 1: "启动中", 2: "停止中", 3: "重启中", 4: "停止"}
+        service_status = serv_status.get(i.get('service_status'))
         if i.get('service__app_name') == 'mysql':
             _ = ServiceMysqlCrawl(env=env.name, instance=i.get('ip'))
             _.run()
@@ -32,18 +43,18 @@ def target_service_run(env, services):
             tmp.update({
                 'host_ip': i.get('ip'),
                 'cluster_name': "",
-                "cpu_usage": "",
-                "log_level": "",
-                "mem_usage": "",
+                "cpu_usage": _.ret.get('_s').get('cpu_usage'),
+                "log_level": "-",
+                "mem_usage": _.ret.get('_s').get('mem_usage'),
                 "run_time": f"{_.ret.get('run_time')}%",
                 "service_name": i.get('service_instance_name'),
-                "service_port": i.get('service_port'),
-                "service_status": _.ret.get('run_status'),
+                "service_port": service_port,
+                "service_status": service_status,
                 "service_type": "2",
                 "basic": [
                     {"name": "max_memory", "name_cn": "最大内存", "value": ''},
                     {"name": "port_status", "name_cn": "监听端口",
-                     "value": i.get('service_port')},
+                     "value": service_ports},
                     {"name": "IP", "name_cn": "IP地址", "value": i.get('ip')},
                     {"name": "process_threads", "name_cn": "线程数量",
                      "value": ''},
@@ -70,7 +81,7 @@ def target_service_run(env, services):
                 "run_time": "-",
                 "service_name": i.get('service_instance_name'),
                 "service_port": '-',
-                "service_status": '-',
+                "service_status": service_status,
                 "service_type": "2",
                 "basic": [
                     {"name": "app_install_args", "name_cn": "安装参数",
@@ -89,12 +100,12 @@ def target_service_run(env, services):
                 "mem_usage": "-",
                 "run_time": "-",
                 "service_name": i.get('service_instance_name'),
-                "service_port": i.get('service_port'),
-                "service_status": '-',
+                "service_port": service_port,
+                "service_status": service_status,
                 "service_type": "2",
                 "basic": [
                     {"name": "port_status", "name_cn": "监听端口",
-                     "value": i.get('service_port')},
+                     "value": service_ports},
                     {"name": "IP", "name_cn": "IP地址", "value": i.get('ip')},
                 ]
             })
