@@ -233,12 +233,14 @@ class HostBatchImportView(GenericViewSet, CreateModelMixin):
         if not serializer.is_valid():
             logger.error(f"host batch import failed:{request.data}")
             raise ValidationError("数据格式错误")
-
         # 主机、操作记录数据入库
         default_env = Env.objects.filter(id=1).first()
         with transaction.atomic():
             host_objs = []
             for host in serializer.data.get("host_list"):
+                # 若存在行号 row 则删除
+                if "row" in host:
+                    host.pop("row")
                 password = host.pop("password")
                 host_objs.append(Host(
                     password=AESCryptor().encode(password),
