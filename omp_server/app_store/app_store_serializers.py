@@ -16,7 +16,7 @@ from app_store.tmp_exec_back_task import front_end_verified_init
 
 from db_models.models import (
     ApplicationHub, ProductHub, UploadPackageHistory,
-    Service, MainInstallHistory, DetailInstallHistory
+    Service, DetailInstallHistory, MainInstallHistory
 )
 
 from app_store.install_utils import (
@@ -588,4 +588,46 @@ class InstallHistorySerializer(ModelSerializer):
         fields = (
             "operation_uuid", "install_status", "install_status_msg",
             "install_args", "install_log", "detail_lst"
+        )
+
+
+class ServiceInstallHistorySerializer(ModelSerializer):
+    """ 安装历史记录序列化类 """
+    install_step_status = serializers.SerializerMethodField()
+    log = serializers.SerializerMethodField()
+
+    def get_install_step_status(self, obj):
+        """
+        获取服务安装状态
+        :param obj:
+        :return:
+        """
+        detail_obj = DetailInstallHistory.objects.filter(service=obj).last()
+        return detail_obj.install_step_status
+
+    def get_log(self, obj):
+        """
+        获取服务日志信息
+        :param obj:
+        :return:
+        """
+        detail_obj = DetailInstallHistory.objects.filter(service=obj).last()
+        _log = ""
+        if detail_obj.send_flag != 0 and detail_obj.send_msg:
+            _log += detail_obj.send_msg
+        if detail_obj.unzip_flag != 0 and detail_obj.unzip_msg:
+            _log += detail_obj.unzip_msg
+        if detail_obj.install_flag != 0 and detail_obj.install_msg:
+            _log += detail_obj.install_msg
+        if detail_obj.init_flag != 0 and detail_obj.init_msg:
+            _log += detail_obj.init_msg
+        if detail_obj.start_flag != 0 and detail_obj.start_msg:
+            _log += detail_obj.start_msg
+        return _log
+
+    class Meta:
+        """ 元数据 """
+        model = Service
+        fields = (
+            "install_step_status", "log"
         )

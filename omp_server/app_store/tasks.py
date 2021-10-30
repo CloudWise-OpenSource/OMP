@@ -601,10 +601,10 @@ def install_service(main_history_id):
     """
     try:
         executor = InstallServiceExecutor(main_history_id)
-        install_success = executor.main()
+        is_err = executor.main()
         logger.error(f"Install Service Task Success [{main_history_id}]")
     except Exception as err:
-        install_success = False
+        is_err = True
         import traceback
         logger.error(f"Install Service Task Failed [{main_history_id}], "
                      f"err: {err}")
@@ -615,5 +615,5 @@ def install_service(main_history_id):
             install_status=MainInstallHistory.INSTALL_STATUS_FAILED)
 
     # 安装成功，则注册服务至监控
-    if install_success:
+    if not is_err:
         add_prometheus(main_history_id)

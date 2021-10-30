@@ -6,7 +6,7 @@ from django_filters.rest_framework import FilterSet
 
 from db_models.models import (
     Labels, ApplicationHub, ProductHub, UploadPackageHistory,
-    MainInstallHistory
+    MainInstallHistory, Service
 )
 
 
@@ -98,3 +98,15 @@ class InstallHistoryFilter(FilterSet):
         """ 元数据 """
         model = MainInstallHistory
         fields = ("operation_uuid", )
+
+
+class ServiceInstallHistoryFilter(FilterSet):
+    """ 基础组件安装入口过滤类 """
+    id = django_filters.NumberFilter(
+        help_text="服务id",
+        field_name="id", lookup_expr="exact")
+
+    class Meta:
+        """ 元数据 """
+        model = Service
+        fields = ("id", )

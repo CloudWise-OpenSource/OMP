@@ -168,10 +168,12 @@ class MonitorAgentManager(object):
                     if _data_folder.startswith(key):
                         data_path = key
                         break
+            # prometheus 使用的target数据
             hosts_data.append({
                 "ip": _ip,
                 "env": _env,
-                "data_path": data_path
+                "data_path": data_path,
+                "instance_name": item.instance_name
             })
         return hosts_data
 

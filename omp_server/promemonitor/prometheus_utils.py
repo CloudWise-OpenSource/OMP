@@ -331,7 +331,8 @@ class PrometheusUtils(object):
             {
                 "data_path": "/data",
                 "env": "default",
-                "ip": "127.0.0.1"
+                "ip": "127.0.0.1",
+                "instance_name": "instance"
             }
         ]
         添加主机到自监控系统
