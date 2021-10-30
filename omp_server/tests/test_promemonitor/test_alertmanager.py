@@ -101,5 +101,41 @@ class TestAlertmanager(TestCase):
         revoke_result = alertmanager.revoke_maintain_by_env_name('default')
         TestCase.assertIsNotNone(revoke_result, '删除维护失败')
 
+    @mock.patch.object(requests, 'post', return_value='')
+    def test_error_alertmanager_func1(self, mock_post):
+        alertmanager = Alertmanager()
+        result_format_time = alertmanager.format_time(1)
+        self.assertIsNone(result_format_time)
+
+        result_add_setting = alertmanager.add_setting(
+            value=1, name='env', start_time=1, ends_time=2)
+        self.assertIsNone(result_add_setting)
+
+        result_add_setting = alertmanager.add_setting(value=1, name='env', start_time='2021-09-11 12:34:56',
+                                                      ends_time=2)
+        self.assertIsNone(result_add_setting)
+
+        mock_post.return_value = self.return_revoke_alertmanager_maintain_response()
+
+        MonitorUrl.objects.filter(name='alertmanager').delete()
+        alertmanager.get_alertmanager_config()
+
+    def test_error_alertmanager_func2(self):
+        alertmanager = Alertmanager()
+        result_set_maintain_by_env_name = alertmanager.set_maintain_by_env_name(
+            'aaa')
+        self.assertIsNone(result_set_maintain_by_env_name)
+
+        result_revoke_maintain_by_host_list = alertmanager.revoke_maintain_by_host_list([
+            {
+                'ip': '10.0.3.73',
+                'data_folder': '/boot',
+                'cpu_usage': 0,
+                'mem_usage': 0,
+                'root_disk_usage': 0,
+                'data_disk_usage': 0,
+            }])
+        self.assertEqual(result_revoke_maintain_by_host_list, False)
+
     def tearDown(self):
         MonitorUrl.objects.filter(name='alertmanager').delete()

@@ -53,6 +53,13 @@ class TestPrometheus(TestCase):
             1633782875.771, "11.04166666666666"]}
     ]}}
 
+    error_request_get_response = {"status": "error", "data": {"resultType": "vector", "result": [
+        {"metric": {"instance": "10.0.3.71"}, "value": [
+            1633782875.771, "11.360416666623973"]},
+        {"metric": {"instance": "10.0.3.72"}, "value": [
+            1633782875.771, "11.04166666666666"]}
+    ]}}
+
     @mock.patch.object(requests, 'get', return_value='')
     def test_get_prometheus_info(self, mock_post):
         mock_post.return_value = MockResponse(self.request_get_response)
@@ -61,6 +68,74 @@ class TestPrometheus(TestCase):
         # print(result)
         self.assertListEqual(result,
                              self.return_host_info_data())
+
+    def test_get_host_metric_status(self):
+        p = Prometheus()
+        result_none = p.get_host_metric_status('cpu', None)
+        self.assertIsNone(result_none)
+
+        result_critical = p.get_host_metric_status('cpu', 91)
+        self.assertEqual(result_critical, 'critical')
+
+        result_warning = p.get_host_metric_status('cpu', 81)
+        self.assertEqual(result_warning, 'warning')
+
+    @mock.patch.object(requests, 'get', return_value='')
+    def test_error_get_host_arg_usage(self, mock_get):
+        mock_get.return_value = MockResponse(self.error_request_get_response)
+        p = Prometheus()
+        result_get_host_cpu_usage = p.get_host_cpu_usage(
+            self.return_host_list())
+        self.assertIsNone(result_get_host_cpu_usage[0].get("cpu_usage"))
+
+        result_get_host_mem_usage = p.get_host_mem_usage(
+            self.return_host_list())
+        self.assertIsNone(result_get_host_mem_usage[0].get("mem_usage"))
+
+        result_get_host_root_disk_usage = p.get_host_root_disk_usage(
+            self.return_host_list())
+        self.assertIsNone(
+            result_get_host_root_disk_usage[0].get("root_disk_usage"))
+
+        result_get_host_data_disk_usage = p.get_host_data_disk_usage(
+            self.return_host_list())
+        self.assertIsNone(
+            result_get_host_data_disk_usage[0].get("data_disk_usage"))
+
+        mock_get.return_value.status_code = -1
+        result_get_host_cpu_usage = p.get_host_cpu_usage(
+            self.return_host_list())
+        self.assertIsNone(result_get_host_cpu_usage[0].get("cpu_usage"))
+
+        result_get_host_mem_usage = p.get_host_mem_usage(
+            self.return_host_list())
+        self.assertIsNone(result_get_host_mem_usage[0].get("mem_usage"))
+
+        result_get_host_root_disk_usage = p.get_host_root_disk_usage(
+            self.return_host_list())
+        self.assertIsNone(
+            result_get_host_root_disk_usage[0].get("root_disk_usage"))
+
+        result_get_host_data_disk_usage = p.get_host_data_disk_usage(
+            self.return_host_list())
+        self.assertIsNone(
+            result_get_host_data_disk_usage[0].get("data_disk_usage"))
+
+        mock_get.return_value = MockResponse(self.request_get_response)
+        mock_get.return_value.status_code = 200
+        result_get_host_cpu_usage = p.get_host_cpu_usage(1)
+        self.assertEqual(result_get_host_cpu_usage, 1)
+
+        result_get_host_mem_usage = p.get_host_mem_usage(1)
+        self.assertEqual(result_get_host_mem_usage, 1)
+
+        result_get_host_root_disk_usage = p.get_host_root_disk_usage(1)
+        self.assertEqual(result_get_host_root_disk_usage, 1)
+
+        result_get_host_data_disk_usage = p.get_host_data_disk_usage(
+            [{"1": 1}, {"2": 2}])
+        self.assertEqual(result_get_host_data_disk_usage, [{'1': 1, 'data_disk_usage': None, 'data_disk_status': None},
+                                                           {'2': 2, 'data_disk_usage': None, 'data_disk_status': None}])
 
     def tearDown(self):
         MonitorUrl.objects.filter(name='prometheus').delete()
