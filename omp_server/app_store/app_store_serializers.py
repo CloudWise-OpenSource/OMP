@@ -384,6 +384,7 @@ class ProductEntranceSerializer(serializers.ModelSerializer):
                 item["process_continue"] = False
                 item["process_message"] = f"服务{item.get('name')}未发布"
                 continue
+            item["app_port"] = ServiceArgsSerializer().get_app_port(ser_obj)
             item["process_continue"] = True
             item["app_install_args"] = \
                 ServiceArgsSerializer().get_app_install_args(ser_obj)
