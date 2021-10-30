@@ -301,14 +301,23 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
                 else:
                     continue
 
-        temp_ip_alertname_list = []
         for index, hil in enumerate(host_info_list):
-            ip_alertname = str(hil.get("ip")) + str(hil.get("alertname"))
-            if ip_alertname in temp_ip_alertname_list and hil.get("severity") == "warning":
-                host_info_list.pop(index)
-                continue
-
-            temp_ip_alertname_list.append(ip_alertname)
+            if hil.get("severity") == "warning":
+                for i, h in enumerate(host_info_list):
+                    if index == i:
+                        continue
+                    if hil.get("ip") == h.get("ip") and hil.get("alertname") == h.get("alertname") and h.get(
+                            "severity") == "critical":
+                        host_info_list.pop(index)
+                        break
+            elif hil.get("severity") == "critical":
+                for i, h in enumerate(host_info_list):
+                    if index == i:
+                        continue
+                    if hil.get("ip") == h.get("ip") and hil.get("alertname") == h.get("alertname") and h.get(
+                            "severity") == "warning":
+                        host_info_list.pop(i)
+                        break
 
         for host in host_list:
             if host.ip in error_host_list:
