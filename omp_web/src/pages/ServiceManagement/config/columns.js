@@ -17,8 +17,10 @@ export const DetailHost = ({
   setIsShowDrawer,
   loading,
   data,
-  setInstallationRecordModal
+  setInstallationRecordModal,
+  queryServiceInstallHistoryDetail
 }) => {
+
   // 视口宽度
   const viewHeight = useSelector((state) => state.layouts.viewSize.height);
   const wrapperRef = useRef(null);
@@ -176,7 +178,8 @@ export const DetailHost = ({
             >
               安装信息
               <a onClick={()=>{
-                setInstallationRecordModal(true)
+                setInstallationRecordModal(true);
+                queryServiceInstallHistoryDetail(data.id)
               }} style={{ fontSize: 13, fontWeight: 400 }}>查看安装记录</a>
             </div>
             <div

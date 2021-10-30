@@ -158,7 +158,7 @@ const ComponentInstallation = () => {
 
   // 定义选中的ip是否包含在instance_info
   const hasSameIp = (item, ip) => {
-    return item.is_base_env && item.instance_info.filter((b) => b.ip == ip);
+    return item.is_base_env && item.instance_info && item.instance_info.filter((b) => b.ip == ip);
   };
 
   const [showJdk, setShowJdk] = useState(false);
@@ -176,7 +176,7 @@ const ComponentInstallation = () => {
         ];
         use_exist_servicesRef.current = [];
 
-        item?.app_install_args.map((i) => {
+        item?.app_install_args?.map((i) => {
           setIsOpen({
             ...isOpen,
             [i.name]: false,
@@ -190,7 +190,7 @@ const ComponentInstallation = () => {
           });
         });
 
-        item?.app_port.map((i) => {
+        item?.app_port?.map((i) => {
           setIsOpen({
             ...isOpen,
             [i.name]: false,
@@ -262,10 +262,9 @@ const ComponentInstallation = () => {
               });
             });
           }
-          containerRef.current.scrollTop = containerRef.current.scrollHeight;
           if (
-            res.data[0].install_status == 1 ||
-            res.data[0].install_status == 0
+            (res.data[0]?.install_status) == 1 ||
+            (res.data[0]?.install_status) == 0
           ) {
             timer.current = setTimeout(() => {
               queryInstallationInfo(operateId);
@@ -274,7 +273,9 @@ const ComponentInstallation = () => {
         });
       })
       .catch((e) => console.log(e))
-      .finally(() => {});
+      .finally(() => {
+        containerRef.current.scrollTop = containerRef.current.scrollHeight;
+      });
   };
 
   useEffect(() => {
@@ -833,8 +834,8 @@ const ComponentInstallation = () => {
                         style={
                           isOpen[item.name]
                             ? step2Open(
-                                item.app_install_args.length +
-                                  item.app_port.length
+                                item.app_install_args?.length +
+                                  item.app_port?.length
                               )
                             : step2NotOpen()
                         }
@@ -974,7 +975,7 @@ const ComponentInstallation = () => {
                         type2
                       ) => {
                         let arr = [];
-                        Object.keys(step2Data).map((key) => {
+                        Object.keys(step2Data)?.map((key) => {
                           if (
                             key.split("|")[0] == type &&
                             key.split("|").length == length &&
@@ -1014,7 +1015,7 @@ const ComponentInstallation = () => {
                         : {};
 
                       let ipAndInstanceName = {};
-                      Object.keys(st2).map((o) => {
+                      Object.keys(st2)?.map((o) => {
                         let arr = o.split("|");
                         if (arr.length == 2 && arr[0] == installArr[0]?.name) {
                           ipAndInstanceName[arr[1]] = st2[o];
@@ -1027,7 +1028,7 @@ const ComponentInstallation = () => {
                         install_servicesRef.current[0].service_instance_name =
                           ipAndInstanceName.instanceName;
                         install_servicesRef.current[0].app_install_args =
-                          install_servicesRef.current[0]?.app_install_args.map(
+                          install_servicesRef.current[0]?.app_install_args?.map(
                             (item) => {
                               let key = JSON.stringify({
                                 name: item.name,
@@ -1044,7 +1045,7 @@ const ComponentInstallation = () => {
                       }
 
                       use_exist_servicesRef.current =
-                        use_exist_servicesRef.current.map((item) => {
+                        use_exist_servicesRef.current?.map((item) => {
                           return {
                             ...item,
                             type: "single",
@@ -1113,7 +1114,7 @@ const ComponentInstallation = () => {
                                   }
                                 }
 
-                                res.data.install_services.map((item, idx) => {
+                                res.data.install_services?.map((item, idx) => {
                                   if (
                                     item.check_flag == false &&
                                     item.check_msg
@@ -1137,7 +1138,7 @@ const ComponentInstallation = () => {
                                       ]);
                                     }
                                   }
-                                  item.app_port.map((i) => {
+                                  item.app_port?.map((i) => {
                                     if (i.check_flag == false) {
                                       form.setFields([
                                         {
@@ -1152,7 +1153,7 @@ const ComponentInstallation = () => {
                                       ]);
                                     }
                                   });
-                                  item.app_install_args.map((i) => {
+                                  item.app_install_args?.map((i) => {
                                     if (i.check_flag == false) {
                                       form.setFields([
                                         {
@@ -1298,7 +1299,7 @@ const ComponentInstallation = () => {
                         : step3NotOpen()
                     }
                   >
-                    {item.log}
+                    {item.log ? item.log : "正在安装..."}
                   </div>
                 </div>
               </div>

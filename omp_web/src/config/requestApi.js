@@ -94,6 +94,9 @@ export const apiRequest = {
     executeInstall: "/api/appStore/executeInstall/",
     // 服务校验通过后的状态查询接口
     installHistory: "/api/appStore/installHistory/",
+
+    // 服务查询安装记录
+    serviceInstallHistoryDetail: "/api/appStore/serviceInstallHistoryDetail/"
   },
   inspection: {
     inspectionList: "/api/inspection/history/",
