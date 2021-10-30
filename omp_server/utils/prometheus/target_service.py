@@ -16,9 +16,11 @@ def target_service_run(env, services):
     # 查询该环境下服务
     services = Service.objects.filter(env=env, service__in=services)
     services = services.values('service_instance_name', 'ip',
-                               'service_port', 'service__app_name')
+                               'service_port', 'service__app_name',
+                               'service__app_install_args',
+                               'service__app_controllers')
     tmp_list = list()
-    tag_total_num = tag_error_num = 0   # 总指标数、异常指标数
+    tag_total_num = tag_error_num = 0  # 总指标数、异常指标数
     for i in services:
         tmp = {}
         if i.get('service__app_name') == 'mysql':
@@ -57,9 +59,45 @@ def target_service_run(env, services):
                      "value": _.ret.get("slave_sql_running")}
                 ]
             })
-        elif i.get('service_instance_name') == '**':
-            # TODO
-            pass
+        elif i.get('service_instance_name') == 'jdk':
+            tag_total_num += 11     # 总指标数/异常指标数 计算
+            tmp.update({
+                'host_ip': '-',
+                'cluster_name': "-",
+                "cpu_usage": "-",
+                "log_level": "-",
+                "mem_usage": "-",
+                "run_time": "-",
+                "service_name": i.get('service_instance_name'),
+                "service_port": '-',
+                "service_status": '-',
+                "service_type": "2",
+                "basic": [
+                    {"name": "app_install_args", "name_cn": "安装参数",
+                     "value": i.get('service__app_install_args')},
+                    {"name": "app_controllers", "name_cn": "应用控制脚本",
+                     "value": i.get('service__app_controllers')},
+                ]
+            })
+        else:
+            tag_total_num += 11     # 总指标数/异常指标数 计算
+            tmp.update({
+                'host_ip': i.get('ip'),
+                'cluster_name': "-",
+                "cpu_usage": "-",
+                "log_level": "-",
+                "mem_usage": "-",
+                "run_time": "-",
+                "service_name": i.get('service_instance_name'),
+                "service_port": i.get('service_port'),
+                "service_status": '-',
+                "service_type": "2",
+                "basic": [
+                    {"name": "port_status", "name_cn": "监听端口",
+                     "value": i.get('service_port')},
+                    {"name": "IP", "name_cn": "IP地址", "value": i.get('ip')},
+                ]
+            })
 
         tmp_list.append(tmp) if tmp else '其他组件暂不支持'
 

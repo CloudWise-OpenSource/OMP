@@ -12,9 +12,10 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 from db_models.models import Host, Env
 from db_models.models import Service, ApplicationHub
-from db_models.models import InspectionHistory, InspectionReport
+from db_models.models import InspectionHistory, InspectionReport, ApplicationHub
 from utils.prometheus.target_host import HostCrawl
 from utils.prometheus.prometheus import back_fill
+from utils.prometheus.prometheus import Prometheus
 from utils.prometheus.target_service import target_service_run
 from utils.prometheus.create_html_tar import create_html_tar
 from inspection.joint_json_report import joint_json_data
@@ -51,11 +52,11 @@ def get_hosts_data(env, hosts):
         temp['cpu_top'] = _p.get('_s').get('cpu_top', [])
         temp['kernel_parameters'] = _p.get('_s').get('kernel_parameters', [])
         # 总指标数/异常指标数 计算
-        tag_total_num += 23     # 当前共23个
+        tag_total_num += 23  # 当前共23个
         tag_error_num += h_w_obj.tag_error_num
         # 操作系统
         _h = Host.objects.filter(ip=instance).first()
-        temp['release_version'] = _h.operate_system if _h else ''    # 操作系统
+        temp['release_version'] = _h.operate_system if _h else ''  # 操作系统
         # 配置信息
         temp['host_massage'] = f"{_h.cpu}C|{_h.memory}G|" \
                                f"{sum(_h.disk.values()) if _h.disk else '-'}G"
@@ -93,6 +94,55 @@ def get_hosts_data(env, hosts):
         if tag_total_num > 0 else '100%'
     }
     return scan_info, scan_result, temp_list
+
+
+def get_risk_data(risks, handle, hosts, services):
+    """
+     查询 prometheus 异常数据
+     :risks:
+     :handle:
+     :hosts:
+     :services:
+     """
+    hosts = hosts if hosts else []
+    services = services if services else []
+
+    host_list = []
+    service_list = []
+    _host = Host.objects
+    _service = Service.objects
+    app_name = list(ApplicationHub.objects.filter(
+        id__in=services).values_list('app_name', flat=True))
+    for i in risks:
+        if handle in ['host', 'deep']:
+            # 主机
+            if handle == 'host' and\
+                    i.get('labels').get('instance') not in hosts:
+                continue
+            if i.get('labels').get('job') == 'nodeExporter':
+                _ = _host.filter(ip=i.get('labels').get('instance')).first()
+                tmp = {'host_ip': i.get('labels').get('instance'),
+                       'resolve_info': "-",
+                       'risk_describe': i.get('annotations').get('description'),
+                       'risk_level': i.get('labels').get('severity'),
+                       'system': _.operate_system if _ else '-'}
+                host_list.append(tmp)
+        if handle in ['service', 'deep']:
+            # 组件
+            if handle == 'service' and \
+                    i.get('labels').get('job').replace('Exporter', '') \
+                    not in app_name:
+                continue
+            if i.get('labels').get('job') != 'nodeExporter':
+                tmp = {'host_ip': i.get('labels').get('instance'),
+                       'resolve_info': "-",
+                       'risk_describe': i.get('annotations').get('description'),
+                       'risk_level': i.get('labels').get('severity'),
+                       'service_name': i.get('labels').get('job'),
+                       'service_port': '-'}
+                service_list.append(tmp)
+
+    return {'host_list': host_list, 'service_list': service_list}
 
 
 @shared_task
@@ -142,7 +192,8 @@ def get_prometheus_data(env_id, hosts, services, history_id, report_id, handle):
 
             # 组件巡检
             services = Service.objects.filter(
-                service__app_type=ApplicationHub.APP_TYPE_COMPONENT)
+                service__app_type=ApplicationHub.APP_TYPE_COMPONENT
+            ).exclude(service_status__in=[5, 6, 7])
             services = list(services.values_list('service__id', flat=True))
             if len(services) > 0:
                 s_info, s_result, serv_data = target_service_run(env, services)
@@ -172,6 +223,9 @@ def get_prometheus_data(env_id, hosts, services, history_id, report_id, handle):
                 'file_name': f"{file_name}.tar.gz"}
             )
 
+        # 风险指标
+        risk_data = Prometheus().query_alerts()
+        kwargs['risk_data'] = get_risk_data(risk_data, handle, hosts, services)
         # 反填巡检记录、巡检报告 数据
         back_fill(**kwargs)
         # 打包html文件
@@ -213,7 +267,8 @@ def inspection_crontab(**kwargs):
                 # 2、查询环境下组件信息
                 services = Service.objects.filter(
                     env=env,
-                    service__app_type=ApplicationHub.APP_TYPE_COMPONENT)
+                    service__app_type=ApplicationHub.APP_TYPE_COMPONENT
+                ).exclude(service_status__in=[5, 6, 7])
                 services = list(services.values_list('service__id', flat=True))
                 if len(services) == 0:
                     logger.error(
