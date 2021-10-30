@@ -29,12 +29,12 @@ class Alertmanager:
             name='alertmanager').first()
         if not alertmanager_url_config:
             # 默认值
-            return f'127.0.0.1:{MONITOR_PORT.get("alertmanager", 19011)}'
+            return f'127.0.0.1:{MONITOR_PORT.get("alertmanager", 19013)}'
 
         monitor_url = alertmanager_url_config.monitor_url
         if monitor_url:
             return monitor_url
-        return f'127.0.0.1:{MONITOR_PORT.get("alertmanager", 19011)}'  # 默认值
+        return f'127.0.0.1:{MONITOR_PORT.get("alertmanager", 19013)}'  # 默认值
 
     @staticmethod
     def format_time(_time):
