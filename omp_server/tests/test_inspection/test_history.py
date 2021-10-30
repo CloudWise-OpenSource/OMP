@@ -3,8 +3,7 @@
 # Author: len chen
 # CreateDate: 2021/10/28 4:59 下午
 # Description:
-import mock
-from inspection import tasks
+from unittest import mock
 from tests.base import AutoLoginTest
 from rest_framework.reverse import reverse
 from tests.test_inspection.inspection_mixin import InspectionHistoryMixin
