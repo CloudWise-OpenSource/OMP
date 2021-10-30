@@ -44,6 +44,8 @@ const ServiceManagement = () => {
 
   const [labelControl, setLabelControl] = useState("ip");
 
+  const [installationRecordModal, setInstallationRecordModal] = useState(false)
+
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -464,7 +466,7 @@ const ServiceManagement = () => {
             location.state?.label_name,
             setShowIframe,
             setOperateAciton,
-            setCurrentSerAcitonModal
+            setCurrentSerAcitonModal,
           )}
           notSelectable={(record) => ({
             // 部署中的不能选中
@@ -513,6 +515,7 @@ const ServiceManagement = () => {
         setIsShowDrawer={setIsShowDrawer}
         loading={historyLoading}
         data={historyData}
+        setInstallationRecordModal={setInstallationRecordModal}
       />
       <OmpMessageModal
         visibleHandle={[serviceAcitonModal, setServiceAcitonModal]}
@@ -575,6 +578,20 @@ const ServiceManagement = () => {
           确定要对{" "}
           <span style={{ fontWeight: 500 }}>当前</span> 服务下发 <span style={{ fontWeight: 500 }}>{operateObj[operateAciton]}</span> 操作？
         </div>
+      </OmpMessageModal>
+      <OmpMessageModal
+       title="安装记录"
+       bodyStyle={{
+         backgroundColor:"#000",
+         color:"#fff"
+       }}
+       style={{
+         top:300
+       }}
+       noFooter={true}
+       visibleHandle={[installationRecordModal, setInstallationRecordModal]}
+      >
+        123
       </OmpMessageModal>
     </OmpContentWrapper>
   );
