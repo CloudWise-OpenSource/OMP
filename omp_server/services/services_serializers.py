@@ -103,17 +103,19 @@ class ServiceDetailSerializer(serializers.ModelSerializer):
             "username": "-",
             "password": "-",
         }
-        # 端口号
-        service_port_ls = json.loads(obj.service_port)
-        for info in service_port_ls:
-            if info.get("key", "") == "service_port":
-                result["service_port"] = info.get("port", "-")
-                break
+        # 获取服务端口号
+        if obj.service_port is not None:
+            service_port_ls = json.loads(obj.service_port)
+            for info in service_port_ls:
+                if info.get("key", "") == "service_port":
+                    result["service_port"] = info.get("port", "-")
+                    break
         # 应用安装参数
-        app_install_args = "[]"
-        if obj.service.app_install_args is not None:
-            app_install_args = obj.service.app_install_args
-        app_install_args = json.loads(app_install_args)
+        app_install_args = []
+        if obj.detailinstallhistory_set.exists():
+            detail_obj = obj.detailinstallhistory_set.first()
+            app_install_args = detail_obj.install_detail_args.get(
+                "app_install_args", [])
         for app_install_info in app_install_args:
             key = app_install_info.get("key", "")
             if key in result.keys():

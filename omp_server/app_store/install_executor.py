@@ -402,29 +402,27 @@ class InstallServiceExecutor:
         queryset.update(
             install_step_status=DetailInstallHistory.INSTALL_STATUS_INSTALLING)
 
-        with ThreadPoolExecutor(THREAD_POOL_MAX_WORKERS) as executor:
-            # 轮询流程列表，进行安装
-            for action in self.ACTION_LS:
-                logger.info(f"Enter [{action}]")
-                # 区分服务列表切分
-                base_env_ls = []
-                dependency_ls = []
-                no_dependency_ls = []
-                for detail_obj in queryset:
-                    if self._is_base_env(detail_obj):
-                        base_env_ls.append(detail_obj)
-                    elif self._is_dependency(detail_obj):
-                        dependency_ls.append(detail_obj)
-                    else:
-                        no_dependency_ls.append(detail_obj)
-                logger.info(f"基础环境列表 [base_env_ls] -- {base_env_ls}")
-                logger.info(f"含依赖列表 [dependency_ls] -- {dependency_ls}")
-                logger.info(f"非依赖列表 [no_dependency_ls] -- {no_dependency_ls}")
-                # TODO 含依赖项列表排序
+        # 区分服务列表切分
+        base_env_ls = []
+        dependency_ls = []
+        no_dependency_ls = []
+        for detail_obj in queryset:
+            if self._is_base_env(detail_obj):
+                base_env_ls.append(detail_obj)
+            elif self._is_dependency(detail_obj):
+                dependency_ls.append(detail_obj)
+            else:
+                no_dependency_ls.append(detail_obj)
+        logger.info(f"基础环境列表 [base_env_ls] -- {base_env_ls}")
+        logger.info(f"含依赖列表 [dependency_ls] -- {dependency_ls}")
+        logger.info(f"非依赖列表 [no_dependency_ls] -- {no_dependency_ls}")
+        # TODO 含依赖项列表 -> 安装顺序排序？
 
+        # 先执行 base_env 基础环境列表安装流程
+        with ThreadPoolExecutor(THREAD_POOL_MAX_WORKERS) as executor:
+            logger.info("Begin base_env install")
+            for action in self.ACTION_LS:
                 # ---- 基础环境列表并发 ----
-                if self.is_error:
-                    break
                 _future_list_env = []
                 for detail_obj in base_env_ls:
                     future_obj = executor.submit(
@@ -435,6 +433,13 @@ class InstallServiceExecutor:
                     if not is_success:
                         self.is_error = True
                         break
+            logger.info("End base_env install")
+
+        with ThreadPoolExecutor(THREAD_POOL_MAX_WORKERS) as executor:
+            # 轮询流程列表，进行安装
+            logger.info("Begin else install")
+            for action in self.ACTION_LS:
+                logger.info(f"Enter [{action}]")
                 # ---- 含依赖项列表轮询 ----
                 if self.is_error:
                     break
@@ -456,6 +461,7 @@ class InstallServiceExecutor:
                     if not is_success:
                         self.is_error = True
                         break
+            logger.info("End else install")
 
         if self.is_error:
             # 步骤失败，主流程失败
