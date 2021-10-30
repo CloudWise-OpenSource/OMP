@@ -43,7 +43,8 @@ class ServiceListView(GenericViewSet, ListModelMixin):
         serializer_data = serializer.data
 
         # 获取监控及日志的url
-        serializer_data = explain_url(serializer_data)
+        serializer_data = explain_url(
+            serializer_data, is_service=True)
         return self.get_paginated_response(serializer_data)
 
 
