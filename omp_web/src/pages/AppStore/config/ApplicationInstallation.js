@@ -76,7 +76,7 @@ const ApplicationInstallation = () => {
   const [processContinue, setProcessContinue] = useState(true);
   //定义校验弹出msessage函数
   const verificationError = (arr) => {
-    console.log(arr)
+    // console.log(arr);
     for (const item of arr) {
       if (item.process_continue == false) {
         setProcessContinue(false);
@@ -135,12 +135,12 @@ const ApplicationInstallation = () => {
         handleResponse(res, (res) => {
           console.log(res.data);
           setDataSource(res.data);
-          
+
           // 设置版本默认选中第一个
           //console.log(form);
-          verificationError(res.data[0].pro_services);
-          setVersionCurrent(res.data[0].pro_version);
-          form.setFieldsValue({ version: res.data[0].pro_version });
+          verificationError(res.data[0]?.pro_services);
+          setVersionCurrent(res.data[0]?.pro_version);
+          form.setFieldsValue({ version: res.data[0]?.pro_version });
           form.setFieldsValue({
             clusterMode: "single",
           });
@@ -164,7 +164,7 @@ const ApplicationInstallation = () => {
 
   // 定义选中的ip是否包含在instance_info
   const hasSameIp = (item, ip) => {
-    return item.is_base_env && item.instance_info.filter((b) => b.ip == ip);
+    return item.is_base_env && item.instance_info && item.instance_info.filter((b) => b.ip == ip);
   };
 
   const [showJdk, setShowJdk] = useState(false);
@@ -182,7 +182,7 @@ const ApplicationInstallation = () => {
       ];
       use_exist_servicesRef.current = [];
 
-      data?.app_install_args.map((i) => {
+      data?.app_install_args?.map((i) => {
         setIsOpen({
           ...isOpen,
           [i.name]: false,
@@ -196,7 +196,7 @@ const ApplicationInstallation = () => {
         });
       });
 
-      data?.app_port.map((i) => {
+      data?.app_port?.map((i) => {
         setIsOpen({
           ...isOpen,
           [i.name]: false,
@@ -271,10 +271,10 @@ const ApplicationInstallation = () => {
               });
             });
           }
-          containerRef.current.scrollTop = containerRef.current.scrollHeight;
+
           if (
-            res.data[0].install_status == 1 ||
-            res.data[0].install_status == 0
+            (res.data[0]?.install_status == 1) ||
+            (res.data[0]?.install_status) == 0
           ) {
             timer.current = setTimeout(() => {
               queryInstallationInfo(operateId);
@@ -283,7 +283,9 @@ const ApplicationInstallation = () => {
         });
       })
       .catch((e) => console.log(e))
-      .finally(() => {});
+      .finally(() => {
+        containerRef.current.scrollTop = containerRef.current.scrollHeight;
+      });
   };
 
   useEffect(() => {
@@ -371,9 +373,8 @@ const ApplicationInstallation = () => {
                     onChange={(e) => {
                       setVersionCurrent(e);
                       verificationError(
-                        dataSource.filter(
-                          (item) => item.pro_version == e
-                        )[0]?.pro_services
+                        dataSource.filter((item) => item.pro_version == e)[0]
+                          ?.pro_services
                       );
                     }}
                   >
@@ -458,7 +459,7 @@ const ApplicationInstallation = () => {
               currentproDependenceData.pro_services.length == 0 ? (
                 <div>无</div>
               ) : (
-                currentproDependenceData?.pro_services.map((item) => {
+                currentproDependenceData?.pro_services?.map((item) => {
                   return (
                     <div
                       key={item.name}
@@ -572,7 +573,7 @@ const ApplicationInstallation = () => {
                   (item) => {
                     form.setFieldsValue({
                       [`install|${
-                        currentproDependenceData.pro_services[0]?.name
+                        currentproDependenceData?.pro_services[0]?.name
                       }|${JSON.stringify({
                         name: item.name,
                         key: item.key,
@@ -586,7 +587,7 @@ const ApplicationInstallation = () => {
                     //console.log(item.default, item);
                     form.setFieldsValue({
                       [`port|${
-                        currentproDependenceData.pro_services[0]?.name
+                        currentproDependenceData?.pro_services[0]?.name
                       }|${JSON.stringify({
                         name: item.name,
                         key: item.key,
@@ -637,7 +638,7 @@ const ApplicationInstallation = () => {
                   paddingRight: 20,
                 }}
               >
-                {currentproDependenceData.pro_services[0]?.name}
+                {currentproDependenceData?.pro_services[0]?.name}
               </div>
               <div
                 style={{ height: 1, backgroundColor: "#b3b2b3", width: "100%" }}
@@ -663,7 +664,7 @@ const ApplicationInstallation = () => {
                       );
                       form.setFieldsValue({
                         instanceName: `${
-                          currentproDependenceData.pro_services[0]?.name
+                          currentproDependenceData?.pro_services[0]?.name
                         }-${IpArr[IpArr.length - 2]}-${
                           IpArr[IpArr.length - 1]
                         }`,
@@ -702,8 +703,8 @@ const ApplicationInstallation = () => {
                   onClick={() => {
                     setIsOpen({
                       ...isOpen,
-                      [currentproDependenceData.pro_services[0]?.name]:
-                        !isOpen[currentproDependenceData.pro_services[0]?.name],
+                      [currentproDependenceData?.pro_services[0]?.name]:
+                        !isOpen[currentproDependenceData?.pro_services[0]?.name],
                     });
                     // setIsDetailOpen({
                     //   ...isDetailOpen,
@@ -714,7 +715,7 @@ const ApplicationInstallation = () => {
                   <DownOutlined
                     style={{
                       transform: `rotate(${
-                        isOpen[currentproDependenceData.pro_services[0]?.name]
+                        isOpen[currentproDependenceData?.pro_services[0]?.name]
                           ? 180
                           : 0
                       }deg)`,
@@ -729,11 +730,11 @@ const ApplicationInstallation = () => {
               <div
                 //className={styles.backIcon}
                 style={
-                  isOpen[currentproDependenceData.pro_services[0]?.name]
+                  isOpen[currentproDependenceData?.pro_services[0]?.name]
                     ? step2Open(
-                        currentproDependenceData.pro_services[0]
+                        currentproDependenceData?.pro_services[0]
                           ?.app_install_args?.length +
-                          currentproDependenceData.pro_services[0]?.app_port
+                          currentproDependenceData?.pro_services[0]?.app_port
                             ?.length
                       )
                     : step2NotOpen()
@@ -747,7 +748,7 @@ const ApplicationInstallation = () => {
                     marginTop: 20,
                   }}
                 >
-                  {currentproDependenceData.pro_services[0]?.app_install_args?.map(
+                  {currentproDependenceData?.pro_services[0]?.app_install_args?.map(
                     (item) => {
                       return (
                         <Form.Item
@@ -755,7 +756,7 @@ const ApplicationInstallation = () => {
                           style={{ paddingLeft: 15, paddingBottom: 15 }}
                           label={<span style={{ width: 60 }}>{item.name}</span>}
                           name={`install|${
-                            currentproDependenceData.pro_services[0]?.name
+                            currentproDependenceData?.pro_services[0]?.name
                           }|${JSON.stringify({
                             name: item.name,
                             key: item.key,
@@ -785,7 +786,7 @@ const ApplicationInstallation = () => {
                       );
                     }
                   )}
-                  {currentproDependenceData.pro_services[0]?.app_port?.map(
+                  {currentproDependenceData?.pro_services[0]?.app_port?.map(
                     (item) => {
                       return (
                         <Form.Item
@@ -793,7 +794,7 @@ const ApplicationInstallation = () => {
                           style={{ paddingLeft: 15 }}
                           label={<span style={{ width: 60 }}>{item.name}</span>}
                           name={`port|${
-                            currentproDependenceData.pro_services[0]?.name
+                            currentproDependenceData?.pro_services[0]?.name
                           }|${JSON.stringify({
                             name: item.name,
                             key: item.key,
@@ -832,7 +833,7 @@ const ApplicationInstallation = () => {
           {showJdk ? (
             <>
               <div
-                key={currentproDependenceData.dependence_services_info[0].name}
+                key={currentproDependenceData?.dependence_services_info[0]?.name}
                 style={{
                   marginTop: 20,
                   backgroundColor: "#fff",
@@ -858,7 +859,7 @@ const ApplicationInstallation = () => {
                       paddingRight: 20,
                     }}
                   >
-                    {currentproDependenceData.dependence_services_info[0].name}
+                    {currentproDependenceData?.dependence_services_info[0]?.name}
                   </div>
                   <div
                     style={{
@@ -885,16 +886,15 @@ const ApplicationInstallation = () => {
                   >
                     <Form.Item
                       label="选择主机"
-                      name={`${currentproDependenceData.dependence_services_info[0].name}|ip`}
+                      name={`${currentproDependenceData?.dependence_services_info[0]?.name}|ip`}
                     >
                       <Select
                         style={{ width: 200 }}
                         onChange={(e) => {
                           const IpArr = e.split(".");
                           form.setFieldsValue({
-                            [`${currentproDependenceData.dependence_services_info[0].name}|instanceName`]: `${
-                              currentproDependenceData
-                                .dependence_services_info[0].name
+                            [`${currentproDependenceData?.dependence_services_info[0]?.name}|instanceName`]: `${
+                              currentproDependenceData?.dependence_services_info[0]?.name
                             }-${IpArr[IpArr.length - 2]}-${
                               IpArr[IpArr.length - 1]
                             }`,
@@ -910,7 +910,7 @@ const ApplicationInstallation = () => {
                     </Form.Item>
                     <Form.Item
                       label="实例名称"
-                      name={`${currentproDependenceData.dependence_services_info[0].name}|instanceName`}
+                      name={`${currentproDependenceData?.dependence_services_info[0]?.name}|instanceName`}
                       style={{ marginLeft: 30 }}
                       rules={[
                         {
@@ -933,11 +933,9 @@ const ApplicationInstallation = () => {
                       onClick={() => {
                         setIsOpen({
                           ...isOpen,
-                          [currentproDependenceData.dependence_services_info[0]
-                            .name]:
+                          [currentproDependenceData?.dependence_services_info[0]?.name]:
                             !isOpen[
-                              currentproDependenceData
-                                .dependence_services_info[0].name
+                              currentproDependenceData?.dependence_services_info[0]?.name
                             ],
                         });
                       }}
@@ -946,16 +944,14 @@ const ApplicationInstallation = () => {
                         style={{
                           transform: `rotate(${
                             isOpen[
-                              currentproDependenceData
-                                .dependence_services_info[0].name
+                              currentproDependenceData?.dependence_services_info[0]?.name
                             ]
                               ? 180
                               : 0
                           }deg)`,
                           position: "relative",
                           top: isOpen[
-                            currentproDependenceData.dependence_services_info[0]
-                              .name
+                            currentproDependenceData?.dependence_services_info[0]?.name
                           ]
                             ? -1
                             : 1,
@@ -969,14 +965,11 @@ const ApplicationInstallation = () => {
                     //className={styles.backIcon}
                     style={
                       isOpen[
-                        currentproDependenceData.dependence_services_info[0]
-                          .name
+                        currentproDependenceData?.dependence_services_info[0]?.name
                       ]
                         ? step2Open(
-                            currentproDependenceData.dependence_services_info[0]
-                              .app_install_args.length +
-                              currentproDependenceData
-                                .dependence_services_info[0].app_port.length
+                            currentproDependenceData?.dependence_services_info[0]?.app_install_args?.length +
+                              currentproDependenceData?.dependence_services_info[0]?.app_port.length
                           )
                         : step2NotOpen()
                     }
@@ -989,7 +982,7 @@ const ApplicationInstallation = () => {
                         marginTop: 20,
                       }}
                     >
-                      {currentproDependenceData.dependence_services_info[0]?.app_install_args?.map(
+                      {currentproDependenceData?.dependence_services_info[0]?.app_install_args?.map(
                         (i) => {
                           return (
                             <Form.Item
@@ -999,8 +992,7 @@ const ApplicationInstallation = () => {
                                 <span style={{ width: 60 }}>{i.name}</span>
                               }
                               name={`install|${
-                                currentproDependenceData
-                                  .dependence_services_info[0].name
+                                currentproDependenceData?.dependence_services_info[0]?.name
                               }|${JSON.stringify({
                                 name: i.name,
                                 key: i.key,
@@ -1030,7 +1022,7 @@ const ApplicationInstallation = () => {
                           );
                         }
                       )}
-                      {currentproDependenceData.dependence_services_info[0]?.app_port?.map(
+                      {currentproDependenceData?.dependence_services_info[0]?.app_port?.map(
                         (i) => {
                           return (
                             <Form.Item
@@ -1040,8 +1032,7 @@ const ApplicationInstallation = () => {
                                 <span style={{ width: 60 }}>{i.name}</span>
                               }
                               name={`port|${
-                                currentproDependenceData
-                                  .dependence_services_info[0].name
+                                currentproDependenceData?.dependence_services_info[0]?.name
                               }|${JSON.stringify({
                                 name: i.name,
                                 key: i.key,
@@ -1159,14 +1150,14 @@ const ApplicationInstallation = () => {
                             st2,
                             "install",
                             3,
-                            install_servicesRef.current[0].name
+                            install_servicesRef.current[0]?.name
                           )
                         : {};
 
                       let ipAndInstanceName = {};
                       Object.keys(st2).map((o) => {
                         let arr = o.split("|");
-                        if (arr.length == 2 && arr[0] == installArr[0]?.name) {
+                        if (arr.length == 2 && arr[0] == (installArr[0]?.name)) {
                           ipAndInstanceName[arr[1]] = st2[o];
                         }
                       });
@@ -1177,7 +1168,7 @@ const ApplicationInstallation = () => {
                         install_servicesRef.current[0].service_instance_name =
                           ipAndInstanceName.instanceName;
                         install_servicesRef.current[0].app_install_args =
-                          install_servicesRef.current[0]?.app_install_args.map(
+                          install_servicesRef.current[0]?.app_install_args?.map(
                             (item) => {
                               let key = JSON.stringify({
                                 name: item.name,
@@ -1249,7 +1240,7 @@ const ApplicationInstallation = () => {
                                   ...isOpenCopy,
                                 });
 
-                                res.data.install_services.map((item, idx) => {
+                                res.data.install_services?.map((item, idx) => {
                                   if (
                                     item.check_flag == false &&
                                     item.check_msg
@@ -1273,7 +1264,7 @@ const ApplicationInstallation = () => {
                                       ]);
                                     }
                                   }
-                                  item.app_port.map((i) => {
+                                  item.app_port?.map((i) => {
                                     if (i.check_flag == false) {
                                       form.setFields([
                                         {
@@ -1288,7 +1279,7 @@ const ApplicationInstallation = () => {
                                       ]);
                                     }
                                   });
-                                  item.app_install_args.map((i) => {
+                                  item.app_install_args?.map((i) => {
                                     if (i.check_flag == false) {
                                       form.setFields([
                                         {
@@ -1342,7 +1333,7 @@ const ApplicationInstallation = () => {
           {step3Data?.detail_lst?.map((item) => {
             return (
               <div
-                key={item.service_instance_name}
+                key={item?.service_instance_name}
                 style={{
                   marginTop: 20,
                   backgroundColor: "#fff",
@@ -1435,7 +1426,7 @@ const ApplicationInstallation = () => {
                         : step3NotOpen()
                     }
                   >
-                    {item.log}
+                    {item.log ? item.log : "正在安装..."}
                   </div>
                 </div>
               </div>

@@ -128,6 +128,7 @@ const ScanServerModal = ({
         </span>
       }
       afterClose={() => {
+        setDataSource([]);
         setStepNum(0);
         clearTimeout(timer.current);
         refresh();

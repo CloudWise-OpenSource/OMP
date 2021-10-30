@@ -59,7 +59,7 @@ const RenderComDependence = ({ data, form }) => {
 
 // 分类渲染
 const RenderHasData = ({ data, form }) => {
-  if (data.cluster_info.length == 0 && data.instance_info.length == 0) {
+  if ((data.cluster_info?.length == 0) && (data.instance_info?.length) == 0) {
     return <RenderClusterDom data={data} form={form} />;
   } else {
     let dataSource = data.cluster_info.concat(data.instance_info);
@@ -134,10 +134,11 @@ const RenderClusterDom = ({ data, form }) => {
 
 // 单实例没有实例名称。其他有(单独封装为了复用)
 const ClusterComponent = ({ data, form }) => {
-  const [deploy_mode, setDeploy_mode] = useState(JSON.stringify(data.ser_deploy_mode[0]));
+  let deploy = (data.deploy_mode && data.deploy_mode[0])? JSON.stringify(data.deploy_mode[0]):""
+  const [deploy_mode, setDeploy_mode] = useState(deploy);
   useEffect(() => {
     form.setFieldsValue({
-      [`${data.name}|deploy_mode`]: JSON.stringify(data.ser_deploy_mode[0]),
+      [`${data.name}|deploy_mode`]: JSON.stringify(deploy),
       [`${data.name}|modeName`]: `${data.name}-${randomNumber()}`,
     });
   }, []);
@@ -159,7 +160,7 @@ const ClusterComponent = ({ data, form }) => {
               setDeploy_mode(e);
             }}
           >
-            {data.ser_deploy_mode.map((item) => (
+            {data.ser_deploy_mode?.map((item) => (
               <Select.Option value={JSON.stringify(item)} key={item.key}>
                 {item.name}
               </Select.Option>

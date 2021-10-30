@@ -44,7 +44,7 @@ const ServiceManagement = () => {
 
   const [labelControl, setLabelControl] = useState("ip");
 
-  const [installationRecordModal, setInstallationRecordModal] = useState(false)
+  const [installationRecordModal, setInstallationRecordModal] = useState(false);
 
   const [pagination, setPagination] = useState({
     current: 1,
@@ -74,16 +74,16 @@ const ServiceManagement = () => {
   //const [showIframe, setShowIframe] = useState({});
 
   const [serviceAcitonModal, setServiceAcitonModal] = useState(false);
-  const [currentSerAcitonModal, setCurrentSerAcitonModal] = useState(false)
+  const [currentSerAcitonModal, setCurrentSerAcitonModal] = useState(false);
 
   // 1启动，2停止，3重启，4删除
   let operateObj = {
-    1:"启动",
-    2:"停止",
-    3:"重启",
-    4:"删除"
-  }
-  const [operateAciton, setOperateAciton] = useState(1)
+    1: "启动",
+    2: "停止",
+    3: "重启",
+    4: "删除",
+  };
+  const [operateAciton, setOperateAciton] = useState(1);
 
   // 列表查询
   function fetchData(
@@ -171,31 +171,31 @@ const ServiceManagement = () => {
   };
 
   // 服务的启动｜停止｜重启
-  const operateService = (data,operate) => {
+  const operateService = (data, operate) => {
     setLoading(true);
     fetchPost(apiRequest.appStore.servicesAction, {
       body: {
-        data:data.map(i=>({
-          action:operate,
-          id:i.id,
-          operation_user:localStorage.getItem("username")
-        }))
+        data: data.map((i) => ({
+          action: operate,
+          id: i.id,
+          operation_user: localStorage.getItem("username"),
+        })),
       },
     })
       .then((res) => {
         //console.log(operateObj[operateAciton])
         handleResponse(res, (res) => {
-          message.success(`${operateObj[operateAciton]}操作下发成功`)
+          message.success(`${operateObj[operateAciton]}操作下发成功`);
         });
       })
       .catch((e) => console.log(e))
       .finally(() => {
         setLoading(false);
         setServiceAcitonModal(false);
-        setCurrentSerAcitonModal(false)
+        setCurrentSerAcitonModal(false);
         // setRestartHostAgentModal(false);
         setCheckedList({});
-        setRow({})
+        setRow({});
         fetchData(
           { current: pagination.current, pageSize: pagination.pageSize },
           {
@@ -205,6 +205,37 @@ const ServiceManagement = () => {
           },
           pagination.ordering
         );
+      });
+  };
+
+  const containerRef = useRef(null);
+
+  const timer = useRef(null);
+
+  const [log, setLog] = useState("")
+
+  const queryServiceInstallHistoryDetail = (id) => {
+    fetchGet(apiRequest.appStore.serviceInstallHistoryDetail, {
+      params: {
+        id: id,
+      },
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          setLog(res.data[0].log)
+          if (
+            res.data[0].install_step_status == 1 ||
+            res.data[0].install_step_status == 0
+          ) {
+            timer.current = setTimeout(() => {
+              queryServiceInstallHistoryDetail(id);
+            }, 2000);
+          }
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        containerRef.current.scrollTop = containerRef.current.scrollHeight;
       });
   };
 
@@ -239,9 +270,9 @@ const ServiceManagement = () => {
                 key="openMaintain"
                 style={{ textAlign: "center" }}
                 onClick={() => {
-                  setOperateAciton(1)
-                  setServiceAcitonModal(true)}
-                }
+                  setOperateAciton(1);
+                  setServiceAcitonModal(true);
+                }}
                 disabled={
                   Object.keys(checkedList)
                     .map((k) => checkedList[k])
@@ -261,8 +292,8 @@ const ServiceManagement = () => {
                     .map((item) => item.id).length == 0
                 }
                 onClick={() => {
-                  setOperateAciton(2)
-                  setServiceAcitonModal(true)
+                  setOperateAciton(2);
+                  setServiceAcitonModal(true);
                 }}
               >
                 停止
@@ -277,8 +308,8 @@ const ServiceManagement = () => {
                     .map((item) => item.id).length == 0
                 }
                 onClick={() => {
-                  setOperateAciton(3)
-                  setServiceAcitonModal(true)
+                  setOperateAciton(3);
+                  setServiceAcitonModal(true);
                 }}
               >
                 重启
@@ -293,8 +324,8 @@ const ServiceManagement = () => {
                     .map((item) => item.id).length == 0
                 }
                 onClick={() => {
-                  setOperateAciton(4)
-                  setServiceAcitonModal(true)
+                  setOperateAciton(4);
+                  setServiceAcitonModal(true);
                 }}
               >
                 删除
@@ -509,13 +540,16 @@ const ServiceManagement = () => {
           checkedState={[checkedList, setCheckedList]}
         />
       </div>
-      <OmpDrawer showIframe={showIframe} setShowIframe={setShowIframe} />
+      <OmpDrawer showIframe={showIframe} setShowIframe={setShowIframe}  />
       <DetailHost
         isShowDrawer={isShowDrawer}
         setIsShowDrawer={setIsShowDrawer}
         loading={historyLoading}
         data={historyData}
         setInstallationRecordModal={setInstallationRecordModal}
+        queryServiceInstallHistoryDetail={
+          (id)=>queryServiceInstallHistoryDetail(id)
+          }
       />
       <OmpMessageModal
         visibleHandle={[serviceAcitonModal, setServiceAcitonModal]}
@@ -535,9 +569,12 @@ const ServiceManagement = () => {
         }
         loading={loading}
         onFinish={() => {
-          operateService(Object.keys(checkedList)
-          .map((k) => checkedList[k])
-          .flat(1), operateAciton)
+          operateService(
+            Object.keys(checkedList)
+              .map((k) => checkedList[k])
+              .flat(1),
+            operateAciton
+          );
           //fetchMaintainChange(false, [row]);
         }}
       >
@@ -545,12 +582,15 @@ const ServiceManagement = () => {
           确定要对{" "}
           <span style={{ fontWeight: 500 }}>
             {" "}
-            {Object.keys(checkedList)
-              .map((k) => checkedList[k])
-              .flat(1).length
-          }
+            {
+              Object.keys(checkedList)
+                .map((k) => checkedList[k])
+                .flat(1).length
+            }
           </span>{" "}
-        个 服务下发 <span style={{ fontWeight: 500 }}>{operateObj[operateAciton]}</span> 操作？
+          个 服务下发{" "}
+          <span style={{ fontWeight: 500 }}>{operateObj[operateAciton]}</span>{" "}
+          操作？
         </div>
       </OmpMessageModal>
       <OmpMessageModal
@@ -571,27 +611,55 @@ const ServiceManagement = () => {
         }
         loading={loading}
         onFinish={() => {
-          operateService([row], operateAciton)
+          operateService([row], operateAciton);
         }}
       >
         <div style={{ padding: "20px" }}>
-          确定要对{" "}
-          <span style={{ fontWeight: 500 }}>当前</span> 服务下发 <span style={{ fontWeight: 500 }}>{operateObj[operateAciton]}</span> 操作？
+          确定要对 <span style={{ fontWeight: 500 }}>当前</span> 服务下发{" "}
+          <span style={{ fontWeight: 500 }}>{operateObj[operateAciton]}</span>{" "}
+          操作？
         </div>
       </OmpMessageModal>
       <OmpMessageModal
-       title="安装记录"
-       bodyStyle={{
-         backgroundColor:"#000",
-         color:"#fff"
-       }}
-       style={{
-         top:300
-       }}
-       noFooter={true}
-       visibleHandle={[installationRecordModal, setInstallationRecordModal]}
+        title="安装记录"
+        bodyStyle={{
+          backgroundColor: "#000",
+          color: "#fff",
+          padding:0
+        }}
+        style={{
+          top: 200,
+        }}
+        afterClose={()=>{
+          console.log("关闭")
+          if(timer.current){
+            clearTimeout(timer.current)
+          }
+        }}
+        noFooter={true}
+        visibleHandle={[installationRecordModal, setInstallationRecordModal]}
       >
-        123
+        <div
+          ref={containerRef}
+          style={{
+            padding:10,
+            // marginTop: 10,
+            // padding: 10,
+            minHeight: 30,
+            height: 300,
+            // transition: "all .2s ease-in",
+            // overflow: "hidden",
+            color: "#fff",
+            backgroundColor: "#000",
+            wordWrap: "break-word",
+            wordBreak: "break-all",
+            whiteSpace: "pre-line",
+            overflowY: "auto",
+            overflowX: "hidden",
+          }}
+        >
+          {log ? log : "正在安装..."}
+        </div>
       </OmpMessageModal>
     </OmpContentWrapper>
   );
