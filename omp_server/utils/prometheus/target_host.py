@@ -31,7 +31,7 @@ class HostCrawl(Prometheus):
             if ret.get('result'):
                 return ret['result'][0].get('value')[1]
             else:
-                return ''
+                return 0
         else:
             self.tag_error_num += 1     # 统计异常指标数
             return msg

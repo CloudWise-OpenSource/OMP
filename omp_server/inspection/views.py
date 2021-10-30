@@ -32,8 +32,10 @@ class InspectionServiceView(ListModelMixin, GenericViewSet):
         list: 组件巡检 组件列表
     """
     def list(self, request, *args, **kwargs):
+        # 只能是安装成功的组件
         _ = Service.objects.filter(
-            service__app_type=ApplicationHub.APP_TYPE_COMPONENT)
+            service__app_type=ApplicationHub.APP_TYPE_COMPONENT).exclude(
+            service_status__in=[5, 6, 7])
         ret = _.values('service__id', 'service__app_name').distinct()
         return Response(data=list(ret), status=status.HTTP_200_OK)
 

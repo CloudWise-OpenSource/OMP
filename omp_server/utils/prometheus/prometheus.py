@@ -16,7 +16,7 @@ class Prometheus(object):
         self.address = MonitorUrl.objects.get(name='prometheus').monitor_url
 
     def query(self, expr):
-        url = 'http://' + self.address + '/api/v1/query?query=' + expr
+        url = f'http://{self.address}/api/v1/query?query={expr}'
         try:
             rsp = json.loads(requests.get(url=url, timeout=0.5
                                           ).content.decode('utf8', 'ignore'))
@@ -26,6 +26,18 @@ class Prometheus(object):
                 return False, {}, 'fail'
         except Exception as e:
             return False, {}, 'error'
+
+    def query_alerts(self):
+        url = f'http://{self.address}/api/v1/alerts'
+        try:
+            rsp = json.loads(requests.get(url=url, timeout=0.5
+                                          ).content.decode('utf8', 'ignore'))
+            if rsp.get('status') == 'success':
+                return rsp.get('data').get('alerts')
+            else:
+                return {}
+        except:
+            return {}
 
 
 def back_fill(history_id, report_id, host_data=None, serv_data=None,
