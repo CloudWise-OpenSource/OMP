@@ -25,7 +25,6 @@ class InstallServiceExecutor:
     def __init__(self, main_id, timeout=300):
         self.main_id = main_id
         self.timeout = timeout
-        self.salt_client = SaltClient()
         # 安装中是否发生错误，用于流程控制
         self.is_error = False
 
@@ -37,6 +36,7 @@ class InstallServiceExecutor:
     def send(self, detail_obj):
         """ 发送服务包 """
         # 获取发送使用参数
+        salt_client = SaltClient()
         target_ip = detail_obj.service.ip
         service_name = detail_obj.service.service_instance_name
         package_name = detail_obj.service.service.app_package.package_name
@@ -61,7 +61,7 @@ class InstallServiceExecutor:
                 f"{detail_obj.main_install_history.operation_uuid}.json")
 
             # 发送 json 文件
-            is_success, message = self.salt_client.cp_file(
+            is_success, message = salt_client.cp_file(
                 target=target_ip,
                 source_path=json_source_path,
                 target_path=json_target_path)
@@ -77,7 +77,7 @@ class InstallServiceExecutor:
                 package_name)
 
             # 发送服务包
-            is_success, message = self.salt_client.cp_file(
+            is_success, message = salt_client.cp_file(
                 target=target_ip,
                 source_path=source_path,
                 target_path=target_path)
@@ -105,6 +105,7 @@ class InstallServiceExecutor:
     def unzip(self, detail_obj):
         """ 解压服务包 """
         # 获取解压使用参数
+        salt_client = SaltClient()
         target_ip = detail_obj.service.ip
         service_name = detail_obj.service.service_instance_name
         package_name = detail_obj.service.service.app_package.package_name
@@ -148,7 +149,7 @@ class InstallServiceExecutor:
                 real_path = os.path.join(_target_path, app_name)
                 test_path_cmd_str = f"(test -d {_target_path} || mkdir -p {_target_path}) && " \
                                     f"tar -xf {package_path} -C {_target_path} && mv {real_path} {target_path}/"
-            is_success, message = self.salt_client.cmd(
+            is_success, message = salt_client.cmd(
                 target=target_ip,
                 command=test_path_cmd_str,
                 timeout=self.timeout)
@@ -176,6 +177,7 @@ class InstallServiceExecutor:
     def install(self, detail_obj):
         """ 安装服务 """
         # 获取安装使用参数
+        salt_client = SaltClient()
         target_ip = detail_obj.service.ip
         service_name = detail_obj.service.service_instance_name
         # edit by jon.liu service_controllers 为json字段，无需json.loads
@@ -203,7 +205,7 @@ class InstallServiceExecutor:
             cmd_str = f"python {install_script_path} --local_ip {target_ip} --data_json {json_path}"
 
             # 执行安装
-            is_success, message = self.salt_client.cmd(
+            is_success, message = salt_client.cmd(
                 target=target_ip,
                 command=cmd_str,
                 timeout=self.timeout)
@@ -234,6 +236,7 @@ class InstallServiceExecutor:
     def init(self, detail_obj):
         """ 初始化服务 """
         # 获取初始化使用参数
+        salt_client = SaltClient()
         target_ip = detail_obj.service.ip
         service_name = detail_obj.service.service_instance_name
         service_controllers_dict = detail_obj.service.service_controllers
@@ -263,7 +266,7 @@ class InstallServiceExecutor:
 
             cmd_str = f"python {init_script_path} --local_ip {target_ip} --data_json {json_path}"
             # 执行初始化
-            is_success, message = self.salt_client.cmd(
+            is_success, message = salt_client.cmd(
                 target=target_ip,
                 command=cmd_str,
                 timeout=self.timeout)
@@ -294,6 +297,7 @@ class InstallServiceExecutor:
     def start(self, detail_obj):
         """ 启动服务 """
         # 获取启动使用参数
+        salt_client = SaltClient()
         target_ip = detail_obj.service.ip
         service_name = detail_obj.service.service_instance_name
         service_controllers_dict = detail_obj.service.service_controllers
@@ -322,7 +326,7 @@ class InstallServiceExecutor:
             cmd_str = f"bash {start_script_path} start"
 
             # 执行启动
-            is_success, message = self.salt_client.cmd(
+            is_success, message = salt_client.cmd(
                 target=target_ip,
                 command=cmd_str,
                 timeout=self.timeout)
@@ -361,6 +365,18 @@ class InstallServiceExecutor:
         return True, "Start Success"
 
     @staticmethod
+    def _is_base_env(detail_obj):
+        """ 是否为依赖项，优先执行 """
+        is_base_env = False
+        try:
+            extend_dict = detail_obj.service.service.extend_fields
+            if extend_dict.get("base_env") in (True, "True"):
+                is_base_env = True
+        except Exception:
+            pass
+        return is_base_env
+
+    @staticmethod
     def _is_dependency(detail_obj):
         """ 是否为依赖项，优先执行 """
         return False
@@ -390,19 +406,36 @@ class InstallServiceExecutor:
             # 轮询流程列表，进行安装
             for action in self.ACTION_LS:
                 logger.info(f"Enter [{action}]")
-                # 区分服务是否为依赖项
+                # 区分服务列表切分
+                base_env_ls = []
                 dependency_ls = []
                 no_dependency_ls = []
                 for detail_obj in queryset:
-                    if self._is_dependency(detail_obj):
+                    if self._is_base_env(detail_obj):
+                        base_env_ls.append(detail_obj)
+                    elif self._is_dependency(detail_obj):
                         dependency_ls.append(detail_obj)
                     else:
                         no_dependency_ls.append(detail_obj)
-                logger.info(f"dependency_ls -- {dependency_ls}")
-                logger.info(f"no_dependency_ls -- {no_dependency_ls}")
-                # TODO 列表顺序排序?
+                logger.info(f"基础环境列表 [base_env_ls] -- {base_env_ls}")
+                logger.info(f"含依赖列表 [dependency_ls] -- {dependency_ls}")
+                logger.info(f"非依赖列表 [no_dependency_ls] -- {no_dependency_ls}")
+                # TODO 含依赖项列表排序
 
-                # ---- 前置依赖项轮询板块 ----
+                # ---- 基础环境列表并发 ----
+                if self.is_error:
+                    break
+                _future_list_env = []
+                for detail_obj in base_env_ls:
+                    future_obj = executor.submit(
+                        getattr(self, action), detail_obj)
+                    _future_list_env.append(future_obj)
+                for future in as_completed(_future_list_env):
+                    is_success, message = future.result()
+                    if not is_success:
+                        self.is_error = True
+                        break
+                # ---- 含依赖项列表轮询 ----
                 if self.is_error:
                     break
                 for detail_obj in dependency_ls:
@@ -410,7 +443,7 @@ class InstallServiceExecutor:
                     if not is_success:
                         self.is_error = True
                         break
-                # ---- 其他项并发执行板块 ----
+                # ---- 非依赖项列表并发 ----
                 if self.is_error:
                     break
                 _future_list = []
