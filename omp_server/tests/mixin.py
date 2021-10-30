@@ -399,12 +399,12 @@ class ServicesResourceMixin(HostsResourceMixin, ClusterResourceMixin,
             # 随机构造端口字段
             service_port_ls = [{
                 "key": "service_port",
-                "port": 18080,
+                "default": 18080,
             }]
             for port_index in range(random.randint(0, 2)):
                 service_port_ls.append({
                     "key": f"http_port_{port_index}",
-                    "port": 18090 + port_index,
+                    "default": 18090 + port_index,
                 })
             # 随机分配集群
             cluster = None

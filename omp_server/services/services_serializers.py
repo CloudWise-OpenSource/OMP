@@ -34,10 +34,8 @@ class ServiceSerializer(serializers.ModelSerializer):
         service_port = "-"
         if obj.service_port is not None:
             service_port_ls = json.loads(obj.service_port)
-            for info in service_port_ls:
-                if info.get("key", "") == "service_port":
-                    service_port = info.get("port", "")
-                    break
+            if len(service_port_ls) > 0:
+                service_port = service_port_ls[0].get("default", "")
         return service_port
 
     def get_label_name(self, obj):
@@ -106,10 +104,8 @@ class ServiceDetailSerializer(serializers.ModelSerializer):
         # 获取服务端口号
         if obj.service_port is not None:
             service_port_ls = json.loads(obj.service_port)
-            for info in service_port_ls:
-                if info.get("key", "") == "service_port":
-                    result["service_port"] = info.get("port", "-")
-                    break
+            if len(service_port_ls) > 0:
+                result["service_port"] = service_port_ls[0].get("default", "")
         # 应用安装参数
         app_install_args = []
         if obj.detailinstallhistory_set.exists():
