@@ -20,7 +20,8 @@ from app_store.views_for_install import (
     ComponentEntranceView,
     ProductEntranceView,
     ExecuteInstallView,
-    InstallHistoryView
+    InstallHistoryView,
+    ServiceInstallHistoryDetailView
 )
 
 router = DefaultRouter()
@@ -63,3 +64,6 @@ router.register(
 router.register(
     "installHistory", InstallHistoryView,
     basename='installHistory')
+router.register(
+    "serviceInstallHistoryDetail", ServiceInstallHistoryDetailView,
+    basename='serviceInstallHistoryDetail')

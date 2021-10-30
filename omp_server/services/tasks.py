@@ -1,7 +1,6 @@
 """
 服务相关异步任务
 """
-import json
 
 import logging
 
@@ -34,13 +33,15 @@ def exec_action(action, instance, operation_user):
         logger.error(f"service实例id，不存在{instance}:{e}")
         return None
     ip = service_obj.ip
-    service_controllers = json.loads(service_obj.service_controllers)
+    # service_controllers 字段为json字段类型
+    service_controllers = service_obj.service_controllers
     action = action_json.get(str(action))
     if not action:
         logger.error("action动作不合法")
         raise ValueError("action动作不合法")
     if action[0] == 'delete':
-        service_history_obj = ServiceHistory.objects.filter(service=service_obj)
+        service_history_obj = ServiceHistory.objects.filter(
+            service=service_obj)
         if len(service_history_obj) != 0:
             service_history_obj.delete()
         service_obj.delete()

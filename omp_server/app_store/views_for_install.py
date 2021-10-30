@@ -16,20 +16,22 @@ from django_filters.rest_framework.backends import DjangoFilterBackend
 
 from db_models.models import (
     ApplicationHub, ProductHub,
-    MainInstallHistory
+    MainInstallHistory, Service
 )
 
 from app_store.app_store_serializers import (
     ComponentEntranceSerializer,
     ProductEntranceSerializer,
     ExecuteInstallSerializer,
-    InstallHistorySerializer
+    InstallHistorySerializer,
+    ServiceInstallHistorySerializer
 )
 
 from app_store.app_store_filters import (
     ComponentEntranceFilter,
     ProductEntranceFilter,
-    InstallHistoryFilter
+    InstallHistoryFilter,
+    ServiceInstallHistoryFilter
 )
 
 
@@ -92,3 +94,15 @@ class InstallHistoryView(GenericViewSet, ListModelMixin):
     filter_backends = (DjangoFilterBackend,)
     filter_class = InstallHistoryFilter
     get_description = "获取安装历史数据入口"
+
+
+class ServiceInstallHistoryDetailView(GenericViewSet, ListModelMixin):
+    """
+        list:
+        获取安装记录
+    """
+    queryset = Service.objects.all().order_by("-created")
+    serializer_class = ServiceInstallHistorySerializer
+    filter_backends = (DjangoFilterBackend,)
+    filter_class = ServiceInstallHistoryFilter
+    get_description = "获取单个服务安装记录"
