@@ -1140,7 +1140,7 @@ class HostBatchImportTest(AutoLoginTest, HostsResourceMixin, HostBatchRequestMix
         """ 测试错误格式 """
 
         # 格式错误 -> 添加失败
-        data = self.get_host_batch_request(10)
+        data = self.get_host_batch_request(10, row=True)
         data["host_list"].append(12345)
         resp = self.post(self.batch_import_url, data).json()
         self.assertDictEqual(resp, {
@@ -1157,7 +1157,7 @@ class HostBatchImportTest(AutoLoginTest, HostsResourceMixin, HostBatchRequestMix
         """ 测试批量添加主机 """
 
         # 批量添加主机 -> 添加成功
-        data = self.get_host_batch_request(10)
+        data = self.get_host_batch_request(10, row=True)
         resp = self.post(self.batch_import_url, data).json()
         self.assertDictEqual(resp, {
             "code": 0,
