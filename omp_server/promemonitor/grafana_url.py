@@ -125,7 +125,8 @@ def explain_url(explain_info, is_service=None):
     for i in GrafanaMainPage.objects.all():
         url_dict[i.instance_name] = i.instance_url
     for instance_info in explain_info:
-        service_name = instance_info.get('instance_name')
+        # TODO 待确认 跳转服务面板使用 app_name 而不是 instance_name ?
+        service_name = instance_info.get('app_name')
         service_ip = instance_info.get('ip')
         if instance_info.get('type') == 'service' \
                 or is_service:
