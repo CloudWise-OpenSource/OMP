@@ -3,6 +3,8 @@
 # Author: len chen
 # CreateDate: 2021/10/28 4:59 下午
 # Description:
+import mock
+from inspection import tasks
 from tests.base import AutoLoginTest
 from rest_framework.reverse import reverse
 from tests.test_inspection.inspection_mixin import InspectionHistoryMixin
@@ -32,7 +34,8 @@ class TestInspectionHistoryList(AutoLoginTest, InspectionHistoryMixin):
         self.assertEqual(resp.get("message"), "success")
         self.assertTrue(resp.get("data") is not None)
 
-    def test_history_post(self):
+    @mock.patch("inspection.tasks.get_prometheus_data.delay", return_value=True)
+    def test_history_post(self, tasks):
         # 深度巡检
         data = {'env': 1,
                 'execute_type': "man",
@@ -42,7 +45,7 @@ class TestInspectionHistoryList(AutoLoginTest, InspectionHistoryMixin):
                 'inspection_status': '1',
                 'inspection_type': "deep",
                 'services': {}}
-        resp = self.post(reverse("history-create"), data=data)
+        resp = self.post(reverse("history-list"), data=data).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
         self.assertTrue(resp.get("data") is not None)
@@ -56,7 +59,7 @@ class TestInspectionHistoryList(AutoLoginTest, InspectionHistoryMixin):
                 'inspection_status': '1',
                 'inspection_type': "host",
                 'services': {}}
-        resp = self.post(reverse("history-create"), data=data)
+        resp = self.post(reverse("history-list"), data=data).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
         self.assertTrue(resp.get("data") is not None)
@@ -70,7 +73,7 @@ class TestInspectionHistoryList(AutoLoginTest, InspectionHistoryMixin):
                 'inspection_status': '1',
                 'inspection_type': "service",
                 'services': [8]}
-        resp = self.post(reverse("history-create"), data=data)
+        resp = self.post(reverse("history-list"), data=data).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
         self.assertTrue(resp.get("data") is not None)
