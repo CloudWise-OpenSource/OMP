@@ -3,7 +3,9 @@
 # Author: len chen
 # CreateDate: 2021/10/21 5:11 下午
 # Description:
+import json
 from utils.prometheus.prometheus import Prometheus
+from utils.plugin.salt_client import SaltClient
 
 
 class ServiceMysqlCrawl(Prometheus):
@@ -15,6 +17,7 @@ class ServiceMysqlCrawl(Prometheus):
         self.env = env              # 环境
         self.tag_error_num = 0      # 异常指标数
         self.instance = instance    # 主机ip
+        self._obj = SaltClient()
         Prometheus.__init__(self)
 
     def unified_job(self, is_success, ret, msg):
@@ -43,7 +46,10 @@ class ServiceMysqlCrawl(Prometheus):
         """运行时间"""
         expr = f"mysql_global_status_uptime{{env='{self.env}'," \
                f"instance='{self.instance}'}}"
-        self.ret['run_time'] = self.unified_job(*self.query(expr))
+        _ = self.unified_job(*self.query(expr))
+        _ = float(_) if _ else 0
+        self.ret['run_time'] = f"{int(_ // 3600 % 24)}天{int(_ // 86400)}小时" \
+                               f"{int((_ % 3600) // 60)}分钟{round(_ % 60, 2)}秒"
 
     def slow_queries(self):
         """慢查询"""
@@ -80,12 +86,23 @@ class ServiceMysqlCrawl(Prometheus):
         expr = f"mysql_global_status_slave_open_temp_tables"
         self.ret['slave_sql_running'] = self.unified_job(*self.query(expr))
 
+    def salt_json(self):
+        try:
+            self._obj.salt_module_update()
+            ret = self._obj.fun(self.instance, "mysql_check.main")
+            if ret and ret[0]:
+                self.ret['_s'] = json.loads(ret[1])
+            else:
+                self.ret['_s'] = {}
+        except:
+            self.ret['_s'] = {}
+
     def run(self):
         """统一执行实例方法"""
         target = ['run_status', 'run_time', 'slow_queries',
                   'threads_connected', 'max_connections',
                   'threads_running', 'aborted_connects', 'qps',
-                  'slave_sql_running']
+                  'slave_sql_running', 'salt_json']
         for t in target:
             if getattr(self, t):
                 getattr(self, t)()
