@@ -68,13 +68,14 @@ def explain_prometheus(params):
                 continue
             tmp_dict = {}
             label = lab.get('labels')
-            tmp_list = [label.get('alertname'), label.get('instance'), label.get('job')]
+            tmp_list = [label.get('alertname'), label.get(
+                'instance'), label.get('job')]
             if tmp_list in compare_list:
                 continue
             compare_list.append(tmp_list)
             tmp_dict['type'] = "host" if label.get(
                 'job') == 'nodeExporter' else "service"
-            tmp_dict['ip'] = label.get('instance').split(":")[0]           
+            tmp_dict['ip'] = label.get('instance').split(":")[0]
             tmp_dict['instance_name'] = label.get('app') if label.get(
                 'app') else host_list.get(tmp_dict.get('ip'))
             tmp_dict['severity'] = label.get('severity')
@@ -110,7 +111,7 @@ def explain_filter(prometheus_json, params):
     return explain_filter(fil_info, params)
 
 
-def explain_url(explain_info):
+def explain_url(explain_info, is_service=None):
     """
     封装dict添加grafana的url
     """
@@ -126,17 +127,18 @@ def explain_url(explain_info):
     for instance_info in explain_info:
         service_name = instance_info.get('instance_name')
         service_ip = instance_info.get('ip')
-        if instance_info.get('type') == 'service':
+        if instance_info.get('type') == 'service' \
+                or is_service:
             monitor_url = url_dict.get(service_name)
             if monitor_url:
                 instance_info['monitor_url'] = grafana_url + \
-                                               monitor_url + f"?var-instance={service_ip}"
+                    monitor_url + f"?var-instance={service_ip}"
             instance_info['monitor_url'] = grafana_url + url_dict.get(
                 'service', 'noservice') + f"?var-ip={service_ip}&var-app={service_name}"
             instance_info['log_url'] = grafana_url + \
-                                       url_dict.get('log', 'nolog') + f"?var-app={service_name}"
+                url_dict.get('log', 'nolog') + f"?var-app={service_name}"
         else:
             instance_info['monitor_url'] = grafana_url + \
-                                           url_dict.get('node', 'nohosts') + f"?var-node={service_ip}"
+                url_dict.get('node', 'nohosts') + f"?var-node={service_ip}"
             instance_info['log_url'] = None
     return explain_info
