@@ -62,7 +62,7 @@ def get_disk_detail():
         if "docker/overlay" in item.mountpoint or \
                 "docker/container" in item.mountpoint or \
                 "/boot" == item.mountpoint or \
-                item.mountpoint.starswith("/run/media"):
+                item.mountpoint.startswith("/run/media"):
             continue
         disk_usage = psutil.disk_usage(item.mountpoint)
         _disk_total = byte_to_gb(int(disk_usage.total))
