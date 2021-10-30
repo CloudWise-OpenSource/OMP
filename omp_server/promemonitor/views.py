@@ -209,12 +209,15 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
         third_info_list = []
 
         host_list = Host.objects.all()
+        ignore_status_list = [Service.SERVICE_STATUS_NORMAL, Service.SERVICE_STATUS_STARTING,
+                              Service.SERVICE_STATUS_STOPPING, Service.SERVICE_STATUS_RESTARTING,
+                              Service.SERVICE_STATUS_STOP]
         database_list = Service.objects.filter(service__app_type=ApplicationHub.APP_TYPE_COMPONENT).filter(
-            service__app_labels__label_name__contains="数据库")
+            service__app_labels__label_name__contains="数据库").filter(service_status__in=ignore_status_list)
         service_list = Service.objects.filter(
-            service__app_type=ApplicationHub.APP_TYPE_SERVICE)
+            service__app_type=ApplicationHub.APP_TYPE_SERVICE).filter(service_status__in=ignore_status_list)
         component_list = Service.objects.filter(
-            service__app_type=ApplicationHub.APP_TYPE_COMPONENT)
+            service__app_type=ApplicationHub.APP_TYPE_COMPONENT).filter(service_status__in=ignore_status_list)
         # third_info_all = None  # TODO 暂为空
 
         host_info_all_count = len(host_list)
@@ -299,7 +302,7 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
                     continue
 
         temp_ip_alertname_list = []
-        for index, hil in enumerate(host_info_list.copy()):
+        for index, hil in enumerate(host_info_list):
             ip_alertname = str(hil.get("ip")) + str(hil.get("alertname"))
             if ip_alertname in temp_ip_alertname_list and hil.get("severity") == "warning":
                 host_info_list.pop(index)
