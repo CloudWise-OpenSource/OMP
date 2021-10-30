@@ -155,13 +155,31 @@ const OmpLayout = (props) => {
       .finally(() => setLoading(false));
   }, []);
 
-  // 这里做一个视口查询，存入store, 其他组件可以根据视口大小进行自适应
-  reduxDispatch(
-    getSetViewSizeAction({
-      height: document.documentElement.clientHeight,
-      width: document.documentElement.clientWidth,
-    })
-  );
+  const antiShakeRef = useRef(null);
+
+  const getViewSize = () => {
+    reduxDispatch(
+      // 这里做一个视口查询，存入store, 其他组件可以根据视口大小进行自适应
+      getSetViewSizeAction({
+        height: document.documentElement.clientHeight,
+        width: document.documentElement.clientWidth,
+      })
+    );
+  };
+
+  getViewSize();
+  
+  useEffect(() => {
+    window.onresize = () => {
+      if (!antiShakeRef.current) {
+        antiShakeRef.current = true;
+        setTimeout(() => {
+          getViewSize();
+          antiShakeRef.current = false;
+        }, 300);
+      }
+    };
+  }, []);
 
   // 防止在校验进入死循环
   const flag = useRef(null);
