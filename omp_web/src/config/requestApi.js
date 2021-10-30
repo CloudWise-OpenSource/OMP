@@ -82,7 +82,7 @@ export const apiRequest = {
     // 服务详情查询
     servicesDetail: "/api/services/services",
     // 服务的操作
-    servicesAction: "/services/action/",
+    servicesAction: "/api/services/action/",
     // 模版下载
     applicationTemplate: "/api/appStore/applicationTemplate/",
     // 组件安装查询接口
@@ -93,7 +93,7 @@ export const apiRequest = {
     // 服务安装校验
     executeInstall: "/api/appStore/executeInstall/",
     // 服务校验通过后的状态查询接口
-    installHistory: "/api/appStore/installHistory/"
+    installHistory: "/api/appStore/installHistory/",
   },
   inspection: {
     inspectionList: "/api/inspection/history/",

@@ -35,6 +35,7 @@ const AppStoreDetail = () => {
         user: "app_operation_user",
         dependence: "app_dependence",
         instances_info: "app_instances_info",
+        install_url:"/application_management/app_store/component_installation",
       }
     : {
         logo: "pro_logo",
@@ -48,6 +49,7 @@ const AppStoreDetail = () => {
         dependence: "pro_dependence",
         pro_services: "pro_services",
         instances_info: "pro_instances_info",
+        install_url:"/application_management/app_store/application_installation",
       };
 
   const [loading, setLoading] = useState(false);
@@ -134,7 +136,15 @@ const AppStoreDetail = () => {
             </span>
           </div>
           <div style={{ marginRight: 30 }}>
-            <Button style={{ marginRight: 20 }}>安装</Button>
+            <Button style={{ marginRight: 20 }}
+            onClick={()=>{
+              history?.push({
+                pathname: `${nameObj.install_url}/${
+                  dataSource[nameObj.name]
+                }`,
+              });
+            }}
+            >安装</Button>
             版本:{" "}
             <Select
               style={{ width: 160 }}

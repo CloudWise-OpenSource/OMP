@@ -12,13 +12,15 @@ const OmpMessageModal = ({
   children,
   title,
   onFinish,
-  footer,
+  noFooter,
   loading = false,
   afterClose = () => {},
   disabled = false,
+  ...residualParam
 }) => {
   return (
     <Modal
+      {...residualParam}
       title={title}
       visible={visibleHandle[0]}
       //onOk={() => }
@@ -37,21 +39,27 @@ const OmpMessageModal = ({
           paddingTop: 20,
         }}
       >
-        <Button
-          style={{ marginRight: 16 }}
-          onClick={() => visibleHandle[1](false)}
-        >
-          取消
-        </Button>
-        <Button
-          loading={loading}
-          type="primary"
-          htmlType="submit"
-          onClick={onFinish}
-          disabled={disabled}
-        >
-          确定
-        </Button>
+        {noFooter ? (
+          ""
+        ) : (
+          <>
+            <Button
+              style={{ marginRight: 16 }}
+              onClick={() => visibleHandle[1](false)}
+            >
+              取消
+            </Button>
+            <Button
+              loading={loading}
+              type="primary"
+              htmlType="submit"
+              onClick={onFinish}
+              disabled={disabled}
+            >
+              确定
+            </Button>
+          </>
+        )}
       </div>
     </Modal>
   );

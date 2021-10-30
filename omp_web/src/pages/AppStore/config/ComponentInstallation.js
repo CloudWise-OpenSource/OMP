@@ -3,7 +3,16 @@ import { useHistory, useLocation } from "react-router-dom";
 import { handleResponse } from "@/utils/utils";
 import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-import { Steps, Form, Input, Button, Select, Checkbox, Tooltip } from "antd";
+import {
+  Steps,
+  Form,
+  Input,
+  Button,
+  Select,
+  Checkbox,
+  Tooltip,
+  message,
+} from "antd";
 import {
   LeftOutlined,
   DownOutlined,
@@ -93,7 +102,18 @@ const ComponentInstallation = () => {
   // 第二步校验通过后，存储数据
   const [vPassedresData, setVPassedresData] = useState({});
 
-  //
+  const [processContinue, setProcessContinue] = useState(true);
+  //定义校验弹出msessage函数
+  const verificationError = (item) => {
+    if (item.process_continue == false) {
+      setProcessContinue(false);
+      message.warning(item.process_message);
+      return false;
+    } else {
+      setProcessContinue(true);
+      return true;
+    }
+  };
 
   const containerRef = useRef(null);
 
@@ -108,6 +128,7 @@ const ComponentInstallation = () => {
     })
       .then((res) => {
         handleResponse(res, (res) => {
+          verificationError(res.data[0]);
           //console.log(res.data);
           setDataSource(res.data);
           // 设置版本默认选中第一个
@@ -339,6 +360,9 @@ const ComponentInstallation = () => {
                   <Select
                     style={{ width: 200 }}
                     onChange={(e) => {
+                      verificationError(
+                        dataSource.filter((item) => item.app_version == e)[0]
+                      );
                       setVersionCurrent(e);
                     }}
                   >
@@ -442,12 +466,13 @@ const ComponentInstallation = () => {
           >
             <div />
             <Button
+              disabled={!processContinue}
               type="primary"
               onClick={() => {
                 currentAppDependenceData?.app_install_args?.map((item) => {
                   form.setFieldsValue({
                     [`install|${
-                      currentAppDependenceData.app_name
+                      currentAppDependenceData?.app_name
                     }|${JSON.stringify({
                       name: item.name,
                       key: item.key,
@@ -459,11 +484,11 @@ const ComponentInstallation = () => {
                   //console.log(item.default, item);
                   form.setFieldsValue({
                     [`port|${
-                      currentAppDependenceData.app_name
+                      currentAppDependenceData?.app_name
                     }|${JSON.stringify({
                       name: item.name,
                       key: item.key,
-                      dir_key: item.dir_key,
+                      //dir_key: item.dir_key,
                     })}`]: item.default,
                   });
                 });
@@ -595,8 +620,8 @@ const ComponentInstallation = () => {
                 style={
                   isOpen[name]
                     ? step2Open(
-                        currentAppDependenceData.app_install_args.length +
-                          currentAppDependenceData.app_port.length
+                        currentAppDependenceData?.app_install_args?.length +
+                          currentAppDependenceData?.app_port.length
                       )
                     : step2NotOpen()
                 }
@@ -613,10 +638,10 @@ const ComponentInstallation = () => {
                     return (
                       <Form.Item
                         key={item.key}
-                        style={{ paddingLeft: 15,paddingBottom:15 }}
+                        style={{ paddingLeft: 15, paddingBottom: 15 }}
                         label={<span style={{ width: 60 }}>{item.name}</span>}
                         name={`install|${
-                          currentAppDependenceData.app_name
+                          currentAppDependenceData?.app_name
                         }|${JSON.stringify({
                           name: item.name,
                           key: item.key,
@@ -652,7 +677,7 @@ const ComponentInstallation = () => {
                         style={{ paddingLeft: 15 }}
                         label={<span style={{ width: 60 }}>{item.name}</span>}
                         name={`port|${
-                          currentAppDependenceData.app_name
+                          currentAppDependenceData?.app_name
                         }|${JSON.stringify({
                           name: item.name,
                           key: item.key,
@@ -688,7 +713,7 @@ const ComponentInstallation = () => {
           {/* 渲染jdk */}
           {showJdk ? (
             <>
-              {currentAppDependenceData?.app_dependence.map((item) => {
+              {currentAppDependenceData?.app_dependence?.map((item) => {
                 return (
                   <div
                     key={item.name}
@@ -826,7 +851,7 @@ const ComponentInstallation = () => {
                             return (
                               <Form.Item
                                 key={i.key}
-                                style={{ paddingLeft: 15, paddingBottom:15 }}
+                                style={{ paddingLeft: 15, paddingBottom: 15 }}
                                 label={
                                   <span style={{ width: 60 }}>{i.name}</span>
                                 }
@@ -862,11 +887,11 @@ const ComponentInstallation = () => {
                             return (
                               <Form.Item
                                 key={i.key}
-                                style={{ paddingLeft: 15, paddingBottom:15 }}
+                                style={{ paddingLeft: 15, paddingBottom: 15 }}
                                 label={
                                   <span style={{ width: 60 }}>{i.name}</span>
                                 }
-                                name={`port|${i.name}|${JSON.stringify({
+                                name={`port|${item.name}|${JSON.stringify({
                                   name: i.name,
                                   key: i.key,
                                 })}`}
@@ -979,12 +1004,14 @@ const ComponentInstallation = () => {
                       };
 
                       let installArr = install_servicesRef.current;
-                      let app_install_args =  install_servicesRef.current[0] ? analysisJdk(
-                        st2,
-                        "install",
-                        3,
-                        install_servicesRef.current[0].name
-                      ):{};
+                      let app_install_args = install_servicesRef.current[0]
+                        ? analysisJdk(
+                            st2,
+                            "install",
+                            3,
+                            install_servicesRef.current[0].name
+                          )
+                        : {};
 
                       let ipAndInstanceName = {};
                       Object.keys(st2).map((o) => {
@@ -1013,7 +1040,7 @@ const ComponentInstallation = () => {
                               };
                             }
                           );
-                          install_servicesRef.current[0].app_port  = []
+                        install_servicesRef.current[0].app_port = [];
                       }
 
                       use_exist_servicesRef.current =
@@ -1036,13 +1063,13 @@ const ComponentInstallation = () => {
                               st2,
                               "install",
                               3,
-                              currentAppDependenceData.app_name
+                              currentAppDependenceData?.app_name
                             ),
                             app_port: parameterCreate(
                               st2,
                               "port",
                               3,
-                              currentAppDependenceData.app_name
+                              currentAppDependenceData?.app_name
                             ),
                             service_instance_name: st2.instanceName,
                             deploy_mode: JSON.parse(step1Data.clusterMode),
@@ -1070,6 +1097,21 @@ const ComponentInstallation = () => {
                                 setIsOpen({
                                   ...isOpenCopy,
                                 });
+
+                                if (
+                                  res.data.use_exist_services &&
+                                  res.data.use_exist_services.length > 0
+                                ) {
+                                  if (
+                                    res.data.use_exist_services[0].check_flag ==
+                                    false
+                                  ) {
+                                    message.warn(
+                                      res.data.use_exist_services[0].check_msg
+                                    );
+                                    //setProcessContinue(false)
+                                  }
+                                }
 
                                 res.data.install_services.map((item, idx) => {
                                   if (
