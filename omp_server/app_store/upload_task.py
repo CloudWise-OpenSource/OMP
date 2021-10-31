@@ -41,11 +41,11 @@ class CreateDatabase(object):
         self.create_pro_app_lab(app_obj)
         service = self.json_data.pop('product_service')
         self._create_service(service, app_obj)
-        pass
 
     def _create_service(self, service, app_obj):
         pro_history = app_obj.pro_package
-        service_obj = UploadPackageHistory.objects.filter(package_parent=pro_history)
+        service_obj = UploadPackageHistory.objects.filter(
+            package_parent=pro_history)
         valid_packages = {}
         for j in service_obj:
             valid_packages[j.package_name] = j
@@ -55,45 +55,92 @@ class CreateDatabase(object):
             if valid_obj:
                 line['package_name'] = valid_obj
                 valid_info.append(line)
-            continue
         for info in valid_info:
             self.json_data = info
-            ApplicationHub.objects.create(
-                is_release=True, app_type=1, app_name=self.json_data.get("name"),
-                app_version=self.json_data.get("version"),
-                app_description=self.json_data.get("description"),
-                app_port=self.explain("ports"),
-                app_dependence=self.explain("dependencies"),
-                app_install_args=self.explain("install"),
-                app_controllers=self.explain("control"),
-                app_package=self.json_data.get("package_name"),
-                product=app_obj,
-                extend_fields=self.json_data.get("extend_fields")
+            # 按照服务名和版本进行划分 如果存在则覆盖，否则创建
+            _dic = {
+                "is_release": True,
+                "app_type": 1,
+                "app_name": self.json_data.get("name"),
+                "app_version": self.json_data.get("version"),
+                "app_description": self.json_data.get("description"),
+                "app_port": self.explain("ports"),
+                "app_dependence": self.explain("dependencies"),
+                "app_install_args": self.explain("install"),
+                "app_controllers": self.explain("control"),
+                "app_package": self.json_data.get("package_name"),
+                "product": app_obj,
+                "extend_fields": self.json_data.get("extend_fields")
+            }
+            app_queryset = ApplicationHub.objects.filter(
+                app_name=self.json_data.get("name"),
+                app_version=self.json_data.get("version")
             )
+            if app_queryset.exists():
+                app_queryset.update(**_dic)
+            else:
+                ApplicationHub.objects.create(**_dic)
+            # ApplicationHub.objects.create(
+            #     is_release=True, app_type=1,
+            #     app_name=self.json_data.get("name"),
+            #     app_version=self.json_data.get("version"),
+            #     app_description=self.json_data.get("description"),
+            #     app_port=self.explain("ports"),
+            #     app_dependence=self.explain("dependencies"),
+            #     app_install_args=self.explain("install"),
+            #     app_controllers=self.explain("control"),
+            #     app_package=self.json_data.get("package_name"),
+            #     product=app_obj,
+            #     extend_fields=self.json_data.get("extend_fields")
+            # )
 
     def create_component(self):
         self.label_type = 0
         self.create_lab()
-        app_obj = ApplicationHub.objects.create(
-            is_release=True, app_type=0, app_name=self.json_data.get("name"),
-            app_version=self.json_data.get("version"),
-            app_description=self.json_data.get("description"),
-            app_port=self.explain("ports"),
-            app_dependence=self.explain("dependencies"),
-            app_install_args=self.explain("install"),
-            app_controllers=self.explain("control"),
-            app_package=self.json_data.get("package_name"),
-            extend_fields=self.json_data.get("extend_fields"),
-            app_logo=self.json_data.get("image")
+        _dic = {
+            "is_release": True,
+            "app_type": 0,
+            "app_name": self.json_data.get("name"),
+            "app_version": self.json_data.get("version"),
+            "app_description": self.json_data.get("description"),
+            "app_port": self.explain("ports"),
+            "app_dependence": self.explain("dependencies"),
+            "app_install_args": self.explain("install"),
+            "app_controllers": self.explain("control"),
+            "app_package": self.json_data.get("package_name"),
+            "extend_fields": self.json_data.get("extend_fields"),
+            "app_logo": self.json_data.get("image")
+        }
+        app_queryset = ApplicationHub.objects.filter(
+            app_name=self.json_data.get("name"),
+            app_version=self.json_data.get("version")
         )
-        app_obj.save()
+        if app_queryset.exists():
+            app_queryset.update(**_dic)
+            app_obj = app_queryset.first()
+        else:
+            app_obj = ApplicationHub.objects.create(**_dic)
+        # app_obj = ApplicationHub.objects.create(
+        #     is_release=True, app_type=0,
+        #     app_name=self.json_data.get("name"),
+        #     app_version=self.json_data.get("version"),
+        #     app_description=self.json_data.get("description"),
+        #     app_port=self.explain("ports"),
+        #     app_dependence=self.explain("dependencies"),
+        #     app_install_args=self.explain("install"),
+        #     app_controllers=self.explain("control"),
+        #     app_package=self.json_data.get("package_name"),
+        #     extend_fields=self.json_data.get("extend_fields"),
+        #     app_logo=self.json_data.get("image")
+        # )
+        # app_obj.save()
         self.create_pro_app_lab(app_obj)
-        pass
 
     def create_pro_app_lab(self, obj):
         labels = self.json_data.get('labels')
         for i in labels:
-            label_obj = Labels.objects.get(label_name=i, label_type=self.label_type)
+            label_obj = Labels.objects.get(
+                label_name=i, label_type=self.label_type)
             if self.label_type == 1:
                 obj.pro_labels.add(label_obj)
             else:
@@ -106,6 +153,7 @@ class CreateDatabase(object):
         compare_list = []
         if compare_labels:
             for compare_label in compare_labels:
-                label_obj = Labels(label_name=compare_label, label_type=self.label_type)
+                label_obj = Labels(label_name=compare_label,
+                                   label_type=self.label_type)
                 compare_list.append(label_obj)
             Labels.objects.bulk_create(compare_list)
