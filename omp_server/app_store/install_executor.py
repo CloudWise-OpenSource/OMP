@@ -369,8 +369,11 @@ class InstallServiceExecutor:
         """ 是否为依赖项，优先执行 """
         is_base_env = False
         try:
-            extend_dict = detail_obj.service.service.extend_fields
-            if extend_dict.get("base_env") in (True, "True"):
+            base_env = detail_obj.service.service.extend_fields.get(
+                "base_env", "")
+            if isinstance(base_env, str):
+                base_env = base_env.lower()
+            if base_env in (True, "true"):
                 is_base_env = True
         except Exception:
             pass
