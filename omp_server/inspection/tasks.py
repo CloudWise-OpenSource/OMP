@@ -44,7 +44,7 @@ def get_hosts_data(env, hosts):
         temp['mem_usage'] = _p.get('rate_memory')
         temp['cpu_usage'] = _p.get('rate_cpu')
         temp['disk_usage_root'] = _p.get('rate_max_disk')
-        temp['report_disk_usage_data'] = _p.get('rate_data_disk')
+        temp['disk_usage_data'] = _p.get('rate_data_disk')
         temp['sys_load'] = _p.get('load')
         temp['run_time'] = _p.get('run_time')
         temp['host_ip'] = instance
@@ -225,7 +225,12 @@ def get_prometheus_data(env_id, hosts, services, history_id, report_id, handle):
 
         # 风险指标
         risk_data = Prometheus().query_alerts()
-        kwargs['risk_data'] = get_risk_data(risk_data, handle, hosts, services)
+        risk_data = get_risk_data(risk_data, handle, hosts, services)
+        risk_num = \
+            len(risk_data.get('host_list')) + len(risk_data.get('service_list'))
+        kwargs['risk_data'] = risk_data
+        # 根据风险指标更新
+        kwargs['scan_result']['abnormal_target'] = risk_num
         # 反填巡检记录、巡检报告 数据
         back_fill(**kwargs)
         # 打包html文件
