@@ -21,6 +21,8 @@ import {
 } from "@ant-design/icons";
 import styles from "./index.module.less";
 import RenderComDependence from "./component/RenderComDependence";
+import { useDispatch } from "react-redux";
+import { getTabKeyChangeAction } from "../store/actionsCreators";
 
 const step2Open = (num) => ({
   marginTop: 10,
@@ -72,6 +74,8 @@ const step3NotOpen = () => ({
 
 const ApplicationInstallation = () => {
   const [form] = Form.useForm();
+
+  const dispatch = useDispatch();
 
   const [processContinue, setProcessContinue] = useState(true);
   //定义校验弹出msessage函数
@@ -164,7 +168,11 @@ const ApplicationInstallation = () => {
 
   // 定义选中的ip是否包含在instance_info
   const hasSameIp = (item, ip) => {
-    return item.is_base_env && item.instance_info && item.instance_info.filter((b) => b.ip == ip);
+    return (
+      item.is_base_env &&
+      item.instance_info &&
+      item.instance_info.filter((b) => b.ip == ip)
+    );
   };
 
   const [showJdk, setShowJdk] = useState(false);
@@ -273,8 +281,8 @@ const ApplicationInstallation = () => {
           }
 
           if (
-            (res.data[0]?.install_status == 1) ||
-            (res.data[0]?.install_status) == 0
+            res.data[0]?.install_status == 1 ||
+            res.data[0]?.install_status == 0
           ) {
             timer.current = setTimeout(() => {
               queryInstallationInfo(operateId);
@@ -313,9 +321,11 @@ const ApplicationInstallation = () => {
             style={{ fontSize: 16, marginRight: 20 }}
             className={styles.backIcon}
             onClick={() => {
-              history?.push({
-                pathname: `/application_management/app_store`,
-              });
+              dispatch(getTabKeyChangeAction("service"));
+              history?.goBack();
+              // history?.push({
+              //   pathname: `/application_management/app_store`,
+              // });
             }}
           />
           {name}
@@ -471,7 +481,7 @@ const ApplicationInstallation = () => {
                     >
                       <span
                         style={{
-                          width: 70,
+                          //width: 100,
                           paddingRight: 15,
                           textAlign: "right",
                         }}
@@ -645,66 +655,69 @@ const ApplicationInstallation = () => {
               />
             </div>
             <div style={{ paddingLeft: 20, marginTop: 10, paddingBottom: 40 }}>
-              <Form
-                form={form}
-                layout="inline"
-                name="basic"
-                // initialValues={{
-                //   clusterMode: "singleInstance",
-                // }}
-              >
-                <Form.Item label="选择主机" name="ip">
-                  <Select
-                    style={{ width: 200 }}
-                    onChange={(e) => {
-                      const IpArr = e.split(".");
-                      jdkHandleInitData(
-                        currentproDependenceData?.dependence_services_info[0],
-                        e
-                      );
-                      form.setFieldsValue({
-                        instanceName: `${
-                          currentproDependenceData?.pro_services[0]?.name
-                        }-${IpArr[IpArr.length - 2]}-${
-                          IpArr[IpArr.length - 1]
-                        }`,
-                      });
-                    }}
-                  >
-                    {ipListSource?.map((item) => (
-                      <Select.Option key={item} value={item}>
-                        {item}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-                <Form.Item
-                  label="实例名称"
-                  name="instanceName"
-                  style={{ marginLeft: 30 }}
-                  rules={[
-                    {
-                      required: true,
-                      message: "请填写实例名称",
-                    },
-                  ]}
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <Form
+                  form={form}
+                  layout="inline"
+                  name="basic"
+                  // initialValues={{
+                  //   clusterMode: "singleInstance",
+                  // }}
                 >
-                  <Input />
-                </Form.Item>
-
+                  <Form.Item label="选择主机" name="ip">
+                    <Select
+                      style={{ width: 200 }}
+                      onChange={(e) => {
+                        const IpArr = e.split(".");
+                        jdkHandleInitData(
+                          currentproDependenceData?.dependence_services_info[0],
+                          e
+                        );
+                        form.setFieldsValue({
+                          instanceName: `${
+                            currentproDependenceData?.pro_services[0]?.name
+                          }-${IpArr[IpArr.length - 2]}-${
+                            IpArr[IpArr.length - 1]
+                          }`,
+                        });
+                      }}
+                    >
+                      {ipListSource?.map((item) => (
+                        <Select.Option key={item} value={item}>
+                          {item}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                  <Form.Item
+                    label="实例名称"
+                    name="instanceName"
+                    style={{ marginLeft: 30 }}
+                    rules={[
+                      {
+                        required: true,
+                        message: "请填写实例名称",
+                      },
+                    ]}
+                  >
+                    <Input />
+                  </Form.Item>
+                </Form>
                 <a
                   style={{
                     fontSize: 13,
                     display: "flex",
                     alignItems: "center",
                     flexDirection: "row-reverse",
-                    paddingLeft: 200,
+                    paddingRight: 100,
                   }}
                   onClick={() => {
                     setIsOpen({
                       ...isOpen,
                       [currentproDependenceData?.pro_services[0]?.name]:
-                        !isOpen[currentproDependenceData?.pro_services[0]?.name],
+                        !isOpen[
+                          currentproDependenceData?.pro_services[0]?.name
+                        ],
                     });
                     // setIsDetailOpen({
                     //   ...isDetailOpen,
@@ -726,7 +739,7 @@ const ApplicationInstallation = () => {
                   />
                   查看更多配置
                 </a>
-              </Form>
+              </div>
               <div
                 //className={styles.backIcon}
                 style={
@@ -833,7 +846,9 @@ const ApplicationInstallation = () => {
           {showJdk ? (
             <>
               <div
-                key={currentproDependenceData?.dependence_services_info[0]?.name}
+                key={
+                  currentproDependenceData?.dependence_services_info[0]?.name
+                }
                 style={{
                   marginTop: 20,
                   backgroundColor: "#fff",
@@ -859,7 +874,10 @@ const ApplicationInstallation = () => {
                       paddingRight: 20,
                     }}
                   >
-                    {currentproDependenceData?.dependence_services_info[0]?.name}
+                    {
+                      currentproDependenceData?.dependence_services_info[0]
+                        ?.name
+                    }
                   </div>
                   <div
                     style={{
@@ -876,100 +894,122 @@ const ApplicationInstallation = () => {
                     paddingBottom: 40,
                   }}
                 >
-                  <Form
-                    form={form}
-                    layout="inline"
-                    name="basic"
-                    // initialValues={{
-                    //   clusterMode: "singleInstance",
-                    // }}
-                  >
-                    <Form.Item
-                      label="选择主机"
-                      name={`${currentproDependenceData?.dependence_services_info[0]?.name}|ip`}
+                  {currentproDependenceData?.dependence_services_info[0]
+                    ?.is_pack_exist ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                      }}
                     >
-                      <Select
-                        style={{ width: 200 }}
-                        onChange={(e) => {
-                          const IpArr = e.split(".");
-                          form.setFieldsValue({
-                            [`${currentproDependenceData?.dependence_services_info[0]?.name}|instanceName`]: `${
-                              currentproDependenceData?.dependence_services_info[0]?.name
-                            }-${IpArr[IpArr.length - 2]}-${
-                              IpArr[IpArr.length - 1]
-                            }`,
+                      <Form
+                        form={form}
+                        layout="inline"
+                        name="basic"
+                        // initialValues={{
+                        //   clusterMode: "singleInstance",
+                        // }}
+                      >
+                        <Form.Item
+                          label="选择主机"
+                          name={`${currentproDependenceData?.dependence_services_info[0]?.name}|ip`}
+                        >
+                          <Select
+                            disabled={true}
+                            style={{ width: 200 }}
+                            // onChange={(e) => {
+                            //   const IpArr = e.split(".");
+                            //   form.setFieldsValue({
+                            //     [`${currentproDependenceData?.dependence_services_info[0]?.name}|instanceName`]: `${
+                            //       currentproDependenceData
+                            //         ?.dependence_services_info[0]?.name
+                            //     }-${IpArr[IpArr.length - 2]}-${
+                            //       IpArr[IpArr.length - 1]
+                            //     }`,
+                            //   });
+                            // }}
+                          >
+                            {ipListSource?.map((item) => (
+                              <Select.Option key={item} value={item}>
+                                {item}
+                              </Select.Option>
+                            ))}
+                          </Select>
+                        </Form.Item>
+                        <Form.Item
+                          label="实例名称"
+                          name={`${currentproDependenceData?.dependence_services_info[0]?.name}|instanceName`}
+                          style={{ marginLeft: 30 }}
+                          rules={[
+                            {
+                              required: true,
+                              message: "请填写实例名称",
+                            },
+                          ]}
+                        >
+                          <Input />
+                        </Form.Item>
+                      </Form>
+                      <a
+                        style={{
+                          fontSize: 13,
+                          display: "flex",
+                          alignItems: "center",
+                          flexDirection: "row-reverse",
+                          paddingRight: 100,
+                        }}
+                        onClick={() => {
+                          setIsOpen({
+                            ...isOpen,
+                            [currentproDependenceData
+                              ?.dependence_services_info[0]?.name]:
+                              !isOpen[
+                                currentproDependenceData
+                                  ?.dependence_services_info[0]?.name
+                              ],
                           });
                         }}
                       >
-                        {ipListSource?.map((item) => (
-                          <Select.Option key={item} value={item}>
-                            {item}
-                          </Select.Option>
-                        ))}
-                      </Select>
-                    </Form.Item>
-                    <Form.Item
-                      label="实例名称"
-                      name={`${currentproDependenceData?.dependence_services_info[0]?.name}|instanceName`}
-                      style={{ marginLeft: 30 }}
-                      rules={[
-                        {
-                          required: true,
-                          message: "请填写实例名称",
-                        },
-                      ]}
-                    >
-                      <Input />
-                    </Form.Item>
-
-                    <a
-                      style={{
-                        fontSize: 13,
-                        display: "flex",
-                        alignItems: "center",
-                        flexDirection: "row-reverse",
-                        paddingLeft: 200,
-                      }}
-                      onClick={() => {
-                        setIsOpen({
-                          ...isOpen,
-                          [currentproDependenceData?.dependence_services_info[0]?.name]:
-                            !isOpen[
-                              currentproDependenceData?.dependence_services_info[0]?.name
-                            ],
-                        });
-                      }}
-                    >
-                      <DownOutlined
-                        style={{
-                          transform: `rotate(${
-                            isOpen[
-                              currentproDependenceData?.dependence_services_info[0]?.name
+                        <DownOutlined
+                          style={{
+                            transform: `rotate(${
+                              isOpen[
+                                currentproDependenceData
+                                  ?.dependence_services_info[0]?.name
+                              ]
+                                ? 180
+                                : 0
+                            }deg)`,
+                            position: "relative",
+                            top: isOpen[
+                              currentproDependenceData
+                                ?.dependence_services_info[0]?.name
                             ]
-                              ? 180
-                              : 0
-                          }deg)`,
-                          position: "relative",
-                          top: isOpen[
-                            currentproDependenceData?.dependence_services_info[0]?.name
-                          ]
-                            ? -1
-                            : 1,
-                          left: 3,
-                        }}
-                      />
-                      查看更多配置
-                    </a>
-                  </Form>
+                              ? -1
+                              : 1,
+                            left: 3,
+                          }}
+                        />
+                        查看更多配置
+                      </a>
+                    </div>
+                  ) : (
+                    `${currentproDependenceData?.dependence_services_info[0]?.name} 服务的安装包不存在 ！`
+                  )}
+
                   <div
                     //className={styles.backIcon}
                     style={
                       isOpen[
-                        currentproDependenceData?.dependence_services_info[0]?.name
+                        currentproDependenceData?.dependence_services_info[0]
+                          ?.name
                       ]
                         ? step2Open(
-                            currentproDependenceData?.dependence_services_info[0]?.app_install_args?.length +
-                              currentproDependenceData?.dependence_services_info[0]?.app_port.length
+                            currentproDependenceData
+                              ?.dependence_services_info[0]?.app_install_args
+                              ?.length +
+                              currentproDependenceData
+                                ?.dependence_services_info[0]?.app_port.length
                           )
                         : step2NotOpen()
                     }
@@ -992,7 +1032,8 @@ const ApplicationInstallation = () => {
                                 <span style={{ width: 60 }}>{i.name}</span>
                               }
                               name={`install|${
-                                currentproDependenceData?.dependence_services_info[0]?.name
+                                currentproDependenceData
+                                  ?.dependence_services_info[0]?.name
                               }|${JSON.stringify({
                                 name: i.name,
                                 key: i.key,
@@ -1032,7 +1073,8 @@ const ApplicationInstallation = () => {
                                 <span style={{ width: 60 }}>{i.name}</span>
                               }
                               name={`port|${
-                                currentproDependenceData?.dependence_services_info[0]?.name
+                                currentproDependenceData
+                                  ?.dependence_services_info[0]?.name
                               }|${JSON.stringify({
                                 name: i.name,
                                 key: i.key,
@@ -1157,7 +1199,7 @@ const ApplicationInstallation = () => {
                       let ipAndInstanceName = {};
                       Object.keys(st2).map((o) => {
                         let arr = o.split("|");
-                        if (arr.length == 2 && arr[0] == (installArr[0]?.name)) {
+                        if (arr.length == 2 && arr[0] == installArr[0]?.name) {
                           ipAndInstanceName[arr[1]] = st2[o];
                         }
                       });
@@ -1197,7 +1239,8 @@ const ApplicationInstallation = () => {
                         use_exist_services: use_exist_servicesRef.current,
                         install_services: [
                           {
-                            name: name,
+                            name: currentproDependenceData?.pro_services[0]
+                              ?.name,
                             version: versionCurrent,
                             ip: st2.ip,
                             app_install_args: parameterCreate(
@@ -1238,6 +1281,8 @@ const ApplicationInstallation = () => {
                                 }
                                 setIsOpen({
                                   ...isOpenCopy,
+                                  [currentproDependenceData
+                                    ?.dependence_services_info[0]?.name]: true,
                                 });
 
                                 res.data.install_services?.map((item, idx) => {
@@ -1377,10 +1422,16 @@ const ApplicationInstallation = () => {
                     paddingBottom: 40,
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
                     <div
                       style={{
-                        width: 592,
+                        width: 320,
                         display: "flex",
                         alignItems: "center",
                       }}
@@ -1393,7 +1444,7 @@ const ApplicationInstallation = () => {
                         display: "flex",
                         alignItems: "center",
                         flexDirection: "row-reverse",
-                        paddingLeft: 200,
+                        paddingRight: 100,
                       }}
                       onClick={() => {
                         setIsDetailOpen({

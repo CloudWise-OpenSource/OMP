@@ -158,7 +158,11 @@ const ComponentInstallation = () => {
 
   // 定义选中的ip是否包含在instance_info
   const hasSameIp = (item, ip) => {
-    return item.is_base_env && item.instance_info && item.instance_info.filter((b) => b.ip == ip);
+    return (
+      item.is_base_env &&
+      item.instance_info &&
+      item.instance_info.filter((b) => b.ip == ip)
+    );
   };
 
   const [showJdk, setShowJdk] = useState(false);
@@ -263,8 +267,8 @@ const ComponentInstallation = () => {
             });
           }
           if (
-            (res.data[0]?.install_status) == 1 ||
-            (res.data[0]?.install_status) == 0
+            res.data[0]?.install_status == 1 ||
+            res.data[0]?.install_status == 0
           ) {
             timer.current = setTimeout(() => {
               queryInstallationInfo(operateId);
@@ -303,9 +307,10 @@ const ComponentInstallation = () => {
             style={{ fontSize: 16, marginRight: 20 }}
             className={styles.backIcon}
             onClick={() => {
-              history?.push({
-                pathname: `/application_management/app_store`,
-              });
+              history?.goBack();
+              // history?.push({
+              //   pathname: `/application_management/app_store`,
+              // });
             }}
           />
           {name}
@@ -541,58 +546,59 @@ const ComponentInstallation = () => {
               />
             </div>
             <div style={{ paddingLeft: 20, marginTop: 10, paddingBottom: 40 }}>
-              <Form
-                form={form}
-                layout="inline"
-                name="basic"
-                // initialValues={{
-                //   clusterMode: "singleInstance",
-                // }}
-              >
-                <Form.Item label="选择主机" name="ip">
-                  <Select
-                    style={{ width: 200 }}
-                    onChange={(e) => {
-                      const IpArr = e.split(".");
-                      jdkHandleInitData(
-                        currentAppDependenceData?.app_dependence,
-                        e
-                      );
-                      form.setFieldsValue({
-                        instanceName: `${name}-${IpArr[IpArr.length - 2]}-${
-                          IpArr[IpArr.length - 1]
-                        }`,
-                      });
-                    }}
-                  >
-                    {ipListSource?.map((item) => (
-                      <Select.Option key={item} value={item}>
-                        {item}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-                <Form.Item
-                  label="实例名称"
-                  name="instanceName"
-                  style={{ marginLeft: 30 }}
-                  rules={[
-                    {
-                      required: true,
-                      message: "请填写实例名称",
-                    },
-                  ]}
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <Form
+                  form={form}
+                  layout="inline"
+                  name="basic"
+                  // initialValues={{
+                  //   clusterMode: "singleInstance",
+                  // }}
                 >
-                  <Input />
-                </Form.Item>
-
+                  <Form.Item label="选择主机" name="ip">
+                    <Select
+                      style={{ width: 200 }}
+                      onChange={(e) => {
+                        const IpArr = e.split(".");
+                        jdkHandleInitData(
+                          currentAppDependenceData?.app_dependence,
+                          e
+                        );
+                        form.setFieldsValue({
+                          instanceName: `${name}-${IpArr[IpArr.length - 2]}-${
+                            IpArr[IpArr.length - 1]
+                          }`,
+                        });
+                      }}
+                    >
+                      {ipListSource?.map((item) => (
+                        <Select.Option key={item} value={item}>
+                          {item}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                  <Form.Item
+                    label="实例名称"
+                    name="instanceName"
+                    style={{ marginLeft: 30 }}
+                    rules={[
+                      {
+                        required: true,
+                        message: "请填写实例名称",
+                      },
+                    ]}
+                  >
+                    <Input />
+                  </Form.Item>
+                </Form>
                 <a
                   style={{
                     fontSize: 13,
                     display: "flex",
                     alignItems: "center",
                     flexDirection: "row-reverse",
-                    paddingLeft: 200,
+                    paddingRight: 100,
                   }}
                   onClick={() => {
                     setIsOpen({
@@ -615,7 +621,8 @@ const ComponentInstallation = () => {
                   />
                   查看更多配置
                 </a>
-              </Form>
+              </div>
+
               <div
                 //className={styles.backIcon}
                 style={
@@ -760,75 +767,91 @@ const ComponentInstallation = () => {
                         paddingBottom: 40,
                       }}
                     >
-                      <Form
-                        form={form}
-                        layout="inline"
-                        name="basic"
-                        // initialValues={{
-                        //   clusterMode: "singleInstance",
-                        // }}
-                      >
-                        <Form.Item label="选择主机" name={`${item.name}|ip`}>
-                          <Select
-                            style={{ width: 200 }}
-                            onChange={(e) => {
-                              const IpArr = e.split(".");
-                              form.setFieldsValue({
-                                [`${item.name}|instanceName`]: `${item.name}-${
-                                  IpArr[IpArr.length - 2]
-                                }-${IpArr[IpArr.length - 1]}`,
+                      {item.is_pack_exist ? (
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                          }}
+                        >
+                          <Form
+                            form={form}
+                            layout="inline"
+                            name="basic"
+                            // initialValues={{
+                            //   clusterMode: "singleInstance",
+                            // }}
+                          >
+                            <Form.Item
+                              label="选择主机"
+                              name={`${item.name}|ip`}
+                            >
+                              <Select
+                                disabled={true}
+                                style={{ width: 200 }}
+                                // onChange={(e) => {
+                                //   const IpArr = e.split(".");
+                                //   form.setFieldsValue({
+                                //     [`${item.name}|instanceName`]: `${
+                                //       item.name
+                                //     }-${IpArr[IpArr.length - 2]}-${
+                                //       IpArr[IpArr.length - 1]
+                                //     }`,
+                                //   });
+                                // }}
+                              >
+                                {ipListSource?.map((item) => (
+                                  <Select.Option key={item} value={item}>
+                                    {item}
+                                  </Select.Option>
+                                ))}
+                              </Select>
+                            </Form.Item>
+                            <Form.Item
+                              label="实例名称"
+                              name={`${item.name}|instanceName`}
+                              style={{ marginLeft: 30 }}
+                              rules={[
+                                {
+                                  required: true,
+                                  message: "请填写实例名称",
+                                },
+                              ]}
+                            >
+                              <Input />
+                            </Form.Item>
+                          </Form>
+                          <a
+                            style={{
+                              fontSize: 13,
+                              display: "flex",
+                              alignItems: "center",
+                              flexDirection: "row-reverse",
+                              paddingRight: 100,
+                            }}
+                            onClick={() => {
+                              setIsOpen({
+                                ...isOpen,
+                                [item.name]: !isOpen[item.name],
                               });
                             }}
                           >
-                            {ipListSource?.map((item) => (
-                              <Select.Option key={item} value={item}>
-                                {item}
-                              </Select.Option>
-                            ))}
-                          </Select>
-                        </Form.Item>
-                        <Form.Item
-                          label="实例名称"
-                          name={`${item.name}|instanceName`}
-                          style={{ marginLeft: 30 }}
-                          rules={[
-                            {
-                              required: true,
-                              message: "请填写实例名称",
-                            },
-                          ]}
-                        >
-                          <Input />
-                        </Form.Item>
-
-                        <a
-                          style={{
-                            fontSize: 13,
-                            display: "flex",
-                            alignItems: "center",
-                            flexDirection: "row-reverse",
-                            paddingLeft: 200,
-                          }}
-                          onClick={() => {
-                            setIsOpen({
-                              ...isOpen,
-                              [item.name]: !isOpen[item.name],
-                            });
-                          }}
-                        >
-                          <DownOutlined
-                            style={{
-                              transform: `rotate(${
-                                isOpen[item.name] ? 180 : 0
-                              }deg)`,
-                              position: "relative",
-                              top: isOpen[item.name] ? -1 : 1,
-                              left: 3,
-                            }}
-                          />
-                          查看更多配置
-                        </a>
-                      </Form>
+                            <DownOutlined
+                              style={{
+                                transform: `rotate(${
+                                  isOpen[item.name] ? 180 : 0
+                                }deg)`,
+                                position: "relative",
+                                top: isOpen[item.name] ? -1 : 1,
+                                left: 3,
+                              }}
+                            />
+                            查看更多配置
+                          </a>
+                        </div>
+                      ) : (
+                        `${item.name} 服务的安装包不存在 ！`
+                      )}
                       <div
                         //className={styles.backIcon}
                         style={
@@ -1092,11 +1115,15 @@ const ComponentInstallation = () => {
                                 let isOpenCopy = JSON.parse(
                                   JSON.stringify(isOpen)
                                 );
+                                console.log(isOpenCopy);
                                 for (const key in isOpenCopy) {
                                   isOpenCopy[key] = true;
                                 }
+                                console.log(isOpenCopy);
                                 setIsOpen({
                                   ...isOpenCopy,
+                                  [currentAppDependenceData?.app_dependence[0]
+                                    ?.name]: true,
                                 });
 
                                 if (
@@ -1250,10 +1277,16 @@ const ComponentInstallation = () => {
                     paddingBottom: 40,
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
                     <div
                       style={{
-                        width: 592,
+                        width: 320,
                         display: "flex",
                         alignItems: "center",
                       }}
@@ -1266,7 +1299,7 @@ const ComponentInstallation = () => {
                         display: "flex",
                         alignItems: "center",
                         flexDirection: "row-reverse",
-                        paddingLeft: 200,
+                        paddingRight: 100,
                       }}
                       onClick={() => {
                         setIsDetailOpen({
