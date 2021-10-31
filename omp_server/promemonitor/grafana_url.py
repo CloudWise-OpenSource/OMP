@@ -126,7 +126,10 @@ def explain_url(explain_info, is_service=None):
         url_dict[i.instance_name] = i.instance_url
     for instance_info in explain_info:
         # TODO 待确认 跳转服务面板使用 app_name 而不是 instance_name ?
-        service_name = instance_info.get('app_name')
+        if is_service:
+            service_name = instance_info.get('app_name')
+        else:
+            service_name = instance_info.get('instance_name')
         service_ip = instance_info.get('ip')
         if instance_info.get('type') == 'service' \
                 or is_service:
@@ -134,8 +137,9 @@ def explain_url(explain_info, is_service=None):
             if monitor_url:
                 instance_info['monitor_url'] = grafana_url + \
                     monitor_url + f"?var-instance={service_ip}"
-            instance_info['monitor_url'] = grafana_url + url_dict.get(
-                'service', 'noservice') + f"?var-ip={service_ip}&var-app={service_name}"
+            else:
+                instance_info['monitor_url'] = grafana_url + url_dict.get(
+                    'service', 'noservice') + f"?var-ip={service_ip}&var-app={service_name}"
             instance_info['log_url'] = grafana_url + \
                 url_dict.get('log', 'nolog') + f"?var-app={service_name}"
         else:
