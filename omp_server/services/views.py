@@ -3,21 +3,22 @@ from rest_framework.mixins import (
     ListModelMixin, RetrieveModelMixin,
     CreateModelMixin
 )
+from rest_framework.response import Response
 from rest_framework.filters import OrderingFilter
 
 from django_filters.rest_framework.backends import DjangoFilterBackend
 
 from db_models.models import Service
+from services.tasks import exec_action
 from services.services_filters import ServiceFilter
 from services.services_serializers import (
     ServiceSerializer, ServiceDetailSerializer,
     ServiceActionSerializer
 )
-from utils.common.paginations import PageNumberPager
+from promemonitor.prometheus import Prometheus
 from promemonitor.grafana_url import explain_url
-from services.tasks import exec_action
 from utils.common.exceptions import OperateError
-from rest_framework.response import Response
+from utils.common.paginations import PageNumberPager
 
 
 class ServiceListView(GenericViewSet, ListModelMixin):
@@ -41,6 +42,21 @@ class ServiceListView(GenericViewSet, ListModelMixin):
         serializer = self.get_serializer(
             self.paginate_queryset(queryset), many=True)
         serializer_data = serializer.data
+
+        # 实时获取服务动态git
+        prometheus_obj = Prometheus()
+        is_success, prometheus_dict = prometheus_obj.get_all_service_status()
+        # 若获取成功，则动态覆盖服务状态
+        if is_success:
+            status_dict = {
+                True: "正常",
+                False: "停止",
+            }
+            for service_obj in serializer_data:
+                key_name = f"{service_obj.get('ip')}_{service_obj.get('service_instance_name')}"
+                status = prometheus_dict.get(key_name, None)
+                if status is not None:
+                    service_obj["service_status"] = status_dict.get(status)
 
         # 获取监控及日志的url
         serializer_data = explain_url(
