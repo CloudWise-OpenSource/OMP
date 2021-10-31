@@ -13,7 +13,7 @@ from rest_framework.serializers import (
 )
 
 from db_models.models import (
-    Host, Env, HostOperateLog
+    Host, Env, HostOperateLog, Service
 )
 from hosts.tasks import (
     deploy_agent, host_agent_restart
@@ -99,6 +99,7 @@ class HostSerializer(ModelSerializer):
         required=False,
         queryset=Env.objects.all(),
         error_messages={"does_not_exist": "未找到对应环境"})
+    service_num = serializers.SerializerMethodField()
 
     class Meta:
         """ 元数据 """
@@ -109,6 +110,10 @@ class HostSerializer(ModelSerializer):
             "memory", "cpu", "disk", "is_maintenance", "host_agent",
             "monitor_agent", "host_agent_error", "monitor_agent_error",
         )
+
+    def get_service_num(self, obj):
+        """ 获取服务总数 """
+        return Service.objects.filter(ip=obj.ip).count()
 
     def validate_instance_name(self, instance_name):
         """ 校验实例名是否重复 """
