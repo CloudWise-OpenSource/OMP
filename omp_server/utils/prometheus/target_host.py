@@ -50,7 +50,8 @@ class HostCrawl(Prometheus):
         _ = float(_) if _ else 0
         minutes, seconds = divmod(_, 60)
         hours, minutes = divmod(minutes, 60)
-        self.ret['run_time'] = f"{hours}小时{minutes}分钟{seconds}秒"
+        self.ret['run_time'] = \
+            f"{int(hours)}小时{int(minutes)}分钟{int(seconds)}秒"
 
     # def cpu_num(self):
     #     """cpu 核数"""
