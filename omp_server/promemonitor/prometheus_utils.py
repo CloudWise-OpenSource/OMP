@@ -466,7 +466,7 @@ class PrometheusUtils(object):
             from db_models.models import Host
             update_agent_promtail_url = f'http://{dest_ip}:{self.monitor_port}/update/promtail/add'  # NOQA
             host_agent_dir = Host.objects.filter(
-                ip=dest_ip).values_list('agent_dir')[0]
+                ip=dest_ip).values_list('agent_dir', flat=True)[0]
             json_dict["services"] = json.loads(json_dict["services"])
             json_dict['promtail_config'] = {
                 'http_listen_port': MONITOR_PORT.get('promtail'),

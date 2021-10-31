@@ -270,8 +270,8 @@ class Prometheus:
                     continue
                 _key = metric.get("instance", "") + "_" + \
                     metric.get("instance_name", "")
-                _value = True if int(
-                    item.get("value", [0, 0])[-1]) == 1 else False
+                _value = False if int(
+                    item.get("value", [0, 0])[-1]) == 1 else True
                 service_status_dic[_key] = _value
             return True, service_status_dic
         except Exception as e:
