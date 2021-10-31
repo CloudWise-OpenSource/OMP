@@ -196,9 +196,10 @@ def get_prometheus_data(env_id, hosts, services, history_id, report_id, handle):
                 service__app_type=ApplicationHub.APP_TYPE_COMPONENT).exclude(
                 service_status__in=[5, 6, 7])
             for i in _:
-                if i.service.extend_fields.get('base_env')\
-                        in ['false', 'False']:
-                    services.append(i.id)
+                if i.service.extend_fields.get('base_env') \
+                        in [True, 'True', 'true']:
+                    continue
+                services.append(i.id)
             if len(services) > 0:
                 s_info, s_result, serv_data = target_service_run(env, services)
             else:
@@ -279,9 +280,10 @@ def inspection_crontab(**kwargs):
                     service__app_type=ApplicationHub.APP_TYPE_COMPONENT
                 ).exclude(service_status__in=[5, 6, 7])
                 for i in _:
-                    if i.service.extend_fields.get('base_env') \
-                            in ['false', 'False']:
-                        services.append(i.id)
+                    if i.service.extend_fields.get('base_env')\
+                            in [True, 'True', 'true']:
+                        continue
+                    services.append(i.id)
                 if len(services) == 0:
                     logger.error(
                         f"Inspection auto task failed with error: "
