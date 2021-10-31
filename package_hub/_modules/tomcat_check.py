@@ -6,7 +6,7 @@
 from inspection_common import *
 
 
-def GetProcess_Pid(process_name='/data/tomcat'):
+def GetProcess_Pid(process_name='tomcat'):
     cmd = "ps aux|grep {}|grep -v grep".format(process_name)
     try:
         process_info = os.popen(cmd).read().split()
