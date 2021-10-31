@@ -283,17 +283,17 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
                 service_name_str = ele.get("labels").get("app")
                 if not service_name_str:
                     continue
-                if list(filter(lambda x: x.app_name == service_name_str, list(database_list))):
+                if list(filter(lambda x: x.service.app_name == service_name_str, list(database_list))):
                     database_info_exc_count = database_info_exc_count + 1
                     database_info_list.append(ele_dict)
                     error_instance_list.append(
                         ele.get("labels").get("instance_name"))
-                elif list(filter(lambda x: x.app_name == service_name_str, list(service_list))):
+                elif list(filter(lambda x: x.service.app_name == service_name_str, list(service_list))):
                     service_info_exc_count = service_info_exc_count + 1
                     service_info_list.append(ele_dict)
                     error_instance_list.append(
                         ele.get("labels").get("instance_name"))
-                elif list(filter(lambda x: x.app_name == service_name_str, list(component_list))):
+                elif list(filter(lambda x: x.service.app_name == service_name_str, list(component_list))):
                     component_info_exc_count = component_info_exc_count + 1
                     component_info_list.append(ele_dict)
                     error_instance_list.append(
