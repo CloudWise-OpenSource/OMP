@@ -894,108 +894,107 @@ const ApplicationInstallation = () => {
                     paddingBottom: 40,
                   }}
                 >
-                  {currentproDependenceData?.dependence_services_info[0]
-                    ?.is_pack_exist ? (
-                    <div
+                  {/* {currentproDependenceData?.dependence_services_info[0]
+                    ?.is_pack_exist ? ( "" ) : (
+                      <p style={{color:"red"}}>{currentproDependenceData?.dependence_services_info[0]?.name} 服务的安装包不存在 ！</p>
+                    )} */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <Form
+                      form={form}
+                      layout="inline"
+                      name="basic"
+                      // initialValues={{
+                      //   clusterMode: "singleInstance",
+                      // }}
+                    >
+                      <Form.Item
+                        label="选择主机"
+                        name={`${currentproDependenceData?.dependence_services_info[0]?.name}|ip`}
+                      >
+                        <Select
+                          disabled={true}
+                          style={{ width: 200 }}
+                          // onChange={(e) => {
+                          //   const IpArr = e.split(".");
+                          //   form.setFieldsValue({
+                          //     [`${currentproDependenceData?.dependence_services_info[0]?.name}|instanceName`]: `${
+                          //       currentproDependenceData
+                          //         ?.dependence_services_info[0]?.name
+                          //     }-${IpArr[IpArr.length - 2]}-${
+                          //       IpArr[IpArr.length - 1]
+                          //     }`,
+                          //   });
+                          // }}
+                        >
+                          {ipListSource?.map((item) => (
+                            <Select.Option key={item} value={item}>
+                              {item}
+                            </Select.Option>
+                          ))}
+                        </Select>
+                      </Form.Item>
+                      <Form.Item
+                        label="实例名称"
+                        name={`${currentproDependenceData?.dependence_services_info[0]?.name}|instanceName`}
+                        style={{ marginLeft: 30 }}
+                        rules={[
+                          {
+                            required: true,
+                            message: "请填写实例名称",
+                          },
+                        ]}
+                      >
+                        <Input />
+                      </Form.Item>
+                    </Form>
+                    <a
                       style={{
+                        fontSize: 13,
                         display: "flex",
-                        justifyContent: "space-between",
+                        alignItems: "center",
+                        flexDirection: "row-reverse",
+                        paddingRight: 100,
+                      }}
+                      onClick={() => {
+                        setIsOpen({
+                          ...isOpen,
+                          [currentproDependenceData?.dependence_services_info[0]
+                            ?.name]:
+                            !isOpen[
+                              currentproDependenceData
+                                ?.dependence_services_info[0]?.name
+                            ],
+                        });
                       }}
                     >
-                      <Form
-                        form={form}
-                        layout="inline"
-                        name="basic"
-                        // initialValues={{
-                        //   clusterMode: "singleInstance",
-                        // }}
-                      >
-                        <Form.Item
-                          label="选择主机"
-                          name={`${currentproDependenceData?.dependence_services_info[0]?.name}|ip`}
-                        >
-                          <Select
-                            disabled={true}
-                            style={{ width: 200 }}
-                            // onChange={(e) => {
-                            //   const IpArr = e.split(".");
-                            //   form.setFieldsValue({
-                            //     [`${currentproDependenceData?.dependence_services_info[0]?.name}|instanceName`]: `${
-                            //       currentproDependenceData
-                            //         ?.dependence_services_info[0]?.name
-                            //     }-${IpArr[IpArr.length - 2]}-${
-                            //       IpArr[IpArr.length - 1]
-                            //     }`,
-                            //   });
-                            // }}
-                          >
-                            {ipListSource?.map((item) => (
-                              <Select.Option key={item} value={item}>
-                                {item}
-                              </Select.Option>
-                            ))}
-                          </Select>
-                        </Form.Item>
-                        <Form.Item
-                          label="实例名称"
-                          name={`${currentproDependenceData?.dependence_services_info[0]?.name}|instanceName`}
-                          style={{ marginLeft: 30 }}
-                          rules={[
-                            {
-                              required: true,
-                              message: "请填写实例名称",
-                            },
-                          ]}
-                        >
-                          <Input />
-                        </Form.Item>
-                      </Form>
-                      <a
+                      <DownOutlined
                         style={{
-                          fontSize: 13,
-                          display: "flex",
-                          alignItems: "center",
-                          flexDirection: "row-reverse",
-                          paddingRight: 100,
-                        }}
-                        onClick={() => {
-                          setIsOpen({
-                            ...isOpen,
-                            [currentproDependenceData
-                              ?.dependence_services_info[0]?.name]:
-                              !isOpen[
-                                currentproDependenceData
-                                  ?.dependence_services_info[0]?.name
-                              ],
-                          });
-                        }}
-                      >
-                        <DownOutlined
-                          style={{
-                            transform: `rotate(${
-                              isOpen[
-                                currentproDependenceData
-                                  ?.dependence_services_info[0]?.name
-                              ]
-                                ? 180
-                                : 0
-                            }deg)`,
-                            position: "relative",
-                            top: isOpen[
+                          transform: `rotate(${
+                            isOpen[
                               currentproDependenceData
                                 ?.dependence_services_info[0]?.name
                             ]
-                              ? -1
-                              : 1,
-                            left: 3,
-                          }}
-                        />
-                        查看更多配置
-                      </a>
-                    </div>
-                  ) : (
-                    `${currentproDependenceData?.dependence_services_info[0]?.name} 服务的安装包不存在 ！`
-                  )}
+                              ? 180
+                              : 0
+                          }deg)`,
+                          position: "relative",
+                          top: isOpen[
+                            currentproDependenceData
+                              ?.dependence_services_info[0]?.name
+                          ]
+                            ? -1
+                            : 1,
+                          left: 3,
+                        }}
+                      />
+                      查看更多配置
+                    </a>
+                  </div>
 
                   <div
                     //className={styles.backIcon}
@@ -1156,6 +1155,7 @@ const ApplicationInstallation = () => {
                         length = 3,
                         type2
                       ) => {
+                        console.log(step2Data, type, (length = 3), type2);
                         let arr = [];
                         Object.keys(step2Data).map((key) => {
                           if (
@@ -1247,13 +1247,13 @@ const ApplicationInstallation = () => {
                               st2,
                               "install",
                               3,
-                              currentproDependenceData.pro_name
+                              currentproDependenceData?.pro_services[0]?.name
                             ),
                             app_port: parameterCreate(
                               st2,
                               "port",
                               3,
-                              currentproDependenceData.pro_name
+                              currentproDependenceData?.pro_services[0]?.name
                             ),
                             service_instance_name: st2.instanceName,
                             //deploy_mode: JSON.parse(step1Data.clusterMode),

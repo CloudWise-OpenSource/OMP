@@ -216,7 +216,7 @@ const Homepage = () => {
                   ]}
                 />
                 <div className={styles.progressInfo}>
-                  <div style={{ marginBottom: 8 }}>应用服务状态</div>
+                  <div>应用服务状态</div>
                   <div
                     onClick={() =>
                       dataSource.service?.service_info_all_count &&
@@ -244,17 +244,17 @@ const Homepage = () => {
                       {dataSource.service?.service_info_all_count}个
                     </span>
                   </div>
-                  <div style={{ marginBottom: 2 }}>
+                  {/* <div style={{ marginBottom: 2 }}>
                     未监控数：
                     <span>
                       {dataSource.service?.service_info_no_monitor_count}个
                     </span>
-                  </div>
+                  </div> */}
                   <div
                     style={
                       dataSource.service?.service_info_exc_count > 0
-                        ? { cursor: "pointer" }
-                        : {}
+                        ? { cursor: "pointer",paddingTop:10 }
+                        : {paddingTop:10 }
                     }
                     onClick={() =>
                       dataSource.service?.service_info_exc_count &&
@@ -306,7 +306,7 @@ const Homepage = () => {
                   ]}
                 />
                 <div className={styles.progressInfo}>
-                  <div style={{ marginBottom: 8 }}>基础组件状态</div>
+                  <div>基础组件状态</div>
                   <div
                     onClick={() =>
                       dataSource.component?.component_info_all_count &&
@@ -334,17 +334,17 @@ const Homepage = () => {
                       {dataSource.component?.component_info_all_count}个
                     </span>
                   </div>
-                  <div style={{ marginBottom: 2 }}>
+                  {/* <div style={{ marginBottom: 2 }}>
                     未监控数：
                     <span>
                       {dataSource.component?.component_info_no_monitor_count}个
                     </span>
-                  </div>
+                  </div> */}
                   <div
                     style={
                       dataSource.component?.component_info_exc_count > 0
-                        ? { cursor: "pointer" }
-                        : {}
+                        ? { cursor: "pointer",paddingTop:10 }
+                        : {paddingTop:10}
                     }
                     onClick={() =>
                       dataSource.component?.component_info_exc_count &&
@@ -396,7 +396,7 @@ const Homepage = () => {
                   ]}
                 />
                 <div className={styles.progressInfo}>
-                  <div style={{ marginBottom: 8 }}>数据库状态</div>
+                  <div>数据库状态</div>
                   <div
                     onClick={() =>
                       dataSource.database?.database_info_all_count &&
@@ -416,7 +416,7 @@ const Homepage = () => {
                     数据库实例：
                     <span
                       style={
-                        dataSource.database?.database_info_all_count
+                        dataSource.database?.database_info_all_count > 0
                           ? { color: "#1890ff" }
                           : {}
                       }
@@ -424,17 +424,17 @@ const Homepage = () => {
                       {dataSource.database?.database_info_all_count}个
                     </span>
                   </div>
-                  <div style={{ marginBottom: 2 }}>
+                  {/* <div style={{ marginBottom: 2 }}>
                     未监控数：
                     <span>
                       {dataSource.database?.database_info_no_monitor_count}个
                     </span>
-                  </div>
+                  </div> */}
                   <div
                     style={
                       dataSource.database?.database_info_exc_count > 0
-                        ? { cursor: "pointer" }
-                        : {}
+                        ? { cursor: "pointer", paddingTop:10 }
+                        : { paddingTop:10}
                     }
                     onClick={() =>
                       dataSource.database?.database_info_exc_count &&
@@ -614,7 +614,7 @@ const Homepage = () => {
                 });
               }}
               title={"应用服务状态"}
-              hasNotMonitored
+              // hasNotMonitored
               data={dataAggregation(dataSource.service?.service_info_list,"instance_name")}
             />
           </div>
@@ -641,7 +641,7 @@ const Homepage = () => {
                   },
                 });
               }}
-              hasNotMonitored
+              // hasNotMonitored
               title={"基础组件状态"}
               data={dataAggregation(dataSource.component?.component_info_list,"instance_name")}
             />
@@ -669,7 +669,7 @@ const Homepage = () => {
                   },
                 });
               }}
-              hasNotMonitored
+              // hasNotMonitored
               title={"数据库状态"}
               data={dataAggregation(dataSource.database?.database_info_list,"instance_name")}
             />
