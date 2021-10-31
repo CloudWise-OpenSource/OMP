@@ -170,6 +170,8 @@ const ServiceManagement = () => {
       });
   };
 
+  const t = useRef(null)
+
   // 服务的启动｜停止｜重启
   const operateService = (data, operate) => {
     setLoading(true);
@@ -196,15 +198,18 @@ const ServiceManagement = () => {
         // setRestartHostAgentModal(false);
         setCheckedList({});
         setRow({});
-        fetchData(
-          { current: pagination.current, pageSize: pagination.pageSize },
-          {
-            ...pagination.searchParams,
-            ip: selectValue,
-            service_instance_name: instanceSelectValue,
-          },
-          pagination.ordering
-        );
+        setLoading(true)
+        t.current = setTimeout(()=>{
+          fetchData(
+            { current: pagination.current, pageSize: pagination.pageSize },
+            {
+              ...pagination.searchParams,
+              ip: selectValue,
+              service_instance_name: instanceSelectValue,
+            },
+            pagination.ordering
+          );
+        },15000)
       });
   };
 
@@ -248,6 +253,11 @@ const ServiceManagement = () => {
         label_name: location.state?.label_name,
       }
     );
+    return ()=>{
+      if(t.current){
+        clearTimeout(t.current)
+      }
+    }
   }, []);
 
   return (
