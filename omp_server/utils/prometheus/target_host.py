@@ -4,14 +4,20 @@
 # CreateDate: 2021/10/14 6:26 下午
 # Description: 主机指标
 import json
+import logging
+
 from utils.prometheus.prometheus import Prometheus
+from utils.prometheus.utils import get_host_data_folder
 from utils.plugin.salt_client import SaltClient
+
+logger = logging.getLogger("server")
 
 
 class HostCrawl(Prometheus):
     """
     查询 prometheus 主机指标
     """
+
     def __init__(self, env, instance):
         self.ret = {}
         self.env = env  # 环境
@@ -104,11 +110,16 @@ class HostCrawl(Prometheus):
 
     def rate_data_disk(self):
         """数据分区使用率"""
+        # 数据分区应该由主机表中的data_folder目录决定
+        # 并协同disk信息判断出数据分区挂载点是哪个
+        _data_path = get_host_data_folder(self.instance)
+        if not _data_path:
+            return "_"
         expr = f"(1-(node_filesystem_free_bytes{{env='{self.env}'," \
-               f"instance=~'{self.instance}',mountpoint='/data', " \
+               f"instance=~'{self.instance}',mountpoint='{_data_path}', " \
                f"fstype=~'ext.*|xfs'}}" \
                f" / node_filesystem_size_bytes{{env='{self.env}'," \
-               f"instance=~'{self.instance}',mountpoint='/data', " \
+               f"instance=~'{self.instance}',mountpoint='{_data_path}', " \
                f"fstype=~'ext.*|xfs'}}))" \
                f" * 100"
         _ = self.unified_job(*self.query(expr))
@@ -195,7 +206,8 @@ class HostCrawl(Prometheus):
                 self.ret['_s'] = json.loads(ret[1])
             else:
                 self.ret['_s'] = {}
-        except:
+        except Exception as e:
+            logger.error(f"Salt host_check.main failed with error: {str(e)}")
             self.ret['_s'] = {}
 
     def run(self):
