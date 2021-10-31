@@ -241,7 +241,7 @@ class ReceiveAlertSerializer(Serializer):
             if alert_info.get('alert_type') == 'service':
                 Service.objects.filter(service_instance_name=alert_info.get('alert_instance_name')).filter(
                     ip=alert_info.get('alert_host_ip')).update(
-                    service_status=Service.SERVICE_STATUS_STOP)  # TODO 后续在模型中增加异常字段
+                    service_status=Service.SERVICE_STATUS_STOP, alert_count=F("alert_count") + 1)  # TODO 后续在模型中增加异常字段
         Alert.objects.bulk_create(alert_obj_list)
         return validated_data
 
