@@ -576,7 +576,7 @@ const getColumnsConfig = (
                   });
               }}
             >
-              {text}次
+              {text}个
             </a>
           );
         } else {
