@@ -28,15 +28,36 @@ class CreateDatabase(object):
     def create_product(self):
         self.label_type = 1
         self.create_lab()
-        app_obj = ProductHub(is_release=True, pro_name=self.json_data.get('name'),
-                             pro_version=self.json_data.get('version'),
-                             pro_description=self.json_data.get('description'),
-                             pro_dependence=self.explain('dependencies'),
-                             pro_services=self.explain('service'),
-                             pro_package=self.json_data.get('package_name'),
-                             pro_logo=self.json_data.get('image'),
-                             extend_fields=self.json_data.get("extend_fields")
-                             )
+        _dic = {
+            "is_release": True,
+            "pro_name": self.json_data.get('name'),
+            "pro_version": self.json_data.get('version'),
+            "pro_description": self.json_data.get('description'),
+            "pro_dependence": self.explain('dependencies'),
+            "pro_services": self.explain('service'),
+            "pro_package": self.json_data.get('package_name'),
+            "pro_logo": self.json_data.get('image'),
+            "extend_fields": self.json_data.get("extend_fields")
+        }
+        # app_obj = ProductHub(
+        #     is_release=True, pro_name=self.json_data.get('name'),
+        #     pro_version=self.json_data.get('version'),
+        #     pro_description=self.json_data.get('description'),
+        #     pro_dependence=self.explain('dependencies'),
+        #     pro_services=self.explain('service'),
+        #     pro_package=self.json_data.get('package_name'),
+        #     pro_logo=self.json_data.get('image'),
+        #     extend_fields=self.json_data.get("extend_fields")
+        # )
+        pro_queryset = ProductHub.objects.filter(
+            pro_name=self.json_data.get('name'),
+            pro_version=self.json_data.get('version')
+        )
+        if pro_queryset.exists():
+            pro_queryset.update(**_dic)
+            app_obj = pro_queryset.first()
+        else:
+            app_obj = ProductHub.objects.create(**_dic)
         app_obj.save()
         self.create_pro_app_lab(app_obj)
         service = self.json_data.pop('product_service')
