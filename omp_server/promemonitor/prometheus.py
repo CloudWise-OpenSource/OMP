@@ -1,3 +1,4 @@
+import json
 import logging
 import math
 
@@ -248,3 +249,31 @@ class Prometheus:
         host_list = self.get_host_root_disk_usage(host_list)
         host_list = self.get_host_data_disk_usage(host_list)
         return host_list
+
+    def get_all_service_status(self):
+        """
+        获取服务状态  0-运行; 1-停止
+        :return:
+        """
+        headers = {'Content-Type': 'application/json'}
+        query_url = f'{self.prometheus_api_query_url}probe_success'
+        try:
+            res_body = requests.get(url=query_url, headers=headers)
+            res_dic = json.loads(res_body.text)
+            if res_dic.get("status") != "success":
+                return False, {}
+            service_data = res_dic.get("data", {}).get("result", [])
+            service_status_dic = dict()
+            for item in service_data:
+                metric = item.get("metric", {})
+                if metric.get("service_type") != "service":
+                    continue
+                _key = metric.get("instance", "") + "_" + \
+                    metric.get("instance_name", "")
+                _value = True if int(
+                    item.get("value", [0, 0])[-1]) == 1 else False
+                service_status_dic[_key] = _value
+            return True, service_status_dic
+        except Exception as e:
+            logger.error(f"从prometheus获取数据失败: {str(e)}")
+            return False, {}

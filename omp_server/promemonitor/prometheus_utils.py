@@ -446,16 +446,18 @@ class PrometheusUtils(object):
         try:
             result = requests.post(
                 dest_url, headers=headers, data=json_dict).json()
-            if result['return_code'] == 0:
+            if result.get('return_code') == 0:
                 logger.info('向{}更新服务{}配置成功！'.format(
                     dest_ip, services_data[0].get('service_name')))
             else:
                 logger.error('向{}更新服务{}配置失败！'.format(
                     dest_ip, services_data[0].get('service_name')))
-        except requests.exceptions.ConnectionError:
+                return False, result.get('return_message')
+            return True, 'success'
+        except requests.exceptions.ConnectionError as e:
             logger.error('向{}更新服务{}配置失败！'.format(
                 dest_ip, services_data[0].get('service_name')))
-            exit(-1)
+            return False, e
 
     def add_service(self, service_data):
         """
@@ -517,8 +519,10 @@ class PrometheusUtils(object):
         with open(self_exporter_target_file, 'w') as f2:
             json.dump(self_target_list, f2, ensure_ascii=False, indent=4)
 
-        self.update_agent_service(
+        flag, msg = self.update_agent_service(
             service_data.get('ip'), 'add', [service_data])
+        if not flag:
+            return False, msg
         self.add_rules('status', service_data.get('env'))
         reload_prometheus_url = 'http://localhost:19011/-/reload'
         # TODO 确认重载prometheus动作在哪执行
@@ -561,8 +565,10 @@ class PrometheusUtils(object):
 
         with open(self_exporter_target_file, 'w') as f2:
             json.dump(self_target_list, f2, ensure_ascii=False, indent=4)
-        self.update_agent_service(
+        flag, msg = self.update_agent_service(
             service_data.get('ip'), 'delete', [service_data])
+        if not flag:
+            return False, msg
         reload_prometheus_url = 'http://localhost:19011/-/reload'
         # TODO 确认重载prometheus动作在哪执行
         try:
