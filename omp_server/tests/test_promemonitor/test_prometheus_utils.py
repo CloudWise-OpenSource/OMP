@@ -231,6 +231,16 @@ class PrometheusUtilsTest(BaseTest):
     def test_add_service(self, mock_post):
         mock_post.return_value = MockResponse(
             {"return_code": 0, "message": "success"})
+        from db_models.models import Host
+        h1 = Host.objects.create(
+            instance_name="mysql_instance_1",
+            ip="127.0.0.1",
+            port=36000,
+            username="root",
+            password="XoIc56a3HiStUZb3Pu9jXEHj8YvMTRpMYnNFD2YS7MA",
+            data_folder="/data",
+            operate_system="CentOS"
+        )
         test_service_data = {
             "service_name": "mysql",
             "instance_name": "mysql_dosm",
@@ -242,6 +252,7 @@ class PrometheusUtilsTest(BaseTest):
         }
         flag, msg = self.prometheus_obj.add_service(test_service_data)
         self.assertEqual(flag, True)
+        h1.delete()
 
     @mock.patch.object(requests, 'post', return_value='')
     def test_delete_service(self, mock_post):
@@ -251,6 +262,16 @@ class PrometheusUtilsTest(BaseTest):
             self.prometheus_obj.prometheus_targets_path, 'mysqlExporter_all.json')
         with open(mysql_json_file, 'w') as mp:
             mp.write('')
+        from db_models.models import Host
+        h2 = Host.objects.create(
+            instance_name="mysql_instance_1",
+            ip="127.0.0.1",
+            port=36000,
+            username="root",
+            password="XoIc56a3HiStUZb3Pu9jXEHj8YvMTRpMYnNFD2YS7MA",
+            data_folder="/data",
+            operate_system="CentOS"
+        )
         test_service_data = {
             "service_name": "mysql",
             "instance_name": "mysql_dosm",
@@ -262,6 +283,7 @@ class PrometheusUtilsTest(BaseTest):
         }
         flag, msg = self.prometheus_obj.delete_service(test_service_data)
         self.assertEqual(flag, True)
+        h2.delete()
 
     def tearDown(self) -> None:
         """

@@ -464,10 +464,15 @@ class PrometheusUtils(object):
             return False, e
         try:
             from utils.parse_config import MONITOR_PORT, LOCAL_IP
+            from db_models.models import Host
+            host_agent_dir = Host.objects.filter(
+                ip=dest_ip).values_list('agent_dir')[0]
+            # host_agent_dir = ''
             json_dict['promtail_config'] = {
                 'http_listen_port': MONITOR_PORT.get('promtail'),
                 'loki_url': f'http://{LOCAL_IP}:{MONITOR_PORT.get("loki")}/loki/api/v1/push'   # NOQA
             }
+            json_dict['agent_dir'] = host_agent_dir
             logger.info(f'向agent发送数据{json_dict}')
             promtail_result = requests.post(
                 dest_url, headers=headers, data=json.dumps(json_dict)).json()
