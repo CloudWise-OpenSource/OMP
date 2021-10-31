@@ -78,8 +78,6 @@ const AppStoreDetail = () => {
     )
       .then((res) => {
         handleResponse(res, (res) => {
-          setVersionValue(verson);
-
           setAllInstancesInfo(() => {
             return res.data.versions
               .map((item) => {
@@ -87,6 +85,18 @@ const AppStoreDetail = () => {
               })
               .flat();
           });
+          setVersionValue(verson);
+          let y = res.data.versions = res.data.versions.map(item=>{
+            // arr 为全部数据中version重复数据
+            let arr = []
+            res.data.versions.filter(i=>i[nameObj.version] == item[nameObj.version]).map(v=>{
+              arr = [...arr,...v[nameObj.instances_info]]
+            })
+            return {
+              ...item,
+              [nameObj.instances_info]: arr
+            }
+          })
 
           setDataSource(() => {
             let obj = {};
