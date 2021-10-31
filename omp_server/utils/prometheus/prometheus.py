@@ -4,10 +4,13 @@
 # CreateDate: 2021/10/14 4:01 下午
 # Description:
 import json
+import logging
 import requests
 from datetime import datetime
 from db_models.models import MonitorUrl
 from db_models.models import InspectionHistory, InspectionReport
+
+logger = logging.getLogger("server")
 
 
 class Prometheus(object):
@@ -24,8 +27,33 @@ class Prometheus(object):
                 return True, rsp.get('data'), 'success'
             else:
                 return False, {}, 'fail'
-        except Exception as e:
+        except Exception:
             return False, {}, 'error'
+
+    def clean_alert(self, alerts):
+        """
+        清洗告警，去掉同类不同级别告警
+        :param alerts:
+        :return:
+        """
+        unique_alert_dic = dict()
+        clean_alerts = list()
+        for item in alerts:
+            _key = item.get("labels", {}).get("alertname", "") + \
+                item.get("labels", {}).get("instance", "")
+            _level = item.get("labels", {}).get("severity", "")
+            if _key not in unique_alert_dic:
+                unique_alert_dic[_key] = {
+                    "warning": "",
+                    "critical": ""
+                }
+            unique_alert_dic[_key][_level] = item
+        for key, value in unique_alert_dic.items():
+            if value.get("critical"):
+                clean_alerts.append(value.get("critical"))
+            else:
+                clean_alerts.append(value.get("warning"))
+        return clean_alerts
 
     def query_alerts(self):
         url = f'http://{self.address}/api/v1/alerts'
@@ -33,10 +61,13 @@ class Prometheus(object):
             rsp = json.loads(requests.get(url=url, timeout=0.5
                                           ).content.decode('utf8', 'ignore'))
             if rsp.get('status') == 'success':
-                return rsp.get('data').get('alerts')
+                # 处理重复级别告警问题 jon.liu
+                alerts = rsp.get('data').get('alerts')
+                return self.clean_alert(alerts)
             else:
                 return {}
-        except:
+        except Exception as e:
+            logger.error(f"Query Alerts from prometheus error: {str(e)}")
             return {}
 
 
