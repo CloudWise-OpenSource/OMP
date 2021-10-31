@@ -418,7 +418,7 @@ class PrometheusUtils(object):
             dest_url = 'http://{}:{}/update/service/add'.format(dest_ip, self.monitor_port)  # NOQA
             for sd in services_data:
                 service_temp_data = dict()
-                service_temp_data['service_port'] = sd.get('port')
+                service_temp_data['service_port'] = sd.get('listen_port')
                 if sd.get('service_name') in EXPORTERS:
                     service_temp_data['exporter_port'] = self.get_service_port(
                         '{}Exporter'.format(sd.get('service_name')))
@@ -436,6 +436,9 @@ class PrometheusUtils(object):
                 service_temp_data['only_process'] = sd.get('only_process')
                 service_temp_data['process_key_word'] = sd.get(
                     'process_key_word')
+                service_temp_data['instance'] = dest_ip
+                service_temp_data['env'] = sd.get('env')
+                service_temp_data['log_path'] = sd.get('log_path')
                 json_content.append(service_temp_data)
         elif action == 'delete':
             dest_url = 'http://{}:{}/update/service/delete'.format(dest_ip, self.monitor_port)  # NOQA
@@ -444,8 +447,10 @@ class PrometheusUtils(object):
 
         json_dict['services'] = json.dumps(json_content)
         try:
+            logger.info(f'向agent发送数据{json_dict}')
+            update_agent_promtail_url = f'http://{dest_ip}:{self.monitor_port}/update/promtail/add'  # NOQA
             result = requests.post(
-                dest_url, headers=headers, data=json_dict).json()
+                update_agent_promtail_url, headers=headers, data=json_dict).json()
             if result.get('return_code') == 0:
                 logger.info('向{}更新服务{}配置成功！'.format(
                     dest_ip, services_data[0].get('service_name')))
@@ -453,11 +458,33 @@ class PrometheusUtils(object):
                 logger.error('向{}更新服务{}配置失败！'.format(
                     dest_ip, services_data[0].get('service_name')))
                 return False, result.get('return_message')
-            return True, 'success'
         except requests.exceptions.ConnectionError as e:
             logger.error('向{}更新服务{}配置失败！'.format(
                 dest_ip, services_data[0].get('service_name')))
             return False, e
+        try:
+            from utils.parse_config import MONITOR_PORT, LOCAL_IP
+            json_dict['promtail_config'] = {
+                'http_listen_port': MONITOR_PORT.get('promtail'),
+                'loki_url': f'http://{LOCAL_IP}:{MONITOR_PORT.get("loki")}/loki/api/v1/push'   # NOQA
+            }
+            logger.info(f'向agent发送数据{json_dict}')
+            promtail_result = requests.post(
+                dest_url, headers=headers, data=json.dumps(json_dict)).json()
+            if promtail_result.get('return_code') == 0:
+                logger.info('向{}更新服务{}日志监控配置成功！'.format(
+                    dest_ip, services_data[0].get('service_name')))
+            else:
+                logger.error('向{}更新服务{}日志监控配置失败！'.format(
+                    dest_ip, services_data[0].get('service_name')))
+                return False, promtail_result.get('return_message')
+        except Exception as e:
+            logger.error(e)
+            logger.error('向{}更新服务{}日志监控失败！'.format(
+                dest_ip, services_data[0].get('service_name')))
+            return False, e
+
+        return True, 'success'
 
     def add_service(self, service_data):
         """
@@ -477,6 +504,7 @@ class PrometheusUtils(object):
         if not service_data:
             return False, "args cant be null"
 
+        logger.info(f'收到信息：{service_data}')
         with open(self.prometheus_conf_path, 'r') as fr:
             fr_content = fr.read()
         job_name_str = "'{}Exporter".format(service_data.get('service_name'))
