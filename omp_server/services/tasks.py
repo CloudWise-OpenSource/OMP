@@ -59,7 +59,7 @@ def exec_action(action, instance, operation_user):
         service_obj.save()
         ServiceHistory.objects.create(
             username=operation_user,
-            description=f"执行 [{action[0]}] 操作，脚本路径: {exe_action}",
+            description=f"执行 [{action[0]}] 操作",
             result=result_json.get(result),
             created=time_style,
             service=service_obj
