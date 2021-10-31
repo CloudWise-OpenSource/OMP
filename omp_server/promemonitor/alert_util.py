@@ -4,7 +4,7 @@ import traceback
 
 import pytz
 from omp_server.settings import TIME_ZONE
-from db_models.models import Host
+from db_models.models import Host, Service
 from promemonitor.grafana_url import explain_url
 
 logger = logging.getLogger('server')
@@ -242,12 +242,16 @@ class AlertAnalysis:
             alert_info["env_id"] = host.env_id
             alert_info["alert_instance_name"] = host.instance_name
         else:
-            host = Host.objects.filter(
-                ip=alert_info["alert_host_ip"]).first()
-            if not host:
+            ser = Service.objects.filter(
+                service__app_name=alert_info["alert_service_name"],
+                ip=alert_info["alert_host_ip"]
+            ).first()
+            # host = Host.objects.filter(
+            #     ip=alert_info["alert_host_ip"]).first()
+            if not ser:
                 return {}
-            alert_info["env_id"] = host.env_id
-            alert_info["alert_instance_name"] = host.instance_name
+            alert_info["env_id"] = ser.env_id
+            alert_info["alert_instance_name"] = ser.service_instance_name
         alert_info.update(**self.analysis_annotations())
         # if env_id and int(env_id) != alert_info["env_id"]:
         #     return {}  # TODO 等待env开发完成
