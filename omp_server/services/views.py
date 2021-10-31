@@ -54,9 +54,7 @@ class ServiceListView(GenericViewSet, ListModelMixin):
             }
             for service_obj in serializer_data:
                 # 如果服务状态为 '正常' 和 '停止' 的服务，通过 Prometheus 动态更新
-                if service_obj.get("service_status") in (
-                        Service.SERVICE_STATUS_NORMAL,
-                        Service.SERVICE_STATUS_STOP,):
+                if service_obj.get("service_status") in ("正常", "停止"):
                     key_name = f"{service_obj.get('ip')}_{service_obj.get('service_instance_name')}"
                     status = prometheus_dict.get(key_name, None)
                     if status is not None:
