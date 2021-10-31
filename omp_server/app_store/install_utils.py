@@ -688,6 +688,11 @@ class ValidateInstallService(object):
                 service_instance_name=service_instance_name).exists():
             _dic["check_flag"] = False
             _dic["check_msg"] = "实例名称重复"
+            return _dic
+        if "is_pack_exist" in _dic and not _dic["is_pack_exist"]:
+            _dic["check_flag"] = False
+            _dic["check_msg"] = f"服务 {service_name} 的安装包不存在"
+            return _dic
         # 检查端口是否被占用
         app_port = self.check_service_port(
             app_port=_dic.get("app_port", []),
