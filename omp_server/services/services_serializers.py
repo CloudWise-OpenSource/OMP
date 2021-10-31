@@ -48,7 +48,7 @@ class ServiceSerializer(serializers.ModelSerializer):
 
     def get_cluster_type(self, obj):
         """ 获取集群类型 """
-        cluster_type = "-"
+        cluster_type = "单实例"
         if obj.cluster is not None:
             cluster_type = obj.cluster.cluster_type
         return cluster_type
