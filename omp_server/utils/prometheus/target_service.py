@@ -4,6 +4,7 @@
 # CreateDate: 2021/10/22 10:04 下午
 # Description:
 import json
+import random
 from db_models.models import Service
 from utils.prometheus.target_service_mysql import ServiceMysqlCrawl
 
@@ -43,6 +44,7 @@ def target_service_run(env, services):
             tag_total_num += 19
             tag_error_num += _.tag_error_num
             tmp.update({
+                'id': random.randint(1, 99999999),
                 'host_ip': i.get('ip'),
                 'cluster_name': "",
                 "cpu_usage": _.ret.get('_s').get('cpu_usage'),
@@ -75,6 +77,7 @@ def target_service_run(env, services):
         elif i.get('service_instance_name') == 'jdk':
             tag_total_num += 11     # 总指标数/异常指标数 计算
             tmp.update({
+                'id': random.randint(1, 99999999),
                 'host_ip': '-',
                 'cluster_name': "-",
                 "cpu_usage": "-",
@@ -95,6 +98,7 @@ def target_service_run(env, services):
         else:
             tag_total_num += 11     # 总指标数/异常指标数 计算
             tmp.update({
+                'id': random.randint(1, 99999999),
                 'host_ip': i.get('ip'),
                 'cluster_name': "-",
                 "cpu_usage": "-",
