@@ -67,7 +67,7 @@ const ScanServerModal = ({
         } else {
           setDataSource((dataS) => {
             // /console.log(dataS);
-            let arr = dataS.package_detail.map((item) => {
+            let arr = dataS?.package_detail?.map((item) => {
               return {
                 ...item,
                 status: 9,
@@ -93,7 +93,7 @@ const ScanServerModal = ({
         handleResponse(res, (res) => {
           if (
             res.data &&
-            res.data?.package_names.filter((item) => item).length > 0
+            res.data?.package_names?.filter((item) => item).length > 0
           ) {
             fetchData(res.data);
           }
@@ -256,7 +256,7 @@ const ScanServerModal = ({
               },
             ]}
             pagination={false}
-            dataSource={dataSource?.package_detail.map((item, idx) => {
+            dataSource={dataSource?.package_detail?.map((item, idx) => {
               return {
                 ...item,
                 name:
@@ -376,7 +376,7 @@ const ScanServerModal = ({
               },
             ]}
             pagination={false}
-            dataSource={dataSource?.package_detail.map((item, idx) => {
+            dataSource={dataSource?.package_detail?.map((item, idx) => {
               return {
                 ...item,
                 name:
