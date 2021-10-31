@@ -68,7 +68,9 @@ export const DetailHost = ({
             padding: 20,
           }}
         >
-          <div style={{ paddingBottom: 35, fontSize: 15, fontWeight:500 }}>基本信息</div>
+          <div style={{ paddingBottom: 35, fontSize: 15, fontWeight: 500 }}>
+            基本信息
+          </div>
           <div
             style={{
               display: "flex",
@@ -241,7 +243,9 @@ export const DetailHost = ({
               padding: 20,
             }}
           >
-            <div style={{ paddingBottom: 35, fontSize: 15, fontWeight:500 }}>Agent状态</div>
+            <div style={{ paddingBottom: 35, fontSize: 15, fontWeight: 500 }}>
+              Agent状态
+            </div>
             <div style={{ display: "flex", paddingTop: 15, paddingBottom: 15 }}>
               <div style={{ flex: 1 }}>主机Agent</div>
               <div style={{ flex: 1 }}>
@@ -267,7 +271,9 @@ export const DetailHost = ({
               padding: 20,
             }}
           >
-            <div style={{ paddingBottom: 35, fontSize: 15, fontWeight:500 }}>部署组件信息</div>
+            <div style={{ paddingBottom: 35, fontSize: 15, fontWeight: 500 }}>
+              部署组件信息
+            </div>
             <div style={{ display: "flex", paddingTop: 15, paddingBottom: 15 }}>
               <div style={{ flex: 1 }}>部署组件</div>
               <div style={{ flex: 1 }}>
@@ -290,7 +296,9 @@ export const DetailHost = ({
               //overflow:"hidden"
             }}
           >
-            <div style={{ paddingBottom: 20, fontSize: 15, fontWeight:500 }}>历史记录</div>
+            <div style={{ paddingBottom: 20, fontSize: 15, fontWeight: 500 }}>
+              历史记录
+            </div>
             <Spin spinning={loading} wrapperClassName={styles.omp_spin_wrapper}>
               <Timeline
                 style={{
@@ -554,11 +562,29 @@ const getColumnsConfig = (
       // ellipsis: true,
       sorter: (a, b) => a.service_num - b.service_num,
       sortDirections: ["descend", "ascend"],
-      render: (text) => {
-        if((!text || text=="-" )&& (text!==0)){
-          return "-"
+      render: (text, record) => {
+        if (text && text !== 0 && text !== "-") {
+          return (
+            <a
+              onClick={() => {
+                text &&
+                  history.push({
+                    pathname: "/application_management/service_management",
+                    state: {
+                      ip: record.ip,
+                    },
+                  });
+              }}
+            >
+              {text}次
+            </a>
+          );
+        } else {
+          if ((!text || text == "-") && text !== 0) {
+            return "-";
+          }
+          return `${text}个`;
         }
-        return `${text}个`
       },
     },
     {
@@ -570,7 +596,7 @@ const getColumnsConfig = (
       sorter: (a, b) => a.alert_num - b.alert_num,
       sortDirections: ["descend", "ascend"],
       render: (text, record) => {
-        if (text && text !== 0 && text!=="-") {
+        if (text && text !== 0 && text !== "-") {
           return (
             <a
               onClick={() => {
@@ -587,10 +613,10 @@ const getColumnsConfig = (
             </a>
           );
         } else {
-          if((!text || text=="-" )&& (text!==0)){
-            return "-"
+          if ((!text || text == "-") && text !== 0) {
+            return "-";
           }
-          return `${text}次`
+          return `${text}次`;
         }
       },
     },
