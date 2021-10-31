@@ -195,7 +195,8 @@ class SaltClient(object):
                 return False, AGENT_OFFLINE_MSG
             if "PermissionError" in cmd_res[target] and "Permission denied" in cmd_res[target]:
                 return False, "当前目标主机上此用户无法在目标路径下创建目录或文件！"
-            if str(cmd_res[target]).startswith(target_path):
+            if str(cmd_res[target]).startswith(target_path) or \
+                    not cmd_res[target]:
                 return True, cmd_res[target]
             return False, f"当前出现未知错误: {cmd_res[target]}"
         except Exception as e:
