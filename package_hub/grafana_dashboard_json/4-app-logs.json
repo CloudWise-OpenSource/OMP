@@ -218,7 +218,7 @@
         "options": [],
         "query": "label_values({job=\"$app\",env=\"$env\"},filename)",
         "refresh": 2,
-        "regex": "/.*$app\\/.*/",
+        "regex": "/.*$app.*/",
         "skipUrlSync": false,
         "sort": 0,
         "tagValuesQuery": "jkb",
