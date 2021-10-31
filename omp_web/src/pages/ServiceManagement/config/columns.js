@@ -30,7 +30,7 @@ export const DetailHost = ({
           <DesktopOutlined style={{ position: "relative", top: 3, left: -5 }} />
           服务信息面板
           <span style={{ paddingLeft: 30, fontWeight: 400, fontSize: 15 }}>
-            服务名称: {isShowDrawer.record?.service_instance_name}
+            实例名称: {isShowDrawer.record?.service_instance_name}
           </span>
         </div>
       }
@@ -83,7 +83,7 @@ export const DetailHost = ({
               }}
             >
               <div style={{ flex: 1 }}>实例名称</div>
-              <div style={{ flex: 1 }}>{isShowDrawer.record?.app_name}</div>
+              <div style={{ flex: 1 }}>{isShowDrawer.record?.service_instance_name}</div>
             </div>
             <div
               style={{
@@ -95,7 +95,7 @@ export const DetailHost = ({
             >
               <div style={{ flex: 1 }}>服务名称</div>
               <div style={{ flex: 1 }}>
-                {nonEmptyProcessing(isShowDrawer.record?.service_instance_name)}
+                {nonEmptyProcessing(isShowDrawer.record?.app_name)}
               </div>
             </div>
             {/* <div
