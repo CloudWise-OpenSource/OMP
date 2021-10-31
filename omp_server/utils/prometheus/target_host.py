@@ -52,9 +52,11 @@ class HostCrawl(Prometheus):
         """运行时间"""
         expr = f"avg(time() - node_boot_time_seconds{{env='{self.env}'," \
                f"instance=~'{self.instance}'}})"
-        _ = float(self.unified_job(*self.query(expr)))
-        self.ret['run_time'] = f"{int(_ // 3600 % 24)}天{int(_ // 86400)}小时" \
-                               f"{int((_ % 3600) // 60)}分钟{round(_ % 60, 2)}秒"
+        _ = self.unified_job(*self.query(expr))
+        _ = float(_) if _ else 0
+        minutes, seconds = divmod(_, 60)
+        hours, minutes = divmod(minutes, 60)
+        self.ret['run_time'] = f"{hours}小时{minutes}分钟{seconds}秒"
 
     # def cpu_num(self):
     #     """cpu 核数"""

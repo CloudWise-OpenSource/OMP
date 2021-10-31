@@ -48,8 +48,9 @@ class ServiceMysqlCrawl(Prometheus):
                f"instance='{self.instance}'}}"
         _ = self.unified_job(*self.query(expr))
         _ = float(_) if _ else 0
-        self.ret['run_time'] = f"{int(_ // 3600 % 24)}天{int(_ // 86400)}小时" \
-                               f"{int((_ % 3600) // 60)}分钟{round(_ % 60, 2)}秒"
+        minutes, seconds = divmod(_, 60)
+        hours, minutes = divmod(minutes, 60)
+        self.ret['run_time'] = f"{hours}小时{minutes}分钟{seconds}秒"
 
     def slow_queries(self):
         """慢查询"""
