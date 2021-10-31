@@ -88,7 +88,7 @@ class ServiceDetailSerializer(serializers.ModelSerializer):
         model = Service
         fields = (
             "id", "service_instance_name", "app_name", "app_version", "label_name",
-            "cluster_type", "ip", "install_info", "history",
+            "cluster_type", "ip", "install_info", "history", "created",
         )
 
     def get_install_info(self, obj):
