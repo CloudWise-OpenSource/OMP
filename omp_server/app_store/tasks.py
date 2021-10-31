@@ -569,11 +569,16 @@ def add_prometheus(main_history_id):
             app_install_args = detail_obj.install_detail_args.get(
                 "app_install_args", [])
             data_dir = log_dir = ""
+            username = password = ""
             for info in app_install_args:
                 if info.get("key", "") == "data_dir":
                     data_dir = info.get("default", "")
                 if info.get("key", "") == "log_dir":
                     log_dir = info.get("default", "")
+                if info.get("key", "") == "username":
+                    username = info.get("default", "")
+                if info.get("key", "") == "password":
+                    password = info.get("default", "")
             # 添加服务到 prometheus
             is_success, message = prometheus.add_service({
                 "service_name": detail_obj.service.service.app_name,
@@ -582,7 +587,9 @@ def add_prometheus(main_history_id):
                 "log_path": log_dir,
                 "env": "default",
                 "ip": detail_obj.service.ip,
-                "listen_port": service_port
+                "listen_port": service_port,
+                "username": username,
+                "password": password,
             })
             if not is_success:
                 logger.error(

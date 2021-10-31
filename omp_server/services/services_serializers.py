@@ -62,7 +62,10 @@ class ServiceSerializer(serializers.ModelSerializer):
                 Service.SERVICE_STATUS_INSTALL_FAILED):
             alert_count = "-"
         # '基础环境' 展示为 '-'
-        if obj.service.extend_fields.get("base_env") in (True, "True"):
+        base_env = obj.service.extend_fields.get("base_env", "")
+        if isinstance(base_env, str):
+            base_env = base_env.lower()
+        if base_env in (True, "true"):
             alert_count = "-"
         return alert_count
 
