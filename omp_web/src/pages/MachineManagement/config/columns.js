@@ -305,7 +305,7 @@ export const DetailHost = ({
                   return (
                     <Timeline.Item key={item.id}>
                       <p style={{ color: "#595959" }}>
-                        {item.username} {item.description}
+                        [{item.username}] {item.description}
                       </p>
                       <p style={{ color: "#595959" }}>
                         {moment(item.created).format("YYYY-MM-DD HH:mm:ss")}

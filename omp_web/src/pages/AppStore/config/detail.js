@@ -307,10 +307,17 @@ const AppStoreDetail = () => {
         {keyTab ? (
           <div className={styles.detailDependence}>
             <div>
-              {isAll ? "全部" : ""}实例信息{" "}
+              实例信息
               <span style={{ paddingLeft: 20, fontSize: 14, color: "#1f8aee" }}>
                 {isAll ? (
-                  ""
+                  <span
+                  style={{ cursor: "pointer" }}
+                  onClick={() => {
+                    setIsAll(false);
+                  }}
+                >
+                  查看当前版本
+                </span>
                 ) : (
                   <span
                     style={{ cursor: "pointer" }}
@@ -388,10 +395,17 @@ const AppStoreDetail = () => {
         ) : (
           <div className={styles.detailDependence}>
             <div>
-              {isAll ? "全部" : ""}实例信息{" "}
+              实例信息
               <span style={{ paddingLeft: 20, fontSize: 14, color: "#1f8aee" }}>
                 {isAll ? (
-                  ""
+                  <span
+                  style={{ cursor: "pointer" }}
+                  onClick={() => {
+                    setIsAll(false);
+                  }}
+                >
+                  查看当前版本
+                </span>
                 ) : (
                   <span
                     style={{ cursor: "pointer" }}

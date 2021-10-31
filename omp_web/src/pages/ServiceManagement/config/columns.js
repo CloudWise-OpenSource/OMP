@@ -18,9 +18,8 @@ export const DetailHost = ({
   loading,
   data,
   setInstallationRecordModal,
-  queryServiceInstallHistoryDetail
+  queryServiceInstallHistoryDetail,
 }) => {
-
   // 视口宽度
   const viewHeight = useSelector((state) => state.layouts.viewSize.height);
   const wrapperRef = useRef(null);
@@ -177,10 +176,15 @@ export const DetailHost = ({
               }}
             >
               安装信息
-              <a onClick={()=>{
-                setInstallationRecordModal(true);
-                queryServiceInstallHistoryDetail(data.id)
-              }} style={{ fontSize: 13, fontWeight: 400 }}>查看安装记录</a>
+              <a
+                onClick={() => {
+                  setInstallationRecordModal(true);
+                  queryServiceInstallHistoryDetail(data.id);
+                }}
+                style={{ fontSize: 13, fontWeight: 400 }}
+              >
+                查看安装记录
+              </a>
             </div>
             <div
               style={{
@@ -196,7 +200,7 @@ export const DetailHost = ({
             <div
               style={{
                 display: "flex",
-                paddingTop: 15,
+                paddingTop: 8,
                 paddingBottom: 5,
                 borderBottom: "solid 1px rgb(220,220,220)",
               }}
@@ -207,7 +211,7 @@ export const DetailHost = ({
             <div
               style={{
                 display: "flex",
-                paddingTop: 15,
+                paddingTop: 8,
                 paddingBottom: 5,
                 borderBottom: "solid 1px rgb(220,220,220)",
               }}
@@ -218,7 +222,7 @@ export const DetailHost = ({
             <div
               style={{
                 display: "flex",
-                paddingTop: 15,
+                paddingTop: 8,
                 paddingBottom: 5,
                 borderBottom: "solid 1px rgb(220,220,220)",
               }}
@@ -229,7 +233,7 @@ export const DetailHost = ({
             <div
               style={{
                 display: "flex",
-                paddingTop: 15,
+                paddingTop: 8,
                 paddingBottom: 5,
                 borderBottom: "solid 1px rgb(220,220,220)",
               }}
@@ -240,13 +244,30 @@ export const DetailHost = ({
             <div
               style={{
                 display: "flex",
-                paddingTop: 15,
+                paddingTop: 8,
                 paddingBottom: 5,
                 borderBottom: "solid 1px rgb(220,220,220)",
               }}
             >
               <div style={{ flex: 1 }}>密码</div>
               <div style={{ flex: 1 }}>{data.install_info?.password}</div>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                paddingTop: 8,
+                paddingBottom: 5,
+                borderBottom: "solid 1px rgb(220,220,220)",
+              }}
+            >
+              <div style={{ flex: 1 }}>安装时间</div>
+              <div style={{ flex: 1 }}>
+                {(data?.created)
+                  ? moment(data?.created).format(
+                      "YYYY-MM-DD HH:mm:ss"
+                    )
+                  : "-"}
+              </div>
             </div>
           </div>
         </div>
@@ -284,21 +305,31 @@ export const DetailHost = ({
                   overflowY: "scroll",
                   paddingTop: 10,
                   height: "100%",
-                  // height: wrapperRef.current
-                  //   ? wrapperRef.current?.offsetHeight - 100
-                  //   : 100,
+                  height: wrapperRef.current
+                    ? wrapperRef.current?.offsetHeight - 100
+                    : 100,
                 }}
               >
                 {data.history?.map((item) => {
                   return (
-                    <Timeline.Item key={item.created}>
-                      <p style={{ color: "#595959" }}>
-                        {item.username} {item.description}
-                      </p>
-                      <p style={{ color: "#595959" }}>
-                        {moment(item.created).format("YYYY-MM-DD HH:mm:ss")}
-                      </p>
-                    </Timeline.Item>
+                    <>
+                      <Timeline.Item key={item.created}>
+                        <p style={{ color: "#595959" }}>
+                          [{item.username}] {item.description}
+                        </p>
+                        <p style={{ color: "#595959" }}>
+                          {moment(item.created).format("YYYY-MM-DD HH:mm:ss")}
+                        </p>
+                      </Timeline.Item>
+                      <Timeline.Item key={item.created}>
+                        <p style={{ color: "#595959" }}>
+                          [{item.username}] {item.description}
+                        </p>
+                        <p style={{ color: "#595959" }}>
+                          {moment(item.created).format("YYYY-MM-DD HH:mm:ss")}
+                        </p>
+                      </Timeline.Item>
+                    </>
                   );
                 })}
               </Timeline>
@@ -315,7 +346,7 @@ const renderMenu = (
   // setUpdateMoadlVisible,
   // setCloseMaintainModal,
   // setOpenMaintainModal,
-  
+
   record,
   setOperateAciton,
   setServiceAcitonModal
