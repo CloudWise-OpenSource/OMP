@@ -209,7 +209,7 @@ const ServiceManagement = () => {
             },
             pagination.ordering
           );
-        },15000)
+        },1500)
       });
   };
 
