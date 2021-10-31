@@ -49,6 +49,21 @@ class ComponentEntranceView(GenericViewSet, ListModelMixin):
     filter_class = ComponentEntranceFilter
     get_description = "获取组件安装数据入口"
 
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        # 对返回数据重新进行处理，对process_continue字段进行提取
+        for el in serializer.data:
+            if len(el.get("app_dependence", [])) != 0:
+                for item in el.get("app_dependence", []):
+                    if "process_continue" in item and \
+                            not item["process_continue"] and \
+                            el.get("process_continue"):
+                        el["process_continue"] = False
+                        el["process_message"] = item.get("process_message")
+                        break
+        return Response(serializer.data)
+
 
 class ProductEntranceView(GenericViewSet, ListModelMixin):
     """
