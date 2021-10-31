@@ -13,10 +13,10 @@ def target_service_run(env, services):
     """
     组建巡检
     :env: 环境 queryset 对象
-    :services: 组件服务id 列表
+    :services: 服务id 列表
     """
     # 查询该环境下服务
-    services = Service.objects.filter(env=env, service__in=services)
+    services = Service.objects.filter(env=env, id__in=services)
     services = services.values('service_instance_name', 'ip',
                                'service_port', 'service__app_name',
                                'service__app_install_args',
@@ -31,9 +31,9 @@ def target_service_run(env, services):
         ports = json.loads(i.get('service_port'))\
             if i.get('service_port') else []
         for p in ports:
-            service_ports.append(p.get('port'))
+            service_ports.append(p.get('default'))
             if p.get('key') == 'service_port':
-                service_port = p.get('port')
+                service_port = p.get('default')
         # 组装服务状态
         serv_status = {0: "正常", 1: "启动中", 2: "停止中", 3: "重启中", 4: "停止"}
         service_status = serv_status.get(i.get('service_status'))

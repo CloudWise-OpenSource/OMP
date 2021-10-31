@@ -33,11 +33,16 @@ class InspectionServiceView(ListModelMixin, GenericViewSet):
     """
     def list(self, request, *args, **kwargs):
         # 只能是安装成功的组件
+        rets = list()
         _ = Service.objects.filter(
             service__app_type=ApplicationHub.APP_TYPE_COMPONENT).exclude(
             service_status__in=[5, 6, 7])
-        ret = _.values('service__id', 'service__app_name').distinct()
-        return Response(data=list(ret), status=status.HTTP_200_OK)
+        for i in _:
+            if i.service.extend_fields.get('base_env') in ['true', 'True']:
+                rets.append({'service__id': i.id,
+                             'service__app_name': i.service_instance_name})
+
+        return Response(data=rets, status=status.HTTP_200_OK)
 
 
 class InspectionHistoryView(ListModelMixin, GenericViewSet, CreateModelMixin):
