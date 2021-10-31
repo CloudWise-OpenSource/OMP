@@ -189,7 +189,7 @@ class ApplicationDetailSerializer(ModelSerializer):  # NOQA
 
     def get_app_instances_info(self, obj):  # NOQA
         """ 获取服务安装实例信息 """
-        service_objs = Service.objects.filter(service__app_name=obj.app_name)
+        service_objs = Service.objects.filter(service__id=obj.id)
         service_list = []
         for so in service_objs:
             service_dict = {
@@ -236,7 +236,7 @@ class ProductDetailSerializer(ModelSerializer):  # NOQA
     def get_pro_instances_info(self, obj):  # NOQA
         """ 获取服务安装实例信息 """
         service_objs = Service.objects.filter(
-            service__product__pro_name=obj.pro_name)
+            service__product__id=obj.id)
         service_list = []
         for so in service_objs:
             service_dict = {
