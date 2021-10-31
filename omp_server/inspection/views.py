@@ -38,7 +38,7 @@ class InspectionServiceView(ListModelMixin, GenericViewSet):
             service__app_type=ApplicationHub.APP_TYPE_COMPONENT).exclude(
             service_status__in=[5, 6, 7])
         for i in _:
-            if i.service.extend_fields.get('base_env') in ['true', 'True']:
+            if i.service.extend_fields.get('base_env') in ['false', 'False']:
                 rets.append({'service__id': i.id,
                              'service__app_name': i.service_instance_name})
 
