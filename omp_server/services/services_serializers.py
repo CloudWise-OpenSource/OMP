@@ -44,6 +44,11 @@ class ServiceSerializer(serializers.ModelSerializer):
         if obj.service.app_labels.exists():
             label_name = ", ".join(
                 obj.service.app_labels.values_list("label_name", flat=True))
+        # 如果标签依然为 '-' 且服务有产品关联
+        if label_name == "-" and obj.service.product is not None:
+            if obj.service.product.pro_labels.exists():
+                label_name = ", ".join(
+                    obj.service.product.pro_labels.values_list("label_name", flat=True))
         return label_name
 
     def get_cluster_type(self, obj):
