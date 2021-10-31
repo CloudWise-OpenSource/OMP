@@ -17,15 +17,16 @@ logger = get_task_logger("celery_log")
 
 @shared_task
 def exec_action(action, instance, operation_user):
+    # edit by vum: 增加服务的目标成功状态、失败状态
     action_json = {
-        "1": ["start", 1],
-        "2": ["stop", 2],
-        "3": ["restart", 3],
+        "1": ["start", 1, 0, 4],
+        "2": ["stop", 2, 4, 0],
+        "3": ["restart", 3, 0, 4],
         "4": ["delete", 4]
     }
     result_json = {
-        0: "success",
-        4: "failure"
+        True: "success",
+        False: "failure"
     }
     try:
         service_obj = Service.objects.get(id=instance)
@@ -53,14 +54,16 @@ def exec_action(action, instance, operation_user):
         service_obj.save()
         time_array = time.localtime(int(time.time()))
         time_style = time.strftime("%Y-%m-%d %H:%M:%S", time_array)
-        status, info = salt_obj.cmd(ip, exe_action, 600)
-        result = 0 if status else 4
-        service_obj.service_status = result
+        is_success, info = salt_obj.cmd(ip, exe_action, 600)
+        # TODO 服务状态维护问题，临时解决方案，休眠保持中间态
+        time.sleep(35)
+        service_obj.service_status = action[2] if is_success else action[3]
         service_obj.save()
+        logger.info(f"执行 [{action[0]}] 操作 {is_success}，原因: {info}")
         ServiceHistory.objects.create(
             username=operation_user,
             description=f"执行 [{action[0]}] 操作",
-            result=result_json.get(result),
+            result=result_json.get(is_success),
             created=time_style,
             service=service_obj
         )
