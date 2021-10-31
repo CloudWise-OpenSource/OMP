@@ -894,7 +894,7 @@ class CreateInstallPlan(object):
         :type dic: dict
         :return:
         """
-        # 创建服务实例对象
+        # 创建服务实例对象，默认从安装来的服务的状态为 安装中
         _ser_obj = Service(
             ip=dic["ip"],
             service_instance_name=dic["service_instance_name"],
@@ -903,6 +903,7 @@ class CreateInstallPlan(object):
             service_controllers=self.get_controllers_for_service(dic),
             cluster=self.create_cluster(dic),
             env=self.get_env_for_service(),
+            service_status=6,
             service_connect_info=self.create_connect_info(dic)
         )
         _ser_obj.save()
