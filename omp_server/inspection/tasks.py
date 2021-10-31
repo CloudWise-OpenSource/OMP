@@ -58,11 +58,13 @@ def get_hosts_data(env, hosts):
         _h = Host.objects.filter(ip=instance).first()
         temp['release_version'] = _h.operate_system if _h else ''  # 操作系统
         # 配置信息
-        temp['host_massage'] = f"{_h.cpu}C|{_h.memory}G|" \
-                               f"{sum(_h.disk.values()) if _h.disk else '-'}G"
+        temp['host_massage'] = f"{_h.cpu if _h else '-'}C|" \
+                               f"{_h.memory if _h else '-'}G|" \
+                               f"{sum(_h.disk.values()) if _h and _h.disk else '-'}G"
         temp['basic'] = [
             {"name": "IP", "name_cn": "主机IP", "value": instance},
-            {"name": "hostname", "name_cn": "主机名", "value": _h.host_name},
+            {"name": "hostname", "name_cn": "主机名",
+             "value": _h.host_name if _h else '-'},
             {"name": "kernel_version", "name_cn": "内核版本",
              "value": _p.get('_s').get('kernel_version')},
             {"name": "selinux", "name_cn": "SElinux 状态",
