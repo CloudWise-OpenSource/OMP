@@ -6,6 +6,7 @@
 import json
 import random
 from db_models.models import Service
+from utils.prometheus.target_service_func import salt_json
 from utils.prometheus.target_service_mysql import ServiceMysqlCrawl
 
 
@@ -50,7 +51,7 @@ def target_service_run(env, services):
                 "cpu_usage": _.ret.get('_s').get('cpu_usage'),
                 "log_level": "-",
                 "mem_usage": _.ret.get('_s').get('mem_usage'),
-                "run_time": f"{_.ret.get('run_time')}%",
+                "run_time": _.ret.get('_s').get('run_time'),
                 "service_name": i.get('service_instance_name'),
                 "service_port": service_port,
                 "service_status": service_status,
@@ -74,25 +75,25 @@ def target_service_run(env, services):
                      "value": _.ret.get("slave_sql_running")}
                 ]
             })
-        elif i.get('service_instance_name') == 'jdk':
+        elif i.get('service__app_name') == 'tomcat':
+            ret = salt_json(instance=i.get('ip'), func="tomcat_check.main")
             tag_total_num += 11     # 总指标数/异常指标数 计算
             tmp.update({
                 'id': random.randint(1, 99999999),
-                'host_ip': '-',
+                'host_ip': i.get('ip'),
                 'cluster_name': "-",
-                "cpu_usage": "-",
-                "log_level": "-",
-                "mem_usage": "-",
-                "run_time": "-",
+                "cpu_usage": ret.get('cpu_usage'),
+                "log_level": '-',
+                "mem_usage": ret.get('mem_usage'),
+                "run_time": ret.get('run_time'),
                 "service_name": i.get('service_instance_name'),
-                "service_port": '-',
+                "service_port": service_port,
                 "service_status": service_status,
                 "service_type": "2",
                 "basic": [
-                    {"name": "app_install_args", "name_cn": "安装参数",
-                     "value": i.get('service__app_install_args')},
-                    {"name": "app_controllers", "name_cn": "应用控制脚本",
-                     "value": i.get('service__app_controllers')},
+                    {"name": "port_status", "name_cn": "监听端口",
+                     "value": service_ports},
+                    {"name": "IP", "name_cn": "IP地址", "value": i.get('ip')}
                 ]
             })
         else:
