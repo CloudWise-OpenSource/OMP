@@ -151,7 +151,7 @@ def get_prometheus_data(env_id, hosts, services, history_id, report_id, handle):
     异步任务：查询多巡检类型prometheus数据，组装后进行反填
     :env_id: 环境，例：Env id
     :hosts: 主机列表，例：["主机ip"]
-    :services: 组件列表，例：[8]
+    :services: 服务列表，例：[8]
     :history_id: 巡检历史表id，例：1
     :report_id: 巡检报告表id，例：1
     :handle: 巡检类型 service-服务巡检、host-主机巡检、deep-深度巡检
@@ -191,10 +191,13 @@ def get_prometheus_data(env_id, hosts, services, history_id, report_id, handle):
                 h_result = {'all_target_num': 0, 'abnormal_target': 0}
 
             # 组件巡检
-            services = Service.objects.filter(
-                service__app_type=ApplicationHub.APP_TYPE_COMPONENT
-            ).exclude(service_status__in=[5, 6, 7])
-            services = list(services.values_list('service__id', flat=True))
+            services = []
+            _ = Service.objects.filter(
+                service__app_type=ApplicationHub.APP_TYPE_COMPONENT).exclude(
+                service_status__in=[5, 6, 7])
+            for i in _:
+                if i.service.extend_fields.get('base_env') in ['true', 'True']:
+                    services.append(i.id)
             if len(services) > 0:
                 s_info, s_result, serv_data = target_service_run(env, services)
             else:
@@ -270,11 +273,14 @@ def inspection_crontab(**kwargs):
                         f"ID={env.id}环境下无主机数据")
             if job_type in [0, 2]:
                 # 2、查询环境下组件信息
-                services = Service.objects.filter(
-                    env=env,
+                services = list()
+                _ = Service.objects.filter(
                     service__app_type=ApplicationHub.APP_TYPE_COMPONENT
                 ).exclude(service_status__in=[5, 6, 7])
-                services = list(services.values_list('service__id', flat=True))
+                for i in _:
+                    if i.service.extend_fields.get('base_env') \
+                            in ['true', 'True']:
+                        services.append(i.id)
                 if len(services) == 0:
                     logger.error(
                         f"Inspection auto task failed with error: "
