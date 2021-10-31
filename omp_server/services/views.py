@@ -51,14 +51,14 @@ class ServiceListView(GenericViewSet, ListModelMixin):
             status_dict = {
                 True: "正常",
                 False: "停止",
+                None: "未监控",
             }
             for service_obj in serializer_data:
                 # 如果服务状态为 '正常' 和 '停止' 的服务，通过 Prometheus 动态更新
                 if service_obj.get("service_status") in ("正常", "停止"):
                     key_name = f"{service_obj.get('ip')}_{service_obj.get('service_instance_name')}"
                     status = prometheus_dict.get(key_name, None)
-                    if status is not None:
-                        service_obj["service_status"] = status_dict.get(status)
+                    service_obj["service_status"] = status_dict.get(status)
 
         # 获取监控及日志的url
         serializer_data = explain_url(
