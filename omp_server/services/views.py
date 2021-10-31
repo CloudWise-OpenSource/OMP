@@ -43,6 +43,11 @@ class ServiceListView(GenericViewSet, ListModelMixin):
             self.paginate_queryset(queryset), many=True)
         serializer_data = serializer.data
 
+        # 如果服务为 base_env 服务，则修改状态为 '-'
+        for service_obj in serializer_data:
+            if service_obj.get("is_base_env"):
+                service_obj["service_status"] = "-"
+
         # 实时获取服务动态git
         prometheus_obj = Prometheus()
         is_success, prometheus_dict = prometheus_obj.get_all_service_status()

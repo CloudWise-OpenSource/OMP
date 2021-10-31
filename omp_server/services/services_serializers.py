@@ -15,6 +15,7 @@ class ServiceSerializer(serializers.ModelSerializer):
     cluster_type = serializers.SerializerMethodField()
     alert_count = serializers.SerializerMethodField()
     operable = serializers.SerializerMethodField()
+    is_base_env = serializers.SerializerMethodField()
     service_status = serializers.CharField(source="get_service_status_display")
     app_type = serializers.IntegerField(source="service.app_type")
     app_name = serializers.CharField(source="service.app_name")
@@ -26,8 +27,19 @@ class ServiceSerializer(serializers.ModelSerializer):
         fields = (
             "id", "service_instance_name", "ip", "port", "label_name", "alert_count",
             "operable", "app_type", "app_name", "app_version", "cluster_type",
-            "service_status",
+            "service_status", "is_base_env",
         )
+
+    def get_is_base_env(self, obj):
+        """ 返回是否为基础环境 """
+        is_base_env = False
+        base_env = obj.service.extend_fields.get(
+            "base_env", "")
+        if isinstance(base_env, str):
+            base_env = base_env.lower()
+        if base_env in (True, "true"):
+            is_base_env = True
+        return is_base_env
 
     def get_port(self, obj):
         """ 返回服务 service_port """
