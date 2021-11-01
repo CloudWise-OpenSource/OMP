@@ -57,7 +57,7 @@ class FiledCheck(object):
      ignore 强校验中去除一些必要字段的强校验
      settings 待校验文本
      field 需要校验的字段，如果为空则强校验文本所有字段是否value为空
-     is_weak 暂时不支持is_weak = True
+     is_weak 强校验一定包含弱校验。值为True，简化代码量。
     """
 
     def __init__(self, yaml_dir, db_obj):
@@ -118,9 +118,21 @@ class FiledCheck(object):
 
 @shared_task
 def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_dir, upload_obj):
+    """
+     前端发布界面校验逻辑及后端校验逻辑公共类
+     params
+     uuid 操作唯一id
+     operation_user 执行用户
+     package_name 上传的安装包
+     md5 md5值，暂时不用，现为后端自己生成
+     random_str 随机字符串，用于拼接临时校验目录
+     ver_dir 区分前后端校验临时存储路径
+     upload_obj 上传记录表的id
+    """
     upload_obj = UploadPackageHistory.objects.get(id=upload_obj)
     package_path = os.path.join(package_hub, ver_dir)
     file_name = os.path.join(package_path, package_name)
+    # md5校验生成
     md5_out = public_utils.local_cmd(f'md5sum {file_name}')
     if md5_out[2] != 0:
         upload_obj.package_status = 1
@@ -131,10 +143,12 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
     md5 = md5sum
     upload_obj.package_md5 = md5
     upload_obj.save()
+    # 实例化状态更新公共类对象
     public_action = PublicAction(md5)
     touch_name = file_name[:-7] if \
         file_name[-7:] == ".tar.gz" else file_name[:-3]
     tmp_dir = os.path.join(package_path, touch_name + random_str)
+    # 创建临时校验路径
     os.mkdir(tmp_dir)
     tar_out = public_utils.local_cmd(f'tar -xvf {file_name} -C {tmp_dir}')
     if tar_out[2] != 0:
@@ -143,11 +157,13 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
             f"安装包{package_name}解压失败或者压缩包格式不合规")
     app_name = package_name.split('-', 1)[0]
     tmp_dir = os.path.join(tmp_dir, app_name)
+    # 查询临时路径下符合规范的yaml
     check_file = os.path.join(tmp_dir, f'{app_name}.yaml')
     if not os.path.exists(check_file):
         return public_action.update_package_status(
             1,
             f"安装包{package_name}:{app_name}.yaml文件不存在")
+    # yaml内容进行标准校验
     explain_yml = ExplainYml(public_action, check_file).explain_yml()
     # 这个校验可能用不到
     if isinstance(explain_yml, bool):
@@ -168,11 +184,13 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
             return public_action.update_package_status(
                 1,
                 f"{package_name}图片格式异常")
-    # 校验产品yml
+    # yaml分为产品，组建，和服务逻辑。产品必须包含服务。因此需对产品类型做子级服务校验
     if kind == 'product':
         service = explain_yml[1].get("service")
         explain_service_list = []
         yml_dirs = os.path.join(tmp_dir, app_name)
+        # 查找产品包路径下符合规则的tar与产品字段内service字段进行比对，
+        # 成功的将会入库，未匹配到的则跳过逻辑。
         service_name = [os.path.join(tmp_dir, i) for i in os.listdir(tmp_dir)]
         service_packages_value = [
             p for p in service_name if
@@ -182,12 +200,15 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
                                 service_packages_value]
         service_package = dict(
             zip(service_packages_key, service_packages_value))
+        # 对匹配到的yaml进行yaml校验，此时逻辑产品下服务包没有合法，
+        # 但产品内service字段存在的service必须有对应的yaml文件。
         for i in service:
             service_dir = os.path.join(yml_dirs, f"{i.get('name')}.yaml")
             if not os.path.exists(service_dir):
                 return public_action.update_package_status(
                     1,
                     f"安装包{package_name}:{i.get('name')}.yaml文件不存在")
+            # 子集服务进行yaml标准校验
             explain_service_yml = ExplainYml(public_action,
                                              service_dir).explain_yml()
             if isinstance(explain_service_yml, bool):
@@ -202,6 +223,8 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
                 return public_action.update_package_status(
                     1, "md5sum命令执行失败")
             md5_service = md5_ser[0].split()[0]
+            # 对合法服务的记录进行创建操作，
+            # 信息会追加入"product_service"字段并归入所属产品yaml，组件则不会有此值。
             UploadPackageHistory.objects.create(
                 operation_uuid=uuid,
                 operation_user=operation_user,
@@ -223,12 +246,13 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
     explain_yml[1]['image'] = image
     explain_yml[1]['package_name'] = package_name
     explain_yml[1]['tmp_dir'] = tmp_dir
-    # 开启写入中间结果  包含入库所有的信息
+    # 开启写入中间结果，包含发布入库所有的信息
     middle_data = os.path.join(project_dir, 'data', f'middle_data-{uuid}.json')
     with open(middle_data, mode='a', encoding='utf-8') as f:
         f.write(json.dumps(explain_yml[1], ensure_ascii=False) + '\n')
     name = explain_yml[1]['name']
     version = explain_yml[1]['version']
+    # 查看同名称同版本情况下是否存在相同的，存在会提示覆盖
     if explain_yml[1]['kind'] == 'product':
         count = ProductHub.objects.filter(pro_version=version,
                                           pro_name=name).count()
@@ -239,6 +263,7 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
         count = "已存在,将覆盖"
     else:
         count = None
+    # 无校验失败则会更新数据库状态为校验成功
     return public_action.update_package_status(0, count)
 
 
@@ -270,6 +295,7 @@ class ExplainYml:
                 1,
                 f"yml包格式错误，检查yml文件{self.yaml_dir}:{e}")
             return False
+        # 将公共字段抽出校验，生成中间结果
         kind = settings.pop('kind', None)
         name = settings.pop('name', None)
         version = settings.pop('version', None)
@@ -298,6 +324,7 @@ class ExplainYml:
                 1,
                 f"yml校验name或version校验失败，检查yml文件{self.yaml_dir}")
             return False
+        # 对剩余字段进行自定义校验
         yml = getattr(self, kind)(settings)
         if isinstance(yml, bool):
             if not yml:
@@ -340,6 +367,7 @@ class ExplainYml:
 
     def service(self, settings):
         """校验kind为service"""
+        # service骨架弱校验
         db_filed = {}
         first_check = {"auto_launch", "monitor", "ports", "resources",
                        "install", "control", "deploy", "base_env"}
@@ -442,6 +470,9 @@ class ExplainYml:
 
 
 def exec_clear(clear_dir):
+    # 清理逻辑，当发布完成时对临时路径进行清空处理，
+    # 此逻辑会考虑状态为正在校验和正在发布状态的情况
+    # 存在清理跳过，后期会考虑只选择一段时间内状态非中间态不做清理逻辑。，
     online = UploadPackageHistory.objects.filter(
         is_deleted=False,
         package_status__in=[2,
@@ -458,11 +489,20 @@ def exec_clear(clear_dir):
 
 @shared_task
 def publish_bak_end(uuid, exc_len):
+    """
+    后台扫描同步等待发布函数
+    params:
+    uuid 当前唯一操作id
+    exc_len 合法安装包个数
+    """
+
     # 增加try，并增加超时机制释放锁
     exc_task = True
     time_count = 0
     try:
         while exc_task and time_count <= 600:
+            # 当所有安装包的状态均不为正在校验，
+            # 并和扫描出得包的个数相同且不为0，进行发布逻辑。
             valid_uuids = UploadPackageHistory.objects.filter(
                 operation_uuid=uuid,
                 package_parent__isnull=True,
@@ -488,6 +528,13 @@ def publish_bak_end(uuid, exc_len):
 
 @shared_task
 def publish_entry(uuid):
+    """
+    前台发扫描台发布函数公共类
+    params:
+    uuid 当前唯一操作id
+    注：此异步任务的调用的前提必须是校验已完成状态
+    """
+    # 修改校验无误的安装包的状态为正在发布状态。
     valid_uuids = UploadPackageHistory.objects.filter(
         is_deleted=False,
         operation_uuid=uuid,
@@ -500,6 +547,7 @@ def publish_entry(uuid):
         package_parent__isnull=True,
         package_status=5)
     valid_packages = {}
+    # 从库获取校验合法的安装包名称
     if valid_uuids:
         for j in valid_uuids:
             valid_packages[j.package_name] = j
@@ -508,6 +556,7 @@ def publish_entry(uuid):
     with open(json_data, "r", encoding="utf8") as fp:
         lines = fp.readlines()
     valid_info = []
+    # 将匹配到的安装包和中间结果的安装包比对，将安装包名替换成历史记录表的model对象
     for line in lines:
         json_line = json.loads(line)
         valid_obj = valid_packages.get(json_line.get('package_name'))
@@ -517,6 +566,7 @@ def publish_entry(uuid):
             valid_info.append(json_line)
     valid_packages_obj = []
     valid_dir = None
+    # 中间结果转入创表函数
     for line in valid_info:
         if line.get('kind') == 'product':
             CreateDatabase(line).create_product()
@@ -528,6 +578,11 @@ def publish_entry(uuid):
             line['package_name'].save()
             logger.error(f'{tmp_dir[0]}路径异常')
             return None
+        # 匹配到的安装包移动至对应路径
+        # 产品包路径 package_hub/xxx/random/product_name/xxxx
+        # 组件路径   package_hub/xxx/app.tar.gz
+        # 产品目标路径   verified/product_name-version/xxx
+        # 组件目标路径   verified/app.tar.gz
         valid_name = tmp_dir[0].rsplit('/', 1)
         valid_pk = f"{valid_name[1]}-{tmp_dir[1]}" if len(
             tmp_dir) == 2 else valid_name[1]

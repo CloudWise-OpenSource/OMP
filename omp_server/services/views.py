@@ -83,6 +83,10 @@ class ServiceDetailView(GenericViewSet, RetrieveModelMixin):
 
 
 class ServiceActionView(GenericViewSet, CreateModelMixin):
+    """
+        create:
+        服务启停删除
+    """
     queryset = Service.objects.all()
     serializer_class = ServiceActionSerializer
 
