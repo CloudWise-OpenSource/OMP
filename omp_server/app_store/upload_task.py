@@ -12,11 +12,20 @@ PROJECT_DIR = os.path.dirname(os.path.dirname(CURRENT_DIR))
 
 
 class CreateDatabase(object):
+    """
+     创建产品表，服务表，标签表公共类
+     params json_data创建表所需要的json
+     label_type json归属类型
+     eg: 1 产品类型
+    """
     def __init__(self, json_data):
         self.json_data = json_data
         self.label_type = None
 
     def explain(self, data):
+        """
+        将dict list转换成 json
+        """
         data_info = self.json_data.get(data)
         if data_info:
             if isinstance(data_info, dict) or isinstance(data_info, list):
@@ -26,6 +35,9 @@ class CreateDatabase(object):
         return data_info
 
     def create_product(self):
+        """
+        创建产品表
+        """
         self.label_type = 1
         self.create_lab()
         _dic = {
@@ -59,11 +71,18 @@ class CreateDatabase(object):
         else:
             app_obj = ProductHub.objects.create(**_dic)
         app_obj.save()
+        # 创建lab表
         self.create_pro_app_lab(app_obj)
         service = self.json_data.pop('product_service')
+        # 创建服务表
         self._create_service(service, app_obj)
 
     def _create_service(self, service, app_obj):
+        """
+        创建服务表
+        params service service的json字段，格式同json_data一致
+        app_obj 需要关联产品表的对象
+        """
         pro_history = app_obj.pro_package
         service_obj = UploadPackageHistory.objects.filter(
             package_parent=pro_history)
@@ -116,6 +135,9 @@ class CreateDatabase(object):
             # )
 
     def create_component(self):
+        """
+        创建组件表 逻辑同创建产品表一致
+        """
         self.label_type = 0
         self.create_lab()
         _dic = {
@@ -158,6 +180,9 @@ class CreateDatabase(object):
         self.create_pro_app_lab(app_obj)
 
     def create_pro_app_lab(self, obj):
+        """
+        创建lab表和服务表应用表做多对多关联
+        """
         labels = self.json_data.get('labels')
         for i in labels:
             label_obj = Labels.objects.get(
@@ -168,6 +193,9 @@ class CreateDatabase(object):
                 obj.app_labels.add(label_obj)
 
     def create_lab(self):
+        """
+        创建lab表，未存在的名称做创建，已存在的跳过处理
+        """
         labels_obj = Labels.objects.filter(label_type=self.label_type)
         labels = [i.label_name for i in labels_obj]
         compare_labels = set(self.json_data.get('labels')) - set(labels)
