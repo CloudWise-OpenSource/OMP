@@ -36,6 +36,12 @@ class RedisLock(object):
 
 
 def back_end_verified_init(operation_user):
+    """
+    后台扫描接口
+    :param operation_user: 操作用户
+    :return:
+    """
+    # uuid 自己生成，上redis锁，如果存在则返回当前锁及包名
     uuid = str(round(time.time() * 1000))
     redis_obj = RedisLock(
         host=OMP_REDIS_HOST, port=OMP_REDIS_PORT,
@@ -52,6 +58,7 @@ def back_end_verified_init(operation_user):
         os.path.isfile(os.path.join(back_verified, p)) and
         (p.endswith('.tar') or p.endswith('.tar.gz'))]
     redis_key.lpush("back_end_verified", uuid, ",".join(exec_name))
+    # 设置过期时间，同时创建异步校验任务及发布任务
     redis_key.expire("back_end_verified", 3600)
     for j in exec_name:
         upload_obj = UploadPackageHistory(
@@ -67,6 +74,7 @@ def back_end_verified_init(operation_user):
 
 
 def front_end_verified_init(uuid, operation_user, package_name, obj_id, md5=None):
+    # 前端发布校验接口
     random_str = ''.join(
         random.sample('abcdefghijklmnopqrstuvwxyz1234567890', 10))
     if md5:
