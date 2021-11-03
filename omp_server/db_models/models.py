@@ -409,6 +409,8 @@ class ApplicationHub(TimeStampMixin):
         """元数据"""
         db_table = 'omp_application'
         verbose_name = verbose_name_plural = "应用商店服务"
+        # 服务、组件名称和版本形成联合唯一索引，不允许重复
+        unique_together = ("app_name", "app_version")
 
 
 class GrafanaMainPage(models.Model):
