@@ -504,6 +504,27 @@ class ListHostTest(AutoLoginTest, HostsResourceMixin, GrafanaMainPageResourceMix
             self.assertEqual(res_ls, sorted_res_ls)
 
 
+class HostDetailTest(AutoLoginTest, HostsResourceMixin):
+    """ 主机详情测试类 """
+
+    def setUp(self):
+        super(HostDetailTest, self).setUp()
+        self.host_obj_ls = self.get_hosts()
+
+    def tearDown(self):
+        super(HostDetailTest, self).tearDown()
+        self.destroy_hosts()
+
+    def test_host_detail(self):
+        """ 测试主机详情 """
+        resp = self.get(reverse("hostsDetail-detail", [
+            random.choice(self.host_obj_ls).id
+        ])).json()
+        self.assertEqual(resp.get("code"), 0)
+        self.assertEqual(resp.get("message"), "success")
+        self.assertIsNotNone(resp.get("data"))
+
+
 class UpdateHostTest(AutoLoginTest, HostsResourceMixin):
     """ 更新主机测试类 """
 

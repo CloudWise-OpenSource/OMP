@@ -99,7 +99,6 @@ class HostSerializer(ModelSerializer):
         required=False,
         queryset=Env.objects.all(),
         error_messages={"does_not_exist": "未找到对应环境"})
-    service_num = serializers.SerializerMethodField()
 
     class Meta:
         """ 元数据 """
@@ -110,10 +109,6 @@ class HostSerializer(ModelSerializer):
             "memory", "cpu", "disk", "is_maintenance", "host_agent",
             "monitor_agent", "host_agent_error", "monitor_agent_error",
         )
-
-    def get_service_num(self, obj):
-        """ 获取服务总数 """
-        return Service.objects.filter(ip=obj.ip).count()
 
     def validate_instance_name(self, instance_name):
         """ 校验实例名是否重复 """
@@ -229,6 +224,38 @@ class HostSerializer(ModelSerializer):
         return super(HostSerializer, self).update(instance, validated_data)
 
 
+class HostOperateLogSerializer(ModelSerializer):
+    """ 主机操作记录序列化器类 """
+
+    class Meta:
+        """ 元数据 """
+        model = HostOperateLog
+        fields = '__all__'
+
+
+class HostDetailSerializer(ModelSerializer):
+    """ 主机详细信息序列化类 """
+
+    history = HostOperateLogSerializer(
+        source="hostoperatelog_set.all", many=True)
+    deployment_information = serializers.SerializerMethodField()
+
+    class Meta:
+        """ 元数据 """
+        model = Host
+        exclude = ("is_deleted", "agent_dir", "password", "host_name", "env",
+                   "host_agent_error", "monitor_agent_error")
+
+    def get_deployment_information(self, obj):
+        result_ls = []
+        base_env_queryset = Service.objects.filter(
+            ip=obj.ip, service__is_base_env=True)
+        if base_env_queryset.exists():
+            result_ls = list(base_env_queryset.values(
+                "service__app_name", "service__app_version", "service__app_logo"))
+        return result_ls
+
+
 class HostFieldCheckSerializer(ModelSerializer):
     """ 主机字段重复性校验序列化器 """
 
@@ -342,15 +369,6 @@ class HostAgentRestartSerializer(HostIdsSerializer):
             id__in=validated_data.get("host_ids", [])
         ).update(host_agent=1)
         return validated_data
-
-
-class HostOperateLogSerializer(ModelSerializer):
-    """ 主机操作记录序列化器类 """
-
-    class Meta:
-        """ 元数据 """
-        model = HostOperateLog
-        fields = '__all__'
 
 
 class HostBatchValidateSerializer(Serializer):
