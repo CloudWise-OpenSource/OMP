@@ -282,6 +282,21 @@ class ExplainYml:
         self.yaml_dir = yaml_dir.rsplit("/", 1)[1]
         self.check_obj = FiledCheck(self.yaml_dir, self.db_obj)
 
+    def check_book_tools(self, key, value):
+        """
+        校验值bool类型，前置条件，需强校验通过
+        后期根据需求进行扩展
+        params:
+        key输出错误日志的key
+        value需要判断的值
+        """
+        if not isinstance(value, bool):
+            self.db_obj.update_package_status(
+                1,
+                f"yml校验{key}非bool值，检查yml文件{self.yaml_dir}")
+            return True
+        return False
+
     def explain_yml(self):
         """
         各种kind类型公共字段
@@ -380,8 +395,15 @@ class ExplainYml:
             return False
         # auto_launch 校验
         first_strong_check = {"auto_launch"}
-        if not self.check_obj.strong_check(settings, first_strong_check):
+        if not self.check_obj.strong_check(settings, first_strong_check) \
+                or self.check_book_tools("auto_launch", settings.get("auto_launch")):
             return False
+        # base_env 校验
+        base_env_strong_check = {"base_env"}
+        if not self.check_obj.strong_check(settings, base_env_strong_check) \
+                or self.check_book_tools("base_env", settings.get("base_env")):
+            return False
+        db_filed['base_env'] = settings.pop('base_env')
         # ports 校验
         ports = settings.pop('ports')
         ports_strong_check = {"name", "protocol", "default", "key"}
