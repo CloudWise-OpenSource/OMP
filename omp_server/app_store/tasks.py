@@ -311,12 +311,12 @@ class ExplainYml:
         key输出错误日志的key
         value需要判断的值
         """
-        if not isinstance(value, bool):
-            self.db_obj.update_package_status(
-                1,
-                f"yml校验{key}非bool值，检查yml文件{self.yaml_dir}")
-            return True
-        return False
+        if value.lower() == "false" or value.lower() == "true":
+            return False
+        self.db_obj.update_package_status(
+            1,
+            f"yml校验{key}非bool值，检查yml文件{self.yaml_dir}")
+        return True
 
     def explain_yml(self):
         """

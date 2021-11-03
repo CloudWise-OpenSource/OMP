@@ -49,9 +49,9 @@ test_service = {
             "init": "./scripts/init.sh"
         }
     ],
+    "base_env": False,
     "extend_fields": {
         "auto_launch": True,
-        "base_env": False,
         "monitor": {
             "process_name": "jenkins",
             "metrics_port": "service_port"
@@ -66,8 +66,8 @@ kind: service
 name: jenkins
 version: 2.303.2
 description: "jenkins服务"
-auto_launch: true
-base_env: false
+auto_launch: True
+base_env: False
 monitor:
   process_name: "jenkins"
   metrics_port: {service_port}
@@ -98,27 +98,27 @@ control:
 
 component_yml = """
 kind: component
-name: tengine  
+name: tengine
 version: 2.3.3
-description: "服务tengine" 
-labels:          
+description: "服务tengine"
+labels:
   - WEB服务
-auto_launch: true 
-base_env: false
+auto_launch: True
+base_env: False
 monitor:
-  process_name: "nginx"  
+  process_name: "nginx"
   metrics_port: {service_port}
 ports:
-  - name: 服务端口      
-    protocol: TCP     
-    key: service_port 
-    default: 80 
-deploy:    
+  - name: 服务端口
+    protocol: TCP
+    key: service_port
+    default: 80
+deploy:
 dependencies:
 resources:
   cpu: 1000m
-  memory: 500m      
-install:        
+  memory: 500m
+install:
   - name: "安装目录"
     key: base_dir
     default: "{data_path}/tengine"
@@ -128,7 +128,7 @@ install:
   - name: "vhosts"
     key: vhosts_dir
     default: "{data_path}/tengine/vhosts"
-control: 
+control:
   start: "./bin/start.sh"
   stop: "./bin/stop.sh"
   restart: "./bin/restart.sh"
@@ -186,7 +186,8 @@ class PackageUploadTest(AutoLoginTest):
     )
     def test_app_store_upload(self, isfile, listdir, explain, exists, mkdir, local_cmd):
         # 正向前端发布
-        upload_obj = UploadPackageHistory.objects.get(operation_uuid='test-uuid')
+        upload_obj = UploadPackageHistory.objects.get(
+            operation_uuid='test-uuid')
         local_cmd.side_effect = [
             ("test-md5 jenkins-1.0.0-test-md5.tar.gz", "", 0),
             ("success", "", 0),
@@ -204,7 +205,8 @@ class PackageUploadTest(AutoLoginTest):
                            "front_end_verified",
                            upload_obj.id)
         upload_obj.refresh_from_db()
-        clear_file = os.path.join(project_dir, 'data', "middle_data-test-uuid.json")
+        clear_file = os.path.join(
+            project_dir, 'data', "middle_data-test-uuid.json")
         os.remove(clear_file)
         res = upload_obj.package_status
         self.assertEqual(res, 0)
@@ -213,7 +215,8 @@ class PackageUploadTest(AutoLoginTest):
                        return_value=("test-md5 jenkins-1.0.0-test-md5.tar.gz", "", 1))
     def test_app_store_upload_md5(self, local_cmd):
         # 反向md5校验失败
-        upload_obj = UploadPackageHistory.objects.get(operation_uuid='test-uuid')
+        upload_obj = UploadPackageHistory.objects.get(
+            operation_uuid='test-uuid')
         front_end_verified(upload_obj.operation_uuid,
                            upload_obj.operation_user,
                            upload_obj.package_name,
@@ -232,7 +235,8 @@ class PackageUploadTest(AutoLoginTest):
         return_value=None)
     def test_app_store_upload_tar(self, mkdir, local_cmd):
         # 反向tar解压失败
-        upload_obj = UploadPackageHistory.objects.get(operation_uuid='test-uuid')
+        upload_obj = UploadPackageHistory.objects.get(
+            operation_uuid='test-uuid')
         local_cmd.side_effect = [
             ("test-md5 jenkins-1.0.0-test-md5.tar.gz", "", 0),
             ("false", "", 1)
@@ -261,7 +265,8 @@ class PackageUploadTest(AutoLoginTest):
         return_value=None)
     def test_app_store_upload_file_check(self, mkdir, exists, local_cmd):
         # 产品或组建yaml文件检测文件存在
-        upload_obj = UploadPackageHistory.objects.get(operation_uuid='test-uuid')
+        upload_obj = UploadPackageHistory.objects.get(
+            operation_uuid='test-uuid')
         local_cmd.side_effect = [
             ("test-md5 jenkins-1.0.0-test-md5.tar.gz", "", 0),
             ("false", "", 0)
@@ -307,7 +312,8 @@ class PackageUploadTest(AutoLoginTest):
         return_value=None)
     def test_app_store_upload_file_service(self, mkdir, isfile, listdir, explain, image, exists, local_cmd):
         # 服务yaml文件检测文件存在
-        upload_obj = UploadPackageHistory.objects.get(operation_uuid='test-uuid')
+        upload_obj = UploadPackageHistory.objects.get(
+            operation_uuid='test-uuid')
         local_cmd.side_effect = [
             ("test-md5 jenkins-1.0.0-test-md5.tar.gz", "", 0),
             ("false", "", 0),
@@ -357,7 +363,8 @@ class PackageUploadTest(AutoLoginTest):
         return_value=None)
     def test_app_store_upload_file_md5(self, mkdir, isfile, listdir, explain, image, exists, local_cmd):
         # 服务md5sum校验失败
-        upload_obj = UploadPackageHistory.objects.get(operation_uuid='test-uuid')
+        upload_obj = UploadPackageHistory.objects.get(
+            operation_uuid='test-uuid')
         local_cmd.side_effect = [
             ("test-md5 jenkins-1.0.0-test-md5.tar.gz", "", 0),
             ("false", "", 0)
@@ -383,7 +390,8 @@ class PackageUploadTest(AutoLoginTest):
     @patch("builtins.open", new_callable=mock_open, read_data=service_yml)
     def test_app_store_explain_service(self, with_open):
         # 正向解析服务
-        upload_obj = UploadPackageHistory.objects.get(operation_uuid='test-uuid')
+        upload_obj = UploadPackageHistory.objects.get(
+            operation_uuid='test-uuid')
         public_action = PublicAction(upload_obj.package_md5)
         explain = ExplainYml(public_action, '/data/test').explain_yml()
         upload_obj.refresh_from_db()
@@ -393,7 +401,8 @@ class PackageUploadTest(AutoLoginTest):
     @patch("builtins.open", new_callable=mock_open, read_data=component_yml)
     def test_app_store_explain_component(self, with_open):
         # 正向解析组件
-        upload_obj = UploadPackageHistory.objects.get(operation_uuid='test-uuid')
+        upload_obj = UploadPackageHistory.objects.get(
+            operation_uuid='test-uuid')
         public_action = PublicAction(upload_obj.package_md5)
         explain = ExplainYml(public_action, '/data/test').explain_yml()
         upload_obj.refresh_from_db()
@@ -403,7 +412,8 @@ class PackageUploadTest(AutoLoginTest):
     @patch("builtins.open", new_callable=mock_open, read_data=product_yml)
     def test_app_store_explain_product(self, with_open):
         # 正向解析产品
-        upload_obj = UploadPackageHistory.objects.get(operation_uuid='test-uuid')
+        upload_obj = UploadPackageHistory.objects.get(
+            operation_uuid='test-uuid')
         public_action = PublicAction(upload_obj.package_md5)
         explain = ExplainYml(public_action, '/data/test').explain_yml()
         upload_obj.refresh_from_db()
@@ -440,7 +450,8 @@ publish_info = """\
 "product_service":\
 [{"kind": "service", "name": "jenkins", "version": "123", "description": "jenkins服务",\
 "dependencies": [{"name": "jdk", "version": "8u211"}],\
-"extend_fields": {"auto_launch": "true", "base_env": "false",\
+"base_env": "False",\
+"extend_fields": {"auto_launch": "true",\
 "monitor": {"process_name": "jenkins"},\
 "resources": {"cpu": "1000m", "memory": "2000m"}},\
 "ports": [{"name": "服务端口", "protocol": "TCP", "key": "service_port", "port": "8080"}],\
@@ -609,6 +620,7 @@ class PackagePublishTest(AutoLoginTest):
         return_value="")
     def test_app_store_scan(self, bak, front, isfile, listdir, redis):
         uuid, exec_name = back_end_verified_init('admin')
-        count = UploadPackageHistory.objects.filter(operation_uuid=uuid).count()
+        count = UploadPackageHistory.objects.filter(
+            operation_uuid=uuid).count()
         self.assertEqual(count, 1)
         self.assertEqual(exec_name[0], "jdk-1.8.1.tar.gz")
