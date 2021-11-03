@@ -18,9 +18,18 @@ class CreateDatabase(object):
      label_type json归属类型
      eg: 1 产品类型
     """
+
     def __init__(self, json_data):
         self.json_data = json_data
         self.label_type = None
+
+    def str_to_bool(self, value):
+        """
+        str转换bool值
+        """
+        str_bool = self.json_data.get(value)
+        result = "true" if str_bool.lower() == "true" else None
+        return bool(result)
 
     def explain(self, data):
         """
@@ -110,7 +119,8 @@ class CreateDatabase(object):
                 "app_controllers": self.explain("control"),
                 "app_package": self.json_data.get("package_name"),
                 "product": app_obj,
-                "extend_fields": self.json_data.get("extend_fields")
+                "extend_fields": self.json_data.get("extend_fields"),
+                "is_base_env": self.str_to_bool("base_env")
             }
             app_queryset = ApplicationHub.objects.filter(
                 app_name=self.json_data.get("name"),
@@ -152,7 +162,8 @@ class CreateDatabase(object):
             "app_controllers": self.explain("control"),
             "app_package": self.json_data.get("package_name"),
             "extend_fields": self.json_data.get("extend_fields"),
-            "app_logo": self.json_data.get("image")
+            "app_logo": self.json_data.get("image"),
+            "is_base_env": self.str_to_bool("base_env")
         }
         app_queryset = ApplicationHub.objects.filter(
             app_name=self.json_data.get("name"),

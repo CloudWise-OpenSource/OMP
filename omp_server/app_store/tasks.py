@@ -170,7 +170,8 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
         return None
     kind = explain_yml[1].get("kind")
     versions = explain_yml[1].get("version")
-    pro_name = f"{explain_yml[1]['name']}-{explain_yml[1]['version']}"
+    name = explain_yml[1].get("name")
+    pro_name = f"{name}-{versions}"
     # 校验图片
     image = None
     if kind == 'product' or 'component':
@@ -187,6 +188,12 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
     # yaml分为产品，组建，和服务逻辑。产品必须包含服务。因此需对产品类型做子级服务校验
     if kind == 'product':
         service = explain_yml[1].get("service")
+        count = ProductHub.objects.filter(pro_version=versions,
+                                          pro_name=name).count()
+        if count != 0:
+            return public_action.update_package_status(
+                1,
+                f"安装包{package_name}已存在:请确保name联合version唯一")
         explain_service_list = []
         yml_dirs = os.path.join(tmp_dir, app_name)
         # 查找产品包路径下符合规则的tar与产品字段内service字段进行比对，
@@ -213,10 +220,18 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
                                              service_dir).explain_yml()
             if isinstance(explain_service_yml, bool):
                 return None
-            name = i.get('name')
-            service_pk = service_package.get(name)
+            ser_name = i.get('name')
+            service_pk = service_package.get(ser_name)
             if not service_pk:
                 continue
+            # 校验服务是否唯一,无安装包跳过逻辑后
+            count = ApplicationHub.objects.filter(app_version=ser_name,
+                                                  app_name=i.get("version")).count()
+            if count != 0:
+                return public_action.update_package_status(
+                    1,
+                    f"安装包{package_name}服务{ser_name}已存在:请确保name联合version唯一")
+            # 校验md5
             service_pk_name = service_pk.rsplit("/", 1)[1]
             md5_ser = public_utils.local_cmd(f'md5sum {service_pk}')
             if md5_ser[2] != 0:
@@ -242,6 +257,12 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
         explain_yml[1]['product_service'] = explain_service_list
         tmp_dir = [tmp_dir, versions]
     else:
+        count = ApplicationHub.objects.filter(app_version=versions,
+                                              app_name=name).count()
+        if count != 0:
+            return public_action.update_package_status(
+                1,
+                f"安装包{package_name}已存在:请确保name联合version唯一")
         tmp_dir = [file_name]
     explain_yml[1]['image'] = image
     explain_yml[1]['package_name'] = package_name
@@ -250,21 +271,21 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
     middle_data = os.path.join(project_dir, 'data', f'middle_data-{uuid}.json')
     with open(middle_data, mode='a', encoding='utf-8') as f:
         f.write(json.dumps(explain_yml[1], ensure_ascii=False) + '\n')
-    name = explain_yml[1]['name']
-    version = explain_yml[1]['version']
-    # 查看同名称同版本情况下是否存在相同的，存在会提示覆盖
-    if explain_yml[1]['kind'] == 'product':
-        count = ProductHub.objects.filter(pro_version=version,
-                                          pro_name=name).count()
-    else:
-        count = ApplicationHub.objects.filter(app_version=version,
-                                              app_name=name).count()
-    if count:
-        count = "已存在,将覆盖"
-    else:
-        count = None
+    # 提示存在逻辑注释，改存在校验失败逻辑
+    # name = explain_yml[1]['name']
+    # version = explain_yml[1]['version']
+    # if explain_yml[1]['kind'] == 'product':
+    #    count = ProductHub.objects.filter(pro_version=version,
+    #                                      pro_name=name).count()
+    # else:
+    #    count = ApplicationHub.objects.filter(app_version=version,
+    #                                          app_name=name).count()
+    # if count:
+    #    count = "已存在,将覆盖"
+    # else:
+    #    count = None
     # 无校验失败则会更新数据库状态为校验成功
-    return public_action.update_package_status(0, count)
+    return public_action.update_package_status(0)
 
 
 class ExplainYml:
@@ -281,6 +302,21 @@ class ExplainYml:
         self.yaml_exc = yaml_dir
         self.yaml_dir = yaml_dir.rsplit("/", 1)[1]
         self.check_obj = FiledCheck(self.yaml_dir, self.db_obj)
+
+    def check_book_tools(self, key, value):
+        """
+        校验值bool类型，前置条件，需强校验通过
+        后期根据需求进行扩展
+        params:
+        key输出错误日志的key
+        value需要判断的值
+        """
+        if value.lower() == "false" or value.lower() == "true":
+            return False
+        self.db_obj.update_package_status(
+            1,
+            f"yml校验{key}非bool值，检查yml文件{self.yaml_dir}")
+        return True
 
     def explain_yml(self):
         """
@@ -313,6 +349,11 @@ class ExplainYml:
             self.db_obj.update_package_status(
                 1,
                 f"yml校验description或dependencies校验失败，检查yml文件{self.yaml_dir}")
+            return False
+        if description is not None and len(description) > 200:
+            self.db_obj.update_package_status(
+                1,
+                f"yml校验description长度过长，检查yml文件{self.yaml_dir}")
             return False
         if kind not in kinds:
             self.db_obj.update_package_status(
@@ -375,8 +416,15 @@ class ExplainYml:
             return False
         # auto_launch 校验
         first_strong_check = {"auto_launch"}
-        if not self.check_obj.strong_check(settings, first_strong_check):
+        if not self.check_obj.strong_check(settings, first_strong_check) \
+                or self.check_book_tools("auto_launch", settings.get("auto_launch")):
             return False
+        # base_env 校验
+        base_env_strong_check = {"base_env"}
+        if not self.check_obj.strong_check(settings, base_env_strong_check) \
+                or self.check_book_tools("base_env", settings.get("base_env")):
+            return False
+        db_filed['base_env'] = settings.pop('base_env')
         # ports 校验
         ports = settings.pop('ports')
         ports_strong_check = {"name", "protocol", "default", "key"}
