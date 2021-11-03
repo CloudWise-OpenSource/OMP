@@ -314,6 +314,11 @@ class ExplainYml:
                 1,
                 f"yml校验description或dependencies校验失败，检查yml文件{self.yaml_dir}")
             return False
+        if description is not None and len(description) > 200:
+            self.db_obj.update_package_status(
+                1,
+                f"yml校验description长度过长，检查yml文件{self.yaml_dir}")
+            return False
         if kind not in kinds:
             self.db_obj.update_package_status(
                 1,
