@@ -26,7 +26,8 @@ class ServiceListView(GenericViewSet, ListModelMixin):
         list:
         查询服务列表
     """
-    queryset = Service.objects.all()
+    queryset = Service.objects.filter(
+        service__is_base_env=False)
     serializer_class = ServiceSerializer
     pagination_class = PageNumberPager
     # 过滤，排序字段
