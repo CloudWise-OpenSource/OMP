@@ -23,11 +23,16 @@ class ListServiceTest(AutoLoginTest, ServicesResourceMixin):
     def test_services_list_filter(self):
         """ 测试服务列表过滤 """
 
-        # 查询服务列表 -> 展示所用服务
+        # 查询服务列表 -> 展示所有非基础环境服务
         resp = self.get(self.list_service_url).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
-        self.assertEqual(resp.get("data").get("count"), len(self.service_ls))
+        self.assertEqual(
+            resp.get("data").get("count"),
+            self.service_ls.filter(
+                service__is_base_env=False).count()
+        )
+
         # IP 过滤 -> 模糊匹配
         ip_field = str(random.randint(1, 20))
         resp = self.get(self.list_service_url, {
@@ -37,7 +42,9 @@ class ListServiceTest(AutoLoginTest, ServicesResourceMixin):
         self.assertEqual(resp.get("message"), "success")
         self.assertEqual(
             resp.get("data").get("count"),
-            Service.objects.filter(ip__contains=ip_field).count()
+            Service.objects.filter(
+                service__is_base_env=False,
+                ip__contains=ip_field).count()
         )
 
         # 服务实例名称过滤 -> 模糊匹配
@@ -49,7 +56,8 @@ class ListServiceTest(AutoLoginTest, ServicesResourceMixin):
         self.assertEqual(resp.get("message"), "success")
         self.assertEqual(
             resp.get("data").get("count"),
-            Service.objects.filter(
+            self.service_ls.filter(
+                service__is_base_env=False,
                 service_instance_name__contains=name_field).count()
         )
 
@@ -63,6 +71,7 @@ class ListServiceTest(AutoLoginTest, ServicesResourceMixin):
         self.assertEqual(
             resp.get("data").get("count"),
             Service.objects.filter(
+                service__is_base_env=False,
                 service__app_labels__label_name=label_field).count()
         )
 
@@ -76,6 +85,7 @@ class ListServiceTest(AutoLoginTest, ServicesResourceMixin):
         self.assertEqual(
             resp.get("data").get("count"),
             Service.objects.filter(
+                service__is_base_env=False,
                 service__app_type=app_type).count()
         )
 
@@ -90,8 +100,11 @@ class ListServiceTest(AutoLoginTest, ServicesResourceMixin):
             lambda x: x.get("service_instance_name"),
             resp.get("data").get("results"))
         )
-        target_instance_name_ls = list(Service.objects.order_by(
-            "-created").values_list("service_instance_name", flat=True))[:10]
+        target_instance_name_ls = list(
+            self.service_ls.filter(
+                service__is_base_env=False).order_by(
+                "-created").values_list(
+                "service_instance_name", flat=True))[:10]
         self.assertEqual(instance_name_ls, target_instance_name_ls)
 
         # 传递排序字段，按照指定字段排序
@@ -105,8 +118,11 @@ class ListServiceTest(AutoLoginTest, ServicesResourceMixin):
             lambda x: x.get("service_instance_name"),
             resp.get("data").get("results"))
         )
-        target_instance_name_ls = list(Service.objects.order_by(
-            ordering).values_list("service_instance_name", flat=True))[:10]
+        target_instance_name_ls = list(
+            self.service_ls.filter(
+                service__is_base_env=False).order_by(
+                ordering).values_list(
+                "service_instance_name", flat=True))[:10]
         self.assertEqual(instance_name_ls, target_instance_name_ls)
 
 
