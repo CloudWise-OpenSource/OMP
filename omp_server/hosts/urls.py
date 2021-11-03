@@ -17,8 +17,8 @@ from hosts.views import (
 
 router = DefaultRouter()
 router.register("hosts", HostListView, basename="hosts")
-router.register("hosts", HostDetailView, basename="hosts")
 router.register("hosts", HostUpdateView, basename="hosts")
+router.register("hostsDetail", HostDetailView, basename="hostsDetail")
 router.register("fields", HostFieldCheckView, basename="fields")
 router.register("ips", IpListView, basename="ips")
 router.register("maintain", HostMaintenanceView, basename="maintain")

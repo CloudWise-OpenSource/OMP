@@ -517,7 +517,7 @@ class HostDetailTest(AutoLoginTest, HostsResourceMixin):
 
     def test_host_detail(self):
         """ 测试主机详情 """
-        resp = self.get(reverse("hosts-detail", [
+        resp = self.get(reverse("hostsDetail-detail", [
             random.choice(self.host_obj_ls).id
         ])).json()
         self.assertEqual(resp.get("code"), 0)
