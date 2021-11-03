@@ -9,7 +9,8 @@ from django.db import transaction
 
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import (
-    ListModelMixin, CreateModelMixin, UpdateModelMixin
+    ListModelMixin, CreateModelMixin, UpdateModelMixin,
+    RetrieveModelMixin
 )
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
@@ -26,7 +27,7 @@ from hosts.hosts_serializers import (
     HostSerializer, HostMaintenanceSerializer,
     HostFieldCheckSerializer, HostAgentRestartSerializer,
     HostOperateLogSerializer, HostBatchValidateSerializer,
-    HostBatchImportSerializer
+    HostBatchImportSerializer, HostDetailSerializer
 )
 from promemonitor.prometheus import Prometheus
 from promemonitor.grafana_url import explain_url
@@ -102,7 +103,18 @@ class HostListView(GenericViewSet, ListModelMixin, CreateModelMixin):
         return self.get_paginated_response(exists_ls)
 
 
-class HostDetailView(GenericViewSet, UpdateModelMixin):
+class HostDetailView(GenericViewSet, RetrieveModelMixin):
+    """
+        read:
+        查询主机详情
+    """
+    queryset = Host.objects.filter(is_deleted=False)
+    serializer_class = HostDetailSerializer
+    # 操作描述信息
+    get_description = "查询主机详情"
+
+
+class HostUpdateView(GenericViewSet, UpdateModelMixin):
     """
         update:
         更新一个主机

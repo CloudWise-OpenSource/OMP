@@ -9,14 +9,16 @@
 from rest_framework.routers import DefaultRouter
 
 from hosts.views import (
-    HostListView, HostDetailView, HostFieldCheckView,
-    IpListView, HostMaintenanceView, HostAgentRestartView,
-    HostOperateLogView, HostBatchValidateView, HostBatchImportView
+    HostListView, HostDetailView, HostUpdateView,
+    HostFieldCheckView, IpListView, HostMaintenanceView,
+    HostAgentRestartView, HostOperateLogView, HostBatchValidateView,
+    HostBatchImportView
 )
 
 router = DefaultRouter()
 router.register("hosts", HostListView, basename="hosts")
 router.register("hosts", HostDetailView, basename="hosts")
+router.register("hosts", HostUpdateView, basename="hosts")
 router.register("fields", HostFieldCheckView, basename="fields")
 router.register("ips", IpListView, basename="ips")
 router.register("maintain", HostMaintenanceView, basename="maintain")
