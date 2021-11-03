@@ -407,7 +407,7 @@ def update_prometheus():
     # 如果没有占位符的话，则不更新
     with open(prometheus_yml_file, "r") as fp:
         content = fp.read()
-        if "CW_PROMETHEUS_PORT" not in content:
+        if "CW_ALERTMANAGER_PORT" not in content:
             return
     omp_prometheus_data_path = os.path.join(PROJECT_DATA_PATH, "prometheus")
     omp_prometheus_log_path = os.path.join(PROJECT_LOG_PATH, "prometheus")
