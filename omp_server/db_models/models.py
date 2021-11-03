@@ -401,6 +401,9 @@ class ApplicationHub(TimeStampMixin):
     # 冗余字段，用于存储未定义的其他服务相关数据
     extend_fields = models.JSONField(
         "冗余字段", null=True, blank=True, help_text="冗余字段")
+    # 解析服务数据后，如果服务为jdk、python等，则其为基础数据
+    is_base_env = models.BooleanField(
+        "是否为基础环境", default=False, help_text="是否为基础环境")
 
     class Meta:
         """元数据"""
