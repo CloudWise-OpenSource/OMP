@@ -104,8 +104,14 @@ class CreateDatabase(object):
             if valid_obj:
                 line['package_name'] = valid_obj
                 valid_info.append(line)
+        # 实例化变量添加label标签，创建产品名称标签，类型组件
+        self.json_data['labels'] = [app_obj.pro_name]
+        self.label_type = 0
+        self.create_lab()
         for info in valid_info:
             self.json_data = info
+            # 服务json添加labels字段，给create_pro_app_lab做筛选
+            self.json_data['labels'] = [app_obj.pro_name]
             # 按照服务名和版本进行划分 如果存在则覆盖，否则创建
             _dic = {
                 "is_release": True,
@@ -129,7 +135,9 @@ class CreateDatabase(object):
             if app_queryset.exists():
                 app_queryset.update(**_dic)
             else:
-                ApplicationHub.objects.create(**_dic)
+                ser_obj = ApplicationHub.objects.create(**_dic)
+                # 做多对多关联
+                self.create_pro_app_lab(ser_obj)
             # ApplicationHub.objects.create(
             #     is_release=True, app_type=1,
             #     app_name=self.json_data.get("name"),
