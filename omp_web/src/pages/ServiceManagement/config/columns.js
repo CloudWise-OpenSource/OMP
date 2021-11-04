@@ -304,7 +304,7 @@ export const DetailHost = ({
                 style={{
                   overflowY: "scroll",
                   paddingTop: 10,
-                  height: "100%",
+                  //height: "100%",
                   height: wrapperRef.current
                     ? wrapperRef.current?.offsetHeight - 100
                     : 100,
@@ -312,24 +312,14 @@ export const DetailHost = ({
               >
                 {data.history?.map((item) => {
                   return (
-                    <>
-                      <Timeline.Item key={item.created}>
-                        <p style={{ color: "#595959" }}>
-                          [{item.username}] {item.description}
-                        </p>
-                        <p style={{ color: "#595959" }}>
-                          {moment(item.created).format("YYYY-MM-DD HH:mm:ss")}
-                        </p>
-                      </Timeline.Item>
-                      <Timeline.Item key={item.created}>
-                        <p style={{ color: "#595959" }}>
-                          [{item.username}] {item.description}
-                        </p>
-                        <p style={{ color: "#595959" }}>
-                          {moment(item.created).format("YYYY-MM-DD HH:mm:ss")}
-                        </p>
-                      </Timeline.Item>
-                    </>
+                    <Timeline.Item key={item.created}>
+                      <p style={{ color: "#595959" }}>
+                        [{item.username}] {item.description}
+                      </p>
+                      <p style={{ color: "#595959" }}>
+                        {moment(item.created).format("YYYY-MM-DD HH:mm:ss")}
+                      </p>
+                    </Timeline.Item>
                   );
                 })}
               </Timeline>
@@ -500,7 +490,6 @@ const getColumnsConfig = (
       title: "功能模块",
       key: "label_name",
       dataIndex: "label_name",
-      align: "center",
       usefilter: true,
       queryRequest: queryRequest,
       ellipsis: true,

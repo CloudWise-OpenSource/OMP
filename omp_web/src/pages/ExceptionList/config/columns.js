@@ -36,6 +36,7 @@ const getColumnsConfig = (
       title: "IP地址",
       key: "ip",
       dataIndex: "ip",
+      //width: 180,
       ellipsis: true,
       sorter: (a, b) => a.ip - b.ip,
       sortDirections: ["descend", "ascend"],
