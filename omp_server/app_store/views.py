@@ -65,8 +65,9 @@ class LabelListView(GenericViewSet, ListModelMixin):
         list:
         查询所有标签列表
     """
-    queryset = Labels.objects.all().values_list(
-        "label_name", flat=True)
+    queryset = Labels.objects.filter(
+        applicationhub__app_type=ApplicationHub.APP_TYPE_COMPONENT
+    ).order_by("id").values_list("label_name", flat=True).distinct()
     # 过滤，排序字段
     filter_backends = (DjangoFilterBackend,)
     filter_class = LabelFilter

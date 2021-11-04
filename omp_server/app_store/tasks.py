@@ -703,14 +703,15 @@ def add_prometheus(main_history_id):
 
 
 @shared_task
-def install_service(main_history_id):
+def install_service(main_history_id, username="admin"):
     """
     安装服务
     :param main_history_id: MainInstallHistory 主表 id
+    :param username: 执行用户
     :return:
     """
     try:
-        executor = InstallServiceExecutor(main_history_id)
+        executor = InstallServiceExecutor(main_history_id, username)
         is_err = executor.main()
         logger.error(f"Install Service Task Success [{main_history_id}]")
     except Exception as err:
