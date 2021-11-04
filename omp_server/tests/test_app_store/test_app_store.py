@@ -4,25 +4,24 @@ from rest_framework.reverse import reverse
 
 from tests.base import AutoLoginTest
 from tests.mixin import (
-    LabelsResourceMixin, ApplicationResourceMixin,
-    ProductResourceMixin
+    ApplicationResourceMixin, ProductResourceMixin
 )
 from db_models.models import (
     Labels, ApplicationHub
 )
 
 
-class LabelListTest(AutoLoginTest, LabelsResourceMixin):
+class LabelListTest(AutoLoginTest, ApplicationResourceMixin):
     """ 标签列表测试类 """
 
     def setUp(self):
         super(LabelListTest, self).setUp()
         self.label_list_url = reverse("labels-list")
-        self.label_ls = self.get_labels()
+        self.get_application()
 
     def tearDown(self):
         super(LabelListTest, self).tearDown()
-        self.destroy_labels()
+        self.destroy_application()
 
     def test_label_list(self):
         """ 测试标签列表 """
@@ -33,7 +32,9 @@ class LabelListTest(AutoLoginTest, LabelsResourceMixin):
         self.assertEqual(resp.get("message"), "success")
         self.assertEqual(
             set(resp.get("data")),
-            set(Labels.objects.values_list("label_name", flat=True))
+            set(Labels.objects.filter(
+                applicationhub__app_type=ApplicationHub.APP_TYPE_COMPONENT
+            ).order_by("id").values_list("label_name", flat=True).distinct())
         )
 
         # 查询指定类型标签 -> 返回指定类型标签列表数据
@@ -46,8 +47,9 @@ class LabelListTest(AutoLoginTest, LabelsResourceMixin):
         self.assertEqual(
             set(resp.get("data")),
             set(Labels.objects.filter(
-                label_type=choice[0]
-            ).values_list("label_name", flat=True))
+                label_type=choice[0],
+                applicationhub__app_type=ApplicationHub.APP_TYPE_COMPONENT
+            ).order_by("id").values_list("label_name", flat=True).distinct())
         )
 
 
