@@ -209,6 +209,7 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
             zip(service_packages_key, service_packages_value))
         # 对匹配到的yaml进行yaml校验，此时逻辑产品下服务包没有合法，
         # 但产品内service字段存在的service必须有对应的yaml文件。
+        name_version = []
         for i in service:
             service_dir = os.path.join(yml_dirs, f"{i.get('name')}.yaml")
             if not os.path.exists(service_dir):
@@ -221,6 +222,8 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
             if isinstance(explain_service_yml, bool):
                 return None
             ser_name = i.get('name')
+            name_version.append(
+                {'name': ser_name, 'version': i.get('version')})
             service_pk = service_package.get(ser_name)
             if not service_pk:
                 continue
@@ -255,6 +258,7 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
             explain_service_yml[1]['package_name'] = service_pk_name
             explain_service_list.append(explain_service_yml[1])
         explain_yml[1]['product_service'] = explain_service_list
+        explain_yml[1]['service'] = name_version
         tmp_dir = [tmp_dir, versions]
     else:
         count = ApplicationHub.objects.filter(app_version=versions,
@@ -391,7 +395,7 @@ class ExplainYml:
                 f"yml校验service校验失败，检查yml文件{self.yaml_dir}")
             return False
         for i in service:
-            if not i.get("name") or not i.get("version"):
+            if not i.get("name"):
                 self.db_obj.update_package_status(
                     1,
                     f"yml校验service校验失败，检查yml文件{self.yaml_dir}")
@@ -406,12 +410,12 @@ class ExplainYml:
         db_filed['labels'] = label
         return True, db_filed
 
-    def service(self, settings):
+    def service_component(self, settings):
         """校验kind为service"""
         # service骨架弱校验
         db_filed = {}
         first_check = {"auto_launch", "monitor", "ports", "resources",
-                       "install", "control", "deploy", "base_env"}
+                       "install", "control", "deploy", "base_env", "affinity"}
         if not self.check_obj.weak_check(settings, first_check):
             return False
         # auto_launch 校验
@@ -497,8 +501,24 @@ class ExplainYml:
             return False
         return True, db_filed
 
+    def service(self, settings):
+        """
+        创建服务校验类，原服务类变为基类
+        """
+        level = settings.pop('level', -1)
+        if level == -1:
+            self.db_obj.update_package_status(
+                1,
+                f"level，检查yml文件{self.yaml_dir}")
+            return False
+        result = self.service_component(settings)
+        if isinstance(result, bool):
+            return False
+        settings['level'] = level
+        return True, {}
+
     def upgrade(self, settings):
-        return self.service(settings)
+        return self.service_component(settings)
 
     def component(self, settings):
         # 校验label,继承service
@@ -510,7 +530,7 @@ class ExplainYml:
                 f"yml校验labels失败，检查yml文件{self.yaml_dir}")
             return False
         db_filed['labels'] = label
-        result = self.service(settings)
+        result = self.service_component(settings)
         if isinstance(result, bool):
             return False
         db_filed.update(result[1])

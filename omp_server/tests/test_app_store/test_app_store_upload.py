@@ -27,7 +27,7 @@ test_product = {
     "description": "这是jenkins",
     "labels": ["CI&CD"],
     "dependencies": None,
-    "service": [{"name": "jenkins", "version": "2.303.2"}],
+    "service": [{"name": "jenkins"}],
     "extend_fields": {}
 }
 
@@ -52,6 +52,8 @@ test_service = {
     "base_env": False,
     "extend_fields": {
         "auto_launch": True,
+        "affinity:": None,
+        "level": "1",
         "monitor": {
             "process_name": "jenkins",
             "metrics_port": "service_port"
@@ -68,6 +70,7 @@ version: 2.303.2
 description: "jenkins服务"
 auto_launch: True
 base_env: False
+level: 1
 monitor:
   process_name: "jenkins"
   metrics_port: {service_port}
@@ -87,6 +90,7 @@ install:
   - name: "安装目录"
     key: base_dir
     default: "{data_path}/jeknins"
+affinity:
 control:
   start: "./bin/start.sh"
   stop: "./bin/stop.sh"
@@ -114,6 +118,7 @@ ports:
     key: service_port
     default: 80
 deploy:
+affinity:
 dependencies:
 resources:
   cpu: 1000m
@@ -147,7 +152,6 @@ labels:
 dependencies:
 service:
   - name: jenkins
-    version: 2.303.2
 """
 
 
@@ -441,17 +445,17 @@ publish_info = """\
 {"name": "tomcat1.88", "version": "1.88"},\
 {"name": "home1.99", "version": "1.99"}],\
 "extend_fields": {},\
-"service": [{"name": "jenkinss01", "version": "010101"},\
-{"name": "jenkinsss01", "version": "010101-01.01"},\
-{"name": "jenkinssss01", "version": "01010101"},\
-{"name": "qqqqqqqqqq01", "version": "11011"},\
-{"name": "jenkins", "version": "111111111"}],\
+"service": [{"name": "jenkinss01"},\
+{"name": "jenkinsss01"},\
+{"name": "jenkinssss01"},\
+{"name": "qqqqqqqqqq01"},\
+{"name": "jenkins"}],\
 "labels": ["mysql_db"],\
 "product_service":\
 [{"kind": "service", "name": "jenkins", "version": "123", "description": "jenkins服务",\
 "dependencies": [{"name": "jdk", "version": "8u211"}],\
 "base_env": "False",\
-"extend_fields": {"auto_launch": "true",\
+"extend_fields": {"auto_launch": "true","affinity":"","level":"1",\
 "monitor": {"process_name": "jenkins"},\
 "resources": {"cpu": "1000m", "memory": "2000m"}},\
 "ports": [{"name": "服务端口", "protocol": "TCP", "key": "service_port", "port": "8080"}],\
