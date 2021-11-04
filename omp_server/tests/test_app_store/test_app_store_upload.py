@@ -53,7 +53,7 @@ test_service = {
     "extend_fields": {
         "auto_launch": True,
         "affinity:": None,
-        "leve": "1",
+        "level": "1",
         "monitor": {
             "process_name": "jenkins",
             "metrics_port": "service_port"
@@ -70,7 +70,7 @@ version: 2.303.2
 description: "jenkins服务"
 auto_launch: True
 base_env: False
-leve: 1
+level: 1
 monitor:
   process_name: "jenkins"
   metrics_port: {service_port}
@@ -455,7 +455,7 @@ publish_info = """\
 [{"kind": "service", "name": "jenkins", "version": "123", "description": "jenkins服务",\
 "dependencies": [{"name": "jdk", "version": "8u211"}],\
 "base_env": "False",\
-"extend_fields": {"auto_launch": "true","affinity":"","leve":"1",\
+"extend_fields": {"auto_launch": "true","affinity":"","level":"1",\
 "monitor": {"process_name": "jenkins"},\
 "resources": {"cpu": "1000m", "memory": "2000m"}},\
 "ports": [{"name": "服务端口", "protocol": "TCP", "key": "service_port", "port": "8080"}],\

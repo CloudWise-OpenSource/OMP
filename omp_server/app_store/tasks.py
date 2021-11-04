@@ -209,6 +209,7 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
             zip(service_packages_key, service_packages_value))
         # 对匹配到的yaml进行yaml校验，此时逻辑产品下服务包没有合法，
         # 但产品内service字段存在的service必须有对应的yaml文件。
+        name_version = []
         for i in service:
             service_dir = os.path.join(yml_dirs, f"{i.get('name')}.yaml")
             if not os.path.exists(service_dir):
@@ -221,6 +222,8 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
             if isinstance(explain_service_yml, bool):
                 return None
             ser_name = i.get('name')
+            name_version.append(
+                {'name': ser_name, 'version': i.get('version')})
             service_pk = service_package.get(ser_name)
             if not service_pk:
                 continue
@@ -255,6 +258,7 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
             explain_service_yml[1]['package_name'] = service_pk_name
             explain_service_list.append(explain_service_yml[1])
         explain_yml[1]['product_service'] = explain_service_list
+        explain_yml[1]['service'] = name_version
         tmp_dir = [tmp_dir, versions]
     else:
         count = ApplicationHub.objects.filter(app_version=versions,
@@ -501,16 +505,16 @@ class ExplainYml:
         """
         创建服务校验类，原服务类变为基类
         """
-        leve = settings.pop('leve', -1)
-        if leve == -1:
+        level = settings.pop('level', -1)
+        if level == -1:
             self.db_obj.update_package_status(
                 1,
-                f"yml校验leve值缺失，检查yml文件{self.yaml_dir}")
+                f"level，检查yml文件{self.yaml_dir}")
             return False
         result = self.service_component(settings)
         if isinstance(result, bool):
             return False
-        settings['leve'] = leve
+        settings['level'] = level
         return True, {}
 
     def upgrade(self, settings):
