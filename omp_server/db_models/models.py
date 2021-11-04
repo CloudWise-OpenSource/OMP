@@ -374,7 +374,7 @@ class ApplicationHub(TimeStampMixin):
         null=True, blank=True, help_text="应用描述")
     # 应用端口使用TextField字段进行存储
     # 在入库时使用json.dumps方法处理，读取时使用json.loads方法反向解析
-    # 存储数据格式为[{"port": 18080, "key": "http_port"}]
+    # 存储数据格式为[{"default": 18080, "key": "http_port", "name": "服务端口"}]
     app_port = models.TextField(
         "应用端口", null=True, blank=True, help_text="应用端口")
     # 以下字段使用方法同应用端口
