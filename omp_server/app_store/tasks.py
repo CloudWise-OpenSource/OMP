@@ -391,7 +391,7 @@ class ExplainYml:
                 f"yml校验service校验失败，检查yml文件{self.yaml_dir}")
             return False
         for i in service:
-            if not i.get("name") or not i.get("version"):
+            if not i.get("name"):
                 self.db_obj.update_package_status(
                     1,
                     f"yml校验service校验失败，检查yml文件{self.yaml_dir}")
@@ -406,12 +406,12 @@ class ExplainYml:
         db_filed['labels'] = label
         return True, db_filed
 
-    def service(self, settings):
+    def service_component(self, settings):
         """校验kind为service"""
         # service骨架弱校验
         db_filed = {}
         first_check = {"auto_launch", "monitor", "ports", "resources",
-                       "install", "control", "deploy", "base_env"}
+                       "install", "control", "deploy", "base_env", "affinity"}
         if not self.check_obj.weak_check(settings, first_check):
             return False
         # auto_launch 校验
@@ -497,8 +497,24 @@ class ExplainYml:
             return False
         return True, db_filed
 
+    def service(self, settings):
+        """
+        创建服务校验类，原服务类变为基类
+        """
+        leve = settings.pop('leve', -1)
+        if leve == -1:
+            self.db_obj.update_package_status(
+                1,
+                f"yml校验leve值缺失，检查yml文件{self.yaml_dir}")
+            return False
+        result = self.service_component(settings)
+        if isinstance(result, bool):
+            return False
+        settings['leve'] = leve
+        return True, {}
+
     def upgrade(self, settings):
-        return self.service(settings)
+        return self.service_component(settings)
 
     def component(self, settings):
         # 校验label,继承service
@@ -510,7 +526,7 @@ class ExplainYml:
                 f"yml校验labels失败，检查yml文件{self.yaml_dir}")
             return False
         db_filed['labels'] = label
-        result = self.service(settings)
+        result = self.service_component(settings)
         if isinstance(result, bool):
             return False
         db_filed.update(result[1])
