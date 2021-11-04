@@ -213,11 +213,14 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
                               Service.SERVICE_STATUS_STOPPING, Service.SERVICE_STATUS_RESTARTING,
                               Service.SERVICE_STATUS_STOP]
         database_list = Service.objects.filter(service__app_type=ApplicationHub.APP_TYPE_COMPONENT).filter(
-            service__app_labels__label_name__contains="数据库").filter(service_status__in=ignore_status_list)
+            service__app_labels__label_name__contains="数据库").filter(service_status__in=ignore_status_list).filter(
+            service__is_base_env=False)
         service_list = Service.objects.filter(
-            service__app_type=ApplicationHub.APP_TYPE_SERVICE).filter(service_status__in=ignore_status_list)
+            service__app_type=ApplicationHub.APP_TYPE_SERVICE).filter(service_status__in=ignore_status_list).filter(
+            service__is_base_env=False)
         component_list = Service.objects.filter(
-            service__app_type=ApplicationHub.APP_TYPE_COMPONENT).filter(service_status__in=ignore_status_list)
+            service__app_type=ApplicationHub.APP_TYPE_COMPONENT).filter(service_status__in=ignore_status_list).filter(
+            service__is_base_env=False)
         # third_info_all = None  # TODO 暂为空
 
         host_info_all_count = len(host_list)
