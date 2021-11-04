@@ -64,3 +64,31 @@ monitor_port:
   arangodbExporter: 18119
   nacosExporter: 18117
   monitorAgent: 19031
+
+# 基础及公共组件间的等级划分
+# 用于控制服务安装过程中的执行顺序、服务的启停控制顺序
+basic_order:
+  level_0:
+    - jdk
+  level_1:
+    - tengine
+    - mysql
+    - redis
+    - arangodb
+    - minio
+    - httpd
+    - elasticsearch
+    - ignite
+    - zookeeper
+    - rocketmq
+    - postgreSql
+    - prometheus
+    - pushgateway
+    - wkhtmltox
+  level_2:
+    - nacos
+    - xxlJob
+    - kafka
+    - clickhouse
+    - hadoop
+    - flink
