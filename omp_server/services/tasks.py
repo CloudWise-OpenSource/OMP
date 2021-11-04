@@ -6,9 +6,15 @@ import logging
 
 from celery import shared_task
 from celery.utils.log import get_task_logger
-from db_models.models import Service, ServiceHistory
+from db_models.models import (
+    Service, ServiceHistory
+)
 from utils.plugin.salt_client import SaltClient
 import time
+import json
+from promemonitor.prometheus_utils import PrometheusUtils
+from db_models.models import Host
+from django.db.models import F
 
 # 屏蔽celery任务日志中的paramiko日志
 logging.getLogger("paramiko").setLevel(logging.WARNING)
@@ -41,6 +47,25 @@ def exec_action(action, instance, operation_user):
         logger.error("action动作不合法")
         raise ValueError("action动作不合法")
     if action[0] == 'delete':
+        service_port = None
+        if service_obj.service_port is not None:
+            service_port_ls = json.loads(service_obj.service_port)
+            if len(service_port_ls) > 0:
+                service_port = service_port_ls[0].get("default", "")
+        if service_port is not None:
+            service_data = {
+                "service_name": service_obj.service.app_name,
+                "instance_name": service_obj.service_instance_name,
+                "data_path": None,
+                "log_path": None,
+                "env": service_obj.env.name,
+                "ip": ip,
+                "listen_port": service_port
+            }
+            PrometheusUtils().delete_service(service_data)
+        if not service_obj.service.is_base_env:
+            Host.objects.filter(ip=service_obj.ip).update(
+                service_num=F("service_num") + 1)
         service_history_obj = ServiceHistory.objects.filter(
             service=service_obj)
         if len(service_history_obj) != 0:

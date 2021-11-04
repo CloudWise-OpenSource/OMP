@@ -1,6 +1,11 @@
+import json
+
 from rest_framework.reverse import reverse
 
-from db_models.models import ServiceHistory, Service
+from db_models.models import (
+    ServiceHistory, Service, Env,
+    ApplicationHub
+)
 from tests.base import AutoLoginTest
 from tests.mixin import (
     ServicesResourceMixin
@@ -15,14 +20,19 @@ class ListActionTest(AutoLoginTest, ServicesResourceMixin):
 
     def setUp(self):
         super(ListActionTest, self).setUp()
+        env_obj = Env.objects.create(name="default")
+        app_obj = ApplicationHub.objects.create(
+            app_name="test_app", app_version="1.0.0")
         Service.objects.create(
             ip="192.168.0.110",
             service_instance_name="test1",
-            service_port="3306",
             service_status=5,
             alert_count=6,
             self_healing_count=6,
             service_controllers={"start": "1.txt", "stop": "2.txt"},
+            env=env_obj,
+            service=app_obj,
+            service_port=json.dumps([{'default': '18080', 'key': 'http_port'}])
         )
         self.create_action_url = reverse("action-list")
 
@@ -57,7 +67,11 @@ class ListActionTest(AutoLoginTest, ServicesResourceMixin):
     @mock.patch(
         "utils.plugin.salt_client.SaltClient.cmd",
         return_value=(True, "success"))
-    def test_service_action_delete(self, status):
+    @mock.patch(
+        "promemonitor.prometheus_utils.PrometheusUtils.delete_service",
+        return_value=""
+    )
+    def test_service_action_delete(self, delete_service, status):
         service_obj = Service.objects.get(ip="192.168.0.110")
         time_array = time.localtime(int(time.time()))
         time_style = time.strftime("%Y-%m-%d %H:%M:%S", time_array)
