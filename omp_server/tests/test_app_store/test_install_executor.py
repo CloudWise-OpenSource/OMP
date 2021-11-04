@@ -16,7 +16,7 @@ class TestInstallExecutor(TestCase, InstallHistoryResourceMixin):
     def test_action(self):
         """ 测试动作 """
         main_obj, detail_obj_ls = self.get_install_history()
-        executor = InstallServiceExecutor(main_obj.id)
+        executor = InstallServiceExecutor(main_obj.id, "admin")
 
         # 发送执行正常
         with mock.patch.object(SaltClient, "cp_file") as mock_cp_file:
@@ -103,7 +103,7 @@ class TestInstallExecutor(TestCase, InstallHistoryResourceMixin):
         action_ls = (mock_send, mock_unzip,
                      mock_install, mock_init, mock_start)
 
-        executor = InstallServiceExecutor(main_obj.id)
+        executor = InstallServiceExecutor(main_obj.id, "admin")
         # 所有动作执行成功 -> 主流程执行成功
         executor.main()
         main_obj.refresh_from_db()

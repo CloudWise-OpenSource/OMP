@@ -7,9 +7,9 @@ import logging
 from concurrent.futures import (
     ThreadPoolExecutor, as_completed
 )
-
+from django.db.models import F
 from db_models.models import (
-    Host, Service,
+    Host, Service, HostOperateLog, ServiceHistory,
     MainInstallHistory, DetailInstallHistory
 )
 from utils.plugin.salt_client import SaltClient
@@ -22,8 +22,9 @@ class InstallServiceExecutor:
     """ 安装服务执行器 """
     ACTION_LS = ("send", "unzip", "install", "init", "start")
 
-    def __init__(self, main_id, timeout=300):
+    def __init__(self, main_id, username, timeout=300):
         self.main_id = main_id
+        self.username = username
         self.timeout = timeout
         # 安装中是否发生错误，用于流程控制
         self.is_error = False
@@ -32,6 +33,27 @@ class InstallServiceExecutor:
     def now_time():
         return time.strftime(time.strftime(
             "%Y-%m-%d %H:%M:%S", time.localtime()))
+
+    def create_history(self, detail_obj, is_success=True):
+        """ 创建历史记录 """
+        target_ip = detail_obj.service.ip
+        service_name = detail_obj.service.service_instance_name
+        # 写入主机历史记录、服务历史记录
+        target_host = Host.objects.filter(ip=target_ip).first()
+        HostOperateLog.objects.create(
+            username=self.username,
+            description=f"安装服务 [{service_name}]",
+            result="success" if is_success else "failed",
+            host=target_host)
+        ServiceHistory.objects.create(
+            username=self.username,
+            description="安装服务",
+            result="success" if is_success else "failed",
+            service=detail_obj.service)
+        # 主机服务数量+1
+        if is_success:
+            Host.objects.filter(ip=target_ip).update(
+                service_num=F("service_num") + 1)
 
     def send(self, detail_obj):
         """ 发送服务包 """
@@ -93,6 +115,8 @@ class InstallServiceExecutor:
             detail_obj.save()
             detail_obj.service.service_status = Service.SERVICE_STATUS_INSTALL_FAILED
             detail_obj.service.save()
+            # 创建历史记录
+            self.create_history(detail_obj, is_success=False)
             return False, err
         # 发送成功
         logger.info(
@@ -165,6 +189,8 @@ class InstallServiceExecutor:
             detail_obj.save()
             detail_obj.service.service_status = Service.SERVICE_STATUS_INSTALL_FAILED
             detail_obj.service.save()
+            # 创建历史记录
+            self.create_history(detail_obj, is_success=False)
             return False, err
         # 解压成功
         logger.info(
@@ -225,6 +251,8 @@ class InstallServiceExecutor:
             detail_obj.save()
             detail_obj.service.service_status = Service.SERVICE_STATUS_INSTALL_FAILED
             detail_obj.service.save()
+            # 创建历史记录
+            self.create_history(detail_obj, is_success=False)
             return False, err
         # 安装成功
         logger.info(f"Install Success -> [{service_name}]")
@@ -254,7 +282,12 @@ class InstallServiceExecutor:
                 logger.info(f"Init Un Do -> [{service_name}]")
                 detail_obj.init_flag = 2
                 detail_obj.init_msg += f"{self.now_time()} {service_name} 无需执行初始化\n"
+                # 完成安装流程，更新状态为 '安装成功'
+                detail_obj.install_step_status = \
+                    DetailInstallHistory.INSTALL_STATUS_SUCCESS
                 detail_obj.save()
+                # 创建历史记录
+                self.create_history(detail_obj, is_success=True)
                 return True, "Init Un Do"
 
             # 获取 json 文件路径
@@ -264,7 +297,8 @@ class InstallServiceExecutor:
                 target_host.data_folder, "omp_packages",
                 f"{detail_obj.main_install_history.operation_uuid}.json")
 
-            cmd_str = f"python {init_script_path} --local_ip {target_ip} --data_json {json_path}"
+            cmd_str = f"python {init_script_path} --local_ip {target_ip} " \
+                      f"--data_json {json_path}"
             # 执行初始化
             is_success, message = salt_client.cmd(
                 target=target_ip,
@@ -274,24 +308,35 @@ class InstallServiceExecutor:
                 raise Exception(message)
             # 执行成功且 message 有值，则补充至服务日志中
             if is_success and bool(message):
-                detail_obj.install_msg += f"{self.now_time()} 初始化脚本执行成功，脚本输出如下:\n" \
-                                          f"{message}\n"
+                detail_obj.install_msg += \
+                    f"{self.now_time()} 初始化脚本执行成功，脚本输出如下:\n" \
+                    f"{message}\n"
                 detail_obj.save()
         except Exception as err:
             logger.error(f"Init Failed -> [{service_name}]: {err}")
             detail_obj.init_flag = 3
             detail_obj.init_msg += f"{self.now_time()} {service_name} " \
                                    f"初始化服务失败: {err}\n"
-            detail_obj.install_step_status = DetailInstallHistory.INSTALL_STATUS_FAILED
+            # 更新安装流程状态为 '失败'，服务状态为 '安装失败'
+            detail_obj.install_step_status = \
+                DetailInstallHistory.INSTALL_STATUS_FAILED
             detail_obj.save()
-            detail_obj.service.service_status = Service.SERVICE_STATUS_INSTALL_FAILED
+            detail_obj.service.service_status = \
+                Service.SERVICE_STATUS_INSTALL_FAILED
             detail_obj.service.save()
+            # 创建历史记录
+            self.create_history(detail_obj, is_success=False)
             return False, err
         # 安装成功
         logger.info(f"Init Success -> [{service_name}]")
         detail_obj.init_flag = 2
         detail_obj.init_msg += f"{self.now_time()} {service_name} 成功初始化服务\n"
+        # 完成安装流程，更新状态为 '安装成功'
+        detail_obj.install_step_status = \
+            DetailInstallHistory.INSTALL_STATUS_SUCCESS
         detail_obj.save()
+        # 创建历史记录
+        self.create_history(detail_obj, is_success=True)
         return True, "Init Success"
 
     def start(self, detail_obj):
@@ -315,10 +360,9 @@ class InstallServiceExecutor:
                 logger.info(f"Start Un Do -> [{service_name}]")
                 detail_obj.start_flag = 2
                 detail_obj.start_msg += f"{self.now_time()} {service_name} 无需执行启动\n"
-                # 完成安装流程，更新状态为 '安装成功'，服务状态为 '正常'
-                detail_obj.install_step_status = \
-                    DetailInstallHistory.INSTALL_STATUS_SUCCESS
-                detail_obj.service.service_status = Service.SERVICE_STATUS_NORMAL
+                # 服务状态更新为 '正常'
+                detail_obj.service.service_status = \
+                    Service.SERVICE_STATUS_NORMAL
                 detail_obj.service.save()
                 detail_obj.save()
                 return True, "Start Un Do"
@@ -339,29 +383,30 @@ class InstallServiceExecutor:
                 raise Exception(message)
             # 执行成功且 message 有值，则补充至服务日志中
             if is_success and bool(message):
-                detail_obj.install_msg += f"{self.now_time()} 启动脚本执行成功，脚本输出如下:\n" \
-                                          f"{message}\n"
-            detail_obj.save()
+                detail_obj.install_msg += \
+                    f"{self.now_time()} 启动脚本执行成功，脚本输出如下:\n" \
+                    f"{message}\n"
+                detail_obj.save()
         except Exception as err:
             logger.error(f"Start Failed -> [{service_name}]: {err}")
             detail_obj.start_flag = 3
             detail_obj.start_msg += f"{self.now_time()} {service_name} " \
                                     f"启动服务失败: {err}\n"
-            detail_obj.install_step_status = DetailInstallHistory.INSTALL_STATUS_FAILED
             detail_obj.save()
-            detail_obj.service.service_status = Service.SERVICE_STATUS_INSTALL_FAILED
+            # 服务状态更新为 '停止'
+            detail_obj.service.service_status = \
+                Service.SERVICE_STATUS_STOP
             detail_obj.service.save()
             return False, err
         # 安装成功
         logger.info(f"Start Success -> [{service_name}]")
         detail_obj.start_flag = 2
         detail_obj.start_msg += f"{self.now_time()} {service_name} 成功启动服务\n"
-        # 完成安装流程，更新状态为 '安装成功'，服务状态为 '正常'
-        detail_obj.install_step_status = \
-            DetailInstallHistory.INSTALL_STATUS_SUCCESS
-        detail_obj.service.service_status = Service.SERVICE_STATUS_NORMAL
-        detail_obj.service.save()
         detail_obj.save()
+        # 服务状态更新为 '正常'
+        detail_obj.service.service_status = \
+            Service.SERVICE_STATUS_NORMAL
+        detail_obj.service.save()
         return True, "Start Success"
 
     @staticmethod
@@ -426,6 +471,8 @@ class InstallServiceExecutor:
             logger.info("Begin base_env install")
             for action in self.ACTION_LS:
                 # ---- 基础环境列表并发 ----
+                if self.is_error:
+                    break
                 _future_list_env = []
                 for detail_obj in base_env_ls:
                     future_obj = executor.submit(
@@ -483,6 +530,5 @@ class InstallServiceExecutor:
         main_obj.install_status = \
             MainInstallHistory.INSTALL_STATUS_SUCCESS
         main_obj.save()
-        # TODO 注册监控
         logger.info(f"Main Install Success, id[{self.main_id}]")
         return self.is_error

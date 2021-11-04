@@ -61,3 +61,4 @@ OMP_MYSQL_PASSWORD = os.getenv(
     "OMP_MYSQL_PASSWORD",
     CONFIG_DIC.get("mysql", {}).get("password")
 )
+BASIC_ORDER = CONFIG_DIC.get("basic_order", {})
