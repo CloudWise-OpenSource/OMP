@@ -27,4 +27,4 @@ class ApplicationTemplateTest(AutoLoginTest):
         self.assertEqual(resp.status_code, 200)
         self.assertTrue(isinstance(resp, FileResponse))
         self.assertTrue(resp.streaming)
-        self.assertTrue(resp.streaming_content is not None)
+        self.assertIsNotNone(resp.streaming_content)
