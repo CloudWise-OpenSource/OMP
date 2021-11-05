@@ -21,7 +21,8 @@ from db_models.models import (
     MainInstallHistory, DetailInstallHistory
 )
 from app_store.upload_task import CreateDatabase
-from app_store.install_executor import InstallServiceExecutor
+from app_store.install_exec import InstallServiceExecutor
+# from app_store.install_executor import InstallServiceExecutor
 from promemonitor.prometheus_utils import PrometheusUtils
 
 # 屏蔽celery任务日志中的paramiko日志
