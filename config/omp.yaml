@@ -7,7 +7,7 @@ ssh_cmd_timeout: 60
 # SSH连通性校验超时时间，单位秒
 ssh_check_timeout: 10
 # 线程池最大workers
-thread_pool_max_workers: 20
+thread_pool_max_workers: 10
 # redis相关配置
 redis:
   host: 127.0.0.1
@@ -65,12 +65,13 @@ monitor_port:
   nacosExporter: 18117
   monitorAgent: 19031
 
-# 基础及公共组件间的等级划分
+# 基础及公共组件间的等级划分，不要将自研服务类的服务放入下面的配置
 # 用于控制服务安装过程中的执行顺序、服务的启停控制顺序
+# 安装时顺序从小到大执行，同级别并发执行
 basic_order:
-  level_0:
+  0:
     - jdk
-  level_1:
+  1:
     - tengine
     - mysql
     - redis
@@ -85,7 +86,8 @@ basic_order:
     - prometheus
     - pushgateway
     - wkhtmltox
-  level_2:
+    - tomcat
+  2:
     - nacos
     - xxlJob
     - kafka

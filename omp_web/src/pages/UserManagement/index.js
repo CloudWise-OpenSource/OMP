@@ -47,16 +47,19 @@ const UserManagement = () => {
   const columns = [
     {
       title: "序列",
+      width:80,
       key: "_idx",
       dataIndex: "_idx",
       //sorter: (a, b) => a.username - b.username,
       // sortDirections: ["descend", "ascend"],
       align: "center",
       render: nonEmptyProcessing,
+      fixed:"left"
     },
     {
       title: "用户名",
       key: "username",
+      width:120,
       dataIndex: "username",
       //sorter: (a, b) => a.username - b.username,
       // sortDirections: ["descend", "ascend"],
@@ -67,6 +70,7 @@ const UserManagement = () => {
       title: "角色",
       key: "is_superuser",
       dataIndex: "is_superuser",
+      width: 100,
       //sorter: (a, b) => a.is_superuser - b.is_superuser,
       //sortDirections: ["descend", "ascend"],
       align: "center",
@@ -83,6 +87,7 @@ const UserManagement = () => {
       key: "is_active",
       dataIndex: "is_active",
       align: "center",
+      width: 100,
       render: (text) => {
         if (text) {
           return "正常";
@@ -96,7 +101,7 @@ const UserManagement = () => {
       key: "date_joined",
       dataIndex: "date_joined",
       align: "center",
-      // width: 300,
+      width: 120,
       render: (text) => {
         if (text) {
           return moment(text).format("YYYY-MM-DD HH:mm:ss");
@@ -117,6 +122,7 @@ const UserManagement = () => {
       key: "1",
       dataIndex: "1",
       align: "center",
+      fixed:"right",
       render: function renderFunc(text, record, index) {
         return (
           <div

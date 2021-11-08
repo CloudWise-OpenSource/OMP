@@ -783,3 +783,6 @@ class DetailInstallHistory(TimeStampMixin):
         """元数据"""
         db_table = "omp_detail_install_history"
         verbose_name = verbose_name_plural = "安装记录详情表"
+
+    def __str__(self):
+        return self.service.service_instance_name + f"({self.service.ip})"

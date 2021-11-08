@@ -8,9 +8,10 @@
  */
 import { Table, Pagination } from "antd";
 import styles from "./index.module.less";
-import { useLayoutEffect } from "react";
+import { useLayoutEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import OmpTableFilter from "./components/OmpTableFilter";
+// import * as R from "ramda"
 
 const OmpTable = ({
   checkedState,
@@ -18,9 +19,28 @@ const OmpTable = ({
   notSelectable,
   ...residualParam
 }) => {
-  // console.log(residualParam)
+  const [checkedList, setCheckedList] = checkedState ? checkedState : [];
+  // 视口高度
+  const viewHeight = useSelector((state) => state.layouts.viewSize.height);
+  // 视口宽度
+  const viewWidth = useSelector((state) => state.layouts.viewSize.width);
+  const [maxWidth, setMaxWidth] = useState(1900);
+  
   // 当columns传入usefilter时，对该项做处理
   const extensionsColumns = columns.map((item) => {
+    // // 复制一下item
+    // let item = R.clone(i);
+
+    // // 当columns的width未设置时，直接添加width200,然后计算最大宽度
+    // if (!item.width) {
+    //   item = {
+    //     width: 120,
+    //     ellipsis: true,
+    //     ...item,
+    //   };
+    // }
+
+    // 筛选功能
     if (item.usefilter) {
       return {
         ...item,
@@ -45,11 +65,18 @@ const OmpTable = ({
     };
   });
 
-  const [checkedList, setCheckedList] = checkedState ? checkedState : [];
-  // 视口高度
-  const viewHeight = useSelector((state) => state.layouts.viewSize.height);
-  // 视口宽度
-  const viewWith = useSelector((state) => state.layouts.viewSize.width);
+
+
+  // 计算表格实际横向宽度（最大）
+  // useLayoutEffect(() => {
+  //   let maxW = 0
+  //   extensionsColumns.map((item) => {
+  //     maxW += item.width
+  //   });
+  //   console.log(maxW)
+  //   setMaxWidth(maxW)
+  //   //console.log(extensionsColumns)
+  // }, []);
 
   useLayoutEffect(() => {
     //console.log(viewHeight);
@@ -83,7 +110,8 @@ const OmpTable = ({
 
   return (
     <Table
-      scroll={viewWith > 1500 ? null : { x: 1400 }}
+      //scroll={(viewWidth - 300) > maxWidth ? null : { x: (maxWidth + 30) }}
+      scroll={ viewWidth > 1900 ? null : { x: 1400 }}
       {...residualParam}
       columns={extensionsColumns}
       //size="small"
