@@ -41,7 +41,11 @@ class ListActionTest(AutoLoginTest, ServicesResourceMixin):
         super(ListActionTest, self).setUp()
         env_obj = Env.objects.create(name="default")
         app_obj = ApplicationHub.objects.create(
-            app_name="test_app", app_version="1.0.0")
+            app_name="test_app", app_version="1.0.0",
+            app_dependence=json.dumps(
+                [{"name": "jda", "version": "1.0.0"}]
+            )
+        )
         Service.objects.create(
             ip="192.168.0.110",
             service_instance_name="test1",
@@ -153,3 +157,15 @@ class ListActionTest(AutoLoginTest, ServicesResourceMixin):
             "message": "请输入action或id",
             "data": None
         })
+
+    def test_service_delete_post(self):
+        # 参数正常 -> 成功
+        create_delete_url = reverse("delete-list")
+        service_obj = Service.objects.get(ip="192.168.0.110")
+        resp = self.post(create_delete_url, {"data": [{
+            "action": "1",
+            "id": str(service_obj.id),
+            "operation_user": "admin",
+        }]}).json()
+        print(resp)
+        self.assertEqual(resp.get("code"), 0)
