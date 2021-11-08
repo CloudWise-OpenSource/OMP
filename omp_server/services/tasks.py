@@ -78,8 +78,7 @@ def exec_action(action, instance, operation_user):
         if exe_action:
             is_success, info = salt_obj.cmd(ip, exe_action, 600)
             logger.info(f"执行 [{action[0]}] 操作 {is_success}，原因: {info}")
-        install_detail = json.loads(
-            service_obj.detailinstallhistory_set.first().install_detail_args)
+        install_detail = service_obj.detailinstallhistory_set.first().install_detail_args
         base_dir = None
         for args in install_detail.get("app_install_args"):
             if args.get("key") == "base_dir":
