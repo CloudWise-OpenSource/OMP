@@ -348,7 +348,7 @@ class ExplainYml:
                 if not i.get("name") or not i.get("version"):
                     self.db_obj.update_package_status(
                         1,
-                        f"yml校验dependecies校验失败，检查yml文件{self.yaml_dir}")
+                        f"yml校验dependencies校验失败，检查yml文件{self.yaml_dir}")
                     return False
         if description == "-1" or dependencies == "-1":
             self.db_obj.update_package_status(
@@ -648,7 +648,7 @@ def publish_entry(uuid):
             logger.error(f'{tmp_dir[0]}路径异常')
             return None
         # 匹配到的安装包移动至对应路径
-        # 产品包路径 package_hub/xxx/random/product_name/xxxx
+        # 产品包路径 package_hub/xxx/random/product_name/xxx
         # 组件路径   package_hub/xxx/app.tar.gz
         # 产品目标路径   verified/product_name-version/xxx
         # 组件目标路径   verified/app.tar.gz

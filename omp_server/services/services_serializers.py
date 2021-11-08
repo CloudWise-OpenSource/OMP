@@ -161,3 +161,12 @@ class ServiceActionSerializer(serializers.ModelSerializer):
         """ 元数据 """
         model = Service
         fields = '__all__'
+
+
+class ServiceDeleteSerializer(serializers.ModelSerializer):
+    """ 服务删除序列化类 """
+
+    class Meta:
+        """ 元数据 """
+        model = Service
+        fields = '__all__'

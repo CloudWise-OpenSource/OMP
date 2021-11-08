@@ -8,17 +8,23 @@ from rest_framework.filters import OrderingFilter
 
 from django_filters.rest_framework.backends import DjangoFilterBackend
 
-from db_models.models import Service
+from db_models.models import (
+    Service, ApplicationHub
+)
 from services.tasks import exec_action
 from services.services_filters import ServiceFilter
 from services.services_serializers import (
     ServiceSerializer, ServiceDetailSerializer,
-    ServiceActionSerializer
+    ServiceActionSerializer, ServiceDeleteSerializer
 )
 from promemonitor.prometheus import Prometheus
 from promemonitor.grafana_url import explain_url
 from utils.common.exceptions import OperateError
 from utils.common.paginations import PageNumberPager
+import json
+import logging
+
+logger = logging.getLogger('server')
 
 
 class ServiceListView(GenericViewSet, ListModelMixin):
@@ -102,3 +108,52 @@ class ServiceActionView(GenericViewSet, CreateModelMixin):
             else:
                 raise OperateError("请输入action或id")
         return Response("执行成功")
+
+
+class ServiceDeleteView(GenericViewSet, CreateModelMixin):
+    """
+        create:
+        服务删除校验
+    """
+    queryset = Service.objects.all()
+    serializer_class = ServiceDeleteSerializer
+
+    def create(self, request, *args, **kwargs):
+        """
+        检查被依赖关系，包含多服务匹配
+        例如 jdk-1.8和 test-app被同时标记删除
+        test-app依赖jdk-1.8，同时标记则不显示依赖。单选jdk1.8则会显示。
+        """
+        many_data = self.request.data.get('data')
+        service_objs = Service.objects.all()
+        app_objs = ApplicationHub.objects.all()
+        service_json = {}
+        dependence_dict = []
+        # 存在的service key
+        for i in service_objs:
+            service_key = f"{i.service.app_name}-{i.service.app_version}"
+            service_json[i.id] = service_key
+        # 全量app的dependence反向
+        for app in app_objs:
+            if app.app_dependence:
+                for i in json.loads(app.app_dependence):
+                    dependence_dict.append(
+                        {f"{i.get('name')}-{i.get('version')}": f"{app.app_name}-{app.app_version}"}
+                    )
+        exist_service = set()
+        # 过滤存在的实例所属app的key
+        for data in many_data:
+            instance = int(data.get("id"))
+            filter_list = service_json.get(instance)
+            exist_service.add(filter_list)
+        # 查看存在的服务有没有被依赖的，做set去重
+        res = set()
+        for i in exist_service:
+            for j in dependence_dict:
+                if j.get(i):
+                    res.add(j.get(i))
+        res = res - exist_service
+        # 查看是否需要被依赖的是否已不存在
+        res = res & set(service_json.values())
+        res = "存在依赖信息:" + ",".join(res) if res else "无依赖信息"
+        return Response(res)
