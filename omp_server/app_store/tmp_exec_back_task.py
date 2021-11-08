@@ -21,12 +21,12 @@ package_dir = {
 
 class RedisLock(object):
     def __init__(self, host='127.0.0.1', port='6379', db=9, **kwargs):
-        self.rdcon = self.argsinit(host, port, db, kwargs)
+        self.rdcon = self.args_init(host, port, db, kwargs)
 
-    def argsinit(self, host, port, db, kwwargs):
-        if kwwargs:
-            if kwwargs.get('password'):
-                return redis.Redis(host, port, db, kwwargs['password'])
+    @staticmethod
+    def args_init(host, port, db, kwargs):
+        if kwargs and kwargs.get('password'):
+            return redis.Redis(host, port, db, kwargs['password'])
         return redis.Redis(host, port, db)
 
     def get_lock(self):
@@ -54,9 +54,9 @@ def back_end_verified_init(operation_user):
         package_hub, package_dir.get('back_end_verified'))
     service_name = os.listdir(back_verified)
     exec_name = [
-        p for p in service_name if
-        os.path.isfile(os.path.join(back_verified, p)) and
-        (p.endswith('.tar') or p.endswith('.tar.gz'))]
+        p for p in service_name
+        if os.path.isfile(os.path.join(back_verified, p)) and (p.endswith('.tar') or p.endswith('.tar.gz'))
+    ]
     redis_key.lpush("back_end_verified", uuid, ",".join(exec_name))
     # 设置过期时间，同时创建异步校验任务及发布任务
     redis_key.expire("back_end_verified", 3600)

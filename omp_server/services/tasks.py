@@ -53,6 +53,7 @@ def exec_action(action, instance, operation_user):
             if len(service_port_ls) > 0:
                 service_port = service_port_ls[0].get("default", "")
         if service_port is not None:
+            # 端口存在则删除prometheus监控的
             service_data = {
                 "service_name": service_obj.service.app_name,
                 "instance_name": service_obj.service_instance_name,
@@ -63,6 +64,7 @@ def exec_action(action, instance, operation_user):
                 "listen_port": service_port
             }
             PrometheusUtils().delete_service(service_data)
+        # 删除hosts实例个数
         if not service_obj.service.is_base_env:
             Host.objects.filter(ip=service_obj.ip).update(
                 service_num=F("service_num") + 1)
@@ -70,8 +72,25 @@ def exec_action(action, instance, operation_user):
             service=service_obj)
         if len(service_history_obj) != 0:
             service_history_obj.delete()
+        salt_obj = SaltClient()
+        exe_action = service_controllers.get("stop")
+        # 存在stop脚本先执行stop脚本后执行删除
+        if exe_action:
+            is_success, info = salt_obj.cmd(ip, exe_action, 600)
+            logger.info(f"执行 [{action[0]}] 操作 {is_success}，原因: {info}")
+        install_detail = json.loads(
+            service_obj.detailinstallhistory_set.first().install_detail_args)
+        base_dir = None
+        for args in install_detail.get("app_install_args"):
+            if args.get("key") == "base_dir":
+                base_dir = args.get("default")
+        # 删除安装路径
+        if base_dir is not None and len(base_dir) >= 5:
+            is_success, info = salt_obj.cmd(ip, f"rm -rf {base_dir}", 600)
+            logger.info(f"执行 [{action[0]}] 操作 {is_success}，原因: {info}")
         service_obj.delete()
         return None
+
     exe_action = service_controllers.get(action[0])
     if exe_action:
         salt_obj = SaltClient()
