@@ -362,9 +362,12 @@ class InstallServiceExecutor:
         detail_obj.init_flag = 2
         detail_obj.init_msg += f"{self.now_time()} {service_name} 成功初始化服务\n"
         # 完成安装流程，更新状态为 '安装成功'
-        detail_obj.install_step_status = \
-            DetailInstallHistory.INSTALL_STATUS_SUCCESS
-        detail_obj.save()
+        # 如果是自研服务，初始化完成即认为其安装成功
+        if detail_obj.service.service.app_type == \
+                ApplicationHub.APP_TYPE_SERVICE:
+            detail_obj.install_step_status = \
+                DetailInstallHistory.INSTALL_STATUS_SUCCESS
+            detail_obj.save()
         # 创建历史记录
         self.create_history(detail_obj, is_success=True)
         return True, "Init Success"
@@ -391,6 +394,9 @@ class InstallServiceExecutor:
                 detail_obj.start_flag = 2
                 detail_obj.start_msg += \
                     f"{self.now_time()} {service_name} 无需执行启动\n"
+                # 如果服务无需启动，则认可其为安装成功
+                detail_obj.install_step_status = \
+                    DetailInstallHistory.INSTALL_STATUS_SUCCESS
                 # 服务状态更新为 '正常'
                 detail_obj.service.service_status = \
                     Service.SERVICE_STATUS_NORMAL
@@ -423,6 +429,11 @@ class InstallServiceExecutor:
             detail_obj.start_flag = 3
             detail_obj.start_msg += f"{self.now_time()} {service_name} " \
                                     f"启动服务失败: {err}\n"
+            # 如果是基础组件服务的启动步骤，如果启动失败则认为其启动失败
+            if detail_obj.service.service.app_type == \
+                    ApplicationHub.APP_TYPE_COMPONENT:
+                detail_obj.install_step_status = \
+                    DetailInstallHistory.INSTALL_STATUS_FAILED
             detail_obj.save()
             # 服务状态更新为 '停止'
             detail_obj.service.service_status = \
@@ -437,8 +448,44 @@ class InstallServiceExecutor:
         # 服务状态更新为 '正常'
         detail_obj.service.service_status = \
             Service.SERVICE_STATUS_NORMAL
+        # 服务启动成功，则认为其已经安装成功
+        detail_obj.install_step_status = \
+            DetailInstallHistory.INSTALL_STATUS_SUCCESS
+        detail_obj.save()
         detail_obj.service.save()
         return True, "Start Success"
+
+    def execute_post_action(self, queryset):    # NOQA
+        """
+        执行安装后的操作，所有服务安装完成后，针对不同服务的个性化配置执行
+        目前仅支持shell脚本方式
+        :param queryset: 包含部署详情表的列表
+        :type queryset: [DetailInstallHistory]
+        :return:
+        """
+        try:
+            salt_client = SaltClient()
+            for detail_obj in queryset:
+                target_ip = detail_obj.service.ip
+                _script = detail_obj.service.service_controllers.get(
+                    "post_action")
+                flag, msg = salt_client.cmd(
+                    target=target_ip,
+                    command=f"chmod +x {_script.split()[0]} && {_script}",
+                    timeout=60
+                )
+                logger.info(f"Execute {_script}, flag: {flag}; msg: {msg}")
+                detail_obj.post_action_msg += str(msg)
+                if not flag:
+                    self.is_error = True
+                    detail_obj.post_action_flag = 3
+                    detail_obj.save()
+                    break
+                detail_obj.post_action_flag = 2
+                detail_obj.save()
+        except Exception as e:
+            logger.error(f"Error while execute post_action: {str(e)}")
+            self.is_error = True
 
     def single_service_executor(self, detail_obj):
         """
@@ -533,7 +580,7 @@ class InstallServiceExecutor:
             "service", "service__service", "service__service__app_package"
         ).filter(main_install_history_id=self.main_id).exclude(
             install_step_status=DetailInstallHistory.INSTALL_STATUS_SUCCESS)
-        assert queryset.exists()
+        # assert queryset.exists()
 
         # 构建 unzip_concurrent_controller 用于控制解压安装包时单主机的并发数量
         ips = set([el.service.ip for el in queryset])
@@ -556,6 +603,14 @@ class InstallServiceExecutor:
             # 如果哪层的服务有安装失败的情况，那么直接退出循环
             if self.is_error:
                 break
+
+        # 安装后执行动作范围过滤，排除无需执行操作以及排除已经执行成功的服务对象
+        post_action_queryset = DetailInstallHistory.objects.select_related(
+            "service", "service__service", "service__service__app_package"
+        ).filter(main_install_history_id=self.main_id).exclude(
+            post_action_flag__in=[2, 4]
+        )
+        self.execute_post_action(post_action_queryset)
 
         if self.is_error:
             # 步骤失败，主流程失败

@@ -33,7 +33,7 @@ from db_models.models import (
 )
 from app_store.tasks import install_service
 from utils.common.exceptions import GeneralError
-from utils.plugin import public_utils
+# from utils.plugin import public_utils
 from utils.plugin.salt_client import SaltClient
 
 DIR_KEY = "{data_path}"
@@ -550,7 +550,7 @@ class ValidateExistService(object):
             dic["check_msg"] = "success"
             return dic
         dic["check_flag"] = False
-        dic["check_msg"] = "此集群不存在"
+        dic["check_msg"] = f"复用已存在集群{dic.get('id', 'UNKNOWN')}不存在"
         return dic
 
     def check_single(self, dic):    # NOQA
@@ -565,7 +565,7 @@ class ValidateExistService(object):
             dic["check_msg"] = "success"
             return dic
         dic["check_flag"] = False
-        dic["check_msg"] = "此服务不存在"
+        dic["check_msg"] = f"复用已存在实例{dic.get('id', 'UNKNOWN')}不存在"
         return dic
 
     def run(self):
@@ -608,13 +608,21 @@ class ValidateInstallService(object):
         :type ip: str
         :return:
         """
+        salt_obj = SaltClient()
         for el in app_port:
             _port = el.get("default", "")
             if not _port or not str(_port).isnumeric():
                 el["check_flag"] = False
                 el["check_msg"] = f"端口 {_port} 必须为数字"
                 continue
-            _flag, _msg = public_utils.check_ip_port(ip=ip, port=int(_port))
+            # method1: 从OMP本机查看端口是否已被占用
+            # _flag, _msg = public_utils.check_ip_port(ip=ip, port=int(_port))
+            # method2: 从目标服务器查看端口是否被占用
+            _flag, _msg = salt_obj.cmd(
+                target=ip,
+                command=f"</dev/tcp/{ip}/{_port}",
+                timeout=10
+            )
             if _flag:
                 el["check_flag"] = False
                 el["check_msg"] = f"主机 {ip} 上的端口 {_port} 已被占用"
@@ -726,6 +734,7 @@ class ValidateInstallService(object):
         for f in futures_list:
             result_list.append(f[1].result())
         thread_p.shutdown(wait=True)
+        # TODO 整体服务间的关键校验
         return result_list
 
 
@@ -831,6 +840,13 @@ class CreateInstallPlan(object):
             if not value:
                 continue
             _new_controller[key] = os.path.join(real_home, value)
+        # 如果该服务需要在整体安装完成后有一些操作，那么需要重新构建post_action
+        # 在每次安装完所有服务后，需要搜索出相应的post_action并统一执行
+        if "post_action" in _app.extend_fields and \
+                _app.extend_fields["post_action"]:
+            _new_controller["post_action"] = os.path.join(
+                real_home, _app.extend_fields["post_action"]
+            )
         return _new_controller
 
     def get_env_for_service(self):  # NOQA
@@ -930,6 +946,18 @@ class CreateInstallPlan(object):
             product=self.get_app_obj_for_service(dic).product
         )
 
+    def check_if_has_post_action(self, ser):    # NOQA
+        """
+        检测是否需要执行安装后的动作
+        :param ser: 服务对象
+        :type ser Service
+        :return:
+        """
+        if "post_action" in ser.service_controllers and \
+                ser.service_controllers.get("post_action"):
+            return True
+        return False
+
     def run(self):
         """
         服务部署信息入库操作
@@ -952,16 +980,21 @@ class CreateInstallPlan(object):
                     ser_obj = self.create_service(item)
                     # 创建产品实例对象
                     self.create_product_instance(item)
+                    post_action_flag = 0 if self.check_if_has_post_action(
+                        ser_obj) else 4
                     DetailInstallHistory(
                         service=ser_obj,
                         main_install_history=main_obj,
-                        install_detail_args=item
+                        install_detail_args=item,
+                        post_action_flag=post_action_flag
                     ).save()
+                _json_obj = DataJson(operation_uuid=operation_uuid)
+                _json_obj.run()
+                # 调用安装异步任务，并回写异步任务到
+                task_id = install_service.delay(main_obj.id)
+                MainInstallHistory.objects.filter(id=main_obj.id).update(
+                    task_id=task_id
+                )
             except Exception as e:
                 return False, f"生成部署计划失败: {str(e)}"
-        # TODO 生成json文件，用于应用安装
-        _json_obj = DataJson(operation_uuid=operation_uuid)
-        _json_obj.run()
-        # 调用安装异步任务
-        install_service.delay(main_obj.id)
         return True, operation_uuid
