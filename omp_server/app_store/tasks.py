@@ -416,7 +416,9 @@ class ExplainYml:
         # service骨架弱校验
         db_filed = {}
         first_check = {"auto_launch", "monitor", "ports", "resources",
-                       "install", "control", "deploy", "base_env", "affinity"}
+                       "install", "control", "deploy", "base_env", "affinity",
+                       "post_action"
+                       }
         if not self.check_obj.weak_check(settings, first_check):
             return False
         # auto_launch 校验
@@ -497,7 +499,9 @@ class ExplainYml:
         db_filed['install'] = install
         # monitor 校验
         monitor = settings.get('monitor')
-        monitor_check = self.check_obj.strong_check(monitor) if deploy else 1
+        monitor_weak_check = {"process_name", "metric_port", "type"}
+        monitor_check = self.check_obj.weak_check(
+            monitor, monitor_weak_check) if monitor else 1
         if not monitor_check:
             return False
         return True, db_filed
