@@ -127,7 +127,7 @@ class CreateDatabase(object):
                 "product": app_obj,
                 "extend_fields": self.json_data.get("extend_fields"),
                 "is_base_env": self.str_to_bool("base_env"),
-                "app_monitor": self.explain("monitor")
+                "app_monitor": self.json_data.get("monitor")
             }
             app_queryset = ApplicationHub.objects.filter(
                 app_name=self.json_data.get("name"),
@@ -173,7 +173,7 @@ class CreateDatabase(object):
             "extend_fields": self.json_data.get("extend_fields"),
             "app_logo": self.json_data.get("image"),
             "is_base_env": self.str_to_bool("base_env"),
-            "app_monitor": self.explain("monitor")
+            "app_monitor": self.json_data.get("monitor")
         }
         app_queryset = ApplicationHub.objects.filter(
             app_name=self.json_data.get("name"),
