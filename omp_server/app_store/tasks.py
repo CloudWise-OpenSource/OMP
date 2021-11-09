@@ -498,12 +498,13 @@ class ExplainYml:
             return False
         db_filed['install'] = install
         # monitor 校验
-        monitor = settings.get('monitor')
+        monitor = settings.pop('monitor', None)
         monitor_weak_check = {"process_name", "metric_port", "type"}
         monitor_check = self.check_obj.weak_check(
             monitor, monitor_weak_check) if monitor else 1
         if not monitor_check:
             return False
+        db_filed['monitor'] = monitor
         return True, db_filed
 
     def service(self, settings):
