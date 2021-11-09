@@ -404,6 +404,8 @@ class ApplicationHub(TimeStampMixin):
     # 解析服务数据后，如果服务为jdk、python等，则其为基础数据
     is_base_env = models.BooleanField(
         "是否为基础环境", default=False, help_text="是否为基础环境")
+    app_monitor = models.JSONField(
+        "监控使用字段", null=True, blank=True, help_text="监控使用字段")
 
     class Meta:
         """元数据"""
@@ -712,6 +714,9 @@ class MainInstallHistory(TimeStampMixin):
     operation_uuid = models.CharField(
         "部署操作uuid", max_length=36,
         null=False, blank=False, help_text="部署操作uuid")
+    task_id = models.CharField(
+        "异步任务id", max_length=36,
+        null=True, blank=True, help_text="异步任务id")
     # 直接代表整体的安装状态
     install_status = models.IntegerField(
         "安装状态", choices=INSTALL_STATUS_CHOICES,
@@ -778,6 +783,11 @@ class DetailInstallHistory(TimeStampMixin):
     start_msg = models.TextField("启动日志", help_text="启动日志")
     install_detail_args = models.JSONField(
         "详情表安装信息", null=True, blank=True, help_text="详情表安装信息")
+    post_action_flag = models.IntegerField(
+        "安装后执行动作标记", default=0,
+        help_text="0-待执行 1-执行中 2-执行成功 3-执行失败 4-无需执行")
+    post_action_msg = models.TextField(
+        "安装后执行动作日志", default="", help_text="安装后执行动作日志")
 
     class Meta:
         """元数据"""
