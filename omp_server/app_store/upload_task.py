@@ -113,6 +113,8 @@ class CreateDatabase(object):
             # 服务json添加labels字段，给create_pro_app_lab做筛选
             self.json_data['labels'] = [app_obj.pro_name]
             # 按照服务名和版本进行划分 如果存在则覆盖，否则创建
+            monitor = self.json_data.get(
+                "monitor") if self.json_data.get("monitor") else None
             _dic = {
                 "is_release": True,
                 "app_type": 1,
@@ -126,7 +128,7 @@ class CreateDatabase(object):
                 "product": app_obj,
                 "extend_fields": self.json_data.get("extend_fields"),
                 "is_base_env": self.str_to_bool("base_env"),
-                "app_monitor": self.json_data.get("monitor")
+                "app_monitor": monitor
             }
             app_queryset = ApplicationHub.objects.filter(
                 app_name=self.json_data.get("name"),
@@ -158,6 +160,8 @@ class CreateDatabase(object):
         """
         self.label_type = 0
         self.create_lab()
+        monitor = self.json_data.get(
+            "monitor") if self.json_data.get("monitor") else None
         _dic = {
             "is_release": True,
             "app_type": 0,
@@ -172,7 +176,7 @@ class CreateDatabase(object):
             "extend_fields": self.json_data.get("extend_fields"),
             "app_logo": self.json_data.get("image"),
             "is_base_env": self.str_to_bool("base_env"),
-            "app_monitor": self.json_data.get("monitor")
+            "app_monitor": monitor
         }
         app_queryset = ApplicationHub.objects.filter(
             app_name=self.json_data.get("name"),
