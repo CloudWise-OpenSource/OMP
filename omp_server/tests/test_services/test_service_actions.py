@@ -129,7 +129,7 @@ class ListActionTest(AutoLoginTest, ServicesResourceMixin):
             install_msg="install_log",
             init_msg="init_log",
             start_msg="start_log",
-            install_detail_args=json.dumps(install_detail)
+            install_detail_args=install_detail
         )
         exec_action("4", service_obj.id, "admin")
         history_count = ServiceHistory.objects.filter(
@@ -167,5 +167,4 @@ class ListActionTest(AutoLoginTest, ServicesResourceMixin):
             "id": str(service_obj.id),
             "operation_user": "admin",
         }]}).json()
-        print(resp)
         self.assertEqual(resp.get("code"), 0)

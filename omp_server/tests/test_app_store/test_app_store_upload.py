@@ -35,7 +35,6 @@ test_service = {
     "kind": "service",
     "name": "jenkins",
     "version": "2.303.2",
-    "description": "这是jenkins服务",
     "ports": [{"name": "服务端口", "protocol": "TCP", "key": "service_port", "default": 8080}],
     "dependencies": [{"name": "jdk", "version": "1.8.0"}],
     "install": [{"name": "安装目录", "key": "base_dir", "default": "path/jenkins"}],
@@ -50,14 +49,15 @@ test_service = {
         }
     ],
     "base_env": False,
+    "monitor": {
+        "process_name": "jenkins",
+        "metric_port": "service_port",
+        "type": "JavaSpringBoot"
+    },
     "extend_fields": {
         "auto_launch": True,
         "affinity:": None,
         "level": "1",
-        "monitor": {
-            "process_name": "jenkins",
-            "metrics_port": "service_port"
-        },
         "deploy": None,
         "resources": {"cpu": "2c", "memory": "2g"}
     }
@@ -67,13 +67,13 @@ service_yml = """
 kind: service
 name: jenkins
 version: 2.303.2
-description: "jenkins服务"
 auto_launch: True
 base_env: False
 level: 1
 monitor:
   process_name: "jenkins"
-  metrics_port: {service_port}
+  metric_port: {service_port}
+  type: "JavaSpringBoot"
 deploy:
 ports:
   - name: 服务端
@@ -98,6 +98,7 @@ control:
   reload: "./bin/reload.sh"
   install: "./scripts/install.sh"
   init: "./scripts/init.sh"
+post_action:
 """
 
 component_yml = """
@@ -111,7 +112,8 @@ auto_launch: True
 base_env: False
 monitor:
   process_name: "nginx"
-  metrics_port: {service_port}
+  metric_port: {service_port}
+  type: "JavaSpringBoot"
 ports:
   - name: 服务端口
     protocol: TCP
@@ -140,6 +142,7 @@ control:
   reload: "./bin/reload.sh"
   install: "./scripts/install.sh"
   init:  "./scripts/init.sh"
+post_action:
 """
 
 product_yml = """
@@ -452,13 +455,13 @@ publish_info = """\
 {"name": "jenkins"}],\
 "labels": ["mysql_db"],\
 "product_service":\
-[{"kind": "service", "name": "jenkins", "version": "123", "description": "jenkins服务",\
+[{"kind": "service", "name": "jenkins", "version": "123",\
 "dependencies": [{"name": "jdk", "version": "8u211"}],\
 "base_env": "False",\
 "extend_fields": {"auto_launch": "true","affinity":"","level":"1",\
-"monitor": {"process_name": "jenkins"},\
 "resources": {"cpu": "1000m", "memory": "2000m"}},\
 "ports": [{"name": "服务端口", "protocol": "TCP", "key": "service_port", "port": "8080"}],\
+"monitor": {"process_name": "jenkins"},\
 "control": {"start": "./bin/start.sh", "stop": "./bin/stop.sh",\
 "restart": "./bin/restart.sh", "reload": "./bin/reload.sh", "install": "./scripts/install.sh",\
 "init": "./scripts/init.sh"},\
