@@ -118,7 +118,6 @@ class CreateDatabase(object):
                 "app_type": 1,
                 "app_name": self.json_data.get("name"),
                 "app_version": self.json_data.get("version"),
-                "app_description": self.json_data.get("description"),
                 "app_port": self.explain("ports"),
                 "app_dependence": self.explain("dependencies"),
                 "app_install_args": self.explain("install"),

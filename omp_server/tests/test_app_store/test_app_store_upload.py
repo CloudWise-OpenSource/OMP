@@ -35,7 +35,6 @@ test_service = {
     "kind": "service",
     "name": "jenkins",
     "version": "2.303.2",
-    "description": "这是jenkins服务",
     "ports": [{"name": "服务端口", "protocol": "TCP", "key": "service_port", "default": 8080}],
     "dependencies": [{"name": "jdk", "version": "1.8.0"}],
     "install": [{"name": "安装目录", "key": "base_dir", "default": "path/jenkins"}],
@@ -68,7 +67,6 @@ service_yml = """
 kind: service
 name: jenkins
 version: 2.303.2
-description: "jenkins服务"
 auto_launch: True
 base_env: False
 level: 1
@@ -457,7 +455,7 @@ publish_info = """\
 {"name": "jenkins"}],\
 "labels": ["mysql_db"],\
 "product_service":\
-[{"kind": "service", "name": "jenkins", "version": "123", "description": "jenkins服务",\
+[{"kind": "service", "name": "jenkins", "version": "123",\
 "dependencies": [{"name": "jdk", "version": "8u211"}],\
 "base_env": "False",\
 "extend_fields": {"auto_launch": "true","affinity":"","level":"1",\

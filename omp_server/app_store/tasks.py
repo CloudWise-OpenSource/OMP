@@ -340,8 +340,12 @@ class ExplainYml:
         kind = settings.pop('kind', None)
         name = settings.pop('name', None)
         version = settings.pop('version', None)
-        description = settings.pop('description', "-1")
         dependencies = settings.pop('dependencies', "-1")
+        if dependencies == "-1":
+            self.db_obj.update_package_status(
+                1,
+                f"yml校验dependencies校验失败，检查yml文件{self.yaml_dir}")
+            return False
         if dependencies:
             for i in dependencies:
                 if not i.get("name") or not i.get("version"):
@@ -349,16 +353,6 @@ class ExplainYml:
                         1,
                         f"yml校验dependencies校验失败，检查yml文件{self.yaml_dir}")
                     return False
-        if description == "-1" or dependencies == "-1":
-            self.db_obj.update_package_status(
-                1,
-                f"yml校验description或dependencies校验失败，检查yml文件{self.yaml_dir}")
-            return False
-        if description is not None and len(description) > 200:
-            self.db_obj.update_package_status(
-                1,
-                f"yml校验description长度过长，检查yml文件{self.yaml_dir}")
-            return False
         if kind not in kinds:
             self.db_obj.update_package_status(
                 1,
@@ -378,7 +372,6 @@ class ExplainYml:
             "kind": kind,
             "name": name,
             "version": version,
-            "description": description,
             "dependencies": dependencies,
             "extend_fields": settings
         }
@@ -408,6 +401,18 @@ class ExplainYml:
                 f"yml校验labels失败，检查yml文件{self.yaml_dir}")
             return False
         db_filed['labels'] = label
+        description = settings.pop('description', "-1")
+        if description == "-1":
+            self.db_obj.update_package_status(
+                1,
+                f"yml校验description校验失败，检查yml文件{self.yaml_dir}")
+            return False
+        if description is not None and len(description) > 200:
+            self.db_obj.update_package_status(
+                1,
+                f"yml校验description长度过长，检查yml文件{self.yaml_dir}")
+            return False
+        db_filed['description'] = description
         return True, db_filed
 
     def service_component(self, settings):
@@ -535,6 +540,18 @@ class ExplainYml:
                 f"yml校验labels失败，检查yml文件{self.yaml_dir}")
             return False
         db_filed['labels'] = label
+        description = settings.pop('description', "-1")
+        if description == "-1":
+            self.db_obj.update_package_status(
+                1,
+                f"yml校验description校验失败，检查yml文件{self.yaml_dir}")
+            return False
+        if description is not None and len(description) > 200:
+            self.db_obj.update_package_status(
+                1,
+                f"yml校验description长度过长，检查yml文件{self.yaml_dir}")
+            return False
+        db_filed['description'] = description
         result = self.service_component(settings)
         if isinstance(result, bool):
             return False
