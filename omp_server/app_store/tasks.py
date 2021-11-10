@@ -97,7 +97,8 @@ class FiledCheck(object):
 
     def weak_check(self, settings, field):
         if isinstance(settings, dict):
-            status = set(settings.keys()) - field
+            # 以field为基准,settings多出的也不会显示,只要满足field即可
+            status = field - set(settings.keys())
             if status:
                 self.db_obj.update_package_status(
                     1,
@@ -106,7 +107,7 @@ class FiledCheck(object):
             return True
         elif isinstance(settings, list):
             for i in settings:
-                status = set(i.keys()) - field
+                status = field - set(i.keys())
                 if status:
                     self.db_obj.update_package_status(
                         1,
@@ -224,7 +225,7 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
                 return None
             ser_name = i.get('name')
             name_version.append(
-                {'name': ser_name, 'version': i.get('version')})
+                {'name': ser_name, 'version': explain_service_yml[1].get('version')})
             service_pk = service_package.get(ser_name)
             if not service_pk:
                 continue
@@ -420,8 +421,8 @@ class ExplainYml:
         # service骨架弱校验
         db_filed = {}
         first_check = {"auto_launch", "monitor", "ports", "resources",
-                       "install", "control", "deploy", "base_env", "affinity",
-                       "post_action"
+                       "install", "control", "base_env", "affinity",
+                       "post_action", "deploy"
                        }
         if not self.check_obj.weak_check(settings, first_check):
             return False

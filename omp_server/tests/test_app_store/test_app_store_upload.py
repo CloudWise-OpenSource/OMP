@@ -74,7 +74,6 @@ monitor:
   process_name: "jenkins"
   metric_port: {service_port}
   type: "JavaSpringBoot"
-deploy:
 ports:
   - name: 服务端
     protocol: TCP
@@ -91,6 +90,7 @@ install:
     key: base_dir
     default: "{data_path}/jeknins"
 affinity:
+deploy:
 control:
   start: "./bin/start.sh"
   stop: "./bin/stop.sh"
