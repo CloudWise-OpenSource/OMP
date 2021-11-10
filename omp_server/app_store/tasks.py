@@ -525,7 +525,7 @@ class ExplainYml:
         if isinstance(result, bool):
             return False
         settings['level'] = level
-        return True, {}
+        return True, result[1]
 
     def upgrade(self, settings):
         return self.service_component(settings)
