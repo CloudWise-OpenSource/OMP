@@ -340,9 +340,8 @@ class ExplainYml:
         kind = settings.pop('kind', None)
         name = settings.pop('name', None)
         version = settings.pop('version', None)
-        description = settings.pop('description', -1)
-        dependencies = settings.pop('dependencies', -1)
-
+        description = settings.pop('description', "-1")
+        dependencies = settings.pop('dependencies', "-1")
         if dependencies:
             for i in dependencies:
                 if not i.get("name") or not i.get("version"):
