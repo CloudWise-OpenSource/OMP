@@ -105,7 +105,7 @@ class MonitorAgentManager(object):
             return send_flag, send_msg
         # step3: 解压源码包并启动服务
         metrics_auth = json.dumps(
-            {"username": "mokey", "password": ""})  # TODO  后续从配置文件读取
+            {"username": "mokey", "password": "w7SiYs$oE"})  # TODO  后续从配置文件读取
         cmd_flag, cmd_res = salt_obj.cmd(
             target=obj.ip,
             command=f"cd {obj.agent_dir} && "
