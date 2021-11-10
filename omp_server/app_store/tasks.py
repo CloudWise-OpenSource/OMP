@@ -43,7 +43,6 @@ class PublicAction(object):
         self.md5_obj = UploadPackageHistory.objects.filter(package_md5=md5)
 
     def update_package_status(self, status, msg=None):
-        print(msg)
         self.md5_obj.update(package_status=status, error_msg=msg)
         logger.info(msg)
 
@@ -423,7 +422,7 @@ class ExplainYml:
         db_filed = {}
         first_check = {"auto_launch", "monitor", "ports", "resources",
                        "install", "control", "base_env", "affinity",
-                       "post_action","deploy"
+                       "post_action", "deploy"
                        }
         if not self.check_obj.weak_check(settings, first_check):
             return False
