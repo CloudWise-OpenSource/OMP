@@ -6,6 +6,9 @@
 
 
 def joint_json_data(handle, _r, _h):
+    """
+    巡检导出、报告展示时，组装数据结构
+    """
     ret = {
         "summary": {
             "task_info": {

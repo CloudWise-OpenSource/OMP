@@ -4,10 +4,14 @@
 # CreateDate: 2021/10/31 7:28 下午
 # Description:
 import json
+import random
 from utils.plugin.salt_client import SaltClient
 
 
 def salt_json(instance, func):
+    """
+    salt执行脚本，获取返回值
+    """
     ret = {}
     try:
         _obj = SaltClient()

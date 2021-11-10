@@ -402,7 +402,7 @@ monitor:
 dependencies:
   - name: mysql
     version: 5.7.31
-  - name: redis
+  - name: kafka
     version: 5.0.1
   - name: python
     version: 3.8.3

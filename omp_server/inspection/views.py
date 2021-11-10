@@ -12,7 +12,7 @@ from rest_framework.viewsets import GenericViewSet
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from rest_framework.mixins import (
     ListModelMixin, CreateModelMixin, UpdateModelMixin, RetrieveModelMixin)
-from db_models.models import Env
+from db_models.models import Env, Service
 from utils.plugin.crontab_utils import CrontabUtils
 from inspection.tasks import get_prometheus_data
 from db_models.models import (
@@ -23,7 +23,6 @@ from inspection.serializers import (
     InspectionHistorySerializer, InspectionCrontabSerializer,
     InspectionReportSerializer)
 from rest_framework.filters import OrderingFilter
-from db_models.models import Service, ApplicationHub
 from inspection.joint_json_report import joint_json_data
 
 
@@ -35,13 +34,9 @@ class InspectionServiceView(ListModelMixin, GenericViewSet):
         # 只能是安装成功的组件
         rets = list()
         _ = Service.objects.filter(
-            service__app_type=ApplicationHub.APP_TYPE_COMPONENT).exclude(
-            service_status__in=[5, 6, 7])
+            service__app_type=0, service__is_base_env=False
+        ).exclude(service_status__in=[5, 6, 7])
         for i in _:
-            if i.service.extend_fields.get('base_env') \
-                    in [True, 'True', 'true']:
-                continue
-
             rets.append({'service__id': i.id,
                          'service__app_name': i.service_instance_name})
 
@@ -112,8 +107,7 @@ class InspectionHistoryView(ListModelMixin, GenericViewSet, CreateModelMixin):
         his_obj = InspectionHistory(**data_dict)
         his_obj.save()
         # 二、创建巡检记录历史表关联的报告表的数据
-        rep_dict = {'inst_id': his_obj}
-        rep_obj = InspectionReport(**rep_dict)
+        rep_obj = InspectionReport(**{'inst_id': his_obj})
         rep_obj.save()
         # 三、手动序列化数据，不是json的不能response
         data_dict.update({'id': his_obj.id, 'env': data_dict['env'].id})

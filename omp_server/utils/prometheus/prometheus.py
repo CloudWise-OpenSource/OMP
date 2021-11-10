@@ -27,10 +27,11 @@ class Prometheus(object):
                 return True, rsp.get('data'), 'success'
             else:
                 return False, {}, 'fail'
-        except Exception:
+        except:
             return False, {}, 'error'
 
-    def clean_alert(self, alerts):
+    @staticmethod
+    def clean_alert(alerts):
         """
         清洗告警，去掉同类不同级别告警
         :param alerts:
@@ -90,24 +91,24 @@ def back_fill(history_id, report_id, host_data=None, serv_data=None,
     now = datetime.now()
     his_obj = InspectionHistory.objects.filter(id=history_id)
     duration = (now - his_obj[0].start_time).seconds
-    his_obj.update(end_time=now, duration=duration if duration > 0 else 1,
-                   inspection_status=2)
+    duration = duration if duration > 0 else 1
+    his_obj.update(end_time=now, duration=duration, inspection_status=2)
+
+    # 反填巡检报告InspectionReport表
+    rep_obj = InspectionReport.objects.filter(id=report_id)
     if host_data:
         # 反填巡检报告InspectionReport表，主机列表host_data字段
-        InspectionReport.objects.filter(id=report_id).update(
-            host_data=host_data)
+        rep_obj.update(host_data=host_data)
     if serv_data:
         # 反填巡检报告InspectionReport表，服务列表serv_data字段
-        InspectionReport.objects.filter(id=report_id).update(
-            serv_data=serv_data)
+        rep_obj.update(serv_data=serv_data)
     if serv_plan:
         # 反填巡检报告InspectionReport表，服务列表serv_plan字段
-        InspectionReport.objects.filter(id=report_id).update(
-            serv_plan=serv_plan)
+        rep_obj.update(serv_plan=serv_plan)
     if risk_data:
         # 反填巡检报告InspectionReport表，服务列表risk_data字段
-        InspectionReport.objects.filter(id=report_id).update(
-            risk_data=risk_data)
+        rep_obj.update(risk_data=risk_data)
+
     # 反填巡检报告InspectionReport表scan_info、scan_result
-    InspectionReport.objects.filter(id=report_id).update(
+    rep_obj.update(
         scan_info=scan_info, scan_result=scan_result, file_name=file_name)
