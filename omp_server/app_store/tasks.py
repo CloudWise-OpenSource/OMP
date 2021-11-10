@@ -225,7 +225,7 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
                 return None
             ser_name = i.get('name')
             name_version.append(
-                {'name': ser_name, 'version': i.get('version')})
+                {'name': ser_name, 'version': explain_service_yml[1].get('version')})
             service_pk = service_package.get(ser_name)
             if not service_pk:
                 continue
