@@ -4,7 +4,6 @@
 # CreateDate: 2021/10/31 7:28 下午
 # Description:
 import json
-import random
 from utils.plugin.salt_client import SaltClient
 
 

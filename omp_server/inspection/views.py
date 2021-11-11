@@ -4,7 +4,6 @@
 # CreateDate: 2021/10/13 6:06 下午
 # Description: 巡检视图
 import datetime
-
 from rest_framework import status
 from rest_framework.response import Response
 from utils.common.paginations import PageNumberPager
@@ -12,11 +11,10 @@ from rest_framework.viewsets import GenericViewSet
 from django_filters.rest_framework.backends import DjangoFilterBackend
 from rest_framework.mixins import (
     ListModelMixin, CreateModelMixin, UpdateModelMixin, RetrieveModelMixin)
-from db_models.models import Env, Service
 from utils.plugin.crontab_utils import CrontabUtils
 from inspection.tasks import get_prometheus_data
 from db_models.models import (
-    InspectionHistory, InspectionCrontab, InspectionReport)
+    Env, Service, InspectionHistory, InspectionCrontab, InspectionReport)
 from inspection.filters import (
     InspectionHistoryFilter, InspectionCrontabFilter,)
 from inspection.serializers import (
@@ -220,8 +218,6 @@ class InspectionReportView(GenericViewSet, RetrieveModelMixin):
     serializer_class = InspectionReportSerializer
     # 过滤字段
     lookup_field = 'inst_id'
-    # filter_backends = (DjangoFilterBackend,)
-    # filter_class = InspectionReportFilter
     # 操作描述信息
     get_description = "查询巡检任务配置列表"
 

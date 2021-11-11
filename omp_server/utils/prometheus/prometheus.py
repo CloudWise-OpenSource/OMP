@@ -14,21 +14,31 @@ logger = logging.getLogger("server")
 
 
 class Prometheus(object):
+    """
+    prometheus
+    执行prosql查询数据、查询alerts
+    """
     def __init__(self):
         # prometheus 的 ip:port
         self.address = MonitorUrl.objects.get(name='prometheus').monitor_url
 
     def query(self, expr):
-        url = f'http://{self.address}/api/v1/query?query={expr}'
+        """
+        请求prometheus开放接口，执行prosql，查询数据
+        :para expr: 需要执行的sql
+        :return: 查询到的实时数据
+        """
+        url = f"http://{self.address}/api/v1/query?query={expr}"
         try:
             rsp = json.loads(requests.get(url=url, timeout=0.5
                                           ).content.decode('utf8', 'ignore'))
             if rsp.get('status') == 'success':
-                return True, rsp.get('data'), 'success'
+                return True, rsp.get('data')
             else:
-                return False, {}, 'fail'
-        except:
-            return False, {}, 'error'
+                return False, {}
+        except Exception as e:
+            logger.error(f"Query query from prometheus error: {str(e)}")
+            return False, {}
 
     @staticmethod
     def clean_alert(alerts):

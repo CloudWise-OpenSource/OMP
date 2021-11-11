@@ -22,7 +22,7 @@ from utils.prometheus.target_service_portalserver import ServicePortalServer
 
 def get_port_and_status(i):
     """
-    获取每个服务的端口信息及服务状态
+    组建巡检：统一获取每个服务的端口信息及服务状态
     从target_service_run方法拆出来一段
     """
     # 组装端口
@@ -41,7 +41,7 @@ def get_port_and_status(i):
 
 def _joint(i, ret, basics, service_port, service_ports, service_status):
     """
-     数据组装
+     组件巡检 统一数据组装
     "desc: i" server表基础信息
     "desc: ret" 各服务基础数据,字典类型
     "desc: basic" 各服务拓展数据,列表类型
@@ -71,10 +71,9 @@ def _joint(i, ret, basics, service_port, service_ports, service_status):
 
 def target_service_thread(env, i):
     """
-    组件数据采集
-    多线程执行
-    "env:" 环境表对象
-    "i:" 服务表基础数据
+    组件数据采集,把顺序执行的代码拷贝出来-多线程执行
+    "para env:" 环境表对象
+    "para i:" 服务表基础数据
     """
     # 获取每个服务的端口信息及服务状态
     _port_status = get_port_and_status(i)
@@ -142,7 +141,7 @@ def target_service_thread(env, i):
 
 def target_service_run(env, services):
     """
-    组建巡检
+    组建巡检，多线程执行
     :env: 环境 queryset 对象
     :services: 服务id 列表
     """

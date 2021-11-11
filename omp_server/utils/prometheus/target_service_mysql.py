@@ -20,20 +20,20 @@ class ServiceMysqlCrawl(Prometheus):
         self._obj = SaltClient()
         Prometheus.__init__(self)
 
-    def unified_job(self, is_success, ret, msg):
+    @staticmethod
+    def unified_job(is_success, ret):
         """
         实例方法 返回值统一处理
         :ret: 返回值
-        :msg: 返回值描述
         :is_success: 请求是否成功
         """
         if is_success:
             if ret.get('result'):
                 return ret['result'][0].get('value')[1]
             else:
-                return ''
+                return 0
         else:
-            return ''
+            return 0
 
     def run_status(self):
         """运行状态"""

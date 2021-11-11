@@ -15,7 +15,12 @@ from utils.prometheus.utils import get_host_data_folder
 logger = logging.getLogger("server")
 
 
-def target_host_thread(env, instance, ):
+def target_host_thread(env, instance):
+    """
+    主机巡检，多线程执行
+    :env: 环境 queryset 对象
+    :instance: 主机ip地址
+    """
     temp = dict()
     # 主机 prometheus 数据请求
     h_w_obj = HostCrawl(env=env.name, instance=instance)
@@ -49,19 +54,17 @@ def target_host_thread(env, instance, ):
         {"name": "selinux", "name_cn": "SElinux 状态",
          "value": _p.get('selinux')},
         {"name": "max_openfile", "name_cn": "最大打开文件数",
-         "value": _p.get('total_file_descriptor')},
-        {"name": "iowait", "name_cn": "IOWait",
-         "value": _p.get('rate_io_wait')},
+         "value": _p.get('max_openfile')},
+        {"name": "iowait", "name_cn": "IOWait", "value": _p.get('iowait')},
         {"name": "inode_usage", "name_cn": "inode 使用率",
-         "value": {"/": _p.get('rate_inode')}},
+         "value": {"/": _p.get('inode_usage')}},
         {"name": "now_time", "name_cn": "当前时间",
          "value": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
         {"name": "run_process", "name_cn": "进程数",
          "value": _p.get('run_process')},
         {"name": "umask", "name_cn": "umask", "value": _p.get('umask')},
-        {"name": "bandwidth", "name_cn": "带宽",
-         "value": _p.get('network_bytes_total')},
-        {"name": "throughput", "name_cn": "IO", "value": _p.get('disk_io')},
+        {"name": "bandwidth", "name_cn": "带宽", "value": _p.get('bandwidth')},
+        {"name": "throughput", "name_cn": "IO", "value": _p.get('throughput')},
         {"name": "zombies_process", "name_cn": "僵尸进程",
          "value": _p.get('zombies_process')}
     ]
@@ -80,11 +83,11 @@ class HostCrawl(Prometheus):
         self._obj = SaltClient()
         Prometheus.__init__(self)
 
-    def unified_job(self, is_success, ret, msg):
+    @staticmethod
+    def unified_job(is_success, ret):
         """
         实例方法 返回值统一处理
         :ret: 返回值
-        :msg: 返回值描述
         :is_success: 请求是否成功
         """
         if is_success:
@@ -121,11 +124,11 @@ class HostCrawl(Prometheus):
         self.ret['cpu_usage'] = \
             f"{round(float(self.unified_job(*self.query(expr))), 2)}%"
 
-    def rate_io_wait(self):
+    def iowait(self):
         """IO wait使用率"""
         expr = f"avg(rate(node_cpu_seconds_total{{env='{self.env}'," \
                f"instance=~'{self.instance}',mode='iowait'}}[5m])) * 100"
-        self.ret['rate_io_wait'] = \
+        self.ret['iowait'] = \
             f"{round(float(self.unified_job(*self.query(expr))), 2)}%"
 
     def mem_usage(self):
@@ -183,20 +186,20 @@ class HostCrawl(Prometheus):
                f"{{instance=~'{self.instance}',mode='iowait'}}[5m])) * 100"
         self.ret['rate_cpu_io_wait'] = self.unified_job(*self.query(expr))
 
-    def rate_inode(self):
+    def inode_usage(self):
         """inode使用率"""
         expr = f"(1-node_filesystem_files_free{{fstype=~'xfs|ext4'," \
                f"mountpoint='/', env='{self.env}'," \
                f"instance=~'{self.instance}'}} / " \
                f"node_filesystem_files{{fstype=~'xfs|ext4',mountpoint='/', " \
                f"env='{self.env}',instance=~'{self.instance}'}})*100"
-        self.ret['rate_inode'] = \
+        self.ret['inode_usage'] = \
             f"{round(float(self.unified_job(*self.query(expr))), 2)}%"
 
-    def total_file_descriptor(self):
+    def max_openfile(self):
         """总文件描述符"""
         expr = f"avg(node_filefd_maximum{{instance=~'{self.instance}'}})"
-        self.ret['total_file_descriptor'] = self.unified_job(*self.query(expr))
+        self.ret['max_openfile'] = self.unified_job(*self.query(expr))
 
     def sys_load(self):
         """系统平均负载"""
@@ -211,35 +214,34 @@ class HostCrawl(Prometheus):
         load15 = self.unified_job(*self.query(expr))
         self.ret['sys_load'] = f"{load1},{load5},{load15}"
 
-    def network_bytes_total(self):
+    def bandwidth(self):
         """网络带宽使用"""
         # eth0 下载
         expr = f"sum(rate(node_network_receive_bytes_total{{env='{self.env}'," \
                f"instance=~'{self.instance}',device=~'eth0'}}[2m])*8/1024)"
-        self.ret['network_bytes_total'] = {
+        self.ret['bandwidth'] = {
             'receive': f"{round(float(self.unified_job(*self.query(expr))), 2)}"
                        f"kb/s"}
         # eth0 上传
         expr = f"sum(rate(node_network_transmit_bytes_total" \
                f"{{env='{self.env}',instance=~'{self.instance}'," \
                f"device=~'eth0'}}[2m])*8/1024)"
-        self.ret['network_bytes_total']['transmit'] = {
-            'receive': f"{round(float(self.unified_job(*self.query(expr))), 2)}"
-                       f"kb/s"}
+        self.ret['bandwidth']['transmit'] = \
+            f"{round(float(self.unified_job(*self.query(expr))), 2)}kb/s"
 
-    def disk_io(self):
+    def throughput(self):
         """磁盘io"""
         # 读
         expr = f"sum(rate(node_disk_read_bytes_total{{env='{self.env}'," \
                f"instance=~'{self.instance}'}}[2m])) / 1024"
-        self.ret['disk_io'] = \
+        self.ret['throughput'] = \
             {'read': f"{round(float(self.unified_job(*self.query(expr))), 2)}"
                      f"kb/s"}
         # 写
         expr = f"sum(rate(node_disk_written_bytes_total" \
                f"{{env='{self.env}'," \
                f"instance=~'{self.instance}'}}[2m])) / 1024"
-        self.ret['disk_io']['write'] = \
+        self.ret['throughput']['write'] = \
             f"{round(float(self.unified_job(*self.query(expr))), 2)}kb/s"
 
     def salt_json(self):
@@ -267,13 +269,9 @@ class HostCrawl(Prometheus):
         """统一执行实例方法"""
         # target为实例方法，目的是统一执行实例方法并统一返回值
         target = ['mem_usage', 'cpu_usage', 'disk_usage_root',
-                  'disk_usage_data', 'sys_load', 'run_time',
-
-
-                  'salt_json',
-                   'rate_inode',
-                  'total_file_descriptor', 'rate_io_wait',
-                  'network_bytes_total', 'disk_io', 'run_status']
+                  'disk_usage_data', 'sys_load', 'run_time', 'max_openfile',
+                  'inode_usage', 'iowait', 'bandwidth', 'throughput',
+                  'salt_json', 'run_status']
         for t in target:
             if getattr(self, t):
                 getattr(self, t)()

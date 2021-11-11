@@ -7,7 +7,11 @@ import threading
 
 
 class MyThread(threading.Thread):
-    """封装下多线程，重写下run"""
+    """
+    封装下多线程
+    重写下run
+    拿到每个线程的返回值
+    """
     def __init__(self, func, args):
         threading.Thread.__init__(self)
         self.func = func
