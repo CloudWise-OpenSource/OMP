@@ -8,16 +8,13 @@ import random
 from db_models.models import Service
 from utils.prometheus.thread import MyThread
 from utils.prometheus.target_service_func import salt_json
+from utils.prometheus.target_service_jvm_base import ServiceBase
 from utils.prometheus.target_service_mysql import ServiceMysqlCrawl
 from utils.prometheus.target_service_redis import ServiceRedisCrawl
 from utils.prometheus.target_service_kafka import ServiceKafkaCrawl
 from utils.prometheus.target_service_nacos import ServiceNacosCrawl
-from utils.prometheus.target_service_zookeeper import ServiceZookeeperCrawl
 from utils.prometheus.target_service_rocketmq import ServiceRocketmqCrawl
-from utils.prometheus.target_service_gatewayserver import ServiceGatewayServer
-from utils.prometheus.target_service_gatewayserverapi import GatewayServerApi
-from utils.prometheus.target_service_portalweb import ServicePortalWebCrawl
-from utils.prometheus.target_service_portalserver import ServicePortalServer
+from utils.prometheus.target_service_zookeeper import ServiceZookeeperCrawl
 
 
 def get_port_and_status(i):
@@ -72,8 +69,8 @@ def _joint(i, ret, basics, service_port, service_ports, service_status):
 def target_service_thread(env, i):
     """
     组件数据采集,把顺序执行的代码拷贝出来-多线程执行
-    "para env:" 环境表对象
-    "para i:" 服务表基础数据
+    :param env: 环境表对象
+    :param i: 服务表基础数据(端口/服务名/app_name...)
     """
     # 获取每个服务的端口信息及服务状态
     _port_status = get_port_and_status(i)
@@ -112,27 +109,47 @@ def target_service_thread(env, i):
         _.run()
         tmp = _joint(i, _.ret, _.basic, *_port_status)
     elif i.get('service__app_name').lower() == 'gatewayserver':
-        tag_total_num = 9  # 总指标数累加
-        _ = ServiceGatewayServer(env=env.name, instance=i.get('ip'))
+        tag_total_num = 10  # 总指标数累加
+        _ = ServiceBase(env.name, i.get('ip'), 'gatewayServerExporter')
         _.run()
         tmp = _joint(i, _.ret, _.basic, *_port_status)
     elif i.get('service__app_name').lower() == 'gatewayserverapi':
-        tag_total_num = 9  # 总指标数累加
-        _ = GatewayServerApi(env=env.name, instance=i.get('ip'))
-        _.run()
-        tmp = _joint(i, _.ret, _.basic, *_port_status)
-    elif i.get('service__app_name').lower() == 'portalweb':
-        tag_total_num = 8  # 总指标数累加
-        _ = ServicePortalWebCrawl(env=env.name, instance=i.get('ip'))
+        tag_total_num = 10  # 总指标数累加
+        _ = ServiceBase(env.name, i.get('ip'), 'gatewayServerApiExporter')
         _.run()
         tmp = _joint(i, _.ret, _.basic, *_port_status)
     elif i.get('service__app_name').lower() == 'portalserver':
-        tag_total_num = 9  # 总指标数累加
-        _ = ServicePortalServer(env=env.name, instance=i.get('ip'))
+        tag_total_num = 10  # 总指标数累加
+        _ = ServiceBase(env.name, i.get('ip'), 'portalServerExporter')
+        _.run()
+        tmp = _joint(i, _.ret, _.basic, *_port_status)
+    elif i.get('service__app_name').lower() == 'doucapi':
+        tag_total_num = 10  # 总指标数累加
+        _ = ServiceBase(env.name, i.get('ip'), 'doucApiExporter')
+        _.run()
+        tmp = _joint(i, _.ret, _.basic, *_port_status)
+    elif i.get('service__app_name').lower() == 'doucsso':
+        tag_total_num = 10  # 总指标数累加
+        _ = ServiceBase(env.name, i.get('ip'), 'doucSsoExporter')
+        _.run()
+        tmp = _joint(i, _.ret, _.basic, *_port_status)
+    elif i.get('service__app_name').lower() == 'doucdubborpc':
+        tag_total_num = 10  # 总指标数累加
+        _ = ServiceBase(env.name, i.get('ip'), 'doucDubboRpcExporter')
+        _.run()
+        tmp = _joint(i, _.ret, _.basic, *_port_status)
+    elif i.get('service__app_name').lower() == 'doucadmin':
+        tag_total_num = 10  # 总指标数累加
+        _ = ServiceBase(env.name, i.get('ip'), 'doucAdminExporter')
+        _.run()
+        tmp = _joint(i, _.ret, _.basic, *_port_status)
+    elif i.get('service__app_name').lower() == 'douczabbixapi':
+        tag_total_num = 10  # 总指标数累加
+        _ = ServiceBase(env.name, i.get('ip'), 'doucZabbixApiExporter')
         _.run()
         tmp = _joint(i, _.ret, _.basic, *_port_status)
     else:
-        tag_total_num = 0  # 总指标数 计算
+        tag_total_num = 0   # 总指标数 计算
         ret, basics = {}, []
         tmp = _joint(i, ret, basics, *_port_status)
 
@@ -162,7 +179,7 @@ def target_service_run(env, services):
     for t in threads:
         t.join()                        # 用join等待线程执行结束
         total_no += t.res[0]
-        tmp_list.append(t.res[1])
+        tmp_list.append(t.res[1])       # 等线程结束，回收返回值
 
     # 扫描统计
     scan_info = {"host": 0, "service": len(services), "component": 0}
