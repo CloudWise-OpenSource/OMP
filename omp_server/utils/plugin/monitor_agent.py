@@ -9,7 +9,7 @@
 """
 安装、卸载、更新monitor agent
 """
-
+import json
 import os
 import time
 import random
@@ -104,12 +104,16 @@ class MonitorAgentManager(object):
         if not send_flag:
             return send_flag, send_msg
         # step3: 解压源码包并启动服务
+        metrics_auth = json.dumps(
+            {"username": "mokey", "password": "w7SiYs$oE"})  # TODO  后续从配置文件读取
         cmd_flag, cmd_res = salt_obj.cmd(
             target=obj.ip,
             command=f"cd {obj.agent_dir} && "
                     f"tar -xf {self.monitor_agent_package_name} && "
                     f"rm -rf {self.monitor_agent_package_name} && "
-                    f"cd {self.name} && bash monitor_agent.sh start",
+                    f"cd {self.name} && "
+                    f"./ install --agent_ip={obj.ip} --metrics_auth='{metrics_auth}' && "
+                    f"bash monitor_agent.sh start",
             timeout=120)
         logger.info(
             f"Install omp_monitor_agent cmd, "
