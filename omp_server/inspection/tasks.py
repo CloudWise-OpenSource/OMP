@@ -5,20 +5,20 @@
 # Description: 巡检异步任务及定时任务
 
 import logging
-import random
 import traceback
 from datetime import datetime
 from celery import shared_task
+from utils.prometheus.thread import MyThread
 from celery.utils.log import get_task_logger
-from db_models.models import Host, Env
-from db_models.models import Service, ApplicationHub
+from db_models.models import Host, Env, Service
 from db_models.models import InspectionHistory, InspectionReport, ApplicationHub
-from utils.prometheus.target_host import HostCrawl
 from utils.prometheus.prometheus import back_fill
-from utils.prometheus.prometheus import Prometheus
+from utils.prometheus.target_host import target_host_thread
 from utils.prometheus.target_service import target_service_run
 from utils.prometheus.create_html_tar import create_html_tar
 from inspection.joint_json_report import joint_json_data
+from inspection.get_prometheus_risk_data import get_risk_data
+from inspection.get_service_topology import get_topology_data
 
 # 屏蔽celery任务日志中的paramiko日志
 logging.getLogger("paramiko").setLevel(logging.WARNING)
@@ -32,119 +32,24 @@ def get_hosts_data(env, hosts):
     :hosts: 主机列表，例：["主机ip"]
     """
     temp_list = list()
-    scan_info = {"host": len(hosts), "service": 0, "component": 0}  # 扫描统计
-    tag_total_num = tag_error_num = 0  # 总指标数/异常指标数
+    threads = list()
+    total_no = error_no = 0     # 总指标数/异常指标数
     for instance in hosts:
-        temp = dict()
-        # 主机 prometheus 数据请求
-        h_w_obj = HostCrawl(env=env.name, instance=instance)
-        h_w_obj.run()
-        _p = h_w_obj.ret
-        temp['id'] = random.randint(1, 99999999)
-        temp['mem_usage'] = _p.get('rate_memory')
-        temp['cpu_usage'] = _p.get('rate_cpu')
-        temp['disk_usage_root'] = _p.get('rate_max_disk')
-        temp['disk_usage_data'] = _p.get('rate_data_disk')
-        temp['sys_load'] = _p.get('load')
-        temp['run_time'] = _p.get('run_time')
-        temp['host_ip'] = instance
-        temp['memory_top'] = _p.get('_s').get('memory_top', [])
-        temp['cpu_top'] = _p.get('_s').get('cpu_top', [])
-        temp['kernel_parameters'] = _p.get('_s').get('kernel_parameters', [])
-        # 总指标数/异常指标数 计算
-        tag_total_num += 23  # 当前共23个
-        tag_error_num += h_w_obj.tag_error_num
-        # 操作系统
-        _h = Host.objects.filter(ip=instance).first()
-        temp['release_version'] = _h.operate_system if _h else ''  # 操作系统
-        # 配置信息
-        temp['host_massage'] = f"{_h.cpu if _h else '-'}C|" \
-                               f"{_h.memory if _h else '-'}G|" \
-                               f"{sum(_h.disk.values()) if _h and _h.disk else '-'}G"
-        temp['basic'] = [
-            {"name": "IP", "name_cn": "主机IP", "value": instance},
-            {"name": "hostname", "name_cn": "主机名",
-             "value": _h.host_name if _h else '-'},
-            {"name": "kernel_version", "name_cn": "内核版本",
-             "value": _p.get('_s').get('kernel_version')},
-            {"name": "selinux", "name_cn": "SElinux 状态",
-             "value": _p.get('_s').get('selinux')},
-            {"name": "max_openfile", "name_cn": "最大打开文件数",
-             "value": _p.get('total_file_descriptor')},
-            {"name": "iowait", "name_cn": "IOWait",
-             "value": _p.get('rate_io_wait')},
-            {"name": "inode_usage", "name_cn": "inode 使用率",
-             "value": {"/": _p.get('rate_inode')}},
-            {"name": "now_time", "name_cn": "当前时间",
-             "value": datetime.now().strftime("%Y-%m-%d %H:%M:%S")},
-            {"name": "run_process", "name_cn": "进程数",
-             "value": _p.get('_s').get('run_process')},
-            {"name": "umask", "name_cn": "umask",
-             "value": _p.get('_s').get('umask')},
-            {"name": "bandwidth", "name_cn": "带宽",
-             "value": _p.get('network_bytes_total')},
-            {"name": "throughput", "name_cn": "IO", "value": _p.get('disk_io')},
-            {"name": "zombies_process", "name_cn": "僵尸进程",
-             "value": _p.get('_s').get('zombies_process')}
-        ]
-        temp_list.append(temp)
+        total_no += 23          # 总指标数;当前共23个
+        threads.append(MyThread(func=target_host_thread, args=(env, instance)))
+
+    for t in threads:
+        t.start()
+
+    for t in threads:
+        t.join()                    # 用join等待线程执行结束
+        temp_list.append(t.res)     # 组装每个线程的返回值
 
     scan_result = {
-        "all_target_num": tag_total_num,
-        "abnormal_target": tag_error_num,
-        "healthy": f"{round((tag_error_num / tag_total_num) * 100, 2)}%"
-        if tag_total_num > 0 else '100%'
+        "all_target_num": total_no, "abnormal_target": error_no, "healthy": ""
     }
+    scan_info = {"host": len(hosts), "service": 0, "component": 0}  # 扫描统计
     return scan_info, scan_result, temp_list
-
-
-def get_risk_data(risks, handle, hosts, services):
-    """
-     查询 prometheus 异常数据
-     :risks:
-     :handle:
-     :hosts:
-     :services:
-     """
-    hosts = hosts if hosts else []
-    services = services if services else []
-
-    host_list = []
-    service_list = []
-    _host = Host.objects
-    _service = Service.objects
-    app_name = list(ApplicationHub.objects.filter(
-        id__in=services).values_list('app_name', flat=True))
-    for i in risks:
-        if handle in ['host', 'deep']:
-            # 主机
-            if handle == 'host' and\
-                    i.get('labels').get('instance') not in hosts:
-                continue
-            if i.get('labels').get('job') == 'nodeExporter':
-                _ = _host.filter(ip=i.get('labels').get('instance')).first()
-                tmp = {'host_ip': i.get('labels').get('instance'),
-                       'resolve_info': "-",
-                       'risk_describe': i.get('annotations').get('description'),
-                       'risk_level': i.get('labels').get('severity'),
-                       'system': _.operate_system if _ else '-'}
-                host_list.append(tmp)
-        if handle in ['service', 'deep']:
-            # 组件
-            if handle == 'service' and \
-                    i.get('labels').get('job').replace('Exporter', '') \
-                    not in app_name:
-                continue
-            if i.get('labels').get('job') != 'nodeExporter':
-                tmp = {'host_ip': i.get('labels').get('instance'),
-                       'resolve_info': "-",
-                       'risk_describe': i.get('annotations').get('description'),
-                       'risk_level': i.get('labels').get('severity'),
-                       'service_name': i.get('labels').get('job'),
-                       'service_port': '-'}
-                service_list.append(tmp)
-
-    return {'host_list': host_list, 'service_list': service_list}
 
 
 @shared_task
@@ -170,8 +75,7 @@ def get_prometheus_data(env_id, hosts, services, history_id, report_id, handle):
             kwargs.update({
                 'scan_info': scan_info, 'scan_result': scan_result,
                 'host_data': host_data,
-                'file_name': f"{file_name}.tar.gz"}
-            )
+                'file_name': f"{file_name}.tar.gz"})
         elif handle == 'service':
             # 组件巡检
             file_name = f"serviceinspection{_h.inspection_name.split('-')[1]}"
@@ -180,8 +84,7 @@ def get_prometheus_data(env_id, hosts, services, history_id, report_id, handle):
             kwargs.update({
                 'scan_info': scan_info, 'scan_result': scan_result,
                 'serv_data': serv_data,
-                'file_name': f"{file_name}.tar.gz"}
-            )
+                'file_name': f"{file_name}.tar.gz"})
         elif handle == 'deep':
             # 主机巡检
             file_name = f"deepinspection{_h.inspection_name.split('-')[1]}"
@@ -193,48 +96,33 @@ def get_prometheus_data(env_id, hosts, services, history_id, report_id, handle):
                 h_result = {'all_target_num': 0, 'abnormal_target': 0}
 
             # 组件巡检
-            services = []
             _ = Service.objects.filter(
-                service__app_type=ApplicationHub.APP_TYPE_COMPONENT).exclude(
+                service__app_type=ApplicationHub.APP_TYPE_COMPONENT,
+                service__is_base_env=False).exclude(
                 service_status__in=[5, 6, 7])
-            for i in _:
-                if i.service.extend_fields.get('base_env') \
-                        in [True, 'True', 'true']:
-                    continue
-                services.append(i.id)
+            services = list(_.values_list('id', flat=True))
             if len(services) > 0:
                 s_info, s_result, serv_data = target_service_run(env, services)
             else:
                 s_info, serv_data = {'service': 0}, []
                 s_result = {'all_target_num': 0, 'abnormal_target': 0}
 
-            # 合并结果
+            # 主机巡检 + 组件巡检 合并结果
             scan_info = {"host": h_info.get('host'), "component": 0,
                          "service": s_info.get('service')}
             all_target_num = \
-                h_result.get('all_target_num') + \
-                s_result.get('all_target_num')
-            abnormal_target = \
-                h_result.get('abnormal_target') + \
-                s_result.get('abnormal_target')
-            scan_result = {
-                "all_target_num": all_target_num,
-                "abnormal_target": abnormal_target,
-                "healthy":
-                    f"{round((abnormal_target / all_target_num) * 100, 2)}%"
-                    if all_target_num > 0 else "-"
-            }
+                h_result.get('all_target_num') + s_result.get('all_target_num')
+            scan_result = {"all_target_num": all_target_num,
+                           "abnormal_target": 0, "healthy": "-"}
             kwargs.update({
                 'scan_info': scan_info, 'scan_result': scan_result,
                 'serv_data': serv_data, 'host_data': host_data,
-                'file_name': f"{file_name}.tar.gz"}
-            )
+                'file_name': f"{file_name}.tar.gz"})
+            # 服务平面图
+            kwargs['serv_plan'] = get_topology_data()
 
         # 风险指标
-        risk_data = Prometheus().query_alerts()
-        risk_data = get_risk_data(risk_data, handle, hosts, services)
-        risk_num = \
-            len(risk_data.get('host_list')) + len(risk_data.get('service_list'))
+        risk_num, risk_data = get_risk_data(handle, hosts, services)
         kwargs['risk_data'] = risk_data
         # 根据风险指标更新
         kwargs['scan_result']['abnormal_target'] = risk_num
@@ -272,24 +160,18 @@ def inspection_crontab(**kwargs):
                 hosts = Host.objects.filter(env=env.id).values_list(
                     'ip', flat=True)
                 if len(hosts) == 0:
-                    logger.error(
-                        f"Inspection auto task failed with error: "
-                        f"ID={env.id}环境下无主机数据")
+                    logger.error(f"Inspection auto task failed with error: "
+                                 f"ID={env.id}环境下无主机数据")
             if job_type in [0, 2]:
                 # 2、查询环境下组件信息
-                services = list()
                 _ = Service.objects.filter(
-                    service__app_type=ApplicationHub.APP_TYPE_COMPONENT
+                    service__app_type=ApplicationHub.APP_TYPE_COMPONENT,
+                    service__is_base_env=False
                 ).exclude(service_status__in=[5, 6, 7])
-                for i in _:
-                    if i.service.extend_fields.get('base_env')\
-                            in [True, 'True', 'true']:
-                        continue
-                    services.append(i.id)
+                services = list(_.values_list('id', flat=True))
                 if len(services) == 0:
-                    logger.error(
-                        f"Inspection auto task failed with error: "
-                        f"ID={env.id}环境下无组件数据")
+                    logger.error(f"Inspection auto task failed with error: "
+                                 f"ID={env.id}环境下无组件数据")
 
             # job_type 与 inspection_type 参数对应
             inspection_type = {0: 'deep', 1: 'host', 2: 'service'}
@@ -308,8 +190,7 @@ def inspection_crontab(**kwargs):
             his_obj = InspectionHistory(**his_dict)
             his_obj.save()
             # 4、组装巡检报告表数据，并存储入库
-            rep_dict = {'inst_id': his_obj}
-            rep_obj = InspectionReport(**rep_dict)
+            rep_obj = InspectionReport(**{'inst_id': his_obj})
             rep_obj.save()
             # 5、查询prometheus数据，组装后进行反填
             get_prometheus_data(
@@ -317,6 +198,5 @@ def inspection_crontab(**kwargs):
                 history_id=his_obj.id, report_id=rep_obj.id,
                 handle=inspection_type.get(job_type))
     except Exception as e:
-        logger.error(
-            f"Inspection auto task failed with error:"
-            f" {traceback.format_exc(e)}")
+        logger.error(f"Inspection auto task failed with error:"
+                     f"{traceback.format_exc(e)}")
