@@ -491,7 +491,8 @@ def update_alertmanager():
         {'EMAIL_ADDRESS': EMAIL_ADDRESS},
         {'RECEIVER': RECEIVER},
         {'EMAIL_SEND_INTERVAL': EMAIL_SEND_INTERVAL},
-        {'WEBHOOK_URL': WEBHOOK_URL}
+        {'WEBHOOK_URL': WEBHOOK_URL},
+        {'ALERTMANAGER_PATH': alertmanager_path}
     ]
     replace_placeholder(alertmanager_yml_file, cay_placeholder_script)
 

@@ -1,4 +1,4 @@
-from db_models.models import GrafanaMainPage, MonitorUrl, Host
+from db_models.models import GrafanaMainPage, MonitorUrl, Host, ApplicationHub
 import requests
 import json
 import logging
@@ -138,8 +138,19 @@ def explain_url(explain_info, is_service=None):
                 instance_info['monitor_url'] = grafana_url + \
                     monitor_url + f"?var-instance={service_ip}"
             else:
-                instance_info['monitor_url'] = grafana_url + url_dict.get(
-                    'service', 'noservice') + f"?var-ip={service_ip}&var-app={service_name}"
+                try:
+                    if service_name and json.loads(
+                            ApplicationHub.objects.filter(app_name=service_name).first().app_monitor).get(
+                                "type") == "JavaSpringBoot":
+                        instance_info['monitor_url'] = grafana_url + url_dict.get(
+                            'javaspringboot', 'nojavaspringboot') + f"?var-ip={service_ip}&var-app={service_name}"
+                    else:
+                        instance_info['monitor_url'] = grafana_url + url_dict.get(
+                            'service', 'noservice') + f"?var-ip={service_ip}&var-app={service_name}"
+                except Exception as e:
+                    logger.error(e)
+                    instance_info['monitor_url'] = grafana_url + url_dict.get(
+                        'service', 'noservice') + f"?var-ip={service_ip}&var-app={service_name}"
             instance_info['log_url'] = grafana_url + \
                 url_dict.get('log', 'nolog') + f"?var-app={service_name}"
         else:
