@@ -339,7 +339,8 @@ const renderMenu = (
 
   record,
   setOperateAciton,
-  setServiceAcitonModal
+  setServiceAcitonModal,
+  queryDeleteMsg
 ) => {
   return (
     <Menu>
@@ -384,6 +385,7 @@ const renderMenu = (
         disabled={!record.operable}
         key="delete"
         onClick={() => {
+          queryDeleteMsg([record])
           setOperateAciton(4);
           setServiceAcitonModal(true);
         }}
@@ -428,7 +430,8 @@ const getColumnsConfig = (
   initfilterLabelName,
   setShowIframe,
   setOperateAciton,
-  setServiceAcitonModal
+  setServiceAcitonModal,
+  queryDeleteMsg
 ) => {
   return [
     {
@@ -652,7 +655,8 @@ const getColumnsConfig = (
                 // setOpenMaintainModal,
                 record,
                 setOperateAciton,
-                setServiceAcitonModal
+                setServiceAcitonModal,
+                queryDeleteMsg
               )}
             >
               <a>

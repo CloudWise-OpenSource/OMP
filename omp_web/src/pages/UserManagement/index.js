@@ -1,5 +1,5 @@
 import { OmpContentWrapper, OmpTable, OmpModal } from "@/components";
-import { Button, Input, Form, message } from "antd";
+import { Button, Input, Form, message, Menu } from "antd";
 import { useState, useEffect, useRef } from "react";
 import {
   handleResponse,
@@ -15,7 +15,7 @@ import { apiRequest } from "@/config/requestApi";
 //import updata from "@/store_global/globalStore";
 import { useDispatch } from "react-redux";
 import moment from "moment";
-import { SearchOutlined } from "@ant-design/icons";
+import { SearchOutlined, SettingFilled } from "@ant-design/icons";
 
 const UserManagement = () => {
   const dispatch = useDispatch();
@@ -47,19 +47,19 @@ const UserManagement = () => {
   const columns = [
     {
       title: "序列",
-      width:80,
+      width: 80,
       key: "_idx",
       dataIndex: "_idx",
       //sorter: (a, b) => a.username - b.username,
       // sortDirections: ["descend", "ascend"],
       align: "center",
       render: nonEmptyProcessing,
-      fixed:"left"
+      fixed: "left",
     },
     {
       title: "用户名",
       key: "username",
-      width:120,
+      width: 120,
       dataIndex: "username",
       //sorter: (a, b) => a.username - b.username,
       // sortDirections: ["descend", "ascend"],
@@ -120,9 +120,10 @@ const UserManagement = () => {
     {
       title: "用户操作",
       key: "1",
+      width: 80,
       dataIndex: "1",
       align: "center",
-      fixed:"right",
+      fixed: "right",
       render: function renderFunc(text, record, index) {
         return (
           <div

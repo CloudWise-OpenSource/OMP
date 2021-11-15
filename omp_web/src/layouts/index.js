@@ -380,8 +380,7 @@ const OmpLayout = (props) => {
               // 应用商店content大背景不是白色，特殊处理
               backgroundColor:
                 location.pathname == "/application_management/app_store" ||
-                location.pathname.includes("/component_installation") ||
-                location.pathname.includes("/application_installation") ||
+                location.pathname.includes("installation") ||
                 location.pathname.includes("/homepage")
                   ? undefined
                   : "#fff",

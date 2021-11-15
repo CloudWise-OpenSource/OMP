@@ -6,11 +6,14 @@
  * @Description: In User Settings Edit
  * @FilePath: /omp-fontend123/src/components/OmpTable/index.js
  */
-import { Table, Pagination } from "antd";
+import { Table, Pagination, Tree } from "antd";
 import styles from "./index.module.less";
-import { useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import OmpTableFilter from "./components/OmpTableFilter";
+import { SettingOutlined } from "@ant-design/icons";
+import { columnsConfig } from "src/utils/utils";
+import { createTrue } from "typescript";
 // import * as R from "ramda"
 
 const OmpTable = ({
@@ -25,9 +28,14 @@ const OmpTable = ({
   // 视口宽度
   const viewWidth = useSelector((state) => state.layouts.viewSize.width);
   const [maxWidth, setMaxWidth] = useState(1900);
-  
+
+  // 表格项的筛选selectKey
+  const [selectKeys, setSelectKeys] = useState(
+    columns.map((item) => item.dataIndex)
+  );
+
   // 当columns传入usefilter时，对该项做处理
-  const extensionsColumns = columns.map((item) => {
+  const extensionsColumns = columns.map((item, idx) => {
     // // 复制一下item
     // let item = R.clone(i);
 
@@ -39,6 +47,39 @@ const OmpTable = ({
     //     ...item,
     //   };
     // }
+
+    //item.isShow = true;
+
+    let lastIndex = columns.length - 1;
+    if (idx == lastIndex) {
+      return {
+        ...item,
+        filterIcon: (filtered) => <SettingOutlined />,
+        filterDropdown: ({ confirm, clearFilters }) => (
+          <div style={{ padding: 8, overflow: "hidden" }}>
+            <Tree
+              style={{
+                left: -20,
+                fontSize:13
+              }}
+              checkable
+              switcherIcon={<SettingOutlined />}
+              selectable={false}
+              onCheck={(checkedKeys, info) => {
+                setSelectKeys(checkedKeys);
+              }}
+              treeData={columns.map((item, idx)=>{
+                return {
+                  ...item,
+                  disabled : idx == columns.length - 1 ? true:false
+                }
+              })}
+              checkedKeys={selectKeys}
+            />
+          </div>
+        ),
+      };
+    }
 
     // 筛选功能
     if (item.usefilter) {
@@ -65,8 +106,6 @@ const OmpTable = ({
     };
   });
 
-
-
   // 计算表格实际横向宽度（最大）
   // useLayoutEffect(() => {
   //   let maxW = 0
@@ -77,6 +116,10 @@ const OmpTable = ({
   //   setMaxWidth(maxW)
   //   //console.log(extensionsColumns)
   // }, []);
+
+  // useEffect(()=>{
+
+  // },[selectKeys])
 
   useLayoutEffect(() => {
     //console.log(viewHeight);
@@ -111,9 +154,11 @@ const OmpTable = ({
   return (
     <Table
       //scroll={(viewWidth - 300) > maxWidth ? null : { x: (maxWidth + 30) }}
-      scroll={ viewWidth > 1900 ? null : { x: 1400 }}
+      scroll={viewWidth > 1900 ? null : { x: 1400 }}
       {...residualParam}
-      columns={extensionsColumns}
+      columns={extensionsColumns.filter((i) => {
+        return selectKeys.includes(i.dataIndex)
+      })}
       //size="small"
       rowSelection={
         checkedState && {
