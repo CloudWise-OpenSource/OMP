@@ -13,6 +13,7 @@ import PatrolInspectionDetail from "@/pages/PatrolInspectionRecord/config/detail
 import ServiceManagement from "@/pages/ServiceManagement";
 import ComponentInstallation from "@/pages/AppStore/config/ComponentInstallation";
 import ApplicationInstallation from "@/pages/AppStore/config/ApplicationInstallation";
+import Installation from "@/pages/AppStore/config/Installation";
 import {
   DesktopOutlined,
   ClusterOutlined,
@@ -74,6 +75,12 @@ export default [
         path: "/application_management/app_store/app-component-detail/:name/:verson",
         notInMenu: true,
         component: AppStoreDetail,
+      },
+      {
+        title: "批量安装",
+        path: "/application_management/app_store/installation",
+        notInMenu: true,
+        component: Installation,
       },
     ],
   },

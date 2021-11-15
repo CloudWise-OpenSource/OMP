@@ -83,6 +83,8 @@ export const apiRequest = {
     servicesDetail: "/api/services/services",
     // 服务的操作
     servicesAction: "/api/services/action/",
+    // 服务的删除提示信息
+    servicesDeleteMsg: "/api/services/delete/",
     // 模版下载
     applicationTemplate: "/api/appStore/applicationTemplate/",
     // 组件安装查询接口

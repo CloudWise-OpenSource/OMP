@@ -19,6 +19,8 @@ import { apiRequest } from "@/config/requestApi";
 import { handleResponse, downloadFile } from "@/utils/utils";
 import ReleaseModal from "./config/ReleaseModal.js";
 import ScanServerModal from "./config/ScanServerModal";
+// 批量安装弹框组件
+import BatchInstallationModal from "./config/BatchInstallationModal";
 import { getTabKeyChangeAction } from "./store/actionsCreators";
 
 const AppStore = () => {
@@ -47,12 +49,15 @@ const AppStore = () => {
     searchParams: {},
   });
 
-  //发布操作
+  // 发布操作
   const [releaseModalVisibility, setReleaseModalVisibility] = useState(false);
 
-  //扫描服务端
+  // 扫描服务端
   const [scanServerModalVisibility, setScanServerModalVisibility] =
     useState(false);
+
+  // 批量安装弹框
+  const [bIModalVisibility, setBIModalVisibility] = useState(false);
 
   function fetchData(pageParams = { current: 1, pageSize: 8 }, searchParams) {
     setLoading(true);
@@ -232,6 +237,15 @@ const AppStore = () => {
               style={{ marginRight: 10 }}
               type="primary"
               onClick={() => {
+                setBIModalVisibility(true);
+              }}
+            >
+              批量安装
+            </Button>
+            <Button
+              style={{ marginRight: 10 }}
+              type="primary"
+              onClick={() => {
                 setTimeUnix(new Date().getTime());
                 setReleaseModalVisibility(true);
               }}
@@ -364,6 +378,10 @@ const AppStore = () => {
         scanServerModalVisibility={scanServerModalVisibility}
         setScanServerModalVisibility={setScanServerModalVisibility}
         refresh={refresh}
+      />
+      <BatchInstallationModal
+        bIModalVisibility={bIModalVisibility}
+        setBIModalVisibility={setBIModalVisibility}
       />
     </div>
   );
