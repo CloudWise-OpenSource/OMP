@@ -1,14 +1,20 @@
 """
 omp使用的models集合
 """
+import logging
+import os
 
+import requests
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from ruamel import yaml
 
 from db_models.mixins import (
     DeleteMixin,
     TimeStampMixin,
 )
+
+logger = logging.getLogger('server')
 
 
 class UserProfile(AbstractUser):
@@ -796,3 +802,205 @@ class DetailInstallHistory(TimeStampMixin):
 
     def __str__(self):
         return self.service.service_instance_name + f"({self.service.ip})"
+
+
+class AlertSendWaySetting(models.Model):
+    used = models.BooleanField("是否启用", default=False)
+    env_id = models.IntegerField("环境id", default=0)
+    way_name = models.CharField("告警推送服务名称", max_length=64)
+    server_url = models.TextField("告警推送服务url", default="")
+    way_token = models.CharField("服务token", max_length=255, default="")
+    extra_info = models.JSONField("服务其他信息", default=dict)
+
+    class Meta:
+        db_table = 'omp_alert_send_way_setting'
+        verbose_name = verbose_name_plural = '告警推送通道设置'
+
+    # 暂时屏蔽doem的配置
+    # @property
+    # def get_doem_init_kwargs(self):
+    #     """
+    #     返回告警推送服务类对象初始化参数
+    #     :return:
+    #     """
+    #     return {"app_key": self.way_token, "server_url": self.server_url}
+    #
+    # @property
+    # def get_doem_dict(self):
+    #     return {
+    #         "way_token": self.way_token,
+    #         "server_url": self.server_url,
+    #         "used": self.used
+    #     }
+
+    @property
+    def get_email_dict(self):
+        return {
+            "server_url": self.server_url,
+            "used": self.used
+        }
+
+    @classmethod
+    def get_v1_5_email_dict(cls, env_id):
+        # 临时适配1.5，email推送走alert manage
+        obj = cls.objects.filter(way_name="email").first()
+        kwargs = {
+            "server_url": "",
+            "used": False
+        }
+        if obj:
+            kwargs.update(server_url=obj.server_url, used=obj.used)
+            cls.objects.create(
+                env_id=env_id,
+                way_name="email",
+                server_url=obj.server_url,
+                used=obj.used)
+        return kwargs
+
+    def get_self_dict(self):
+        # 前端展示
+        return getattr(self, f"get_{self.way_name}_dict")
+
+    # def get_func_class_obj(self):
+    #     """
+    #     返回告警推送服务类对象
+    #     :return:
+    #     """
+    #     from base import base_monitor
+    #     kwargs = getattr(self, f"get_{self.way_name}_init_kwargs")
+    #     return getattr(
+    #         base_monitor, f"SendAlertTo{self.way_name.capitalize()}Way"
+    #     )(**kwargs)
+
+    @classmethod
+    def update_email_config(cls, used, user_emails):
+        cls.objects.filter(
+            way_name="email"
+        ).update(used=used, server_url=user_emails)
+
+
+class EmailSMTPSetting(models.Model):
+    email_host = models.EmailField("邮箱SMTP主机地址:smtp.163.com", null=True)
+    email_port = models.IntegerField("邮箱SMTP端口:465", null=True)
+    email_host_user = models.CharField(
+        "邮箱SMTP服务器用户名:a@163.com", max_length=128, null=True)
+    email_host_password = models.CharField(
+        "邮箱SMTP服务器秘钥", max_length=128, null=True)
+
+    class Meta:
+        db_table = 'omp_email_smtp_setting'
+        verbose_name = verbose_name_plural = '平台邮件服务器配置'
+
+    alert_manage_key = {
+        "EMAIL_SEND": "email_host_user",
+        "smtp_auth_username": "email_host_user",
+        "EMAIL_SEND_PASSWORD": "email_host_password",
+        "smtp_auth_password": "email_host_password",
+        "EMAIL_ADDRESS": "email_url",
+    }
+
+    def get_dict(self):
+        return {
+            "host": self.email_host,
+            "port": self.email_port,
+            "username": self.email_host_user,
+            "password": self.email_host_password
+        }
+
+    @property
+    def email_url(self):
+        if hasattr(self, "email"):
+            return self.email
+        email_send = AlertSendWaySetting.objects.filter(
+            way_name="email").first()
+        email = ""
+        if email_send and email_send.used:
+            email = email_send.server_url.split(",")[0]
+        setattr(self, "email", email)
+        return email
+
+    def update_config(self, key):
+        if key in {"EMAIL_SEND_USER", "smtp_from"}:
+            value = self.email_host_user
+        elif key in {"SMTP_SMARTHOST", "smtp_smarthost"}:
+            value = f"{self.email_host}:{self.email_port}"
+        elif key in self.alert_manage_key:
+            value = getattr(self, self.alert_manage_key.get(key))
+        elif key in {"smtp_hello", "SMTP_HELLO"}:
+            value = ".".join(self.email_host.split(".")[-2:])
+        elif key == "RECEIVER":
+            value = "cloudwise"
+        else:
+            value = None
+        return value
+
+    @staticmethod
+    def reload_alert_manage():
+        from promemonitor.alertmanager import Alertmanager
+        alertmanager_url = Alertmanager.get_alertmanager_config()
+        try:
+            response = requests.post(f"http://{alertmanager_url}/-/reload")  # NOQA
+        except Exception as e:
+            logger.error(f"重载alertmanager配置出错！错误信息：{str(e)}")
+            return False
+        if response.status_code == 200:
+            return True
+        return False
+
+    def set_omp_conf(self):
+        # 更新omp.yaml
+        from utils.parse_config import config_file_path
+        with open(config_file_path, "r", encoding="utf8") as fp:
+            content = fp.read()
+        my_yaml = yaml.YAML()
+        code = my_yaml.load(content)
+        for key, value in code.get("alert_manager", {}).items():
+            if key == "send_email":
+                value = bool(self.email_url)
+            else:
+                value = self.update_config(key)
+            if value is None:
+                continue
+            code["alert_manager"][key] = value
+        with open(config_file_path, "w", encoding="utf8") as fp:
+            my_yaml.dump(code, fp)
+
+    def set_alert_manage_config(self):
+        # 更新alert manage配置
+        from omp_server.settings import PROJECT_DIR
+        config_path = os.path.join(
+            PROJECT_DIR, "component/alertmanager/conf/alertmanager.yml")
+        with open(config_path, "r", encoding="utf8") as fp:
+            code = yaml.load(fp.read(), yaml.Loader)
+        for key, value in code.get("global", {}).items():
+            value = self.update_config(key)
+            if value is None:
+                continue
+            code["global"][key] = value
+
+        if not self.email_url:
+            for receiver in code.get("receivers"):
+                if "email_configs" in receiver:
+                    code.get("receivers")[0].pop("email_configs", {})
+        else:
+            email_configs = [
+                {
+                    "send_resolved": bool(self.email_url),
+                    "to": self.email_url,
+                    "headers": "{Subject: 'OMP 告警'}",
+                    "html": "'{{ template \"email.to.html\" . }}'"
+                }
+            ]
+            code.get("receivers")[0]["email_configs"] = email_configs
+        code["templates"] = f"{PROJECT_DIR}component/alertmanager/templates/*tmpl"
+        with open(config_path, "w", encoding="utf8") as fp:
+            yaml.dump(code, fp, Dumper=yaml.RoundTripDumper)
+        return self.reload_alert_manage()
+
+    def update_setting_config(self):
+        """
+        更新配置文件
+        :return:
+        """
+        self.set_omp_conf()
+        return self.set_alert_manage_config(), self.email_url
