@@ -420,9 +420,9 @@ class ExplainYml:
         """校验kind为service"""
         # service骨架弱校验
         db_filed = {}
-        first_check = {"auto_launch", "monitor", "ports", "resources",
-                       "install", "control", "base_env", "affinity",
-                       "post_action", "deploy"
+        first_check = {"auto_launch", "monitor", "ports", "install",
+                       "control", "base_env", "affinity",
+                       "post_action"
                        }
         if not self.check_obj.weak_check(settings, first_check):
             return False
@@ -488,10 +488,10 @@ class ExplainYml:
             if not complex_check:
                 return False
         # resources 校验
-        deploy = settings.get('resources')
-        deploy_check = self.check_obj.strong_check(deploy) if deploy else 1
-        if not deploy_check:
-            return False
+        # deploy = settings.get('resources')
+        # deploy_check = self.check_obj.strong_check(deploy) if deploy else 1
+        # if not deploy_check:
+        #    return False
         # install 校验
         install = settings.pop('install')
         single_strong_install = {"name", "key", "default"}
