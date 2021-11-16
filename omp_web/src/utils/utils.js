@@ -1983,3 +1983,13 @@ export const clone = (any) => {
   }
   return any;
 };
+
+export const randomNumber = () => {
+  let r = "";
+  let str = "QWERTYUIOPLKJHGFDSAZXCVBNM123456790";
+  new Array(6).fill(0).map((item) => {
+    let num = parseInt(Math.random() * 26);
+    r += str[num];
+  });
+  return r;
+};

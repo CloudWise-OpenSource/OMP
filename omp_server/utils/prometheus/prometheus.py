@@ -14,23 +14,34 @@ logger = logging.getLogger("server")
 
 
 class Prometheus(object):
+    """
+    prometheus
+    执行prosql查询数据、查询alerts
+    """
     def __init__(self):
         # prometheus 的 ip:port
         self.address = MonitorUrl.objects.get(name='prometheus').monitor_url
 
     def query(self, expr):
-        url = f'http://{self.address}/api/v1/query?query={expr}'
+        """
+        请求prometheus开放接口，执行prosql，查询数据
+        :para expr: 需要执行的sql
+        :return: 查询到的实时数据
+        """
+        url = f"http://{self.address}/api/v1/query?query={expr}"
         try:
             rsp = json.loads(requests.get(url=url, timeout=0.5
                                           ).content.decode('utf8', 'ignore'))
             if rsp.get('status') == 'success':
-                return True, rsp.get('data'), 'success'
+                return True, rsp.get('data')
             else:
-                return False, {}, 'fail'
-        except Exception:
-            return False, {}, 'error'
+                return False, {}
+        except Exception as e:
+            logger.error(f"Query query from prometheus error: {str(e)}")
+            return False, {}
 
-    def clean_alert(self, alerts):
+    @staticmethod
+    def clean_alert(alerts):
         """
         清洗告警，去掉同类不同级别告警
         :param alerts:
@@ -90,24 +101,24 @@ def back_fill(history_id, report_id, host_data=None, serv_data=None,
     now = datetime.now()
     his_obj = InspectionHistory.objects.filter(id=history_id)
     duration = (now - his_obj[0].start_time).seconds
-    his_obj.update(end_time=now, duration=duration if duration > 0 else 1,
-                   inspection_status=2)
+    duration = duration if duration > 0 else 1
+    his_obj.update(end_time=now, duration=duration, inspection_status=2)
+
+    # 反填巡检报告InspectionReport表
+    rep_obj = InspectionReport.objects.filter(id=report_id)
     if host_data:
         # 反填巡检报告InspectionReport表，主机列表host_data字段
-        InspectionReport.objects.filter(id=report_id).update(
-            host_data=host_data)
+        rep_obj.update(host_data=host_data)
     if serv_data:
         # 反填巡检报告InspectionReport表，服务列表serv_data字段
-        InspectionReport.objects.filter(id=report_id).update(
-            serv_data=serv_data)
+        rep_obj.update(serv_data=serv_data)
     if serv_plan:
         # 反填巡检报告InspectionReport表，服务列表serv_plan字段
-        InspectionReport.objects.filter(id=report_id).update(
-            serv_plan=serv_plan)
+        rep_obj.update(serv_plan=serv_plan)
     if risk_data:
         # 反填巡检报告InspectionReport表，服务列表risk_data字段
-        InspectionReport.objects.filter(id=report_id).update(
-            risk_data=risk_data)
+        rep_obj.update(risk_data=risk_data)
+
     # 反填巡检报告InspectionReport表scan_info、scan_result
-    InspectionReport.objects.filter(id=report_id).update(
+    rep_obj.update(
         scan_info=scan_info, scan_result=scan_result, file_name=file_name)

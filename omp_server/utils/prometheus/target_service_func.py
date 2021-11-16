@@ -8,6 +8,9 @@ from utils.plugin.salt_client import SaltClient
 
 
 def salt_json(instance, func):
+    """
+    salt执行脚本，获取返回值
+    """
     ret = {}
     try:
         _obj = SaltClient()

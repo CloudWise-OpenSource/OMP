@@ -14,27 +14,26 @@ class ServiceMysqlCrawl(Prometheus):
     """
     def __init__(self, env, instance):
         self.ret = {}
+        self.basic = []
         self.env = env              # 环境
-        self.tag_error_num = 0      # 异常指标数
         self.instance = instance    # 主机ip
         self._obj = SaltClient()
         Prometheus.__init__(self)
 
-    def unified_job(self, is_success, ret, msg):
+    @staticmethod
+    def unified_job(is_success, ret):
         """
         实例方法 返回值统一处理
         :ret: 返回值
-        :msg: 返回值描述
         :is_success: 请求是否成功
         """
         if is_success:
             if ret.get('result'):
                 return ret['result'][0].get('value')[1]
             else:
-                return ''
+                return 0
         else:
-            self.tag_error_num += 1  # 统计异常指标数
-            return msg
+            return 0
 
     def run_status(self):
         """运行状态"""
@@ -50,60 +49,64 @@ class ServiceMysqlCrawl(Prometheus):
         _ = float(_) if _ else 0
         minutes, seconds = divmod(_, 60)
         hours, minutes = divmod(minutes, 60)
-        self.ret['run_time'] = f"{hours}小时{minutes}分钟{seconds}秒"
+        self.ret['run_time'] = f"{int(hours)}小时{int(minutes)}分钟{int(seconds)}秒"
 
-    def slow_queries(self):
+    def slow_query(self):
         """慢查询"""
         expr = f"rate(mysql_global_status_slow_queries[5m])"
-        self.ret['slow_queries'] = self.unified_job(*self.query(expr))
+        self.basic.append({"name": "slow_query", "name_cn": "慢查询",
+                          "value": self.unified_job(*self.query(expr))})
 
-    def threads_connected(self):
+    def conn_num(self):
         """当前连接数量"""
         expr = f"rate(mysql_global_status_threads_connected[5m])"
-        self.ret['threads_connected'] = self.unified_job(*self.query(expr))
+        self.basic.append({"name": "conn_num", "name_cn": "连接数量",
+                           "value": self.unified_job(*self.query(expr))})
 
     def max_connections(self):
         """最大连接数"""
         expr = f"mysql_global_variables_max_connections"
-        self.ret['max_connections'] = self.unified_job(*self.query(expr))
+        self.basic.append({"name": "max_connections", "name_cn": "最大连接数",
+                           "value": self.unified_job(*self.query(expr))})
 
     def threads_running(self):
         """活跃连接数量"""
         expr = f"mysql_global_status_threads_running"
-        self.ret['threads_running'] = self.unified_job(*self.query(expr))
-
-    def aborted_connects(self):
-        """累计所有的连接数"""
-        expr = f"mysql_global_status_aborted_connects"
-        self.ret['aborted_connects'] = self.unified_job(*self.query(expr))
+        self.basic.append({"name": "threads_running", "name_cn": "活跃连接数",
+                           "value": self.unified_job(*self.query(expr))})
 
     def qps(self):
         """qps"""
         expr = f"rate(mysql_global_status_questions[5m])"
-        self.ret['qps'] = self.unified_job(*self.query(expr))
+        self.basic.append({"name": "qps", "name_cn": "qps",
+                           "value": self.unified_job(*self.query(expr))})
 
-    def slave_sql_running(self):
+    def backup_status(self):
         """备份状态"""
         expr = f"mysql_global_status_slave_open_temp_tables"
-        self.ret['slave_sql_running'] = self.unified_job(*self.query(expr))
+        self.basic.append({"name": "backup_status", "name_cn": "数据同步状态",
+                           "value": self.unified_job(*self.query(expr))})
 
     def salt_json(self):
         try:
             self._obj.salt_module_update()
             ret = self._obj.fun(self.instance, "mysql_check.main")
             if ret and ret[0]:
-                self.ret['_s'] = json.loads(ret[1])
+                ret = json.loads(ret[1])
             else:
-                self.ret['_s'] = {}
+                ret = {}
         except:
-            self.ret['_s'] = {}
+            ret = {}
+
+        self.ret['cpu_usage'] = ret.get('cpu_usage', '-')
+        self.ret['mem_usage'] = ret.get('mem_usage', '-')
+        self.ret['run_time'] = ret.get('run_time', '-')
 
     def run(self):
         """统一执行实例方法"""
-        target = ['run_status', 'run_time', 'slow_queries',
-                  'threads_connected', 'max_connections',
-                  'threads_running', 'aborted_connects', 'qps',
-                  'slave_sql_running', 'salt_json']
+        target = ['run_status', 'run_time', 'slow_query', 'conn_num',
+                  'max_connections', 'threads_running', 'qps', 'backup_status',
+                  'salt_json']
         for t in target:
             if getattr(self, t):
                 getattr(self, t)()

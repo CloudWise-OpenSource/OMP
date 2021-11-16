@@ -85,6 +85,9 @@ const ServiceManagement = () => {
   };
   const [operateAciton, setOperateAciton] = useState(1);
 
+  // 删除操作的提示语
+  const [deleteMsg, setDeleteMsg] = useState("");
+
   // 列表查询
   function fetchData(
     pageParams = { current: 1, pageSize: 10 },
@@ -170,7 +173,7 @@ const ServiceManagement = () => {
       });
   };
 
-  const t = useRef(null)
+  const t = useRef(null);
 
   // 服务的启动｜停止｜重启
   const operateService = (data, operate) => {
@@ -198,8 +201,8 @@ const ServiceManagement = () => {
         // setRestartHostAgentModal(false);
         setCheckedList({});
         setRow({});
-        setLoading(true)
-        t.current = setTimeout(()=>{
+        setLoading(true);
+        t.current = setTimeout(() => {
           fetchData(
             { current: pagination.current, pageSize: pagination.pageSize },
             {
@@ -209,7 +212,7 @@ const ServiceManagement = () => {
             },
             pagination.ordering
           );
-        },1500)
+        }, 1500);
       });
   };
 
@@ -217,7 +220,7 @@ const ServiceManagement = () => {
 
   const timer = useRef(null);
 
-  const [log, setLog] = useState("")
+  const [log, setLog] = useState("");
 
   const queryServiceInstallHistoryDetail = (id) => {
     fetchGet(apiRequest.appStore.serviceInstallHistoryDetail, {
@@ -227,7 +230,7 @@ const ServiceManagement = () => {
     })
       .then((res) => {
         handleResponse(res, (res) => {
-          setLog(res.data[0].log)
+          setLog(res.data[0].log);
           if (
             res.data[0].install_step_status == 1 ||
             res.data[0].install_step_status == 0
@@ -244,6 +247,25 @@ const ServiceManagement = () => {
       });
   };
 
+  // 删除操作的提示语获取
+  const queryDeleteMsg = (data) => {
+    fetchPost(apiRequest.appStore.servicesDeleteMsg, {
+      body: {
+        data: data.map((i) => ({
+          id: i.id,
+        })),
+      },
+    })
+      .then((res) => {
+        //console.log(operateObj[operateAciton])
+        handleResponse(res, (res) => {
+          setDeleteMsg(res.data);
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {});
+  };
+
   useEffect(() => {
     fetchData(
       { current: pagination.current, pageSize: pagination.pageSize },
@@ -253,11 +275,11 @@ const ServiceManagement = () => {
         label_name: location.state?.label_name,
       }
     );
-    return ()=>{
-      if(t.current){
-        clearTimeout(t.current)
+    return () => {
+      if (t.current) {
+        clearTimeout(t.current);
       }
-    }
+    };
   }, []);
 
   return (
@@ -334,6 +356,11 @@ const ServiceManagement = () => {
                     .map((item) => item.id).length == 0
                 }
                 onClick={() => {
+                  queryDeleteMsg(
+                    Object.keys(checkedList)
+                      .map((k) => checkedList[k])
+                      .flat(1)
+                  );
                   setOperateAciton(4);
                   setServiceAcitonModal(true);
                 }}
@@ -508,6 +535,7 @@ const ServiceManagement = () => {
             setShowIframe,
             setOperateAciton,
             setCurrentSerAcitonModal,
+            queryDeleteMsg
           )}
           notSelectable={(record) => ({
             // 部署中的不能选中
@@ -550,16 +578,16 @@ const ServiceManagement = () => {
           checkedState={[checkedList, setCheckedList]}
         />
       </div>
-      <OmpDrawer showIframe={showIframe} setShowIframe={setShowIframe}  />
+      <OmpDrawer showIframe={showIframe} setShowIframe={setShowIframe} />
       <DetailHost
         isShowDrawer={isShowDrawer}
         setIsShowDrawer={setIsShowDrawer}
         loading={historyLoading}
         data={historyData}
         setInstallationRecordModal={setInstallationRecordModal}
-        queryServiceInstallHistoryDetail={
-          (id)=>queryServiceInstallHistoryDetail(id)
-          }
+        queryServiceInstallHistoryDetail={(id) =>
+          queryServiceInstallHistoryDetail(id)
+        }
       />
       <OmpMessageModal
         visibleHandle={[serviceAcitonModal, setServiceAcitonModal]}
@@ -588,7 +616,7 @@ const ServiceManagement = () => {
           //fetchMaintainChange(false, [row]);
         }}
       >
-        <div style={{ padding: "20px" }}>
+        <div style={{ padding: "20px", paddingBottom: "10px" }}>
           确定要对{" "}
           <span style={{ fontWeight: 500 }}>
             {" "}
@@ -601,6 +629,7 @@ const ServiceManagement = () => {
           个 服务下发{" "}
           <span style={{ fontWeight: 500 }}>{operateObj[operateAciton]}</span>{" "}
           操作？
+          {deleteMsg && <div style={{ paddingTop: 10 }}>{deleteMsg}</div>}
         </div>
       </OmpMessageModal>
       <OmpMessageModal
@@ -635,15 +664,14 @@ const ServiceManagement = () => {
         bodyStyle={{
           backgroundColor: "#000",
           color: "#fff",
-          padding:0
+          padding: 0,
         }}
         style={{
           top: 200,
         }}
-        afterClose={()=>{
-          console.log("关闭")
-          if(timer.current){
-            clearTimeout(timer.current)
+        afterClose={() => {
+          if (timer.current) {
+            clearTimeout(timer.current);
           }
         }}
         noFooter={true}
@@ -652,7 +680,7 @@ const ServiceManagement = () => {
         <div
           ref={containerRef}
           style={{
-            padding:10,
+            padding: 10,
             // marginTop: 10,
             // padding: 10,
             minHeight: 30,
