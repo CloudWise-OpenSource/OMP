@@ -5,7 +5,8 @@ from rest_framework.routers import DefaultRouter
 from promemonitor.views import (
     MonitorUrlViewSet, ListAlertViewSet, UpdateAlertViewSet,
     MaintainViewSet, ReceiveAlertViewSet,
-    MonitorAgentRestartView, GrafanaUrlViewSet, InstanceNameListView, InstrumentPanelView
+    MonitorAgentRestartView, GrafanaUrlViewSet, InstanceNameListView, InstrumentPanelView, GetSendEmailConfig,
+    UpdateSendEmailConfig
 )
 
 router = DefaultRouter()
@@ -22,4 +23,8 @@ router.register(r'instanceNameList', InstanceNameListView,
                 basename='instanceNameList')
 router.register(r"instrumentPanel", InstrumentPanelView,
                 basename="instrumentPanel")
+router.register(r'getSendEmailConfig', GetSendEmailConfig,
+                basename='getSendEmailConfig')
+router.register(r'updateSendEmailConfig', UpdateSendEmailConfig,
+                basename='updateSendEmailConfig')
 urlpatterns = router.urls

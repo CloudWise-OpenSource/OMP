@@ -261,3 +261,12 @@ class MonitorAgentRestartSerializer(HostIdsSerializer):
             id__in=validated_data.get("host_ids", [])
         ).update(monitor_agent=1)
         return validated_data
+
+
+class UpdateSendEmailConfigSerializer(Serializer):
+
+    def create(self, validated_data):
+        return validated_data
+
+    def update(self, instance, validated_data):
+        return validated_data

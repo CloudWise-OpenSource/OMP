@@ -6,6 +6,7 @@ import json
 import logging
 
 import requests
+from django.core.validators import EmailValidator
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -22,7 +23,7 @@ from utils.common.paginations import PageNumberPager
 
 from db_models.models import (
     Host, MonitorUrl,
-    Alert, Maintain, ApplicationHub, Service
+    Alert, Maintain, ApplicationHub, Service, EmailSMTPSetting
 )
 
 from promemonitor import grafana_url
@@ -30,7 +31,7 @@ from promemonitor.promemonitor_filters import AlertFilter, MyTimeFilter
 from promemonitor.promemonitor_serializers import (
     MonitorUrlSerializer, ListAlertSerializer, UpdateAlertSerializer,
     MaintainSerializer, MonitorAgentRestartSerializer,
-    ReceiveAlertSerializer
+    ReceiveAlertSerializer, UpdateSendEmailConfigSerializer
 )
 from utils.common.exceptions import OperateError
 
@@ -229,7 +230,7 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
         component_info_all_count = len(component_list)
         third_info_all_count = 0  # TODO 暂为空
 
-        host_info_exc_count = 0
+        # host_info_exc_count = 0
         database_info_exc_count = 0
         service_info_exc_count = 0
         component_info_exc_count = 0
@@ -391,3 +392,55 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
     def list(self, request, *args, **kwargs):
         result = self.get_exc_serializer_info()
         return Response(result)
+
+
+class GetSendEmailConfig(GenericViewSet, ListModelMixin):
+    get_description = "获取邮件发送配置"
+
+    def list(self, request, *args, **kwargs):
+        email_setting = EmailSMTPSetting.objects.first()
+        if email_setting:
+            return Response(data=email_setting.get_dict())
+        return Response("暂未配置邮箱服务器信息")
+
+
+class UpdateSendEmailConfig(GenericViewSet, CreateModelMixin):
+    post_description = "更新邮件发送配置"
+
+    serializer_class = UpdateSendEmailConfigSerializer
+
+    def create(self, request, *args, **kwargs):
+        email_host = request.data.get("host")
+        if not email_host:
+            return Response(data={"code": 1, "message": "请填写SMTP邮件服务器地址！"})
+        email_port = request.data.get("port")
+        if not email_port or not isinstance(email_port, int):
+            return Response(data={"code": 1, "message": "请检查所填的SMTP邮件服务器端口是否正确！"})
+        email_host_user = request.data.get("username")
+        if not email_host_user:
+            return Response(data={"code": 1, "message": "请填写SMTP邮件服务器发件箱！"})
+        try:
+            EmailValidator()(email_host_user)
+        except Exception as e:
+            message = "SMTP邮件服务器发件箱格式错误！"
+            logger.error(f"{message} 错误信息：{str(e)}")
+            return Response(data={"code": 1, "message": message})
+        email_host_password = request.data.get("password")
+        if not email_host_password:
+            return Response(data={"code": 1, "message": "填写SMTP邮件服务器发件箱格式错误！"})
+        try:
+            EmailSMTPSetting.objects.all().delete()
+            email_setting = EmailSMTPSetting.objects.create(
+                email_host=email_host,
+                email_port=email_port,
+                email_host_user=email_host_user,
+                email_host_password=email_host_password
+            )
+        except Exception as e:
+            message = "修改email邮箱服务器信息出错！"
+            logger.error(f"{message} 详细信息：{str(e)}")
+            return Response(data={"code": 1, "message": message})
+        state, email_url = email_setting.update_setting_config()
+        if not state:
+            return Response(data={"code": 1, "message": "同步到Alert Manage失败！"})
+        return Response("保存成功!")

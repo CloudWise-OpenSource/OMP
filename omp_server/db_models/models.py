@@ -987,7 +987,7 @@ class EmailSMTPSetting(models.Model):
                 {
                     "send_resolved": bool(self.email_url),
                     "to": self.email_url,
-                    "headers": "{Subject: 'OMP 告警'}",
+                    "headers": "{Subject: 'OMP ALERT'}",
                     "html": "'{{ template \"email.to.html\" . }}'"
                 }
             ]
