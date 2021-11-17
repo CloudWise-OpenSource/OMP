@@ -6,7 +6,7 @@ from promemonitor.views import (
     MonitorUrlViewSet, ListAlertViewSet, UpdateAlertViewSet,
     MaintainViewSet, ReceiveAlertViewSet,
     MonitorAgentRestartView, GrafanaUrlViewSet, InstanceNameListView, InstrumentPanelView, GetSendEmailConfig,
-    UpdateSendEmailConfig
+    UpdateSendEmailConfig, GetSendAlertSettingView, UpdateSendAlertSettingView
 )
 
 router = DefaultRouter()
@@ -27,4 +27,8 @@ router.register(r'getSendEmailConfig', GetSendEmailConfig,
                 basename='getSendEmailConfig')
 router.register(r'updateSendEmailConfig', UpdateSendEmailConfig,
                 basename='updateSendEmailConfig')
+router.register(r'getSendAlertSetting', GetSendAlertSettingView,
+                basename='getSendAlertSetting')
+router.register(r'updateSendAlertSetting',
+                UpdateSendAlertSettingView, basename='updateSendAlertSetting')
 urlpatterns = router.urls

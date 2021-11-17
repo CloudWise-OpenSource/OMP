@@ -13,6 +13,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from rest_framework.serializers import Serializer
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import (
     ListModelMixin, CreateModelMixin
@@ -23,7 +24,7 @@ from utils.common.paginations import PageNumberPager
 
 from db_models.models import (
     Host, MonitorUrl,
-    Alert, Maintain, ApplicationHub, Service, EmailSMTPSetting
+    Alert, Maintain, ApplicationHub, Service, EmailSMTPSetting, AlertSendWaySetting
 )
 
 from promemonitor import grafana_url
@@ -31,7 +32,7 @@ from promemonitor.promemonitor_filters import AlertFilter, MyTimeFilter
 from promemonitor.promemonitor_serializers import (
     MonitorUrlSerializer, ListAlertSerializer, UpdateAlertSerializer,
     MaintainSerializer, MonitorAgentRestartSerializer,
-    ReceiveAlertSerializer, UpdateSendEmailConfigSerializer
+    ReceiveAlertSerializer
 )
 from utils.common.exceptions import OperateError
 
@@ -407,7 +408,7 @@ class GetSendEmailConfig(GenericViewSet, ListModelMixin):
 class UpdateSendEmailConfig(GenericViewSet, CreateModelMixin):
     post_description = "更新邮件发送配置"
 
-    serializer_class = UpdateSendEmailConfigSerializer
+    serializer_class = Serializer
 
     def create(self, request, *args, **kwargs):
         email_host = request.data.get("host")
@@ -444,3 +445,50 @@ class UpdateSendEmailConfig(GenericViewSet, CreateModelMixin):
         if not state:
             return Response(data={"code": 1, "message": "同步到Alert Manage失败！"})
         return Response("保存成功!")
+
+
+class GetSendAlertSettingView(GenericViewSet, ListModelMixin):
+    get_description = "获取监控邮箱收件配置"
+
+    def list(self, request, *args, **kwargs):
+        env_id = request.GET.get("env_id", 0)
+        filter_kwargs = dict(env_id=env_id)
+        way_name = request.GET.get("way_name")
+        if way_name:
+            filter_kwargs["way_name"] = way_name
+        objs = AlertSendWaySetting.objects.filter(**filter_kwargs)
+        data = dict()
+        for obj in objs:
+            data.update({obj.way_name: obj.get_self_dict()})
+        if "email" not in data:
+            data["email"] = AlertSendWaySetting.get_v1_5_email_dict(env_id)
+        return Response(data=data)
+
+
+class UpdateSendAlertSettingView(GenericViewSet, CreateModelMixin):
+    post_description = "更新监控邮箱收件配置"
+
+    serializer_class = Serializer
+
+    def create(self, request, *args, **kwargs):
+        env_id = request.data.get("env_id")
+        alert_setting, _ = AlertSendWaySetting.objects.get_or_create(
+            env_id=env_id, way_name="email"
+        )
+        used = request.data.get("used", False)
+        emails = request.data.get("server_url", "")
+        if emails:
+            for email in emails.split(","):
+                try:
+                    EmailValidator()(email)
+                except Exception as e:
+                    message = f"收件箱{email}格式错误！"
+                    logger.error(f"{message} 错误信息：{str(e)}")
+                    return Response(data={"code": 1, "message": message})
+        AlertSendWaySetting.update_email_config(bool(used), emails)
+        email_setting = EmailSMTPSetting.objects.first()
+        if not email_setting:
+            return Response(data={"code": 1, "message": "邮箱SMTP服务器未配置，配置后才可发送告警邮件！"})
+        state, email_url = email_setting.update_setting_config()
+        if not state:
+            return Response(data={"code": 1, "message": "同步到Alert Manage失败！请确保Alert Manage可用"})
