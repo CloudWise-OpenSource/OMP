@@ -1,8 +1,12 @@
 import BasicInfoItem from "../component/BasicInfoItem/index";
 import DependentInfoItem from "../component/DependentinfoItem/index";
 import { Form, Button } from "antd";
+import { useEffect, useState } from "react";
+import { fetchPost } from "@/utils/request";
 
-const Step1 = () => {
+const Step1 = ({ setStepNum }) => {
+  // const [basic, setBasic] = useState([])
+  // const [dependence, setDependence] = useState([])
   const basic = [
     {
       name: "douc",
@@ -114,17 +118,19 @@ const Step1 = () => {
       name: "mysql",
       version: "5.7.34",
       deploy_mode: [
+        //(无集群名称，无vip
         {
           key: "single",
-          name: "单实例(无集群名称，无vip)",
+          name: "单实例",
         },
         {
           key: "master-slave",
           name: "主从",
         },
         {
+          //(选中此项要在集群名称后增加vip列(必填,ip地址校验)，请输入vip地址)
           key: "master-master",
-          name: "主主(选中此项要在集群名称后增加vip列(必填,ip地址校验)，请输入vip地址)",
+          name: "主主",
         },
       ],
       exist_instance: [
@@ -141,6 +147,8 @@ const Step1 = () => {
       ],
       // 判断是否复用依赖，渲染时决定 选择实例 还是 部署数量
       is_use_exist: true,
+      error_msg:
+        "/Users/jon/Desktop/github/omp_open/package_hub/verified/jdk-8u211-3eb087bb67353b4beb5230502f3ac9eb.tar.gz",
     },
     {
       name: "nacos",
@@ -153,6 +161,29 @@ const Step1 = () => {
       is_use_exist: false,
       is_base_env: false,
     },
+    {
+      name: "nacosMock",
+      version: "2.1.2",
+      exist_instance: [{ id: 1, name: "kafka-cluster-1", type: "cluster" }],
+      deploy_mode: [
+        //(无集群名称，无vip
+        {
+          key: "single",
+          name: "单实例",
+        },
+        {
+          key: "master-slave",
+          name: "主从",
+        },
+        {
+          //(选中此项要在集群名称后增加vip列(必填,ip地址校验)，请输入vip地址)
+          key: "master-master",
+          name: "主主",
+        },
+      ],
+      is_use_exist: false,
+      is_base_env: false,
+    },
   ];
 
   // 基本信息的form实例
@@ -160,6 +191,30 @@ const Step1 = () => {
 
   // 依赖信息的form实例
   const [dependentForm] = Form.useForm();
+
+  const getData = () => {
+    fetchPost("/api/appStore/createInstallInfo/", {
+      body: {
+        high_availability: false,
+        install_product: [
+          {
+            name: "jenkins",
+            version: "2.303.2",
+          },
+        ],
+        unique_key: "abf7d622-6fc8-4a04-ad4c-49b57298ecdf",
+      },
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {});
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {});
+  };
+
+  useEffect(() => {
+    getData();
+  }, []);
 
   return (
     <>
@@ -275,7 +330,7 @@ const Step1 = () => {
           display: "flex",
           justifyContent: "space-between",
           paddingRight: 30,
-          boxShadow: "0px 0px 10px #999999"
+          boxShadow: "0px 0px 10px #999999",
         }}
       >
         <div />
@@ -285,6 +340,7 @@ const Step1 = () => {
             onClick={() => {
               console.log(basicForm.getFieldsValue());
               console.log(dependentForm.getFieldsValue());
+              setStepNum(1);
             }}
           >
             下一步
