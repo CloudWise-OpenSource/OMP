@@ -396,6 +396,9 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
 
 
 class GetSendEmailConfig(GenericViewSet, ListModelMixin):
+    """
+    获取邮件发送配置
+    """
     get_description = "获取邮件发送配置"
 
     def list(self, request, *args, **kwargs):
@@ -406,6 +409,9 @@ class GetSendEmailConfig(GenericViewSet, ListModelMixin):
 
 
 class UpdateSendEmailConfig(GenericViewSet, CreateModelMixin):
+    """
+    更新邮件发送配置
+    """
     post_description = "更新邮件发送配置"
 
     serializer_class = Serializer
@@ -448,6 +454,9 @@ class UpdateSendEmailConfig(GenericViewSet, CreateModelMixin):
 
 
 class GetSendAlertSettingView(GenericViewSet, ListModelMixin):
+    """
+    获取监控邮箱收件配置
+    """
     get_description = "获取监控邮箱收件配置"
 
     def list(self, request, *args, **kwargs):
@@ -466,6 +475,7 @@ class GetSendAlertSettingView(GenericViewSet, ListModelMixin):
 
 
 class UpdateSendAlertSettingView(GenericViewSet, CreateModelMixin):
+    """更新监控邮箱收件配置"""
     post_description = "更新监控邮箱收件配置"
 
     serializer_class = Serializer

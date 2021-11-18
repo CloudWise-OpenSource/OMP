@@ -4,8 +4,13 @@
 # CreateDate: 2021/10/13 6:06 下午
 # Description: 巡检视图
 import datetime
+import logging
+
+from django.core.validators import EmailValidator
 from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.serializers import Serializer
+
 from utils.common.paginations import PageNumberPager
 from rest_framework.viewsets import GenericViewSet
 from django_filters.rest_framework.backends import DjangoFilterBackend
@@ -14,7 +19,7 @@ from rest_framework.mixins import (
 from utils.plugin.crontab_utils import CrontabUtils
 from inspection.tasks import get_prometheus_data
 from db_models.models import (
-    Env, Service, InspectionHistory, InspectionCrontab, InspectionReport)
+    Env, Service, InspectionHistory, InspectionCrontab, InspectionReport, ModuleSendEmailSetting)
 from inspection.filters import (
     InspectionHistoryFilter, InspectionCrontabFilter,)
 from inspection.serializers import (
@@ -23,11 +28,14 @@ from inspection.serializers import (
 from rest_framework.filters import OrderingFilter
 from inspection.joint_json_report import joint_json_data
 
+logger = logging.getLogger('server')
+
 
 class InspectionServiceView(ListModelMixin, GenericViewSet):
     """
         list: 组件巡检 组件列表
     """
+
     def list(self, request, *args, **kwargs):
         # 只能是安装成功的组件
         rets = list()
@@ -145,7 +153,7 @@ class InspectionCrontabView(RetrieveModelMixin, ListModelMixin, GenericViewSet,
             tp = {0: 'deep', 1: 'host', 2: 'service'}
             task_name = \
                 f"inspection_cron_task_{tp.get(request.data.get('job_type'))}"
-            task_func = f"inspection.tasks.inspection_crontab"
+            task_func = "inspection.tasks.inspection_crontab"
             cron_obj = CrontabUtils(task_name=task_name, task_func=task_func,
                                     task_kwargs=request.data)
             cron_args = {
@@ -232,3 +240,50 @@ class InspectionReportView(GenericViewSet, RetrieveModelMixin):
 
         ret = joint_json_data(_h.inspection_type, _r, _h)
         return Response(ret)
+
+
+class InspectionSendEmailSettingView(GenericViewSet, ListModelMixin, CreateModelMixin):
+    """
+    读写巡检邮箱收件配置
+    """
+    get_description = "读取巡检邮箱设置"
+    post_description = "更新巡检邮箱设置"
+
+    serializer_class = Serializer
+
+    def list(self, request, *args, **kwargs):
+        # env_id = request.GET.get("env_id")
+        env_id = 0  # 单环境暂为0
+        email_setting = ModuleSendEmailSetting.get_email_settings(
+            env_id, "inspection")  # TODO 暂写死为巡检
+        if not email_setting:
+            return Response(data={})
+        return Response(
+            data={
+                "to_users": email_setting.to_users,
+                "send_email": email_setting.send_email
+            }
+        )
+
+    def create(self, request, *args, **kwargs):
+        env_id = request.data.get("env_id")
+        send_email = request.data.get("send_email", False)
+        to_users = request.data.get("to_users")
+        if not to_users and send_email:
+            return Response(data={"code": 1, "message": "收件邮箱必填！"})
+        if to_users:
+            emails = to_users.split(",")
+            for email in emails:
+                try:
+                    EmailValidator()(email)
+                except Exception as e:
+                    message = f"收件箱{email}格式错误！"
+                    logger.error(f"{message} 错误信息：{str(e)}")
+                    return Response(data={"code": 1, "message": message})
+        try:
+            ModuleSendEmailSetting.update_email_settings(
+                env_id, "inspection", send_email, to_users)  # TODO 暂写死为巡检
+        except Exception as e:
+            logger.info(f"更新邮箱配置失败：{str(e)}")
+            return Response(data={"code": 1, "message": "更新邮箱配置失败！"})
+        return Response({})
