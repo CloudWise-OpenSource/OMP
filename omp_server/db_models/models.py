@@ -987,12 +987,13 @@ class EmailSMTPSetting(models.Model):
                 {
                     "send_resolved": bool(self.email_url),
                     "to": self.email_url,
-                    "headers": "{Subject: 'OMP ALERT'}",
-                    "html": "'{{ template \"email.to.html\" . }}'"
+                    "headers": {"Subject": "OMP ALERT"},
+                    "html": '{{ template \"email.to.html\" . }}'
                 }
             ]
             code.get("receivers")[0]["email_configs"] = email_configs
-        code["templates"] = f"{PROJECT_DIR}component/alertmanager/templates/*tmpl"
+        code["templates"] = [
+            f"{PROJECT_DIR}component/alertmanager/templates/*tmpl"]
         with open(config_path, "w", encoding="utf8") as fp:
             yaml.dump(code, fp, Dumper=yaml.RoundTripDumper)
         return self.reload_alert_manage()
@@ -1004,3 +1005,32 @@ class EmailSMTPSetting(models.Model):
         """
         self.set_omp_conf()
         return self.set_alert_manage_config(), self.email_url
+
+
+class ModuleSendEmailSetting(models.Model):
+    module = models.CharField(
+        "功能模块:BackupSetting,JobSetting", max_length=64)
+    send_email = models.BooleanField("是否开启邮件推送", default=False)
+    to_users = models.TextField("邮箱接收用户", default="")
+    env_id = models.IntegerField("环境id", default=0)
+
+    class Meta:
+        db_table = 'omp_module_email_send_setting'
+        verbose_name = verbose_name_plural = '平台邮件发送账号配置'
+
+    @classmethod
+    def get_email_settings(cls, env_id, module):
+        try:
+            _obj = cls.objects.get(env_id=env_id, module=module)
+        except Exception as e:
+            logger.error(e)
+            logger.error(f"module: {module}, env_id:{env_id}邮箱配置不存在")
+            return None
+        return _obj
+
+    @classmethod
+    def update_email_settings(cls, env_id, module, send_email, to_users):
+        _obj, _ = cls.objects.get_or_create(env_id=env_id, module=module)
+        _obj.send_email = send_email
+        _obj.to_users = to_users
+        _obj.save()
