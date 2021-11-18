@@ -112,7 +112,7 @@ class MonitorAgentManager(object):
                     f"tar -xf {self.monitor_agent_package_name} && "
                     f"rm -rf {self.monitor_agent_package_name} && "
                     f"cd {self.name} && "
-                    f"./ install --agent_ip={obj.ip} --metrics_auth='{metrics_auth}' && "
+                    f"./install --agent_ip={obj.ip} --metrics_auth='{metrics_auth}' && "
                     f"bash monitor_agent.sh start",
             timeout=120)
         logger.info(
