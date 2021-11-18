@@ -402,7 +402,7 @@ class GetSendEmailConfig(GenericViewSet, ListModelMixin):
         email_setting = EmailSMTPSetting.objects.first()
         if email_setting:
             return Response(data=email_setting.get_dict())
-        return Response("暂未配置邮箱服务器信息")
+        return Response({})
 
 
 class UpdateSendEmailConfig(GenericViewSet, CreateModelMixin):
@@ -444,7 +444,7 @@ class UpdateSendEmailConfig(GenericViewSet, CreateModelMixin):
         state, email_url = email_setting.update_setting_config()
         if not state:
             return Response(data={"code": 1, "message": "同步到Alert Manage失败！"})
-        return Response("保存成功!")
+        return Response({})
 
 
 class GetSendAlertSettingView(GenericViewSet, ListModelMixin):
@@ -492,3 +492,4 @@ class UpdateSendAlertSettingView(GenericViewSet, CreateModelMixin):
         state, email_url = email_setting.update_setting_config()
         if not state:
             return Response(data={"code": 1, "message": "同步到Alert Manage失败！请确保Alert Manage可用"})
+        return Response({})
