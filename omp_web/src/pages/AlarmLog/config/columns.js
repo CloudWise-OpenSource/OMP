@@ -150,7 +150,7 @@ const getColumnsConfig = (
     {
       title: "更新时间",
       width:180,
-      key: "create_tim",
+      key: "create_time",
       dataIndex: "create_time",
       align: "center",
       //ellipsis: true,

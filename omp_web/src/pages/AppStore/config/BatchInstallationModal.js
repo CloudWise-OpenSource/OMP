@@ -179,7 +179,7 @@ const BatchInstallationModal = ({
         <div style={{ border: "1px solid rgb(235, 238, 242)" }}>
           <OmpTable
             size="small"
-            scroll={{ y: 200 }}
+            scroll={{ y: 270 }}
             loading={loading}
             //scroll={{ x: 1900 }}
             columns={columns}

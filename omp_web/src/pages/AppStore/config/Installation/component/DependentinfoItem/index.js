@@ -17,8 +17,13 @@ const DependentInfoItem = ({ data, form }) => {
   return (
     <>
       <div className={styles.dependentinfoItem}>
-        {data.is_base_env ? <JdkRow data={data} /> : <DeployRow data={data} form={form} />}
+        {data.is_base_env ? (
+          <JdkRow data={data} />
+        ) : (
+          <DeployRow data={data} form={form} />
+        )}
       </div>
+      <div style={{ marginTop: 5, color: "red" }}>{data.error_msg}</div>
     </>
   );
 };

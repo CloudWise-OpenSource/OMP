@@ -1984,10 +1984,10 @@ export const clone = (any) => {
   return any;
 };
 
-export const randomNumber = () => {
+export const randomNumber = (length = 6) => {
   let r = "";
   let str = "QWERTYUIOPLKJHGFDSAZXCVBNM123456790";
-  new Array(6).fill(0).map((item) => {
+  new Array(length).fill(0).map((item) => {
     let num = parseInt(Math.random() * 26);
     r += str[num];
   });
