@@ -169,7 +169,7 @@ class InstallServiceExecutor:
             app_name = detail_args.get("name", None)
             assert app_name is not None
             target_path = None
-            for info in detail_args.get("app_install_args", []):
+            for info in detail_args.get("install_args", []):
                 if info.get("key", "") == "base_dir":
                     target_path = info.get("default")
                     break
@@ -605,12 +605,16 @@ class InstallServiceExecutor:
                 break
 
         # 安装后执行动作范围过滤，排除无需执行操作以及排除已经执行成功的服务对象
-        post_action_queryset = DetailInstallHistory.objects.select_related(
-            "service", "service__service", "service__service__app_package"
-        ).filter(main_install_history_id=self.main_id).exclude(
-            post_action_flag__in=[2, 4]
-        )
-        self.execute_post_action(post_action_queryset)
+        # 判断整体执行安装完成后才执行
+        if not DetailInstallHistory.objects.filter(
+                install_step_status=DetailInstallHistory.INSTALL_STATUS_FAILED
+        ).exists():
+            post_action_queryset = DetailInstallHistory.objects.select_related(
+                "service", "service__service", "service__service__app_package"
+            ).filter(main_install_history_id=self.main_id).exclude(
+                post_action_flag__in=[2, 4]
+            )
+            self.execute_post_action(post_action_queryset)
 
         if self.is_error:
             # 步骤失败，主流程失败
