@@ -1,7 +1,10 @@
-import { Cascader, Form, Tag } from "antd";
+import { Cascader, Form, Tag, Button, Tooltip } from "antd";
 import { useEffect, useState, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { getDataSourceChangeAction } from "../../store/actionsCreators";
+import {
+  getDataSourceChangeAction,
+  getIpListChangeAction,
+} from "../../store/actionsCreators";
 
 const ServiceDistributionItem = ({ form, data, info }) => {
   const [options, setOption] = useState([]);
@@ -9,6 +12,8 @@ const ServiceDistributionItem = ({ form, data, info }) => {
   const [value, setValue] = useState([]);
 
   const allDataPool = useSelector((state) => state.installation.dataSource);
+
+  const ipList = useSelector((state) => state.installation.ipList);
 
   const reduxDispatch = useDispatch();
 
@@ -44,25 +49,24 @@ const ServiceDistributionItem = ({ form, data, info }) => {
     if (Array.isArray(key)) {
       key.forEach((item) => {
         if (allDataPool[item].num >= 0) {
-          allDataPool[item].num = allDataPool[item].num + num;
+          let n =
+            allDataPool[item].num + num <= 0 ? 0 : allDataPool[item].num + num;
+          allDataPool[item].num = n;
         }
       });
       return allDataPool;
     } else {
       if (allDataPool[key].num >= 0) {
-        allDataPool[key].num = allDataPool[key].num + num;
+        let n =
+          allDataPool[key].num + num <= 0 ? 0 : allDataPool[key].num + num;
+        allDataPool[key].num = n;
       }
       return allDataPool;
     }
   };
 
   useEffect(() => {
-    console.log(
-      "======================================",
-      allDataPool,
-      info.ip,
-      value
-    );
+    console.log(allDataPool, info.ip, value);
     let isDelete = Object.keys(allDataPool).filter((k) => {
       // 当前组件实例已经选中了，那即使在数据池中该数据num已经为0,也不应影响组件对该数据的展示,在这里过滤掉
       return allDataPool[k].num == 0 && !dealColumnsData(value).includes(k);
@@ -103,8 +107,32 @@ const ServiceDistributionItem = ({ form, data, info }) => {
     });
   }, [allDataPool]);
 
+  // 当value值发生改变时触发事件，用来判断当前组件所对应主机是否已经选择服务
+  useEffect(() => {
+    let idx = ipList.indexOf(info.ip);
+
+    console.log(ipList, value, idx);
+    if (value.length == 0) {
+      if (idx !== -1) {
+        console.log([...ipList], info.ip);
+        let newIpList = [...ipList];
+        newIpList.splice(idx, 1);
+        reduxDispatch(getIpListChangeAction(newIpList));
+      }
+    } else {
+      if (idx == -1) {
+        let newIpList = [...ipList];
+        newIpList.push(info.ip);
+        reduxDispatch(getIpListChangeAction(newIpList));
+      }
+    }
+  }, [value]);
+
   return (
     <div style={{ marginBottom: 30, width: "45%" }}>
+      {/* <Button onClick={()=>{
+        console.log(allDataPool)
+      }}>点击</Button> */}
       <Form form={form} name="service">
         <div style={{ display: "flex", justifyContent: "center" }}>
           <div style={{ display: "flex", alignItems: "center" }}>
@@ -117,10 +145,9 @@ const ServiceDistributionItem = ({ form, data, info }) => {
                 placeholder="请选择"
                 style={{ width: 240, marginTop: 0, paddingLeft: 10 }}
                 options={options}
-                changeOnSelect={true}
-                value={value}
+                expandTrigger={"hover"}
+                //value={[["基础组件", "nacos"]]}//['douc', 'doucSso']
                 onChange={(e) => {
-                  console.log(e);
                   let result = [];
                   e.map((item) => {
                     if (item.length == 1) {
@@ -138,17 +165,35 @@ const ServiceDistributionItem = ({ form, data, info }) => {
                       result.push(item);
                     }
                   });
+                  form.setFieldsValue({
+                    [`${info.ip}`]: result,
+                  });
                   setValue(result);
                 }}
                 allowClear={false}
                 tagRender={(e) => {
-                  // console.log(e.onClose);
-                  // console.log(e);
                   const { value, onClose, label } = e;
+                  // label 可能是一级或者二级
                   return (
                     <Tag
                       closable
                       onClose={(event) => {
+                        // 判断点的是一级还是二级
+                        let checkedItem = options.filter((i) => {
+                          return i.label == label;
+                        });
+                        if (checkedItem.length == 1) {
+                          // 是第一级
+                          let arr = checkedItem[0].children.map(
+                            (item) => item.label
+                          );
+                          let data = handleDataSourceData(arr, 1);
+                          reduxDispatch(getDataSourceChangeAction(data));
+                        } else {
+                          // 是第二级
+                          let data = handleDataSourceData(label, 1);
+                          reduxDispatch(getDataSourceChangeAction(data));
+                        }
                         onClose(event);
                       }}
                     >
@@ -156,6 +201,52 @@ const ServiceDistributionItem = ({ form, data, info }) => {
                     </Tag>
                   );
                 }}
+                // tagRender={(e) => {
+                //   // console.log(e.onClose);
+                //   // console.log(e);
+                //   const { value, onClose, label } = e;
+                //   console.log(value);
+                //   if (value.includes("__RC_CASCADER_SPLIT__")) {
+                //     return (
+                //       <Tag
+                //         // closable
+                //         // onClose={(event) => {
+                //         //   onClose(event);
+                //         // }}
+                //       >
+                //         {label}
+                //       </Tag>
+                //     );
+                //   } else {
+                //     // 选中了一级菜单
+                //     console.log(value);
+                //     let checkedItem = options
+                //       .filter((i) => {
+                //         return i.label == value;
+                //       })[0]
+                //       .children.map((i) => {
+                //         return i.label;
+                //       });
+                //     console.log(checkedItem);
+                //     return (
+                //       <>
+                //         {checkedItem.map((item) => {
+                //           return (
+                //             <Tag
+                //               key={item}
+                //               // closable
+                //               // onClose={(event) => {
+                //               //   onClose(event);
+                //               // }}
+                //             >
+                //               {item}
+                //             </Tag>
+                //           );
+                //         })}
+                //       </>
+                //     );
+                //   }
+                // }}
                 onClick={(e) => {
                   // 使用onclick的原因是因为onchange在每次点击后会触发两次，
                   // 每次onchange执行都是一次单独逻辑,不能在每次onchange时，故不能准确对应整个数据池的num增减情况
@@ -177,6 +268,7 @@ const ServiceDistributionItem = ({ form, data, info }) => {
                       reduxDispatch(getDataSourceChangeAction(data));
                     } else {
                       // 点的是一级
+                      //console.log("点击一级");
                       let checkedArr = options
                         .filter((i) => {
                           return i.label == label;
@@ -280,7 +372,55 @@ const ServiceDistributionItem = ({ form, data, info }) => {
             </Form.Item>
           </div>
           <div style={{ paddingLeft: 15 }}>
-            <div style={{ fontSize: 13 }}>选择服务数: 0个</div>
+            <div style={{ fontSize: 13 }}>
+              选择服务数:{" "}
+              {value.length == 0 ? (
+                <span>0个</span>
+              ) : (
+                <Tooltip
+                  mouseEnterDelay={0.3}
+                  placement="right"
+                  color="#fff"
+                  title={
+                    <div
+                      style={{
+                        color: "rgba(0, 0, 0, 0.85)",
+                        padding: 5,
+                      }}
+                    >
+                      <div
+                        style={{
+                          borderBottom: "1px solid #d9d9d9",
+                          fontSize: 13,
+                          paddingBottom: 5,
+                        }}
+                      >
+                        已选服务
+                      </div>
+                      <div
+                        style={{
+                          overflowY: "auto",
+                          height: 100,
+                        }}
+                      >
+                        {value.map((item) => {
+                          return (
+                            <div
+                              style={{ paddingTop: 5, fontSize: 13 }}
+                              key={`${item[0]}/${item[1]}`}
+                            >
+                              {`${item[0]} / ${item[1]}`}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  }
+                >
+                  <a>{value.length}个</a>
+                </Tooltip>
+              )}
+            </div>
             <div
               style={{ fontSize: 12 }}
               onClick={() => {

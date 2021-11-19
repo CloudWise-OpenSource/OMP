@@ -1,1 +1,3 @@
 export const CHANGE_DATASOURCE = "CHANGE_DATASOURCE";
+
+export const CHANGE_IPLIST = "CHANGE_IPLIST";
