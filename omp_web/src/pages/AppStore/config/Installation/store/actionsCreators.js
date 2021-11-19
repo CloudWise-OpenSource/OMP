@@ -10,3 +10,13 @@ export const getDataSourceChangeAction = (value) => {
     },
   };
 };
+
+export const getIpListChangeAction = (value) => {
+  const list = R.clone(value);
+  return {
+    type: actionTypes.CHANGE_IPLIST,
+    payload: {
+      ipList: list,
+    },
+  };
+};

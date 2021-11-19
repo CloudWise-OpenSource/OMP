@@ -2,10 +2,14 @@ import { Button, Form } from "antd";
 import { useEffect, useState } from "react";
 import ServiceDistributionItem from "../component/ServiceDistributionItem/index.js";
 import { useSelector, useDispatch } from "react-redux";
-import { getDataSourceChangeAction } from "../store/actionsCreators";
+import {
+  getDataSourceChangeAction,
+} from "../store/actionsCreators";
 
 const Step2 = ({ setStepNum }) => {
   const reduxDispatch = useDispatch();
+  const allDataPool = useSelector((state) => state.installation.dataSource);
+  const ipList = useSelector((state) => state.installation.ipList);
   useEffect(() => {
     reduxDispatch(
       // 这里做一个视口查询，存入store, 其他组件可以根据视口大小进行自适应
@@ -67,15 +71,16 @@ const Step2 = ({ setStepNum }) => {
           with: null,
         },
         tengine: {
-          num: 1,
+          num: 2,
           with: null,
         },
         tengine1233: {
-          num: 0,
+          num: 3,
           with: null,
         },
       })
     );
+    console.log(allDataPool);
   }, []);
 
   const data = {
@@ -125,6 +130,11 @@ const Step2 = ({ setStepNum }) => {
   // 基本信息的form实例
   const [form] = Form.useForm();
 
+  // 未分配服务个数
+  const unassignedServices = Object.keys(allDataPool).reduce((prev, cur) => {
+    return prev + allDataPool[cur].num;
+  }, 0);
+
   return (
     <>
       <div
@@ -142,7 +152,7 @@ const Step2 = ({ setStepNum }) => {
               paddingBottom: 30,
             }}
           >
-            主机总数: 20台
+            主机总数: {data.host.length}台
           </div>
           <div
             style={{
@@ -151,7 +161,7 @@ const Step2 = ({ setStepNum }) => {
               paddingBottom: 30,
             }}
           >
-            未分配服务: 62个
+            未分配服务: {unassignedServices}个
           </div>
         </div>
         <div
@@ -190,7 +200,9 @@ const Step2 = ({ setStepNum }) => {
           borderRadius: 2,
         }}
       >
-        <div style={{ paddingLeft: 20 }}>已分配主机数量: 0台</div>
+        <div style={{ paddingLeft: 20 }}>
+          已分配主机数量: {ipList?.length}台
+        </div>
         <div>
           <Button
             type="primary"
@@ -205,6 +217,7 @@ const Step2 = ({ setStepNum }) => {
           <Button
             style={{ marginLeft: 10 }}
             type="primary"
+            disabled={unassignedServices !== 0}
             onClick={() => {
               //   console.log(basicForm.getFieldsValue());
               //   console.log(dependentForm.getFieldsValue());
