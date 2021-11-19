@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('db_models', '0023_auto_20211109_1439'),
+        ('db_models', '0025_modulesendemailsetting'),
     ]
 
     operations = [
