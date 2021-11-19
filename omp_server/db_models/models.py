@@ -267,6 +267,7 @@ class Labels(models.Model):
 class UploadPackageHistory(TimeStampMixin, DeleteMixin):
     """ 上传安装包记录表，存储产品包及服务包 """
 
+    objects = None
     PACKAGE_STATUS_SUCCESS = 0
     PACKAGE_STATUS_FAILED = 1
     PACKAGE_STATUS_PARSING = 2
@@ -672,6 +673,11 @@ class Service(TimeStampMixin):
         "告警次数", default=0, help_text="告警次数")
     self_healing_count = models.IntegerField(
         "服务自愈次数", default=0, help_text="服务自愈次数")
+    # 服务实例间的依赖关系，此字段标明当前服务实例所依赖的其他服务实例关系
+    # 注意，当被依赖服务为base_env时，不在此字段中体现
+    # 使用json.dumps存储 list结构数据
+    service_dependence = models.TextField(
+        "服务依赖关系", null=True, blank=True, help_text="服务依赖关系")
 
     class Meta:
         """元数据"""

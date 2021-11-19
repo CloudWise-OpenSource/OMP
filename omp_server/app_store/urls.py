@@ -67,3 +67,55 @@ router.register(
 router.register(
     "serviceInstallHistoryDetail", ServiceInstallHistoryDetailView,
     basename='serviceInstallHistoryDetail')
+
+# 新版安装逻辑
+from app_store.new_install_view import (
+    BatchInstallEntranceView,
+    CreateInstallInfoView,
+    CheckInstallInfoView,
+    CreateServiceDistributionView,
+    CheckServiceDistributionView,
+    GetInstallHostRangeView,
+    GetInstallArgsByIpView,
+    CreateInstallPlanView
+)
+router.register(
+    "batchInstallEntrance",
+    BatchInstallEntranceView,
+    basename="batchInstallEntrance"
+)
+router.register(
+    "createInstallInfo",
+    CreateInstallInfoView,
+    basename="createInstallInfo"
+)
+router.register(
+    "checkInstallInfo",
+    CheckInstallInfoView,
+    basename="checkInstallInfo"
+)
+router.register(
+    "createServiceDistribution",
+    CreateServiceDistributionView,
+    basename="createServiceDistribution"
+)
+router.register(
+    "checkServiceDistribution",
+    CheckServiceDistributionView,
+    basename="checkServiceDistribution"
+)
+router.register(
+    "getInstallHostRange",
+    GetInstallHostRangeView,
+    basename="getInstallHostRange"
+)
+router.register(
+    "getInstallArgsByIp",
+    GetInstallArgsByIpView,
+    basename="getInstallArgsByIp"
+)
+router.register(
+    "createInstallPlan",
+    CreateInstallPlanView,
+    basename="createInstallPlan"
+)
