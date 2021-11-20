@@ -317,6 +317,9 @@ class BaseRedisData(object):
         for item in basic:
             cluster_name_map[item["name"]] = \
                 item.get("cluster_name")
+            # 存储服务对应产品的集群名称
+            for el in item.get("services_list"):
+                cluster_name_map[el["name"]] = item.get("cluster_name")
         dependence = data.get("data", {}).get("dependence", [])
         for item in dependence:
             if item.get("is_use_exist"):
@@ -1172,6 +1175,7 @@ class DataJson(object):
         _ser_dic = {
             "ip": obj.ip,
             "name": obj.service.app_name,
+            "role": obj.service_role,
             "instance_name": obj.service_instance_name,
             "cluster_name": obj.cluster.cluster_name if obj.cluster else None,
             "ports": json.loads(obj.service_port) if obj.service_port else [],
@@ -1383,7 +1387,7 @@ class CreateInstallPlan(object):
         _obj = self.get_app_obj_for_service(dic)
         _dep_lst = list()
         if not _obj.app_dependence or not json.loads(_obj.app_dependence):
-            return json.dumps([])
+            return []
         lst = json.loads(_obj.app_dependence)
 
         exist_data = BaseRedisData(
@@ -1431,12 +1435,12 @@ class CreateInstallPlan(object):
                 not dic["cluster_name"]:
             return
         _obj = self.get_app_obj_for_service(dic)
-        if not _obj or not _obj.app_type != ApplicationHub.APP_TYPE_SERVICE:
+        if not _obj or _obj.app_type != ApplicationHub.APP_TYPE_SERVICE:
             return
         product_instance_name = dic["cluster_name"]
         Product.objects.get_or_create(
             product_instance_name=product_instance_name,
-            product=self.get_app_obj_for_service(dic).product
+            product=_obj.product
         )
 
     def check_if_has_post_action(self, ser):    # NOQA

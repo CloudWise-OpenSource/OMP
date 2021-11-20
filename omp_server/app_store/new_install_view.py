@@ -15,7 +15,7 @@ from rest_framework.mixins import (
 )
 
 from db_models.models import (
-    ApplicationHub, ProductHub,
+    ApplicationHub, ProductHub, Product
 )
 
 from app_store.install_utils import ServiceArgsSerializer
@@ -40,6 +40,21 @@ class BatchInstallEntranceView(GenericViewSet, ListModelMixin):
         获取批量安装参数范围
     """
     get_description = "获取批量安装数据"
+
+    @staticmethod
+    def check_product_instance(pro_name, pro_version_lst):
+        """
+        检查应用产品是否安装过
+        :param pro_name: 应用名称
+        :param pro_version: 应用版本
+        :return:
+        """
+        if Product.objects.filter(
+                product__pro_name=pro_name,
+                product__pro_version__in=pro_version_lst
+        ).exists():
+            return True
+        return False
 
     def list(self, request, *args, **kwargs):
         """
@@ -67,7 +82,12 @@ class BatchInstallEntranceView(GenericViewSet, ListModelMixin):
                 tmp_dic[item["pro_name"]] = list()
             tmp_dic[item["pro_name"]].append(item["pro_version"])
         _data = [
-            {"name": key, "version": value} for key, value in tmp_dic.items()
+            {
+                "name": key,
+                "version": value,
+                "is_continue": not self.check_product_instance(key, value)
+            }
+            for key, value in tmp_dic.items()
         ]
         # unique_key = str(uuid.uuid4())
         unique_key = str("21e041a9-c9a5-4734-9673-7ed932625d21")
