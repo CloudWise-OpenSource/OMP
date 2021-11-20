@@ -80,7 +80,7 @@ def exec_action(action, instance, operation_user):
             logger.info(f"执行 [{action[0]}] 操作 {is_success}，原因: {info}")
         install_detail = service_obj.detailinstallhistory_set.first().install_detail_args
         base_dir = None
-        for args in install_detail.get("app_install_args"):
+        for args in install_detail.get("install_args"):
             if args.get("key") == "base_dir":
                 base_dir = args.get("default")
         # 删除安装路径

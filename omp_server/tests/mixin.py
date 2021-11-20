@@ -474,7 +474,7 @@ class InstallHistoryResourceMixin(ServicesResourceMixin):
                 main_install_history=main_obj,
                 install_detail_args={
                     "name": "t_name",
-                    "app_install_args": [{
+                    "install_args": [{
                         "key": key,
                         "name": "安装目录",
                         "default": "/data/t_name",

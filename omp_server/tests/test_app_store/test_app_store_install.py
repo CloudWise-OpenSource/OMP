@@ -400,7 +400,7 @@ class ExecuteInstallTest(TransactionTestCase):
                     "name": "testApp",
                     "version": "1.0.1",
                     "ip": "127.0.0.1",
-                    "app_install_args": [
+                    "install_args": [
                         {"name": "安装目录", "key": "base_dir",
                          "dir_key": "{data_path}", "default": "/jdk"},
                         {"name": "数据目录", "key": "data_dir",

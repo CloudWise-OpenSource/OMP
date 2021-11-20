@@ -139,9 +139,9 @@ def explain_url(explain_info, is_service=None):
                     monitor_url + f"?var-instance={service_ip}"
             else:
                 try:
-                    if service_name and json.loads(
-                            ApplicationHub.objects.filter(app_name=service_name).first().app_monitor).get(
-                                "type") == "JavaSpringBoot":
+                    if service_name and ApplicationHub.objects.filter(
+                            app_name=service_name
+                    ).first().app_monitor.get("type") == "JavaSpringBoot":
                         instance_info['monitor_url'] = grafana_url + url_dict.get(
                             'javaspringboot', 'nojavaspringboot') + f"?var-ip={service_ip}&var-app={service_name}"
                     else:
