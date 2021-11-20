@@ -18,7 +18,7 @@ install_detail = {
     "ip": "10.0.7.184", "name": "mysql", "version": "5.7.31",
     "app_port": [{"key": "service_port", "name": "服务端口", "default": "3306"}],
     "deploy_mode": {"key": "single", "name": "单实例"},
-    "app_install_args": [
+    "install_args": [
         {"key": "base_dir", "name": "安装目录",
          "default": "/webber/mysql", "dir_key": "{data_path}",
          "check_msg": "success", "check_flag": "true"},

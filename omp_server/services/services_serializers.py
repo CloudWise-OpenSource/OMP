@@ -126,7 +126,7 @@ class ServiceDetailSerializer(serializers.ModelSerializer):
         if obj.detailinstallhistory_set.exists():
             detail_obj = obj.detailinstallhistory_set.first()
             app_install_args = detail_obj.install_detail_args.get(
-                "app_install_args", [])
+                "install_args", [])
         for app_install_info in app_install_args:
             key = app_install_info.get("key", "")
             if key in result.keys():
