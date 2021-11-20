@@ -24,6 +24,17 @@ from app_store.views_for_install import (
     ServiceInstallHistoryDetailView
 )
 
+from app_store.new_install_view import (
+    BatchInstallEntranceView,
+    CreateInstallInfoView,
+    CheckInstallInfoView,
+    CreateServiceDistributionView,
+    CheckServiceDistributionView,
+    GetInstallHostRangeView,
+    GetInstallArgsByIpView,
+    CreateInstallPlanView
+)
+
 router = DefaultRouter()
 router.register("labels", LabelListView, basename="labels")
 router.register("components", ComponentListView, basename="components")
@@ -69,16 +80,6 @@ router.register(
     basename='serviceInstallHistoryDetail')
 
 # 新版安装逻辑
-from app_store.new_install_view import (
-    BatchInstallEntranceView,
-    CreateInstallInfoView,
-    CheckInstallInfoView,
-    CreateServiceDistributionView,
-    CheckServiceDistributionView,
-    GetInstallHostRangeView,
-    GetInstallArgsByIpView,
-    CreateInstallPlanView
-)
 router.register(
     "batchInstallEntrance",
     BatchInstallEntranceView,

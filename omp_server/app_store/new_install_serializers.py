@@ -660,6 +660,7 @@ class CreateInstallPlanSerializer(BaseInstallSerializer):
         :param valid_data:
         :param run_user:
         :param host_ser_map:
+        :param cluster_name_map:
         :return:
         """
         all_install_service_lst = list()

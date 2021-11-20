@@ -595,6 +595,7 @@ class InstallServiceExecutor:
 
         # 对要执行安装的列表进行排序处理
         tobe_execute_lst = self.make_install_order(queryset)
+        logger.info(f"Tobe_execute_lst: {tobe_execute_lst}")
         for item in tobe_execute_lst:
             if not item:
                 continue
