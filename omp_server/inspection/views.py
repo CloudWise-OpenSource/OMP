@@ -11,6 +11,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.serializers import Serializer
 
+from inspection.inspection_utils import send_report_email
 from utils.common.paginations import PageNumberPager
 from rest_framework.viewsets import GenericViewSet
 from django_filters.rest_framework.backends import DjangoFilterBackend
@@ -21,7 +22,7 @@ from inspection.tasks import get_prometheus_data
 from db_models.models import (
     Env, Service, InspectionHistory, InspectionCrontab, InspectionReport, ModuleSendEmailSetting)
 from inspection.filters import (
-    InspectionHistoryFilter, InspectionCrontabFilter,)
+    InspectionHistoryFilter, InspectionCrontabFilter, )
 from inspection.serializers import (
     InspectionHistorySerializer, InspectionCrontabSerializer,
     InspectionReportSerializer)
@@ -60,7 +61,7 @@ class InspectionHistoryView(ListModelMixin, GenericViewSet, CreateModelMixin):
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     filter_class = InspectionHistoryFilter
     # 动态排序字段
-    dynamic_fields = ("start_time", )
+    dynamic_fields = ("start_time",)
     # 操作描述信息
     get_description = "查询巡检历史记录列表"
 
@@ -101,7 +102,7 @@ class InspectionHistoryView(ListModelMixin, GenericViewSet, CreateModelMixin):
             start_time__day=now.day).count()
         tp = {'deep': '深度巡检', 'host': '主机巡检', 'service': '组件巡检'}
         name = f"{tp.get(data_dict.get('inspection_type'))}-" \
-               f"{now.strftime('%Y%m%d')}{num+1}"
+               f"{now.strftime('%Y%m%d')}{num + 1}"
         return name
 
     def create(self, request, *args, **kwargs):
@@ -257,7 +258,10 @@ class InspectionSendEmailSettingView(GenericViewSet, ListModelMixin, CreateModel
         email_setting = ModuleSendEmailSetting.get_email_settings(
             env_id, "inspection")  # TODO 暂写死为巡检
         if not email_setting:
-            return Response(data={})
+            return Response(data={
+                "to_users": "",
+                "send_email": False
+            })
         return Response(
             data={
                 "to_users": email_setting.to_users,
@@ -286,4 +290,33 @@ class InspectionSendEmailSettingView(GenericViewSet, ListModelMixin, CreateModel
         except Exception as e:
             logger.info(f"更新邮箱配置失败：{str(e)}")
             return Response(data={"code": 1, "message": "更新邮箱配置失败！"})
+        return Response({})
+
+
+class InspectionSendEmailAPIView(GenericViewSet, CreateModelMixin):
+    """
+    巡检邮件推送
+    """
+    post_description = "巡检邮件推送"
+
+    def create(self, request, *args, **kwargs):
+        inspection_id = request.data.get("id")
+        inspection_module = request.data.get("module")
+        if inspection_module not in ("DeepInspection", "NormalInspection"):
+            return Response(1, "请选择正确的巡检对象！")
+        to_users = request.data.get("to_users")
+        if not to_users:
+            return Response(1, "请填入接收邮件邮箱！")
+        emails = to_users.split(",")
+        for email in emails:
+            try:
+                EmailValidator()(email)
+            except Exception as e:
+                message = f"收件箱{email}格式错误！"
+                logger.error(f"{message} 错误信息：{str(e)}")
+                return Response(data={"code": 1, "message": message})
+        state, result = send_report_email(
+            inspection_module, inspection_id, emails)
+        if not state:
+            return Response(data={"code": 1, "message": result})
         return Response({})
