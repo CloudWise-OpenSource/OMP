@@ -7,11 +7,12 @@ import styles from "./index.module.less";
 import Step1 from "./steps/Step1";
 import Step2 from "./steps/Step2";
 import Step3 from "./steps/Step3";
+import Step4 from "./steps/Step4";
 
 import { LeftOutlined } from "@ant-design/icons";
 // 安装页面
 const Installation = () => {
-  const [stepNum, setStepNum] = useState(2);
+  const [stepNum, setStepNum] = useState(0);
   const dispatch = useDispatch();
   const history = useHistory();
 
@@ -55,6 +56,7 @@ const Installation = () => {
       {stepNum == 0 && <Step1 setStepNum={setStepNum} />}
       {stepNum == 1 && <Step2 setStepNum={setStepNum} />}
       {stepNum == 2 && <Step3 setStepNum={setStepNum} />}
+      {stepNum == 3 && <Step4 />}
     </div>
   );
 };
