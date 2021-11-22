@@ -114,7 +114,7 @@ const ServiceDistributionItem = ({ form, data, info }) => {
     console.log(ipList, value, idx);
     if (value.length == 0) {
       if (idx !== -1) {
-        console.log([...ipList], info.ip);
+        //console.log([...ipList], info.ip);
         let newIpList = [...ipList];
         newIpList.splice(idx, 1);
         reduxDispatch(getIpListChangeAction(newIpList));

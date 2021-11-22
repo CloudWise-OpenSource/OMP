@@ -8,6 +8,10 @@ import {
 
 const Step2 = ({ setStepNum }) => {
   const reduxDispatch = useDispatch();
+
+  // 基本信息的form实例
+  const [form] = Form.useForm();
+  
   const allDataPool = useSelector((state) => state.installation.dataSource);
   const ipList = useSelector((state) => state.installation.ipList);
   useEffect(() => {
@@ -126,9 +130,6 @@ const Step2 = ({ setStepNum }) => {
       },
     ],
   };
-
-  // 基本信息的form实例
-  const [form] = Form.useForm();
 
   // 未分配服务个数
   const unassignedServices = Object.keys(allDataPool).reduce((prev, cur) => {
