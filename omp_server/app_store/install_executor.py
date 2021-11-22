@@ -154,7 +154,7 @@ class InstallServiceExecutor:
             app_name = detail_args.get("name", None)
             assert app_name is not None
             target_path = None
-            for info in detail_args.get("app_install_args", []):
+            for info in detail_args.get("install_args", []):
                 if info.get("key", "") == "base_dir":
                     target_path = info.get("default")
                     break
