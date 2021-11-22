@@ -6,7 +6,7 @@
 from rest_framework.routers import DefaultRouter
 from inspection.views import (
     InspectionHistoryView, InspectionCrontabView, InspectionReportView,
-    InspectionServiceView, InspectionSendEmailSettingView)
+    InspectionServiceView, InspectionSendEmailSettingView, InspectionSendEmailAPIView)
 
 router = DefaultRouter()
 # 巡检 历史记录
@@ -19,3 +19,5 @@ router.register("crontab", InspectionCrontabView, basename="crontab")
 router.register("report", InspectionReportView, basename="report")
 router.register("inspectionSendEmailSetting",
                 InspectionSendEmailSettingView, basename="inspectionSendEmailSetting")
+router.register("inspectionSendEmail",
+                InspectionSendEmailAPIView, "inspectionSendEmail")

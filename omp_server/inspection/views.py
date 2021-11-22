@@ -258,10 +258,7 @@ class InspectionSendEmailSettingView(GenericViewSet, ListModelMixin, CreateModel
         email_setting = ModuleSendEmailSetting.get_email_settings(
             env_id, "inspection")  # TODO 暂写死为巡检
         if not email_setting:
-            return Response(data={
-                "to_users": "",
-                "send_email": False
-            })
+            return Response(data={})
         return Response(
             data={
                 "to_users": email_setting.to_users,
@@ -298,15 +295,16 @@ class InspectionSendEmailAPIView(GenericViewSet, CreateModelMixin):
     巡检邮件推送
     """
     post_description = "巡检邮件推送"
+    serializer_class = Serializer
 
     def create(self, request, *args, **kwargs):
         inspection_id = request.data.get("id")
         inspection_module = request.data.get("module")
         if inspection_module not in ("DeepInspection", "NormalInspection"):
-            return Response(1, "请选择正确的巡检对象！")
+            return Response(data={"code": 1, "message": "请选择正确的巡检对象！"})
         to_users = request.data.get("to_users")
         if not to_users:
-            return Response(1, "请填入接收邮件邮箱！")
+            return Response(data={"code": 1, "message": "请填入接收邮件邮箱！"})
         emails = to_users.split(",")
         for email in emails:
             try:

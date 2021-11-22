@@ -460,6 +460,18 @@ class InspectionHistory(models.Model):
     env = models.ForeignKey(
         Env, null=True, on_delete=models.SET_NULL, verbose_name="当前环境id",
         help_text="当前环境id")
+    NOT_SEND = 3
+    SUCCESS = 1
+    ING = 2
+    FAIL = 0
+    SEND_RESULT_CHOICES = (
+        ("发送成功", SUCCESS),
+        ("发送中", ING),
+        ("发送失败", FAIL),
+        ("未发送", NOT_SEND)
+    )
+    send_email_result = models.IntegerField(
+        "邮件推送状态", choices=SEND_RESULT_CHOICES, default=NOT_SEND)
 
     class Meta:
         db_table = 'inspection_history'

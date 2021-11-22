@@ -1,10 +1,11 @@
 import logging
 import traceback
 
+from db_models.models import InspectionHistory, InspectionReport
+from inspection.joint_json_report import joint_json_data
 from utils.plugin.send_email import ModelSettingEmailBackend, many_send
 from utils.prometheus.create_html_tar import create_html_tar
 from utils.plugin import send_email as send_email_module
-from db_models import models
 
 logger = logging.getLogger("server")
 
@@ -81,7 +82,11 @@ def create_send_inspection_html(inspection):
         return False, "无巡检对象"
     if inspection.inspection_status != 2:
         return False, "巡检结果未成功！"
-    report_data = inspection.report_data
+    inspection_report = InspectionReport.objects.filter(inst_id=inspection.id)
+    if not inspection_report:
+        return False, "未找到巡检报告！"
+    report_data = joint_json_data(
+        inspection.inspection_type, inspection_report, inspection)
     time_str = inspection.inspection_name.split("-")[1]
     new_html_dir_name = f"{inspection.__class__.__name__.lower()}-{time_str}"
     try:
@@ -110,17 +115,20 @@ def send_report_email(inspection_module, inspection_id, emails):
     :param emails: 邮箱list
     :return:
     """
-    module_class = getattr(models, inspection_module)
-    inspection = module_class.objects.filter(id=inspection_id).first()
+    inspection = InspectionHistory.objects.filter(id=inspection_id).first()
     if not inspection:
         return False, "未找到对应的巡检！"
     if inspection.inspection_status != 2:
         return False, "巡检结果未成功！"
+    inspection_report = InspectionReport.objects.filter(
+        inst_id=inspection_id).first()
+    if not inspection_report:
+        return False, "未找到对应的巡检报告！"
     if inspection.send_email_result == 2:
         return False, "正在发送巡检报告，请稍后再试！"
     inspection.send_email_result = 2
     inspection.save()
-    if not inspection.file_name:
+    if not inspection_report.file_name:
         try:
             state, result = create_send_inspection_html(inspection)
         except Exception as e:
