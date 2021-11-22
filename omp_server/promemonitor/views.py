@@ -35,6 +35,7 @@ from promemonitor.promemonitor_serializers import (
     ReceiveAlertSerializer
 )
 from utils.common.exceptions import OperateError
+from promemonitor.prometheus import Prometheus
 
 logger = logging.getLogger('server')
 
@@ -324,29 +325,47 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
                         host_info_list.pop(i)
                         break
 
+        _, host_targets = Prometheus().get_all_host_targets()
         for host in host_list:
             if host.ip in error_host_list:
                 continue
             host_dict = {
                 "ip": host.ip, "instance_name": host.instance_name, "severity": "normal"}
+            if host.ip not in host_targets:
+                host_dict = {
+                    "ip": host.ip, "instance_name": host.instance_name, "severity": "未监控"}
             host_info_list.append(host_dict)
+
+        _, service_targets = Prometheus().get_all_service_targets()
         for database in database_list:
             if database.service_instance_name in error_instance_list:
                 continue
             database_dict = {"ip": database.ip, "instance_name": database.service_instance_name,
                              "app_name": database.service.app_name, "severity": "normal"}
+            database_ip_instance_name_str = f"{database.ip}_{database.service_instance_name}"
+            if database_ip_instance_name_str not in service_targets:
+                database_dict = {"ip": database.ip, "instance_name": database.service_instance_name,
+                                 "app_name": database.service.app_name, "severity": "未监控"}
             database_info_list.append(database_dict)
         for service in service_list:
             if service.service_instance_name in error_instance_list:
                 continue
             service_dict = {"ip": service.ip, "instance_name": service.service_instance_name,
                             "app_name": service.service.app_name, "severity": "normal"}
+            service_ip_instance_name_str = f"{service.ip}_{service.service_instance_name}"
+            if service_ip_instance_name_str not in service_targets:
+                service_dict = {"ip": service.ip, "instance_name": service.service_instance_name,
+                                "app_name": service.service.app_name, "severity": "未监控"}
             service_info_list.append(service_dict)
         for component in component_list:
             if component.service_instance_name in error_instance_list:
                 continue
             component_dict = {"ip": component.ip, "instance_name": component.service_instance_name,
                               "app_name": component.service.app_name, "severity": "normal"}
+            component_ip_instance_name_str = f"{component.ip}_{component.service_instance_name}"
+            if component_ip_instance_name_str not in service_targets:
+                component_dict = {"ip": component.ip, "instance_name": component.service_instance_name,
+                                  "app_name": component.service.app_name, "severity": "未监控"}
             component_info_list.append(component_dict)
 
         host_info_exc_count = len(set(error_host_list))

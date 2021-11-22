@@ -277,3 +277,42 @@ class Prometheus:
         except Exception as e:
             logger.error(f"从prometheus获取数据失败: {str(e)}")
             return False, {}
+
+    def get_all_host_targets(self):
+        headers = {'Content-Type': 'application/json'}
+        query_url = f'{self.basic_url}/api/v1/targets'
+        host_targets = list()
+        try:
+            res_body = requests.get(url=query_url, headers=headers)
+            res_dic = json.loads(res_body.text)
+            if res_dic.get("status") != "success":
+                return False, {}
+            targets_data = res_dic.get("data", {})
+            for item in targets_data:
+                if item.get("labels", {}).get("job") != "nodeExporter":
+                    continue
+                host_targets.append(item.get("labels").get("instance"))
+            return True, host_targets
+        except Exception as e:
+            logger.error(f"从prometheus获取主机targets失败: {str(e)}")
+            return False, []
+
+    def get_all_service_targets(self):
+        headers = {'Content-Type': 'application/json'}
+        query_url = f'{self.basic_url}/api/v1/targets'
+        service_targets = list()
+        try:
+            res_body = requests.get(url=query_url, headers=headers)
+            res_dic = json.loads(res_body.text)
+            if res_dic.get("status") != "success":
+                return False, {}
+            targets_data = res_dic.get("data", {})
+            for item in targets_data:
+                if item.get("labels", {}).get("service_type") != "service":
+                    continue
+                service_targets.append(
+                    f'{item.get("labels").get("instance")}_{item.get("labels").get("instance_name")}')
+            return True, service_targets
+        except Exception as e:
+            logger.error(f"从prometheus获取服务targets失败: {str(e)}")
+            return False, []
