@@ -287,7 +287,7 @@ class Prometheus:
             res_dic = json.loads(res_body.text)
             if res_dic.get("status") != "success":
                 return False, {}
-            targets_data = res_dic.get("data", {})
+            targets_data = res_dic.get("data", {}).get("activeTargets")
             for item in targets_data:
                 if item.get("labels", {}).get("job") != "nodeExporter":
                     continue
@@ -306,7 +306,7 @@ class Prometheus:
             res_dic = json.loads(res_body.text)
             if res_dic.get("status") != "success":
                 return False, {}
-            targets_data = res_dic.get("data", {})
+            targets_data = res_dic.get("data", {}).get("activeTargets")
             for item in targets_data:
                 if item.get("labels", {}).get("service_type") != "service":
                     continue
