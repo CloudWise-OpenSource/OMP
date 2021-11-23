@@ -9,7 +9,11 @@ import moment from "moment";
 import { apiRequest } from "src/config/requestApi";
 import { fetchGet } from "@/utils/request";
 
-const getColumnsConfig = (queryRequest, history, queryData) => {
+const getColumnsConfig = (queryRequest, history, pushData) => {
+  // 推送邮件相关数据
+  const { pushForm, setPushLoading, setPushAnalysisModal, setPushInfo } =
+    pushData;
+
   const fetchDetailData = (id) => {
     fetchGet(`${apiRequest.inspection.reportDetail}/${id}/`)
       .then((res) => {
@@ -19,6 +23,40 @@ const getColumnsConfig = (queryRequest, history, queryData) => {
       })
       .catch((e) => console.log(e))
       .finally(() => {});
+  };
+
+  // 查询推送数据
+  const fetchPushDate = (record) => {
+    setPushLoading(true);
+    fetchGet(apiRequest.inspection.queryPushConfig)
+      .then((res) => {
+        handleResponse(res, (res) => {
+          if (res && res.data) {
+            const { to_users } = res.data;
+            pushForm.setFieldsValue({
+              email: to_users,
+            });
+            setPushInfo({
+              id: record.id,
+              module: record.inspection_type,
+              to_users: to_users,
+            });
+          }
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setPushLoading(false);
+      });
+  };
+
+  // 点击推送
+  const clickPush = (record) => {
+    setPushAnalysisModal(true);
+    fetchPushDate(record);
+    // pushForm.setFieldsValue({
+    //   id:
+    // })
   };
 
   return [
@@ -206,16 +244,19 @@ const getColumnsConfig = (queryRequest, history, queryData) => {
         return (
           <div style={{ display: "flex", justifyContent: "space-around" }}>
             {record.inspection_status == 2 ? (
-              <a
-                onClick={() => {
-                  message.success(
-                    `正在下载巡检报告，双击文件夹中index.html查看报告`
-                  );
-                  fetchDetailData(record.id);
-                }}
-              >
-                导出
-              </a>
+              <>
+                <a
+                  onClick={() => {
+                    message.success(
+                      `正在下载巡检报告，双击文件夹中index.html查看报告`
+                    );
+                    fetchDetailData(record.id);
+                  }}
+                >
+                  导出
+                </a>
+                <a onClick={() => clickPush(record)}>推送</a>
+              </>
             ) : (
               <span style={{ color: "rgba(0, 0, 0, 0.25" }}>导出</span>
             )}

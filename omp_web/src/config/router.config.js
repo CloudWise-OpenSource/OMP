@@ -13,7 +13,12 @@ import PatrolInspectionDetail from "@/pages/PatrolInspectionRecord/config/detail
 import ServiceManagement from "@/pages/ServiceManagement";
 import ComponentInstallation from "@/pages/AppStore/config/ComponentInstallation";
 import ApplicationInstallation from "@/pages/AppStore/config/ApplicationInstallation";
+<<<<<<< HEAD
 import Installation from "@/pages/AppStore/config/Installation";
+=======
+import EmailSettings from "src/pages/EmailSettings";
+import RuleCenter from "src/pages/RuleCenter";
+>>>>>>> 587d13a (完成优化项、邮件相关页面以及指标页面)
 import {
   DesktopOutlined,
   ClusterOutlined,
@@ -22,6 +27,7 @@ import {
   LineChartOutlined,
   AppstoreOutlined,
   EyeOutlined,
+  UnorderedListOutlined,
 } from "@ant-design/icons";
 
 export default [
@@ -130,6 +136,18 @@ export default [
     ],
   },
   {
+    menuTitle: "指标中心",
+    menuIcon: <UnorderedListOutlined />,
+    menuKey: "/rule-center",
+    children: [
+      {
+        title: "默认指标",
+        path: "/rule-center/default-rule",
+        component: RuleCenter,
+      },
+    ],
+  },
+  {
     menuTitle: "系统设置",
     menuIcon: <SettingOutlined />,
     menuKey: "/system-settings",
@@ -143,6 +161,11 @@ export default [
         title: "系统管理",
         path: "/system-settings/system-management",
         component: SystemManagement,
+      },
+      {
+        title: "邮件管理",
+        path: "/system-settings/email-settings",
+        component: EmailSettings,
       },
     ],
   },

@@ -5,7 +5,7 @@ import {
   OmpSelect,
   OmpDrawer,
 } from "@/components";
-import { Button, message, Menu, Dropdown, Input, Checkbox } from "antd";
+import { Button, message, Menu, Dropdown, Input, Checkbox, Form } from "antd";
 import { useState, useEffect, useRef } from "react";
 import { handleResponse, _idxInit } from "@/utils/utils";
 import { fetchGet, fetchPost, fetchPatch } from "@/utils/request";
@@ -23,6 +23,7 @@ import PatrolInspectionDetail from "@/pages/PatrolInspectionRecord/config/detail
 const PatrolInspectionRecord = () => {
   const history = useHistory();
   const [loading, setLoading] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
   const [instanceSelectValue, setInstanceSelectValue] = useState("");
 
   // 深度分析modal弹框
@@ -31,6 +32,8 @@ const PatrolInspectionRecord = () => {
   const [hostAnalysisModal, setHostAnalysisModal] = useState(false);
   // 组件巡检modal弹框
   const [componenetAnalysisModal, setComponenetAnalysisModal] = useState(false);
+  // 邮件推送modal弹框
+  const [pushAnalysisModal, setPushAnalysisModal] = useState(false);
 
   const [checkboxGroupData, setcheckboxGroupData] = useState([]);
 
@@ -53,6 +56,11 @@ const PatrolInspectionRecord = () => {
     isShow: false,
     data: {},
   });
+
+  // 推送表单数据
+  const [pushForm] = Form.useForm();
+  // 点击推送按钮数据
+  const [pushInfo, setPushInfo] = useState();
 
   function fetchData(
     pageParams = { current: 1, pageSize: 10 },
@@ -161,6 +169,29 @@ const PatrolInspectionRecord = () => {
     fetchIPlist();
     fetchServicelist();
   }, []);
+
+  const pushEmail = () => {
+    setPushLoading(true);
+    fetchPost(apiRequest.inspection.pushEmail, {
+      body: {
+        ...pushInfo,
+        to_users: pushForm.getFieldValue("email"),
+      },
+    })
+      .then((res) => {
+        console.log(res);
+        if (res && res.data) {
+          if (res.data.code == 1) {
+            message.warning(res.data.message);
+          }
+          if (res.data.code == 0) {
+            message.success("推送成功");
+          }
+        }
+      })
+      .catch((e) => console.log(e))
+      .finally(() => setPushLoading(false));
+  };
 
   if (showDetail.isShow) {
     return <PatrolInspectionDetail data={showDetail.data} />;
@@ -278,7 +309,8 @@ const PatrolInspectionRecord = () => {
                 pagination.ordering
               );
             },
-            history
+            history,
+            { pushForm, setPushLoading, setPushAnalysisModal, setPushInfo }
             //fetchDetailData
           )}
           dataSource={dataSource}
@@ -488,6 +520,53 @@ const PatrolInspectionRecord = () => {
             </div>
           </Checkbox.Group>
         </>
+      </OmpMessageModal>
+
+      <OmpMessageModal
+        visibleHandle={[pushAnalysisModal, setPushAnalysisModal]}
+        title={<span>邮件推送</span>}
+        loading={pushLoading}
+        onFinish={() => pushEmail()}
+      >
+        <Form style={{ marginLeft: 40 }} form={pushForm}>
+          <Form.Item
+            name="email"
+            label="接收人"
+            rules={[
+              {
+                type: "email",
+                message: "请输入正确格式的邮箱",
+              },
+            ]}
+          >
+            <Input
+              placeholder="例如: emailname@163.com"
+              style={{
+                width: 320,
+              }}
+            />
+          </Form.Item>
+          <p
+            style={{
+              marginTop: 30,
+              paddingLeft: 40,
+              fontSize: 13,
+            }}
+          >
+            <ExclamationCircleOutlined style={{ paddingRight: 10 }} />
+            如果需要配置默认的巡检报告接收人，请点击
+            <a
+              onClick={() =>
+                history.push({
+                  pathname: "/status-patrol/patrol-strategy",
+                })
+              }
+              style={{ marginLeft: 4 }}
+            >
+              这里
+            </a>
+          </p>
+        </Form>
       </OmpMessageModal>
     </OmpContentWrapper>
   );
