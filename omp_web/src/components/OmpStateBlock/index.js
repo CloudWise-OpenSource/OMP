@@ -14,6 +14,10 @@ const colorObj = {
     borderColor: "#da4e48",
   },
   noMonitored: {
+    background: "#e5e5e5",
+    borderColor: "#606060",
+  },
+  warning: {
     background: "rgba(247, 231, 24, 0.2)",
     borderColor: "rgb(245, 199, 115)",
   },
@@ -22,7 +26,7 @@ const colorObj = {
 function OmpStateBlock(props) {
   const history = useHistory();
   const { title, data = [] } = props;
-  const [allData, setAllData] = useState([])
+  const [allData, setAllData] = useState([]);
   //console.log(data)
   const [currentData, setCurrentData] = useState([]);
 
@@ -32,11 +36,24 @@ function OmpStateBlock(props) {
     if (data && data.length > 0) {
       let handleData = data.map((item) => {
         //后端的critical和warning都渲染成红色，在前端对数据进行处理 noMonitored:"未监控" abnormal:"异常" normal:"正常"
+        // let status = "noMonitored";
+        // if (item.severity == "warning" || item.severity == "critical") {
+        //   status = "abnormal";
+        // } else if (item.severity == "normal") {
+        //   status = "normal";
+        // }
+        // return {
+        //   ...item,
+        //   frontendStatus: status,
+        // };
+
         let status = "noMonitored";
-        if (item.severity == "warning" || item.severity == "critical") {
+        if (item.severity == "critical") {
           status = "abnormal";
         } else if (item.severity == "normal") {
           status = "normal";
+        } else if (item.severity == "warning") {
+          status = "warning";
         }
         return {
           ...item,
@@ -44,7 +61,7 @@ function OmpStateBlock(props) {
         };
       });
       setCurrentData(sortData(handleData));
-      setAllData(sortData(handleData))
+      setAllData(sortData(handleData));
     }
   }, [data]);
 
@@ -52,8 +69,12 @@ function OmpStateBlock(props) {
     let normalArr = data.filter((i) => i.frontendStatus == "normal");
     let noMonitoredArr = data.filter((i) => i.frontendStatus == "noMonitored");
     let abnormalArr = data.filter((i) => i.frontendStatus == "abnormal");
+    let warningArr = data.filter((i) => i.frontendStatus == "warning");
 
-    let result = abnormalArr.concat(normalArr).concat(noMonitoredArr);
+    let result = abnormalArr
+      .concat(normalArr)
+      .concat(noMonitoredArr)
+      .concat(warningArr);
     return result;
   };
 
@@ -69,14 +90,22 @@ function OmpStateBlock(props) {
                 setCurrentData(
                   sortData(
                     currentData.concat(
-                      allData.filter((i) => i.frontendStatus == "abnormal")
+                      allData.filter(
+                        (i) =>
+                          i.frontendStatus == "abnormal" ||
+                          i.frontendStatus == "warning"
+                      )
                     )
                   )
                 );
               } else {
                 setCurrentData(
                   sortData(
-                    currentData.filter((i) => i.frontendStatus !== "abnormal")
+                    currentData.filter(
+                      (i) =>
+                        i.frontendStatus !== "abnormal" ||
+                        i.frontendStatus == "warning"
+                    )
                   )
                 );
               }
@@ -107,32 +136,30 @@ function OmpStateBlock(props) {
             正常
           </Checkbox>
 
-          {props.hasNotMonitored && (
-            <Checkbox
-              defaultChecked={true}
-              onChange={(e) => {
-                if (e.target.checked) {
-                  setCurrentData(
-                    sortData(
-                      currentData.concat(
-                        allData.filter((i) => i.frontendStatus == "noMonitored")
-                      )
+          <Checkbox
+            defaultChecked={true}
+            onChange={(e) => {
+              if (e.target.checked) {
+                setCurrentData(
+                  sortData(
+                    currentData.concat(
+                      allData.filter((i) => i.frontendStatus == "noMonitored")
                     )
-                  );
-                } else {
-                  setCurrentData(
-                    sortData(
-                      currentData.filter(
-                        (i) => i.frontendStatus !== "noMonitored"
-                      )
+                  )
+                );
+              } else {
+                setCurrentData(
+                  sortData(
+                    currentData.filter(
+                      (i) => i.frontendStatus !== "noMonitored"
                     )
-                  );
-                }
-              }}
-            >
-              未监控
-            </Checkbox>
-          )}
+                  )
+                );
+              }
+            }}
+          >
+            未监控
+          </Checkbox>
 
           <Button
             className={styles.dropBtn}
@@ -182,34 +209,36 @@ export default OmpStateBlock;
 function popContent(item) {
   return (
     <div>
-      {item.info.map(i=>
+      {item.info.map((i) => (
         <div className={styles.popContent}>
-        {i.ip && (
-          <span
-            className={styles.ip}
-            style={{ color: colorObj[item.frontendStatus]?.borderColor }}
-          >
-            {i.ip}
-          </span>
-        )}
-        <span>
-          {i.date ? (
-           <span>{i.date}</span>
-          ) : (
-            <span style={{ color: colorObj[item.frontendStatus]?.borderColor }}>
-              正常
+          {i.ip && (
+            <span
+              className={styles.ip}
+              style={{ color: colorObj[item.frontendStatus]?.borderColor }}
+            >
+              {i.ip}
             </span>
           )}
-        </span>
-        {i.describe && (
           <span>
-            {i.describe.length > 100
-              ? i.describe.slice(0, 100) + "..."
-              : i.describe.slice(0, 100)}
+            {i.date ? (
+              <span>{i.date}</span>
+            ) : (
+              <span
+                style={{ color: colorObj[item.frontendStatus]?.borderColor }}
+              >
+                {item.frontendStatus === "noMonitored" ? "未监控" : "正常"}
+              </span>
+            )}
           </span>
-        )}
-      </div>
-      )}
+          {i.describe && (
+            <span>
+              {i.describe.length > 100
+                ? i.describe.slice(0, 100) + "..."
+                : i.describe.slice(0, 100)}
+            </span>
+          )}
+        </div>
+      ))}
     </div>
   );
 }

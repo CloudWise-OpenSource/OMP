@@ -6,9 +6,24 @@ import {
   OmpDatePicker,
   OmpDrawer,
 } from "@/components";
-import { Button, Select, message, Menu, Dropdown, Modal, Input,  Tooltip, Badge, } from "antd";
+import {
+  Button,
+  Select,
+  message,
+  Menu,
+  Dropdown,
+  Modal,
+  Input,
+  Tooltip,
+  Badge,
+} from "antd";
 import { useState, useEffect, useRef } from "react";
-import { handleResponse, _idxInit, refreshTime, colorConfig } from "@/utils/utils";
+import {
+  handleResponse,
+  _idxInit,
+  refreshTime,
+  colorConfig,
+} from "@/utils/utils";
 import { fetchGet, fetchPost, fetchPatch } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import { SearchOutlined } from "@ant-design/icons";
@@ -25,9 +40,9 @@ const ExceptionList = () => {
 
   const [showIframe, setShowIframe] = useState({});
 
-  const [pageSize, setPageSize] = useState(5)
+  const [pageSize, setPageSize] = useState(5);
 
-  function fetchData(searchParams = {},noLoading) {
+  function fetchData(searchParams = {}, noLoading) {
     !noLoading && setLoading(true);
     fetchGet(apiRequest.ExceptionList.exceptionList, {
       params: {
@@ -36,7 +51,7 @@ const ExceptionList = () => {
     })
       .then((res) => {
         handleResponse(res, (res) => {
-          setSearchParams(searchParams)
+          setSearchParams(searchParams);
           setDataSource(
             res.data.map((item, idx) => ({
               ...item,
@@ -52,7 +67,7 @@ const ExceptionList = () => {
   }
 
   useEffect(() => {
-    fetchData(null,true);
+    fetchData(null, true);
   }, []);
 
   return (
@@ -70,7 +85,7 @@ const ExceptionList = () => {
           loading={loading}
           //scroll={{ x: 1400 }}
           onChange={(e, filters, sorter) => {
-            setPageSize(e.pageSize)
+            setPageSize(e.pageSize);
             if (sorter.columnKey) {
               let sort = sorter.order == "descend" ? 0 : 1;
               setTimeout(() => {
@@ -112,7 +127,7 @@ const ExceptionList = () => {
                 </p>
               </div>
             ),
-            pageSize:pageSize
+            pageSize: pageSize,
           }}
           //rowKey={(record) => record.ip}
           //checkedState={[checkedList, setCheckedList]}
@@ -144,7 +159,9 @@ const getColumnsConfig = (
         return (
           <Tooltip title={text}>
             <Badge dot={record.is_read === 0} offset={[5, 2]}>
-              <span style={{fontSize:12}}>{record.instance_name ? record.instance_name : "-"}</span>
+              <span style={{ fontSize: 12 }}>
+                {record.instance_name ? record.instance_name : "-"}
+              </span>
             </Badge>
           </Tooltip>
         );
@@ -299,7 +316,15 @@ const getColumnsConfig = (
             )}
 
             {record.type == "host" ? (
-              ""
+              <a
+                onClick={() =>
+                  history.push({
+                    pathname: "/status-patrol/patrol-inspection-record",
+                  })
+                }
+              >
+                分析
+              </a>
             ) : record.log_url ? (
               <a
                 onClick={() => {

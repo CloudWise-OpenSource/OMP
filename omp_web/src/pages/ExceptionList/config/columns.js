@@ -26,7 +26,9 @@ const getColumnsConfig = (
         return (
           <Tooltip title={text}>
             <Badge dot={record.is_read === 0} offset={[5, 2]}>
-              <span style={{fontSize:12}}>{record.instance_name ? record.instance_name : "-"}</span>
+              <span style={{ fontSize: 12 }}>
+                {record.instance_name ? record.instance_name : "-"}
+              </span>
             </Badge>
           </Tooltip>
         );
@@ -100,7 +102,7 @@ const getColumnsConfig = (
       dataIndex: "type",
       usefilter: true,
       queryRequest: queryRequest,
-      initfilter:initfilter,
+      initfilter: initfilter,
       filterMenuList: [
         {
           value: "service",
@@ -183,7 +185,15 @@ const getColumnsConfig = (
             )}
 
             {record.type == "host" ? (
-              ""
+              <a
+                onClick={() =>
+                  history.push({
+                    pathname: "/status-patrol/patrol-inspection-record",
+                  })
+                }
+              >
+                分析
+              </a>
             ) : record.log_url ? (
               <a
                 onClick={() => {

@@ -17,9 +17,13 @@ export const DetailHost = ({
   setIsShowDrawer,
   loading,
   data,
+  baseEnv,
 }) => {
   // 视口宽度
   const viewHeight = useSelector((state) => state.layouts.viewSize.height);
+  // 组件图片字符串
+  const componentImgStr = `<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg t="1634633143436" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="2388" xmlns:xlink="http://www.w3.org/1999/xlink" width="200" height="200"><defs><style type="text/css"></style></defs><path d="M882.521 282.988L527.534 78.127c-8.98-5.219-20.146-5.219-29.127 0L143.42 282.988c-8.98 5.219-14.563 14.806-14.563 25.244v409.842c0 10.437 5.583 20.025 14.563 25.244L498.407 948.3c4.491 2.548 9.588 3.884 14.563 3.884s10.073-1.334 14.563-3.884L882.52 743.318c8.98-5.219 14.563-14.806 14.563-25.244V308.232c0-10.437-5.583-20.025-14.563-25.244zM838.83 701.326L512.971 889.438 187.112 701.326V325.101l325.859-188.112L838.83 325.101v376.225z" p-id="2389"></path><path d="M270.124 383.476c-8.01 13.957-3.277 31.797 10.681 39.807l202.676 116.994v231.439c0 16.142 12.986 29.127 29.127 29.127s29.127-12.986 29.127-29.127V540.641l203.404-117.479c13.957-8.01 18.69-25.851 10.681-39.807s-25.851-18.69-39.807-10.681L512.973 489.91l-203.04-117.236c-13.957-8.01-31.676-3.155-39.807 10.801z" p-id="2390"></path></svg>`;
+
   const wrapperRef = useRef(null);
   return (
     <Drawer
@@ -271,15 +275,62 @@ export const DetailHost = ({
               padding: 20,
             }}
           >
-            <div style={{ paddingBottom: 35, fontSize: 15, fontWeight: 500 }}>
-              部署组件信息
-            </div>
-            <div style={{ display: "flex", paddingTop: 15, paddingBottom: 15 }}>
-              <div style={{ flex: 1 }}>部署组件</div>
-              <div style={{ flex: 1 }}>
-                {isShowDrawer.record.service_num} 个
+            <Spin spinning={loading} wrapperClassName={styles.omp_spin_wrapper}>
+              <div style={{ paddingBottom: 35, fontSize: 15, fontWeight: 500 }}>
+                部署组件信息
               </div>
-            </div>
+              <div
+                style={{ display: "flex", paddingTop: 15, paddingBottom: 15 }}
+              >
+                <div style={{ flex: 1 }}>部署组件</div>
+                <div style={{ flex: 1 }}>
+                  {isShowDrawer.record.service_num} 个
+                </div>
+              </div>
+              <div
+                style={{ display: "flex", paddingTop: 15, paddingBottom: 15 }}
+              >
+                <div style={{ flex: 1 }}>基础环境</div>
+                <div
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    marginLeft: -20,
+                  }}
+                >
+                  {baseEnv.length > 0 ? (
+                    baseEnv.map((item) => {
+                      return (
+                        <Tooltip
+                          title={`${item.service__app_name} ${item.service__app_version}`}
+                        >
+                          <div
+                            style={{
+                              width: 32,
+                              height: 32,
+                              borderRadius: "50%",
+                              border: "1px solid #a8d0f8",
+                              display: "flex",
+                              justifyContent: "center",
+                              alignItems: "center",
+                              marginLeft: 4,
+                              marginRight: 4,
+                              overflow: "hidden",
+                            }}
+                            dangerouslySetInnerHTML={{
+                              __html: item.service__app_logo || componentImgStr,
+                            }}
+                            key={item.service__app_name}
+                          ></div>
+                        </Tooltip>
+                      );
+                    })
+                  ) : (
+                    <div style={{ marginLeft: 10 }}>无</div>
+                  )}
+                </div>
+              </div>
+            </Spin>
           </div>
 
           <div
@@ -376,7 +427,7 @@ const getColumnsConfig = (
   setIsShowDrawer,
   setRow,
   setUpdateMoadlVisible,
-  fetchHistoryData,
+  fetchHostDetail,
   setCloseMaintainModal,
   setOpenMaintainModal,
   setShowIframe,
@@ -399,7 +450,7 @@ const getColumnsConfig = (
           return (
             <a
               onClick={() => {
-                fetchHistoryData(record.id);
+                fetchHostDetail(record.id);
                 setIsShowDrawer({
                   isOpen: true,
                   record: record,

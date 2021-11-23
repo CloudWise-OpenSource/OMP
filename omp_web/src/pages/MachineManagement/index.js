@@ -19,6 +19,7 @@ import { useDispatch } from "react-redux";
 import getColumnsConfig, { DetailHost } from "./config/columns";
 import { DownOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 import { useHistory, useLocation } from "react-router-dom";
+import { use } from "echarts";
 
 const MachineManagement = () => {
   const location = useLocation();
@@ -70,6 +71,9 @@ const MachineManagement = () => {
 
   // 主机详情历史数据
   const [historyData, setHistoryData] = useState([]);
+
+  // 主机详情基础组件信息
+  const [baseEnvData, setBaseEnvData] = useState([]);
 
   // 主机详情loading
   const [historyLoading, setHistoryLoading] = useState([]);
@@ -208,16 +212,34 @@ const MachineManagement = () => {
       });
   };
 
-  const fetchHistoryData = (id) => {
+  // const fetchHistoryData = (id) => {
+  //   setHistoryLoading(true);
+  //   fetchGet(apiRequest.machineManagement.operateLog, {
+  //     params: {
+  //       host_id: id,
+  //     },
+  //   })
+  //     .then((res) => {
+  //       handleResponse(res, (res) => {
+  //         setHistoryData(res.data);
+  //       });
+  //     })
+  //     .catch((e) => console.log(e))
+  //     .finally(() => {
+  //       setHistoryLoading(false);
+  //     });
+  // };
+
+  // 获取主机详情
+  const fetchHostDetail = (id) => {
     setHistoryLoading(true);
-    fetchGet(apiRequest.machineManagement.operateLog, {
-      params: {
-        host_id: id,
-      },
-    })
+    fetchGet(`${apiRequest.machineManagement.hostDetail}${id}`)
       .then((res) => {
         handleResponse(res, (res) => {
-          setHistoryData(res.data);
+          const { deployment_information, history } = res.data;
+          setHistoryData(history);
+          setBaseEnvData(deployment_information);
+          console.log(deployment_information);
         });
       })
       .catch((e) => console.log(e))
@@ -476,7 +498,7 @@ const MachineManagement = () => {
             // }}
             fetchData={(value) => {
               fetchData(
-                { current: 1, pageSize: pagination.pageSize, },
+                { current: 1, pageSize: pagination.pageSize },
                 { ip: value },
                 pagination.ordering
               );
@@ -521,7 +543,7 @@ const MachineManagement = () => {
             setIsShowDrawer,
             setRow,
             setUpdateMoadlVisible,
-            fetchHistoryData,
+            fetchHostDetail,
             setCloseMaintainOneModal,
             setOpenMaintainOneModal,
             setShowIframe,
@@ -600,6 +622,7 @@ const MachineManagement = () => {
         setIsShowDrawer={setIsShowDrawer}
         loading={historyLoading}
         data={historyData}
+        baseEnv={baseEnvData}
       />
       <OmpDrawer showIframe={showIframe} setShowIframe={setShowIframe} />
 
