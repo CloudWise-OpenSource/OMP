@@ -236,3 +236,6 @@ LOGGING = {
 
 # grafana跳转使用
 X_FRAME_OPTIONS = 'SAMEORIGIN'
+
+# 发邮件使用,是否使用ssl，使用端口：465/994 不使用：25
+EMAIL_USE_SSL = True
