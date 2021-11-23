@@ -7,6 +7,7 @@
 # Introduction:
 
 import logging
+from collections import OrderedDict
 
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
@@ -15,9 +16,10 @@ from rest_framework.mixins import (
 )
 
 from db_models.models import (
-    ApplicationHub, ProductHub, Product
+    ApplicationHub, ProductHub, Product, Service,
+    MainInstallHistory, DetailInstallHistory
 )
-
+from utils.common.exceptions import ValidationError
 from app_store.install_utils import ServiceArgsSerializer
 from app_store.new_install_utils import BaseRedisData
 
@@ -199,3 +201,92 @@ class GetInstallArgsByIpView(GenericViewSet, ListModelMixin):
 class CreateInstallPlanView(GenericViewSet, CreateModelMixin):
     serializer_class = CreateInstallPlanSerializer
     post_description = "校验并生成部署计划"
+
+
+class ListServiceByIpView(GenericViewSet, ListModelMixin):
+    def list(self, request, *args, **kwargs):
+        """
+        根据ip显示主机上安装的服务
+        :param request:
+        :param args:
+        :param kwargs:
+        :return:
+        """
+        ip = request.query_params.get("ip")
+        _data = Service.objects.filter(ip=ip).values(
+            "service__app_name", "service_instance_name"
+        )
+        return Response(data=list(_data))
+
+
+class ShowInstallProcessView(GenericViewSet, ListModelMixin):
+    def list(self, request, *args, **kwargs):
+        """
+        显示安装的进度信息
+        :param request:
+        :param args:
+        :param kwargs:
+        :return:
+        """
+        unique_key = request.query_params.get("unique_key")
+        main_obj = MainInstallHistory.objects.filter(
+            operation_uuid=unique_key).last()
+        if not main_obj:
+            raise ValidationError(f"{unique_key}不存在!")
+        main_status = main_obj.install_status
+        install_detail_queryset = DetailInstallHistory.objects.filter(
+            main_install_history=main_obj
+        ).values(
+            "service__service__app_name",
+            "service__ip",
+            "install_step_status"
+        )
+        detail_dic = OrderedDict()
+        for item in install_detail_queryset:
+            app_name = item["service__service__app_name"]
+            if app_name not in detail_dic:
+                detail_dic[app_name] = list()
+            detail_dic[app_name].append({
+                "ip": item["service__ip"],
+                "status": item["install_step_status"]
+            })
+        data = {
+            "status": main_status,
+            "detail": detail_dic
+        }
+        return Response(data=data)
+
+
+class ShowSingleServiceInstallLogView(GenericViewSet, ListModelMixin):
+    def list(self, request, *args, **kwargs):
+        """
+        查找某服务的安装日志
+        :param request:
+        :param args:
+        :param kwargs:
+        :return:
+        """
+        ip = request.query_params.get("ip")
+        app_name = request.query_params.get("app_name")
+        unique_key = request.query_params.get("unique_key")
+        lst = [
+            "send_msg", "unzip_msg", "install_msg",
+            "init_msg", "start_msg", "post_action_msg"
+        ]
+        main_obj = MainInstallHistory.objects.filter(
+            operation_uuid=unique_key
+        ).last()
+        detail = DetailInstallHistory.objects.filter(
+            main_install_history=main_obj,
+            service__service__app_name=app_name,
+            service__ip=ip
+        ).last()
+
+        def get_log(detail):
+            _log = ""
+            for item in lst:
+                _log += getattr(detail, item, "")
+            return _log
+
+        log = get_log(detail)
+        return Response(data={"log": log})
