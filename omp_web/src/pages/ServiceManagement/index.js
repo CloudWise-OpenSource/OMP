@@ -253,6 +253,8 @@ const ServiceManagement = () => {
       body: {
         data: data.map((i) => ({
           id: i.id,
+          action: "4",
+          operation_user:localStorage.getItem("username")
         })),
       },
     })

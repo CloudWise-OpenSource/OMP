@@ -11,9 +11,9 @@ const DeployInstanceRow = ({ data, form }) => {
     if (check) {
       form.setFieldsValue({
         [`${data.name}`]: JSON.stringify({
-          name: data.exist_instance[0].name,
-          id: data.exist_instance[0].id,
-          type: data.exist_instance[0].type,
+          name: data.exist_instance[0]?.name,
+          id: data.exist_instance[0]?.id,
+          type: data.exist_instance[0]?.type,
         }),
       });
     }

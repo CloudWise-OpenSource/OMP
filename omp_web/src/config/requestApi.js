@@ -105,6 +105,13 @@ export const apiRequest = {
 
     // 服务查询安装记录
     serviceInstallHistoryDetail: "/api/appStore/serviceInstallHistoryDetail/",
+
+    // 服务批量安装选择应用服务列表
+    queryBatchInstallationServiceList: "/api/appStore/batchInstallEntrance/",
+    // 服务批量安装选择应用确认操作
+    createInstallInfo: "/api/appStore/createInstallInfo/",
+    // 批量安装
+    checkInstallInfo:"/api/appStore/checkInstallInfo/",
   },
   inspection: {
     inspectionList: "/api/inspection/history/",

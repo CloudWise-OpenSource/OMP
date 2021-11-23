@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { randomNumber } from "@/utils/utils";
 
 const RenderArr = ({ data, form }) => {
-  const [deployValue, setDeployValue] = useState(data.deploy_mode[0].key);
+  const [deployValue, setDeployValue] = useState(data.deploy_mode[0]?.key);
 
   useEffect(() => {
     form.setFieldsValue({

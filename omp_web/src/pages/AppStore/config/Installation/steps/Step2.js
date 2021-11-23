@@ -16,7 +16,6 @@ const Step2 = ({ setStepNum }) => {
   const ipList = useSelector((state) => state.installation.ipList);
   useEffect(() => {
     reduxDispatch(
-      // 这里做一个视口查询，存入store, 其他组件可以根据视口大小进行自适应
       getDataSourceChangeAction({
         doucApi: {
           num: 1,
