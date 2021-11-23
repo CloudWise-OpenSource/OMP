@@ -179,7 +179,6 @@ const PatrolInspectionRecord = () => {
       },
     })
       .then((res) => {
-        console.log(res);
         if (res && res.data) {
           if (res.data.code == 1) {
             message.warning(res.data.message);

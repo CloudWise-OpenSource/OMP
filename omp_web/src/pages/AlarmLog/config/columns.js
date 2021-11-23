@@ -151,13 +151,8 @@ const getColumnsConfig = (
     },
     {
       title: "更新时间",
-<<<<<<< HEAD
-      width:180,
-      key: "create_time",
-=======
       width: 180,
-      key: "create_tim",
->>>>>>> 587d13a (完成优化项、邮件相关页面以及指标页面)
+      key: "create_time",
       dataIndex: "create_time",
       align: "center",
       //ellipsis: true,
