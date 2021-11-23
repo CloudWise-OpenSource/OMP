@@ -38,13 +38,10 @@ const breadcrumbNameMap = {
   service_management: "服务管理",
   application_installation: "应用安装",
   component_installation: "组件安装",
-<<<<<<< HEAD
-  "installation":"批量安装"
-=======
+  installation: "批量安装",
   "email-settings": "邮件管理",
   "rule-center": "指标中心",
   "default-rule": "默认指标",
->>>>>>> 587d13a (完成优化项、邮件相关页面以及指标页面)
 };
 
 // 基于面包屑组件的一层封装，用于匹配当前路由地址，动态展示页面路径

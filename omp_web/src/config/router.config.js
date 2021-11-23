@@ -13,12 +13,9 @@ import PatrolInspectionDetail from "@/pages/PatrolInspectionRecord/config/detail
 import ServiceManagement from "@/pages/ServiceManagement";
 import ComponentInstallation from "@/pages/AppStore/config/ComponentInstallation";
 import ApplicationInstallation from "@/pages/AppStore/config/ApplicationInstallation";
-<<<<<<< HEAD
 import Installation from "@/pages/AppStore/config/Installation";
-=======
 import EmailSettings from "src/pages/EmailSettings";
 import RuleCenter from "src/pages/RuleCenter";
->>>>>>> 587d13a (完成优化项、邮件相关页面以及指标页面)
 import {
   DesktopOutlined,
   ClusterOutlined,
