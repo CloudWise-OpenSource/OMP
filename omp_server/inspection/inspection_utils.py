@@ -19,14 +19,16 @@ def send_email(inspection, emails):
     """
     if not inspection:
         return False, "无巡检对象"
-    if not inspection.file_name:
+    inspection_report = InspectionReport.objects.filter(
+        inst_id=inspection.id).first()
+    if not inspection_report.file_name:
         return False, "未找到巡检报告！"
     inspection.send_email_result = inspection.ING
     inspection.save()
     reason = ""
     try:
         connection = ModelSettingEmailBackend()
-        content_name = f"Send{inspection.__class__.__name__}EmailContent"
+        content_name = "SendEmailContent"  # TODO 等待发送邮件模式细分，暂默认
         content = getattr(send_email_module, content_name)(inspection)
         fail_user = many_send(connection, content, emails)
     except Exception as e:
@@ -102,8 +104,9 @@ def create_send_inspection_html(inspection):
         inspection.email_fail_reason = result
         inspection.save()
         return False, result
-    inspection.file_name = result
+    inspection_report.file_name = result
     inspection.save()
+    inspection_report.save()
     return True, result
 
 

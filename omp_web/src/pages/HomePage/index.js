@@ -25,45 +25,47 @@ const Homepage = () => {
   const [dataSource, setDataSource] = useState({});
 
   // data数据源，key聚合数据的唯一值
-  const dataAggregation = (data, key)=>{
-    let arr = []
-    data?.map((i,d)=>{
-      let isExistenceArr = arr.filter(e=>e[key] == i[key])
-      console.log(isExistenceArr)
-      if(isExistenceArr.length == 0){
+  const dataAggregation = (data, key) => {
+    let arr = [];
+    data?.map((i, d) => {
+      let isExistenceArr = arr.filter((e) => e[key] == i[key]);
+      // console.log(isExistenceArr);
+      if (isExistenceArr.length == 0) {
         arr.push({
-          [key]:i[key],
-          severity:i.severity,
-          info:[
+          [key]: i[key],
+          severity: i.severity,
+          info: [
             {
-              ...i
-            }
-          ]
-        })
-      }else{
-        let m = data[d]
-        console.log(m)
-      let idx = arr.indexOf(isExistenceArr[0])
-       arr[idx] = {
-        [key]:i[key],
-        severity:i.severity,
-        info:[
-          ...arr[idx].info,
-          {
-            ...m,
-          }
-        ]
-       }
+              ...i,
+            },
+          ],
+        });
+      } else {
+        let m = data[d];
+        // console.log(m);
+        let idx = arr.indexOf(isExistenceArr[0]);
+        arr[idx] = {
+          [key]: i[key],
+          severity: i.severity,
+          info: [
+            ...arr[idx].info,
+            {
+              ...m,
+            },
+          ],
+        };
       }
-    })
-    return arr
-  }
+    });
+    console.log(arr);
+    return arr;
+  };
 
   const queryData = () => {
     setLoading(true);
     fetchGet(apiRequest.homepage.instrumentPanel)
       .then((res) => {
         handleResponse(res, (res) => {
+          console.log(res);
           setDataSource(res.data);
         });
       })
@@ -253,8 +255,8 @@ const Homepage = () => {
                   <div
                     style={
                       dataSource.service?.service_info_exc_count > 0
-                        ? { cursor: "pointer",paddingTop:10 }
-                        : {paddingTop:10 }
+                        ? { cursor: "pointer", paddingTop: 10 }
+                        : { paddingTop: 10 }
                     }
                     onClick={() =>
                       dataSource.service?.service_info_exc_count &&
@@ -343,8 +345,8 @@ const Homepage = () => {
                   <div
                     style={
                       dataSource.component?.component_info_exc_count > 0
-                        ? { cursor: "pointer",paddingTop:10 }
-                        : {paddingTop:10}
+                        ? { cursor: "pointer", paddingTop: 10 }
+                        : { paddingTop: 10 }
                     }
                     onClick={() =>
                       dataSource.component?.component_info_exc_count &&
@@ -402,9 +404,9 @@ const Homepage = () => {
                       dataSource.database?.database_info_all_count &&
                       history.push({
                         pathname: "/application_management/service_management",
-                        state:{
-                          label_name:"数据库"
-                        }
+                        state: {
+                          label_name: "数据库",
+                        },
                       })
                     }
                     style={
@@ -433,8 +435,8 @@ const Homepage = () => {
                   <div
                     style={
                       dataSource.database?.database_info_exc_count > 0
-                        ? { cursor: "pointer", paddingTop:10 }
-                        : { paddingTop:10}
+                        ? { cursor: "pointer", paddingTop: 10 }
+                        : { paddingTop: 10 }
                     }
                     onClick={() =>
                       dataSource.database?.database_info_exc_count &&
@@ -587,7 +589,7 @@ const Homepage = () => {
                   },
                 });
               }}
-              data={dataAggregation(dataSource.host?.host_info_list,"ip")}
+              data={dataAggregation(dataSource.host?.host_info_list, "ip")}
             />
           </div>
 
@@ -615,7 +617,10 @@ const Homepage = () => {
               }}
               title={"应用服务状态"}
               // hasNotMonitored
-              data={dataAggregation(dataSource.service?.service_info_list,"instance_name")}
+              data={dataAggregation(
+                dataSource.service?.service_info_list,
+                "instance_name"
+              )}
             />
           </div>
 
@@ -643,7 +648,10 @@ const Homepage = () => {
               }}
               // hasNotMonitored
               title={"基础组件状态"}
-              data={dataAggregation(dataSource.component?.component_info_list,"instance_name")}
+              data={dataAggregation(
+                dataSource.component?.component_info_list,
+                "instance_name"
+              )}
             />
           </div>
 
@@ -656,7 +664,7 @@ const Homepage = () => {
                   pathname: "/application_management/service_management",
                   state: {
                     ip: data.ip,
-                    label_name:"数据库"
+                    label_name: "数据库",
                   },
                 });
               }}
@@ -671,7 +679,10 @@ const Homepage = () => {
               }}
               // hasNotMonitored
               title={"数据库状态"}
-              data={dataAggregation(dataSource.database?.database_info_list,"instance_name")}
+              data={dataAggregation(
+                dataSource.database?.database_info_list,
+                "instance_name"
+              )}
             />
           </div>
 

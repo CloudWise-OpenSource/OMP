@@ -478,6 +478,12 @@ class InspectionHistory(models.Model):
         verbose_name = verbose_name_plural = "巡检记录历史表"
         ordering = ("-start_time",)
 
+    def send_email_content(self):
+        return f"""
+                巡检任务名称：{self.inspection_name}\n
+                巡检时间：{self.start_time.strftime("%Y-%m-%d %H:%M:%S")}
+                """
+
 
 class InspectionCrontab(models.Model):
     """巡检任务 定时配置表"""

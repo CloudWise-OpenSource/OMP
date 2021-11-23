@@ -300,7 +300,7 @@ class InspectionSendEmailAPIView(GenericViewSet, CreateModelMixin):
     def create(self, request, *args, **kwargs):
         inspection_id = request.data.get("id")
         inspection_module = request.data.get("module")
-        if inspection_module not in ("DeepInspection", "NormalInspection"):
+        if inspection_module not in ("host", "service", "deep"):
             return Response(data={"code": 1, "message": "请选择正确的巡检对象！"})
         to_users = request.data.get("to_users")
         if not to_users:

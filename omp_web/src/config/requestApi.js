@@ -20,6 +20,8 @@ export const apiRequest = {
     // 主机管理
     hosts: "/api/hosts/hosts/",
     ipList: "/api/hosts/ips/",
+    // 主机详情
+    hostDetail: "/api/hosts/hostsDetail/",
     // 主机名和ip地址校验接口
     checkHost: "/api/hosts/fields/",
     operateLog: "/api/hosts/operateLog/",
@@ -42,6 +44,10 @@ export const apiRequest = {
     monitorurl: "/api/promemonitor/monitorurl/",
     // 修改配置监控
     multiple_update: "/api/promemonitor/monitorurl/multiple_update/",
+    // 查询推送配置
+    queryPushConfig: "/api/promemonitor/getSendAlertSetting/",
+    // 更新邮件配置
+    updatePushConfig: "/api/promemonitor/updateSendAlertSetting/",
   },
   Alert: {
     // 告警记录页面查询
@@ -123,5 +129,17 @@ export const apiRequest = {
     servicesList: "/api/inspection/services/",
     // 巡检导出
     download: "/download-inspection",
+    // 查询推送配置
+    queryPushConfig: "/api/inspection/inspectionSendEmailSetting/",
+    // 更新邮件配置
+    updatePushConfig: "/api/inspection/inspectionSendEmailSetting/",
+    // 推送邮件
+    pushEmail: "/api/inspection/inspectionSendEmail/",
+  },
+  emailSetting: {
+    // 查询邮件全局设置
+    querySetting: "/api/promemonitor/getSendEmailConfig/",
+    // 更新邮件全局设置
+    updateSetting: "/api/promemonitor/updateSendEmailConfig/",
   },
 };

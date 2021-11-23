@@ -25,7 +25,9 @@ const getColumnsConfig = (
         return (
           <Tooltip title={text}>
             <Badge dot={record.is_read === 0} offset={[5, 2]}>
-              <span style={{fontSize:12}}>{record.alert_instance_name ? record.alert_instance_name : "-"}</span>
+              <span style={{ fontSize: 12 }}>
+                {record.alert_instance_name ? record.alert_instance_name : "-"}
+              </span>
             </Badge>
           </Tooltip>
         );
@@ -135,7 +137,7 @@ const getColumnsConfig = (
     },
     {
       title: "告警时间",
-      width:180,
+      width: 180,
       key: "alert_time",
       dataIndex: "alert_time",
       align: "center",
@@ -149,7 +151,7 @@ const getColumnsConfig = (
     },
     {
       title: "更新时间",
-      width:180,
+      width: 180,
       key: "create_time",
       dataIndex: "create_time",
       align: "center",
@@ -169,6 +171,7 @@ const getColumnsConfig = (
       fixed: "right",
       align: "center",
       render: function renderFunc(text, record, index) {
+        console.log(record);
         return (
           <div style={{ display: "flex", justifyContent: "space-around" }}>
             {record.monitor_path ? (
@@ -193,7 +196,15 @@ const getColumnsConfig = (
             )}
 
             {record.alert_type == "host" ? (
-              ""
+              <a
+                onClick={() =>
+                  history.push({
+                    pathname: "/status-patrol/patrol-inspection-record",
+                  })
+                }
+              >
+                分析
+              </a>
             ) : record.monitor_log ? (
               <a
                 onClick={() => {
