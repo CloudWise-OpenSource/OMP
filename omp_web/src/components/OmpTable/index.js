@@ -13,7 +13,6 @@ import { useSelector } from "react-redux";
 import OmpTableFilter from "./components/OmpTableFilter";
 import { SettingOutlined } from "@ant-design/icons";
 import { columnsConfig } from "src/utils/utils";
-import { createTrue } from "typescript";
 // import * as R from "ramda"
 
 const OmpTable = ({
@@ -60,7 +59,7 @@ const OmpTable = ({
             <Tree
               style={{
                 left: -20,
-                fontSize:13
+                fontSize: 13,
               }}
               checkable
               switcherIcon={<SettingOutlined />}
@@ -68,11 +67,11 @@ const OmpTable = ({
               onCheck={(checkedKeys, info) => {
                 setSelectKeys(checkedKeys);
               }}
-              treeData={columns.map((item, idx)=>{
+              treeData={columns.map((item, idx) => {
                 return {
                   ...item,
-                  disabled : idx == columns.length - 1 ? true:false
-                }
+                  disabled: idx == columns.length - 1 ? true : false,
+                };
               })}
               checkedKeys={selectKeys}
             />
@@ -157,7 +156,7 @@ const OmpTable = ({
       scroll={viewWidth > 1900 ? null : { x: 1400 }}
       {...residualParam}
       columns={extensionsColumns.filter((i) => {
-        return selectKeys.includes(i.dataIndex)
+        return selectKeys.includes(i.dataIndex);
       })}
       //size="small"
       rowSelection={
@@ -165,13 +164,13 @@ const OmpTable = ({
           onSelect: (record, selected, selectedRows) => {
             setCheckedList({
               ...checkedList,
-              [residualParam.pagination.current]: selectedRows,
+              [residualParam.pagination.current || "data"]: selectedRows,
             });
           },
           onSelectAll: (selected, selectedRows, changeRows) => {
             setCheckedList({
               ...checkedList,
-              [residualParam.pagination.current]: selectedRows.filter(
+              [residualParam.pagination.current || "data"]: selectedRows.filter(
                 (item) => item
               ),
             });

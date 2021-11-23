@@ -21,11 +21,15 @@ import ReleaseModal from "./config/ReleaseModal.js";
 import ScanServerModal from "./config/ScanServerModal";
 // 批量安装弹框组件
 import BatchInstallationModal from "./config/BatchInstallationModal";
-import { getTabKeyChangeAction } from "./store/actionsCreators";
+import {
+  getTabKeyChangeAction,
+  getUniqueKeyChangeAction,
+} from "./store/actionsCreators";
 
 const AppStore = () => {
   // appStoreTabKey
   const appStoreTabKey = useSelector((state) => state.appStore.appStoreTabKey);
+
   const dispatch = useDispatch();
   // 视口高度
   const viewHeight = useSelector((state) => state.layouts.viewSize.height);
@@ -58,6 +62,9 @@ const AppStore = () => {
 
   // 批量安装弹框
   const [bIModalVisibility, setBIModalVisibility] = useState(false);
+
+  // 批量安装的应用服务列表
+  const [bIserviceList, setBIserviceList] = useState([]);
 
   function fetchData(pageParams = { current: 1, pageSize: 8 }, searchParams) {
     setLoading(true);
@@ -101,6 +108,24 @@ const AppStore = () => {
         //fetchIPlist();
       });
   }
+
+  // 获取批量安装应用服务列表
+  const queryBatchInstallationServiceList = () => {
+    setLoading(true);
+    fetchGet(apiRequest.appStore.queryBatchInstallationServiceList)
+      .then((res) => {
+        handleResponse(res, (res) => {
+          if (res.data && res.data.data) {
+            setBIserviceList(res.data.data);
+            dispatch(getUniqueKeyChangeAction(res.data.unique_key));
+          }
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setLoading(false);
+      });
+  };
 
   const fetchSearchlist = () => {
     //setSearchLoading(true);
@@ -237,6 +262,7 @@ const AppStore = () => {
               style={{ marginRight: 10 }}
               type="primary"
               onClick={() => {
+                queryBatchInstallationServiceList();
                 setBIModalVisibility(true);
               }}
             >
@@ -382,6 +408,7 @@ const AppStore = () => {
       <BatchInstallationModal
         bIModalVisibility={bIModalVisibility}
         setBIModalVisibility={setBIModalVisibility}
+        dataSource={bIserviceList}
       />
     </div>
   );

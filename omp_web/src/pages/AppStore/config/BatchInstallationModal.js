@@ -16,101 +16,29 @@ import { apiRequest } from "@/config/requestApi";
 import { handleResponse } from "@/utils/utils";
 import { OmpMessageModal, OmpTable } from "@/components";
 import { useHistory, useLocation } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import {
+  getStep1ChangeAction,
+} from "./Installation/store/actionsCreators";
 
 const BatchInstallationModal = ({
   bIModalVisibility,
   setBIModalVisibility,
+  dataSource,
 }) => {
+  const uniqueKey = useSelector((state) => state.appStore.uniqueKey);
+
+  const reduxDispatch = useDispatch();
+
   const [loading, setLoading] = useState(false);
 
   const history = useHistory();
 
-  const [dataSource, setDataSource] = useState([
-    {
-      name: "douc",
-      id: "douc",
-      version: ["5.3.0", "5.3.1"],
-    },
-    {
-      name: "cmdb",
-      id: "cmdb",
-      version: ["5.3.0", "5.3.1"],
-    },
-    {
-      name: "cmdb1",
-      id: "cmdb1",
-      version: ["5.3.0", "5.3.1"],
-    },
-    {
-      name: "cmdb2",
-      id: "cmdb2",
-      version: ["5.3.0", "5.3.1"],
-    },
-    {
-      name: "cmdb3",
-      id: "cmdb3",
-      version: ["5.3.0", "5.3.1"],
-    },
-    {
-      name: "cmdb4",
-      id: "cmdb4",
-      version: ["5.3.0", "5.3.1"],
-    },
-    {
-      name: "cmdb5",
-      id: "cmdb5",
-      version: ["5.3.0", "5.3.1"],
-    },
-    {
-      name: "cmdb6",
-      id: "cmdb6",
-      version: ["5.3.0", "5.3.1"],
-    },
-    {
-      name: "cmdb11",
-      id: "cmdb11",
-      version: ["5.3.0", "5.3.1"],
-    },
-    {
-      name: "cmdb22",
-      id: "cmdb22",
-      version: ["5.3.0", "5.3.1"],
-    },
-    {
-      name: "cmd2b",
-      id: "cmd2b",
-      version: ["5.3.0", "5.3.1"],
-    },
-    {
-      name: "cmd1b",
-      id: "cmd1b",
-      version: ["5.3.0", "5.3.1"],
-    },
-
-    {
-      name: "cmd123b",
-      id: "cmd123b",
-      version: ["5.3.0", "5.3.1"],
-    },
-    {
-      name: "cm123123db",
-      id: "cm123123db",
-      version: ["5.3.0", "5.3.1"],
-    },
-    {
-      name: "cm123121233db",
-      id: "cm123121233db",
-      version: ["5.3.0", "5.3.1"],
-    },
-    {
-      name: "c1admdb",
-      id: "c1admdb",
-      version: ["5.3.0", "5.3.1"],
-    },
-  ]);
-
   //选中的数据
   const [checkedList, setCheckedList] = useState({});
+
+  //应用服务选择的版本号
+  const versionInfo = useRef({});
 
   const columns = [
     {
@@ -137,6 +65,9 @@ const BatchInstallationModal = ({
             bordered={false}
             defaultValue={text[0]}
             style={{ width: 120 }}
+            onSelect={(v) => {
+              versionInfo.current[record.name] = v;
+            }}
           >
             {text.map((item) => {
               return (
@@ -150,6 +81,34 @@ const BatchInstallationModal = ({
       },
     },
   ];
+
+  // 高可用是否开启
+  const [highAvailabilityCheck, setHighAvailabilityCheck] = useState(false);
+
+  // 选择确认请求
+  const createInstallInfo = (install_product) => {
+    setLoading(true);
+    fetchPost(apiRequest.appStore.createInstallInfo, {
+      body: {
+        high_availability: highAvailabilityCheck,
+        install_product: install_product,
+        unique_key: uniqueKey,
+      },
+    })
+      .then((res) => {
+        //console.log(operateObj[operateAciton])
+        handleResponse(res, (res) => {
+          if(res.data && res.data.data){
+            reduxDispatch(getStep1ChangeAction(res.data.data))
+          }
+          history.push("/application_management/app_store/installation");
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setLoading(false);
+      });
+  };
 
   return (
     <Modal
@@ -184,9 +143,21 @@ const BatchInstallationModal = ({
             //scroll={{ x: 1900 }}
             columns={columns}
             dataSource={dataSource}
-            rowKey={(record) => record.id}
+            rowKey={(record) => {
+              return record.name;
+            }}
             checkedState={[checkedList, setCheckedList]}
             pagination={false}
+            notSelectable={(record) => ({
+              // is_continue的不能选中
+              disabled: !record.is_continue,
+            })}
+            rowSelection={{
+              selectedRowKeys: Object.keys(checkedList)
+                .map((k) => checkedList[k])
+                .flat(1)
+                .map((item) => item?.name),
+            }}
           />
         </div>
         <div
@@ -199,7 +170,13 @@ const BatchInstallationModal = ({
         >
           <div style={{ display: "flex", alignItems: "center" }}>
             高可用
-            <Switch style={{ marginLeft: 10 }} defaultChecked />
+            <Switch
+              style={{ marginLeft: 10 }}
+              checked={highAvailabilityCheck}
+              onChange={(e) => {
+                setHighAvailabilityCheck(e);
+              }}
+            />
           </div>
           <div style={{ display: "flex" }}>
             <div style={{ marginRight: 15 }}>
@@ -228,8 +205,20 @@ const BatchInstallationModal = ({
             <Button
               type="primary"
               //style={{ marginRight: 16 }}
+              disabled={
+                Object.keys(checkedList)
+                  .map((k) => checkedList[k])
+                  .flat(1).length == 0
+              }
               onClick={() => {
-                  history.push("/application_management/app_store/installation")
+                let install_product = checkedList.data.map((item) => {
+                  return {
+                    name: item.name,
+                    version: versionInfo.current[item.name] || item.version[0],
+                  };
+                });
+                createInstallInfo(install_product);
+                // history.push("/application_management/app_store/installation")
               }}
             >
               确认选择
