@@ -134,8 +134,7 @@ const PatrolStrategy = () => {
           is_start_crontab: queryData.isOpen.value ? 0 : 1,
           crontab_detail: {
             hour: timeInfo.time.format("HH:mm").split(":")[0] || "*",
-            minute:
-            timeInfo.time.format("HH:mm").split(":")[1] || "*",
+            minute: timeInfo.time.format("HH:mm").split(":")[1] || "*",
             month: "*",
             day_of_week: timeInfo.week || "*",
             day: timeInfo.month || "*",
@@ -167,8 +166,7 @@ const PatrolStrategy = () => {
           is_start_crontab: queryData.isOpen.value ? 0 : 1,
           crontab_detail: {
             hour: timeInfo.time.format("HH:mm").split(":")[0] || "*",
-            minute:
-            timeInfo.time.format("HH:mm").split(":")[1] || "*",
+            minute: timeInfo.time.format("HH:mm").split(":")[1] || "*",
             month: "*",
             day_of_week: timeInfo.week || "*",
             day: timeInfo.month || "*",
@@ -474,11 +472,12 @@ const PatrolStrategy = () => {
               </Input.Group>
             </Form.Item>
           )}
-          <Form.Item
-            style={{ paddingTop: 30 }}
-            wrapperCol={{ offset: 6, span: 16 }}
-          >
-            <Button type="primary" htmlType="submit">
+          <Form.Item className={styles.saveButtonWrapper}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              className={styles.saveButton}
+            >
               保存
             </Button>
           </Form.Item>
@@ -531,11 +530,12 @@ const PatrolStrategy = () => {
               />
             </Form.Item>
           )}
-          <Form.Item
-            style={{ paddingTop: 30 }}
-            wrapperCol={{ offset: 6, span: 16 }}
-          >
-            <Button type="primary" htmlType="submit">
+          <Form.Item className={styles.saveButtonWrapper}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              className={styles.saveButton}
+            >
               保存
             </Button>
           </Form.Item>

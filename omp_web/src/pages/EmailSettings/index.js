@@ -82,9 +82,7 @@ const EmailSettings = () => {
           <Form.Item
             label="邮件服务器"
             name="address"
-            rules={[
-              { required: true, message: "请输入邮件服务器地址" },
-            ]}
+            rules={[{ required: true, message: "请输入邮件服务器地址" }]}
           >
             <Input
               placeholder="例如: 192.168.10.10"
@@ -145,10 +143,13 @@ const EmailSettings = () => {
           </Form.Item>
 
           <Form.Item
-            style={{ paddingTop: 30 }}
-            wrapperCol={{ offset: 6, span: 16 }}
+            className={styles.saveButtonWrapper}
           >
-            <Button type="primary" htmlType="submit">
+            <Button
+              type="primary"
+              htmlType="submit"
+              className={styles.saveButton}
+            >
               保存
             </Button>
           </Form.Item>
