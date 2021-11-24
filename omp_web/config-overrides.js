@@ -17,7 +17,7 @@ const devServerConfig = () => (config) => {
     ...config,
     proxy: {
       "/api": {
-        target: "http://10.0.14.234:19001/", //"http://10.0.7.146:19001/",  //"http://10.0.9.168:19001/" //服务器地址 Xd8r$3jz //http://10.0.22.86:8000/
+        target: "http://10.0.7.146:19001/", //"http://10.0.14.234:19001/",  //"http://10.0.9.168:19001/" //服务器地址 Xd8r$3jz //http://10.0.22.86:8000/
         changeOrigin: true,
       },
     },
