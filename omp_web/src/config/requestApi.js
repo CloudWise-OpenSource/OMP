@@ -111,7 +111,7 @@ export const apiRequest = {
     // 服务批量安装选择应用确认操作
     createInstallInfo: "/api/appStore/createInstallInfo/",
     // 批量安装
-    checkInstallInfo:"/api/appStore/checkInstallInfo/",
+    checkInstallInfo: "/api/appStore/checkInstallInfo/",
   },
   inspection: {
     inspectionList: "/api/inspection/history/",
@@ -141,5 +141,10 @@ export const apiRequest = {
     querySetting: "/api/promemonitor/getSendEmailConfig/",
     // 更新邮件全局设置
     updateSetting: "/api/promemonitor/updateSendEmailConfig/",
+  },
+  ruleCenter: {
+    hostThreshold: "/api/promemonitor/hostThreshold/",
+    serviceThreshold: "/api/promemonitor/serviceThreshold/",
+    queryCustomThreshold: "/api/promemonitor/customThreshold/",
   },
 };

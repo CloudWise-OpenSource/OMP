@@ -185,6 +185,8 @@ const PatrolInspectionRecord = () => {
           }
           if (res.data.code == 0) {
             message.success("推送成功");
+            setPushAnalysisModal(false);
+            fetchData();
           }
         }
       })
