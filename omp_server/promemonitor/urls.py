@@ -6,7 +6,8 @@ from promemonitor.views import (
     MonitorUrlViewSet, ListAlertViewSet, UpdateAlertViewSet,
     MaintainViewSet, ReceiveAlertViewSet,
     MonitorAgentRestartView, GrafanaUrlViewSet, InstanceNameListView, InstrumentPanelView, GetSendEmailConfig,
-    UpdateSendEmailConfig, GetSendAlertSettingView, UpdateSendAlertSettingView
+    UpdateSendEmailConfig, GetSendAlertSettingView, UpdateSendAlertSettingView, HostThresholdView, ServiceThresholdView,
+    CustomThresholdView
 )
 
 router = DefaultRouter()
@@ -31,4 +32,9 @@ router.register(r'getSendAlertSetting', GetSendAlertSettingView,
                 basename='getSendAlertSetting')
 router.register(r'updateSendAlertSetting',
                 UpdateSendAlertSettingView, basename='updateSendAlertSetting')
+router.register(r'hostThreshold', HostThresholdView, basename='hostThreshold')
+router.register(r'serviceThreshold', ServiceThresholdView,
+                basename='serviceThreshold')
+router.register(r'customThreshold', CustomThresholdView,
+                basename='customThreshold')
 urlpatterns = router.urls

@@ -239,3 +239,8 @@ X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 # 发邮件使用,是否使用ssl，使用端口：465/994 不使用：25
 EMAIL_USE_SSL = True
+
+# 可定制化指标的服务及指标
+CUSTOM_THRESHOLD_SERVICES = {
+    "kafka": {"kafka_consumergroup_lag"}
+}
