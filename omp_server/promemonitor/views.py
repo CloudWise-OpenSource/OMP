@@ -546,6 +546,8 @@ class HostThresholdView(GenericViewSet, ListModelMixin, CreateModelMixin):
         env_id = request.GET.get('env_id')
         if not env_id:
             return Response(data={"code": 1, "message": "请确认请求参数中包含env_id"})
+        if not HostThreshold.objects.filter(env_id=env_id).exists():
+            return Response(data={"code": 1, "message": f"env {env_id}错误"})
         host_thresholds = HostThreshold.objects.filter(
             env_id=env_id,
             index_type__in=["cpu_used", "memory_used", "disk_root_used",
@@ -624,6 +626,8 @@ class ServiceThresholdView(GenericViewSet, ListModelMixin, CreateModelMixin):
         env_id = request.GET.get('env_id')
         if not env_id:
             return Response(data={"code": 1, "message": "请确认请求参数中包含env_id"})
+        if not ServiceThreshold.objects.filter(env_id=env_id).exists():
+            return Response(data={"code": 1, "message": f"env {env_id}错误"})
         service_thresholds = ServiceThreshold.objects.filter(
             env_id=env_id,
             index_type__in=["service_active", "service_cpu_used",
@@ -675,7 +679,7 @@ class ServiceThresholdView(GenericViewSet, ListModelMixin, CreateModelMixin):
             with transaction.atomic():
                 ServiceThreshold.objects.filter(env_id=env_id).delete()
                 ServiceThreshold.objects.bulk_create(_obj_lst)
-            return Response(data={"code": 1, "message": "设置成功"})
+            return Response({})
         except Exception as e:
             logger.error(f"更新服务相关阈值过程中出错: {traceback.format_exc()}")
             return Response(data={"code": 1, "message": f"更新服务相关阈值过程中出错: {str(e)}!"})
@@ -751,6 +755,8 @@ class CustomThresholdView(GenericViewSet, ListModelMixin, CreateModelMixin):
             if not index_type_info:
                 return Response(data={"code": 1, "message": "无法正确解析到要更新的数据!"})
             env_id = request.data.get("env_id")
+            if not ServiceCustomThreshold.objects.filter(env_id=env_id).exists():
+                return Response(data={"code": 1, "message": f"env {env_id}不存在"})
             # 后续需要增加对环境是否存在的判断
 
             # 后续可能需要同步阈值至prometheus的rules文件中
@@ -783,7 +789,7 @@ class CustomThresholdView(GenericViewSet, ListModelMixin, CreateModelMixin):
                     index_type=index_type
                 ).delete()
                 ServiceCustomThreshold.objects.bulk_create(_obj_lst)
-            return Response(data={"code": 1, "message": "设置成功"})
+            return Response({})
         except Exception as e:
             logger.error(f"更新服务相关阈值过程中出错: {traceback.format_exc()}")
             return Response(data={"code": 1, "message": f"更新服务相关阈值过程中出错: {str(e)}!"})
