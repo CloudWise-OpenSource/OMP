@@ -332,6 +332,10 @@ class ExplainYml:
         try:
             with open(self.yaml_exc, "r", encoding="utf8") as fp:
                 settings = yaml.load(fp, Loader=yaml.BaseLoader)
+            if not settings:
+                self.db_obj.update_package_status(
+                    1,
+                    f"yml文件为空，检查yml文件{self.yaml_dir}")
         except Exception as e:
             self.db_obj.update_package_status(
                 1,
