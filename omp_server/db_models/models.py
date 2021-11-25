@@ -484,6 +484,14 @@ class InspectionHistory(models.Model):
                 巡检时间：{self.start_time.strftime("%Y-%m-%d %H:%M:%S")}
                 """
 
+    def fetch_file_kwargs(self):
+        from omp_server.settings import PROJECT_DIR
+        inspection_report = InspectionReport.objects.filter(
+            inst_id=self.id).first()
+        file_path = os.path.join(
+            PROJECT_DIR, f"data/inspection_file/{inspection_report.file_name}")
+        return {"path": file_path}
+
 
 class InspectionCrontab(models.Model):
     """巡检任务 定时配置表"""
@@ -1017,7 +1025,7 @@ class EmailSMTPSetting(models.Model):
             ]
             code.get("receivers")[0]["email_configs"] = email_configs
         code["templates"] = [
-            f"{PROJECT_DIR}component/alertmanager/templates/*tmpl"]
+            f"{PROJECT_DIR}/component/alertmanager/templates/*tmpl"]
         with open(config_path, "w", encoding="utf8") as fp:
             yaml.dump(code, fp, Dumper=yaml.RoundTripDumper)
         return self.reload_alert_manage()
