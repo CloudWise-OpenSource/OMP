@@ -8,7 +8,7 @@ import {
   kafka_partition_columns,
   kafka_topic_size_columns,
   handleResponse,
-  downloadFile
+  downloadFile,
 } from "@/utils/utils";
 import { Card, Collapse, message, Table, BackTop, Drawer } from "antd";
 import * as R from "ramda";
@@ -51,12 +51,20 @@ export default function PatrolInspectionDetail() {
 
   const [loading, setLoading] = useState(false);
 
+  // 是否为主机巡检
+  const [isHost, setIsHost] = useState(false);
+
   const fetchDetailData = (id) => {
     setLoading(true);
     fetchGet(`${apiRequest.inspection.reportDetail}/${id}/`)
       .then((res) => {
         handleResponse(res, (res) => {
           setData(res.data);
+
+          // 通过文件名判断是否为主机巡检
+          if (res.data.file_name.indexOf("host") === 0) {
+            setIsHost(true);
+          }
         });
       })
       .catch((e) => console.log(e))
@@ -132,7 +140,11 @@ export default function PatrolInspectionDetail() {
             <div className={"overviewItemWrapper"}>
               <OverviewItem data={data.summary?.task_info} type={"task_info"} />
               <OverviewItem data={data.summary?.time_info} type={"time_info"} />
-              <OverviewItem data={data.summary?.scan_info} type={"scan_info"} />
+              <OverviewItem
+                data={data.summary?.scan_info}
+                type={"scan_info"}
+                isHost={isHost}
+              />
               <OverviewItem
                 data={data.summary?.scan_result}
                 type={"scan_result"}
@@ -282,7 +294,7 @@ export default function PatrolInspectionDetail() {
                 style={{ marginTop: 20 }}
                 scroll={{ x: 1100 }}
                 pagination={false}
-                rowKey={(record,index) => record.id}
+                rowKey={(record, index) => record.id}
                 // defaultExpandAllRows
                 columns={[
                   {
@@ -468,7 +480,7 @@ function formatTime(text = 0) {
 }
 
 // 概览信息
-function OverviewItem({ data, type }) {
+function OverviewItem({ data, type, isHost = false }) {
   switch (type) {
     case "task_info":
       return (
@@ -500,7 +512,11 @@ function OverviewItem({ data, type }) {
             <div>
               {data?.host >= 0 && <div>主机个数：{data.host}台</div>}
               {/* {data?.component >= 0 && <div>组件个数：{data.component}个</div>} */}
-              {data?.service >= 0 && <div>服务个数：{data.service}个</div>}
+              {isHost ? (
+                <></>
+              ) : (
+                data?.service >= 0 && <div>服务个数：{data.service}个</div>
+              )}
             </div>
           </div>
         </div>
