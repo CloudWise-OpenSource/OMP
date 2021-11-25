@@ -205,6 +205,7 @@ const BatchInstallationModal = ({
             <Button
               type="primary"
               //style={{ marginRight: 16 }}
+              loading={loading}
               disabled={
                 Object.keys(checkedList)
                   .map((k) => checkedList[k])

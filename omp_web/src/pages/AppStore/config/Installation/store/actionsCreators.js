@@ -41,6 +41,16 @@ export const getStep2ChangeAction = (value) => {
   };
 };
 
+export const getStep2ErrorLstChangeAction = (value) => {
+  const data = R.clone(value);
+  return {
+    type: actionTypes.CHANGE_STEP2ERRORLISTDATA,
+    payload: {
+      errorList: data,
+    },
+  };
+}
+
 export const getStep3ChangeAction = (value) => {
   const data = R.clone(value);
   return {

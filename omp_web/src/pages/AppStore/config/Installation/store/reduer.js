@@ -8,6 +8,8 @@ const defaultState = {
     dependence:[]
   },
   step2Data: {},
+  errorList:[],
+
   step3Data: []
 };
 
@@ -21,6 +23,8 @@ function reducer(state = defaultState, action) {
       return { ...state, step1Data: action.payload.step1Data };
     case actionTypes.CHANGE_STEP2DATA:
       return { ...state, step2Data: action.payload.step2Data };
+      case actionTypes.CHANGE_STEP2ERRORLISTDATA:
+        return { ...state, errorList: action.payload.errorList };
     case actionTypes.CHANGE_STEP3DATA:
       return { ...state, step3Data: action.payload.step3Data };
     default:

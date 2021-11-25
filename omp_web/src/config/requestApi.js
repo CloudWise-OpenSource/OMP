@@ -111,7 +111,13 @@ export const apiRequest = {
     // 服务批量安装选择应用确认操作
     createInstallInfo: "/api/appStore/createInstallInfo/",
     // 批量安装
-    checkInstallInfo:"/api/appStore/checkInstallInfo/",
+    checkInstallInfo: "/api/appStore/checkInstallInfo/",
+    // 服务分布数据查询
+    createServiceDistribution: "/api/appStore/createServiceDistribution/",
+    // 服务分布已安装服务查询
+    queryListServiceByIp: "/api/appStore/listServiceByIp",
+    // 服务批量安装服务分布确认操作
+    checkServiceDistribution: "/api/appStore/checkServiceDistribution/",
   },
   inspection: {
     inspectionList: "/api/inspection/history/",

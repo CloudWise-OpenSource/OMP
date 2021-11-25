@@ -23,7 +23,16 @@ const DependentInfoItem = ({ data, form }) => {
           <DeployRow data={data} form={form} />
         )}
       </div>
-      <div style={{ marginTop: 5, color: "red" }}>{data.error_msg}</div>
+      <div
+        style={{
+          marginTop: 5,
+          color: "red",
+          height: data.error_msg ? 20 : 0,
+          transition: "all .2s ease-in",
+        }}
+      >
+        {data.error_msg}
+      </div>
     </>
   );
 };
