@@ -207,7 +207,7 @@ class AlertAnalysis:
             alert_describe=self._get(self.annotations, "description")
         )
 
-    def __call__(self, env_id=0, *args, **kwargs):
+    def __call__(self, env_id=1, *args, **kwargs):
         """
         :param env_id:
         :param args:

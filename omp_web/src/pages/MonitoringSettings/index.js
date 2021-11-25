@@ -141,7 +141,7 @@ const MonitoringSettings = () => {
     fetchPost(apiRequest.MonitoringSettings.updatePushConfig, {
       body: {
         way_name: "email",
-        env_id: 0,
+        env_id: 1,
         server_url: pushForm.getFieldValue("email"),
         used: data.pushIsOpen,
       },

@@ -268,7 +268,7 @@ function RuleCenter() {
     setMachineLoading(true);
     fetchGet(apiRequest.ruleCenter.hostThreshold, {
       params: {
-        env_id: 0,
+        env_id: 1,
       },
     })
       .then((res) => {
@@ -296,7 +296,7 @@ function RuleCenter() {
     setServiceLoading(true);
     fetchGet(apiRequest.ruleCenter.serviceThreshold, {
       params: {
-        env_id: 0,
+        env_id: 1,
       },
     })
       .then((res) => {
@@ -334,7 +334,7 @@ function RuleCenter() {
     setCustomizationLoading(true);
     fetchGet(apiRequest.ruleCenter.queryCustomThreshold, {
       params: {
-        env_id: 0,
+        env_id: 1,
       },
     })
       .then((res) => {
@@ -362,17 +362,17 @@ function RuleCenter() {
     Promise.all([
       fetchGet(apiRequest.ruleCenter.hostThreshold, {
         params: {
-          env_id: 0,
+          env_id: 1,
         },
       }),
       fetchGet(apiRequest.ruleCenter.serviceThreshold, {
         params: {
-          env_id: 0,
+          env_id: 1,
         },
       }),
       fetchGet(apiRequest.ruleCenter.queryCustomThreshold, {
         params: {
-          env_id: 0,
+          env_id: 1,
         },
       }),
     ])
@@ -531,7 +531,7 @@ function RuleCenter() {
                   fetchPost(apiRequest.ruleCenter.hostThreshold, {
                     body: {
                       update_data: update_data,
-                      env_id: 0,
+                      env_id: 1,
                     },
                   })
                     .then((res) => {
@@ -645,7 +645,7 @@ function RuleCenter() {
                   fetchPost(apiRequest.ruleCenter.serviceThreshold, {
                     body: {
                       update_data: update_data,
-                      env_id: 0,
+                      env_id: 1,
                     },
                   })
                     .then((res) => {
@@ -816,7 +816,7 @@ function RuleCenter() {
                         fetchPost(apiRequest.ruleCenter.queryCustomThreshold, {
                           body: {
                             //update_data: update_data,
-                            env_id: 0,
+                            env_id: 1,
                             service_name: "kafka",
                             index_type: "kafka_consumergroup_lag",
                             index_type_info: [...kafkaData],
