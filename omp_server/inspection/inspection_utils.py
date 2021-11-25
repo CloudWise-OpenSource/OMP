@@ -28,7 +28,12 @@ def send_email(inspection, emails):
     reason = ""
     try:
         connection = ModelSettingEmailBackend()
-        content_name = "SendEmailContent"  # TODO 等待发送邮件模式细分，暂默认
+        if inspection.inspection_type == "host" or inspection.inspection_type == "service":
+            content_name = "SendNormalInspectionEmailContent"
+        elif inspection.inspection_type == "deep":
+            content_name = "SendDeepInspectionEmailContent"
+        else:
+            content_name = "SendEmailContent"
         content = getattr(send_email_module, content_name)(inspection)
         fail_user = many_send(connection, content, emails)
     except Exception as e:

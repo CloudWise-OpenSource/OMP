@@ -256,11 +256,12 @@ const MonitoringSettings = () => {
             />
           </Form.Item>
 
-          <Form.Item
-            style={{ paddingTop: 30 }}
-            wrapperCol={{ offset: 6, span: 16 }}
-          >
-            <Button type="primary" htmlType="submit">
+          <Form.Item className={styles.saveButtonWrapper}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              className={styles.saveButton}
+            >
               保存
             </Button>
           </Form.Item>
@@ -313,11 +314,12 @@ const MonitoringSettings = () => {
               />
             </Form.Item>
           )}
-          <Form.Item
-            style={{ paddingTop: 30 }}
-            wrapperCol={{ offset: 6, span: 16 }}
-          >
-            <Button type="primary" htmlType="submit">
+          <Form.Item className={styles.saveButtonWrapper}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              className={styles.saveButton}
+            >
               保存
             </Button>
           </Form.Item>

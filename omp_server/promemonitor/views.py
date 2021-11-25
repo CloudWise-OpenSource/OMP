@@ -4,9 +4,12 @@
 """
 import json
 import logging
+import traceback
 
 import requests
 from django.core.validators import EmailValidator
+from django.db import transaction
+from django.db.models import F
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -24,7 +27,8 @@ from utils.common.paginations import PageNumberPager
 
 from db_models.models import (
     Host, MonitorUrl,
-    Alert, Maintain, ApplicationHub, Service, EmailSMTPSetting, AlertSendWaySetting
+    Alert, Maintain, ApplicationHub, Service, EmailSMTPSetting, AlertSendWaySetting, HostThreshold, ServiceThreshold,
+    ServiceCustomThreshold
 )
 
 from promemonitor import grafana_url
@@ -36,6 +40,7 @@ from promemonitor.promemonitor_serializers import (
 )
 from utils.common.exceptions import OperateError
 from promemonitor.prometheus import Prometheus
+from omp_server.settings import CUSTOM_THRESHOLD_SERVICES
 
 logger = logging.getLogger('server')
 
@@ -522,3 +527,269 @@ class UpdateSendAlertSettingView(GenericViewSet, CreateModelMixin):
         if not state:
             return Response(data={"code": 1, "message": "同步到Alert Manage失败！请确保Alert Manage可用"})
         return Response({})
+
+
+class HostThresholdView(GenericViewSet, ListModelMixin, CreateModelMixin):
+    """
+    读写主机阈值
+    """
+
+    get_description = "读取主机阈值设置"
+    post_description = "更新主机阈值设置"
+
+    serializer_class = Serializer
+
+    def list(self, request, *args, **kwargs):
+        """
+        获取主机监控指标项设置
+        """
+        env_id = request.GET.get('env_id')
+        if not env_id:
+            return Response(data={"code": 1, "message": "请确认请求参数中包含env_id"})
+        if not HostThreshold.objects.filter(env_id=env_id).exists():
+            return Response(data={"code": 1, "message": f"env {env_id}错误"})
+        host_thresholds = HostThreshold.objects.filter(
+            env_id=env_id,
+            index_type__in=["cpu_used", "memory_used", "disk_root_used",
+                            "disk_data_used"]
+        ).annotate(
+            value=F("condition_value"), level=F("alert_level")
+        ).order_by("index_type", "level").values(
+            "index_type", "condition", "value", "level")
+        data = {
+            "cpu_used": [],
+            "memory_used": [],
+            "disk_root_used": [],
+            "disk_data_used": []
+        }
+        for host_threshold in host_thresholds:
+            data[host_threshold.get("index_type")].append(host_threshold)
+        return Response(data=data)
+
+    def create(self, request, *args, **kwargs):
+        """
+        更新主机指标项到自监控平台
+        """
+        try:
+            logger.info(f"主机监控指标更新接口获取到的参数为: {request.data}")
+            update_data = request.data.get("update_data", {})
+            env_id = request.data.get("env_id")
+            if not update_data:
+                return Response(data={"code": 1, "message": "无法正确解析到要更新的数据!"})
+            if env_id is None:
+                return Response(data={"code": 1, "message": "请确认请求参数中包含env_id"})
+            # 同步阈值至prometheus主机告警规则文件中，并做配置检查
+            # if not check_prometheus():
+            #     return Response(1, "无法连接到prometheus，更改阈值失败！")
+            _obj_lst = list()
+            hosts_list = list()
+            for key, value in update_data.items():
+                for item in value:
+                    if not item["condition"] or not item["value"] or not item["level"]:
+                        continue
+                    _obj = HostThreshold()
+                    _obj.index_type = key
+                    _obj.condition = item["condition"]
+                    _obj.condition_value = item["value"]
+                    _obj.alert_level = item["level"]
+                    _obj.env_id = env_id
+                    _obj_lst.append(_obj)
+                    hosts_list.append({
+                        'index_type': key,
+                        'condition': item["condition"],
+                        'condition_value': item["value"],
+                        'alert_level': item["level"]
+                    })
+            with transaction.atomic():
+                HostThreshold.objects.filter(env_id=env_id).delete()
+                HostThreshold.objects.bulk_create(_obj_lst)
+            return Response({})
+        except Exception as e:
+            logger.error(f"更新主机相关阈值过程中出错: {traceback.format_exc()}")
+            return Response(data={"code": 1, "message": f"更新主机相关阈值过程中出错: {str(e)}!"})
+
+
+class ServiceThresholdView(GenericViewSet, ListModelMixin, CreateModelMixin):
+    """
+    读写服务阈值
+    """
+
+    get_description = "读取服务阈值设置"
+    post_description = "更新服务阈值设置"
+
+    serializer_class = Serializer
+
+    def list(self, request, *args, **kwargs):
+        """
+        获取服务阈值监控指标项设置
+        """
+        env_id = request.GET.get('env_id')
+        if not env_id:
+            return Response(data={"code": 1, "message": "请确认请求参数中包含env_id"})
+        if not ServiceThreshold.objects.filter(env_id=env_id).exists():
+            return Response(data={"code": 1, "message": f"env {env_id}错误"})
+        service_thresholds = ServiceThreshold.objects.filter(
+            env_id=env_id,
+            index_type__in=["service_active", "service_cpu_used",
+                            "service_memory_used"]
+        ).annotate(
+            value=F("condition_value"), level=F("alert_level")
+        ).order_by("index_type", "level").values(
+            "index_type", "condition", "value", "level")
+        data = {
+            "service_active": [],
+            "service_cpu_used": [],
+            "service_memory_used": [],
+        }
+        for service_threshold in service_thresholds:
+            data[service_threshold.get("index_type")].append(service_threshold)
+        return Response(data=data)
+
+    def create(self, request, *args, **kwargs):
+        """
+        更新服务阈值监控指标项设置
+        """
+        try:
+            logger.info(f"服务监控指标更新接口获取到的参数为: {request.data}")
+            update_data = request.data.get("update_data", {})
+            env_id = request.data.get("env_id")
+            if not update_data:
+                return Response(data={"code": 1, "message": "无法正确解析到要更新的数据!"})
+            if env_id is None:
+                return Response(data={"code": 1, "message": "请确认请求参数中包含env_id"})
+            _obj_lst = list()
+            services_list = list()
+            for key, value in update_data.items():
+                for item in value:
+                    if not item["condition"] or not item["value"] or not item["level"]:
+                        continue
+                    _obj = ServiceThreshold()
+                    _obj.index_type = key
+                    _obj.condition = item["condition"]
+                    _obj.condition_value = item["value"]
+                    _obj.alert_level = item["level"]
+                    _obj.env_id = env_id
+                    _obj_lst.append(_obj)
+                    services_list.append({
+                        'index_type': key,
+                        'condition': item["condition"],
+                        'condition_value': item["value"],
+                        'alert_level': item["level"]
+                    })
+            with transaction.atomic():
+                ServiceThreshold.objects.filter(env_id=env_id).delete()
+                ServiceThreshold.objects.bulk_create(_obj_lst)
+            return Response({})
+        except Exception as e:
+            logger.error(f"更新服务相关阈值过程中出错: {traceback.format_exc()}")
+            return Response(data={"code": 1, "message": f"更新服务相关阈值过程中出错: {str(e)}!"})
+
+
+class CustomThresholdView(GenericViewSet, ListModelMixin, CreateModelMixin):
+    """
+    读写自定义服务指标阈值
+    """
+
+    get_description = "读取自定义服务指标阈值设置"
+    post_description = "更新自定义服务指标阈值设置"
+
+    serializer_class = Serializer
+
+    def list(self, request, *args, **kwargs):
+        """
+        暂时只有kafka_consumergroup_lag
+        """
+        env_id = request.GET.get('env_id')
+        if not env_id:
+            return Response(data={"code": 1, "message": "请确认请求参数中包含env_id"})
+        service_thresholds = list(
+            ServiceCustomThreshold.objects.filter(
+                env_id=env_id
+            ).annotate(
+                value=F("condition_value"), level=F("alert_level")
+            ).order_by("service_name", "index_type", "level").values(
+                "service_name", "index_type", "condition", "value", "level")
+        )
+        data = dict()
+        for service_threshold in service_thresholds:
+            service_name = service_threshold.get("service_name", "")
+            index_type = service_threshold.get("index_type", "")
+            if not service_name or not index_type:
+                continue
+            index_type_info = {
+                "condition": service_threshold.get("condition"),
+                "index_type": index_type,
+                "level": service_threshold.get("level"),
+                "value": service_threshold.get("value")
+            }
+            threshold_info = data.get(service_name, {})
+            if not threshold_info:
+                data[service_name] = {index_type: [index_type_info]}
+            else:
+                index_type_infos = threshold_info.get(index_type)
+                if not index_type_infos:
+                    threshold_info[index_type] = [index_type_info]
+                else:
+                    threshold_info[index_type].append(index_type_info)
+        return Response(data=data)
+
+    def valid_kafka_kafka_consumergroup_lag(self, value):  # NOQA
+        if isinstance(value, int):
+            return value > 0
+        return value.isdigit() and int(value) > 0
+
+    def create(self, request, *args, **kwargs):
+        """
+        更新服务阈值监控指标项设置
+        """
+        try:
+            logger.info(f"自定义服务监控指标更新接口获取到的参数为: {request.data}")
+            service_name = request.data.get("service_name", "")
+            index_types = CUSTOM_THRESHOLD_SERVICES.get(service_name)
+            if not index_types:
+                return Response(data={"code": 1, "message": "暂不支持该服务定制化阈值!"})
+            index_type = request.data.get("index_type", "")
+            if not index_type or index_type not in index_types:
+                return Response(data={"code": 1, "message": "暂不支持该指标项!"})
+            index_type_info = request.data.get("index_type_info", [])
+            if not index_type_info:
+                return Response(data={"code": 1, "message": "无法正确解析到要更新的数据!"})
+            env_id = request.data.get("env_id")
+            if not ServiceCustomThreshold.objects.filter(env_id=env_id).exists():
+                return Response(data={"code": 1, "message": f"env {env_id}不存在"})
+            # 后续需要增加对环境是否存在的判断
+
+            # 后续可能需要同步阈值至prometheus的rules文件中
+            # if not check_prometheus():
+            #     return Response(1, "无法连接到prometheus，更改阈值失败！")
+            _obj_lst = list()
+            # 创建阈值
+            for index_type_value in index_type_info:
+                condition = index_type_value.get("condition")
+                level = index_type_value.get("level")
+                value = index_type_value.get("value")
+                valid = getattr(
+                    self, f"valid_{service_name}_{index_type}"
+                )(value)
+                if not valid:
+                    return Response(data={"code": 1, "message": "阈值更新的值不符合要求！"})
+                _obj = ServiceCustomThreshold(
+                    env_id=env_id,
+                    service_name=service_name,
+                    index_type=index_type,
+                    condition=condition,
+                    condition_value=value,
+                    alert_level=level
+                )
+                _obj_lst.append(_obj)
+            with transaction.atomic():
+                ServiceCustomThreshold.objects.filter(
+                    env_id=env_id,
+                    service_name=service_name,
+                    index_type=index_type
+                ).delete()
+                ServiceCustomThreshold.objects.bulk_create(_obj_lst)
+            return Response({})
+        except Exception as e:
+            logger.error(f"更新服务相关阈值过程中出错: {traceback.format_exc()}")
+            return Response(data={"code": 1, "message": f"更新服务相关阈值过程中出错: {str(e)}!"})

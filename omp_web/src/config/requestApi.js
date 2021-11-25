@@ -148,4 +148,9 @@ export const apiRequest = {
     // 更新邮件全局设置
     updateSetting: "/api/promemonitor/updateSendEmailConfig/",
   },
+  ruleCenter: {
+    hostThreshold: "/api/promemonitor/hostThreshold/",
+    serviceThreshold: "/api/promemonitor/serviceThreshold/",
+    queryCustomThreshold: "/api/promemonitor/customThreshold/",
+  },
 };

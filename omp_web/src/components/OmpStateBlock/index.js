@@ -15,7 +15,7 @@ const colorObj = {
   },
   noMonitored: {
     background: "#e5e5e5",
-    borderColor: "#606060",
+    borderColor: "#aaaaaa",
   },
   warning: {
     background: "rgba(247, 231, 24, 0.2)",

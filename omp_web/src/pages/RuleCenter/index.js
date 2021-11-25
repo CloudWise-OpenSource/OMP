@@ -1,5 +1,5 @@
 import { apiRequest } from "@/config/requestApi";
-import { fetchGet, fetchPut } from "@/utils/request";
+import { fetchGet, fetchPut, fetchPost } from "@/utils/request";
 import { handleResponse } from "@/utils/utils";
 import {
   Collapse,
@@ -66,14 +66,14 @@ function InfoTip({ text }) {
 
 const defaultData = [
   {
-    condition: null,
-    level: null,
-    value: null,
+    condition: ">=",
+    level: "critical",
+    value: 90,
   },
   {
-    condition: null,
-    level: null,
-    value: null,
+    condition: ">=",
+    level: "warning",
+    value: 80,
   },
 ];
 
@@ -199,9 +199,16 @@ function RuleCenter() {
 
   const [kafkaData, setKafkaData] = useState([
     {
+      index_type: "kafka_consumergroup_lag",
       condition: ">=",
       value: 5000,
       level: "critical",
+    },
+    {
+      index_type: "kafka_consumergroup_lag",
+      condition: ">=",
+      value: 3000,
+      level: "warning",
     },
   ]);
 
@@ -257,136 +264,122 @@ function RuleCenter() {
   const [isServiceLoading, setServiceLoading] = useState(false);
   const [isCustomizationLoading, setCustomizationLoading] = useState(false);
 
-  useEffect(() => {
+  function fetchHostDate() {
+    setMachineLoading(true);
+    fetchGet(apiRequest.ruleCenter.hostThreshold, {
+      params: {
+        env_id: 0,
+      },
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          const {
+            data: { cpu_used, memory_used, disk_root_used, disk_data_used },
+          } = res.dat;
+          setCpuUsed(cpu_used.length > 0 ? cpu_used : defaultData);
+          setMemoryUsed(memory_used.length > 0 ? memory_used : defaultData);
+          setDiskRootUsed(
+            disk_root_used.length > 0 ? disk_root_used : defaultData
+          );
+          setDiskDataUsed(
+            disk_data_used.length > 0 ? disk_data_used : defaultData
+          );
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setMachineLoading(false);
+      });
+  }
+
+  function fetchServiceDate() {
+    setServiceLoading(true);
+    fetchGet(apiRequest.ruleCenter.serviceThreshold, {
+      params: {
+        env_id: 0,
+      },
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          const {
+            data: { service_active, service_cpu_used, service_memory_used },
+          } = res.data;
+          setServiceActive(
+            service_active.length > 0
+              ? service_active
+              : [
+                  {
+                    index_type: "service_active",
+                    condition: "==",
+                    value: "False",
+                    level: "critical",
+                  },
+                ]
+          );
+          setServiceCpuUsed(
+            service_cpu_used.length > 0 ? service_cpu_used : defaultData
+          );
+          setServiceMemoryUsed(
+            service_memory_used.length > 0 ? service_memory_used : defaultData
+          );
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setServiceLoading(false);
+      });
+  }
+
+  function fetchCustomDate() {
+    setCustomizationLoading(true);
+    fetchGet(apiRequest.ruleCenter.queryCustomThreshold, {
+      params: {
+        env_id: 0,
+      },
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          if (res.code === 0 && Object.keys(res.data).length !== 0) {
+            setKafkaData(
+              res.data?.kafka?.kafka_consumergroup_lag?.map((item) => {
+                // 把其中的value改成number
+                return { ...item, value: Number(item.value) };
+              })
+            );
+          }
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setServiceLoading(false);
+      });
+  }
+
+  function fetchData() {
     setMachineLoading(true);
     setServiceLoading(true);
     setCustomizationLoading(true);
     Promise.all([
-      fetchGet(apiRequest.emailSetting.querySetting),
-      fetchGet(apiRequest.emailSetting.querySetting),
-      fetchGet(apiRequest.emailSetting.querySetting),
+      fetchGet(apiRequest.ruleCenter.hostThreshold, {
+        params: {
+          env_id: 0,
+        },
+      }),
+      fetchGet(apiRequest.ruleCenter.serviceThreshold, {
+        params: {
+          env_id: 0,
+        },
+      }),
+      fetchGet(apiRequest.ruleCenter.queryCustomThreshold, {
+        params: {
+          env_id: 0,
+        },
+      }),
     ])
       .then(([hostResponse, serviceResponse, customThresholdRes]) => {
-        hostResponse = {
-          code: 0,
-          message: "",
-          data: {
-            cpu_used: [
-              {
-                index_type: "cpu_used",
-                condition: ">=",
-                value: "80",
-                level: "warning",
-              },
-            ],
-            memory_used: [
-              {
-                index_type: "memory_used",
-                condition: ">=",
-                value: "90",
-                level: "critical",
-              },
-              {
-                index_type: "memory_used",
-                condition: ">=",
-                value: "80",
-                level: "warning",
-              },
-            ],
-            disk_root_used: [
-              {
-                index_type: "disk_root_used",
-                condition: ">=",
-                value: "90",
-                level: "critical",
-              },
-              {
-                index_type: "disk_root_used",
-                condition: ">=",
-                value: "80",
-                level: "warning",
-              },
-            ],
-            disk_data_used: [
-              {
-                index_type: "disk_data_used",
-                condition: ">=",
-                value: "90",
-                level: "critical",
-              },
-              {
-                index_type: "disk_data_used",
-                condition: ">=",
-                value: "80",
-                level: "warning",
-              },
-            ],
-          },
-        };
-        serviceResponse = {
-          code: 0,
-          message: "",
-          data: {
-            service_active: [
-              {
-                index_type: "service_active",
-                condition: "==",
-                value: "False",
-                level: "critical",
-              },
-            ],
-            service_cpu_used: [
-              {
-                index_type: "service_cpu_used",
-                condition: ">=",
-                value: "90",
-                level: "critical",
-              },
-              {
-                index_type: "service_cpu_used",
-                condition: ">=",
-                value: "80",
-                level: "warning",
-              },
-            ],
-            service_memory_used: [
-              {
-                index_type: "service_memory_used",
-                condition: ">=",
-                value: "90",
-                level: "critical",
-              },
-              {
-                index_type: "service_memory_used",
-                condition: ">=",
-                value: "80",
-                level: "warning",
-              },
-            ],
-          },
-        };
-        customThresholdRes = {
-          code: 0,
-          message: "",
-          data: {
-            kafka: {
-              kafka_consumergroup_lag: [
-                {
-                  condition: ">=",
-                  index_type: "kafka_consumergroup_lag",
-                  level: "critical",
-                  value: "5000",
-                },
-                {
-                  condition: ">=",
-                  index_type: "kafka_consumergroup_lag",
-                  level: "warning",
-                  value: "3000",
-                },
-              ],
-            },
-          },
-        };
+        hostResponse = hostResponse.data;
+        serviceResponse = serviceResponse.data;
+        customThresholdRes = customThresholdRes.data;
         if (hostResponse.code === 3) {
           message.warn("登录已过期，请重新登录");
 
@@ -394,14 +387,12 @@ function RuleCenter() {
           window.__history__.replace("/login");
           return;
         }
-
         const {
           data: { cpu_used, memory_used, disk_root_used, disk_data_used },
         } = hostResponse;
         const {
           data: { service_active, service_cpu_used, service_memory_used },
         } = serviceResponse;
-
         setCpuUsed(cpu_used.length > 0 ? cpu_used : defaultData);
         setMemoryUsed(memory_used.length > 0 ? memory_used : defaultData);
         setDiskRootUsed(
@@ -411,7 +402,16 @@ function RuleCenter() {
           disk_data_used.length > 0 ? disk_data_used : defaultData
         );
         setServiceActive(
-          service_active.length > 0 ? service_active : defaultData
+          service_active.length > 0
+            ? service_active
+            : [
+                {
+                  index_type: "service_active",
+                  condition: "==",
+                  value: "False",
+                  level: "critical",
+                },
+              ]
         );
         setServiceCpuUsed(
           service_cpu_used.length > 0 ? service_cpu_used : defaultData
@@ -419,8 +419,10 @@ function RuleCenter() {
         setServiceMemoryUsed(
           service_memory_used.length > 0 ? service_memory_used : defaultData
         );
-
-        if (customThresholdRes.code === 0) {
+        if (
+          customThresholdRes.code === 0 &&
+          Object.keys(customThresholdRes.data).length !== 0
+        ) {
           setKafkaData(
             customThresholdRes.data?.kafka?.kafka_consumergroup_lag?.map(
               (item) => {
@@ -437,6 +439,10 @@ function RuleCenter() {
         setServiceLoading(false);
         setCustomizationLoading(false);
       });
+  }
+
+  useEffect(() => {
+    fetchData();
   }, []);
 
   function isThresholdAccurate(data) {
@@ -519,25 +525,27 @@ function RuleCenter() {
                   disk_root_used: diskRootUsed,
                   disk_data_used: diskDataUsed,
                 };
-                console.log(update_data);
                 // 如果核验数据未通过，直接退出
                 if (isThresholdAccurate(update_data)) {
-                  // setMachineLoading(true);
-                  // fetchPut(apiRequest.systemSettings.hostThreshold, {
-                  //   body: {
-                  //     update_data: update_data,
-                  //     env_id: Number(updata()().value),
-                  //   },
-                  // })
-                  //   .then((res) => {
-                  //     handleResponse(res);
-                  //   })
-                  //   .catch((e) => console.log(e))
-                  //   .finally(() => {
-                  //     setMachineLoading(false);
-                  //   });
-                } else {
-                  console.log(111);
+                  setMachineLoading(true);
+                  fetchPost(apiRequest.ruleCenter.hostThreshold, {
+                    body: {
+                      update_data: update_data,
+                      env_id: 0,
+                    },
+                  })
+                    .then((res) => {
+                      handleResponse(res, (res) => {
+                        if (res.code == 0) {
+                          message.success("更新主机指标成功");
+                          fetchHostDate();
+                        }
+                      });
+                    })
+                    .catch((e) => console.log(e))
+                    .finally(() => {
+                      setMachineLoading(false);
+                    });
                 }
               }}
             />
@@ -627,27 +635,32 @@ function RuleCenter() {
                 };
 
                 // 不检查service_active，因为只有一项
-                // if (
-                //   isThresholdAccurate({
-                //     service_cpu_used: serviceCpuUsed,
-                //     service_memory_used: serviceMemoryUsed,
-                //   })
-                // ) {
-                //   setServiceLoading(true);
-                //   fetchPut(apiRequest.systemSettings.serviceThreshold, {
-                //     body: {
-                //       update_data: update_data,
-                //       env_id: Number(updata()().value),
-                //     },
-                //   })
-                //     .then((res) => {
-                //       handleResponse(res);
-                //     })
-                //     .catch((e) => console.log(e))
-                //     .finally(() => {
-                //       setServiceLoading(false);
-                //     });
-                // }
+                if (
+                  isThresholdAccurate({
+                    service_cpu_used: serviceCpuUsed,
+                    service_memory_used: serviceMemoryUsed,
+                  })
+                ) {
+                  setServiceLoading(true);
+                  fetchPost(apiRequest.ruleCenter.serviceThreshold, {
+                    body: {
+                      update_data: update_data,
+                      env_id: 0,
+                    },
+                  })
+                    .then((res) => {
+                      handleResponse(res, (res) => {
+                        if (res.code == 0) {
+                          message.success("更新服务指标成功");
+                          fetchServiceDate();
+                        }
+                      });
+                    })
+                    .catch((e) => console.log(e))
+                    .finally(() => {
+                      setServiceLoading(false);
+                    });
+                }
               }}
             />
           </Spin>
@@ -795,30 +808,33 @@ function RuleCenter() {
                     }}
                     saveHandler={() => {
                       let checkMessage = checkKafkaData(kafkaData);
-                      // if (checkMessage) {
-                      //   message.warn(checkMessage);
-                      // } else {
-                      //   setCustomizationLoading(true);
-                      //   fetchPut(
-                      //     apiRequest.systemSettings.queryCustomThreshold,
-                      //     {
-                      //       body: {
-                      //         //update_data: update_data,
-                      //         env_id: Number(updata()().value),
-                      //         service_name: "kafka",
-                      //         index_type: "kafka_consumergroup_lag",
-                      //         index_type_info: [...kafkaData],
-                      //       },
-                      //     }
-                      //   )
-                      //     .then((res) => {
-                      //       handleResponse(res);
-                      //     })
-                      //     .catch((e) => console.log(e))
-                      //     .finally(() => {
-                      //       setCustomizationLoading(false);
-                      //     });
-                      // }
+                      if (checkMessage) {
+                        message.warn(checkMessage);
+                      } else {
+                        setCustomizationLoading(true);
+
+                        fetchPost(apiRequest.ruleCenter.queryCustomThreshold, {
+                          body: {
+                            //update_data: update_data,
+                            env_id: 0,
+                            service_name: "kafka",
+                            index_type: "kafka_consumergroup_lag",
+                            index_type_info: [...kafkaData],
+                          },
+                        })
+                          .then((res) => {
+                            handleResponse(res, (res) => {
+                              if (res.code == 0) {
+                                message.success("更新定制化指标成功");
+                                fetchCustomDate();
+                              }
+                            });
+                          })
+                          .catch((e) => console.log(e))
+                          .finally(() => {
+                            setCustomizationLoading(false);
+                          });
+                      }
                     }}
                   />
                 </TabPane>

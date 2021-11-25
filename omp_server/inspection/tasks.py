@@ -8,9 +8,11 @@ import logging
 import traceback
 from datetime import datetime
 from celery import shared_task
+
+from inspection.inspection_utils import send_email
 from utils.prometheus.thread import MyThread
 from celery.utils.log import get_task_logger
-from db_models.models import Host, Env, Service
+from db_models.models import Host, Env, Service, ModuleSendEmailSetting
 from db_models.models import InspectionHistory, InspectionReport, ApplicationHub
 from utils.prometheus.prometheus import back_fill
 from utils.prometheus.target_host import target_host_thread
@@ -88,7 +90,8 @@ def get_prometheus_data(env_id, hosts, services, history_id, report_id, handle):
         elif handle == 'deep':
             # 主机巡检
             file_name = f"deepinspection{_h.inspection_name.split('-')[1]}"
-            hosts = Host.objects.filter(env=env.id).values_list('ip', flat=True)
+            hosts = Host.objects.filter(
+                env=env.id).values_list('ip', flat=True)
             if len(hosts) > 0:
                 h_info, h_result, host_data = get_hosts_data(env, list(hosts))
             else:
@@ -133,6 +136,10 @@ def get_prometheus_data(env_id, hosts, services, history_id, report_id, handle):
         _h = InspectionHistory.objects.filter(id=history_id).first()
         ret = joint_json_data(_h.inspection_type, _r, _h)
         create_html_tar(file_name, ret)
+        if _h.inspection_status == 2:
+            email_users = ModuleSendEmailSetting.get_email_settings(
+                env_id, "inspection").to_users
+            send_email(_h, email_users)
     except Exception as e:
         logger.error(
             f"Inspection man task failed with error: {traceback.format_exc(e)}")

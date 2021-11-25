@@ -234,6 +234,27 @@ const getColumnsConfig = (queryRequest, history, pushData) => {
       width: 60,
     },
     {
+      title: "推送结果",
+      key: "send_email_result",
+      dataIndex: "send_email_result",
+      align: "center",
+      width: 80,
+      render: (text, record) => {
+        switch (text) {
+          case 1:
+            return <div>{renderDisc("normal", 7, -1)}成功</div>;
+          case 2:
+            return <div>{renderDisc("warning", 7, -1)}推送中</div>;
+          case 0:
+            return <div>{renderDisc("critical", 7, -1)}失败</div>;
+          case 3:
+            return <div>{renderDisc("warning", 7, -1)}未推送 </div>;
+          default:
+            return "-";
+        }
+      },
+    },
+    {
       title: "操作",
       width: 60,
       key: "",
