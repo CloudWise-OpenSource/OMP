@@ -1044,7 +1044,7 @@ class ModuleSendEmailSetting(models.Model):
         "功能模块:BackupSetting,JobSetting", max_length=64)
     send_email = models.BooleanField("是否开启邮件推送", default=False)
     to_users = models.TextField("邮箱接收用户", default="")
-    env_id = models.IntegerField("环境id", default=0)
+    env_id = models.IntegerField("环境id", default=1)
 
     class Meta:
         db_table = 'omp_module_email_send_setting'
@@ -1081,7 +1081,7 @@ class HostThreshold(models.Model):
     alert_level = models.CharField(
         max_length=32, null=False, blank=False, help_text="告警级别")
     create_date = models.DateTimeField(auto_now_add=True)
-    env_id = models.IntegerField(help_text="环境id", default=0)
+    env_id = models.IntegerField(help_text="环境id", default=1)
 
     class Meta:
         db_table = 'omp_host_threshold'
@@ -1112,7 +1112,7 @@ class ServiceThreshold(models.Model):
     alert_level = models.CharField(
         "告警级别", max_length=32, null=False, blank=False)
     create_date = models.DateTimeField(auto_now_add=True)
-    env_id = models.IntegerField("环境id", default=0)
+    env_id = models.IntegerField("环境id", default=1)
 
     class Meta:
         db_table = 'omp_service_threshold'
@@ -1144,7 +1144,7 @@ class ServiceCustomThreshold(models.Model):
     alert_level = models.CharField(
         "告警级别", max_length=32, null=False, blank=False)
     create_date = models.DateTimeField(auto_now_add=True)
-    env_id = models.IntegerField("环境id", default=0)
+    env_id = models.IntegerField("环境id", default=1)
 
     class Meta:
         db_table = 'omp_service_custom_threshold'

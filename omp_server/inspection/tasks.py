@@ -138,7 +138,7 @@ def get_prometheus_data(env_id, hosts, services, history_id, report_id, handle):
         create_html_tar(file_name, ret)
         if _h.inspection_status == 2:
             email_users = ModuleSendEmailSetting.get_email_settings(
-                env_id, "inspection").to_users
+                env_id, "inspection").to_users.split(",")
             send_email(_h, email_users)
     except Exception as e:
         logger.error(

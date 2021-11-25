@@ -219,7 +219,7 @@ const PatrolStrategy = () => {
     setPushLoading(true);
     fetchPost(apiRequest.inspection.updatePushConfig, {
       body: {
-        env_id: 0,
+        env_id: 1,
         to_users: pushForm.getFieldValue("email"),
         send_email: data.pushIsOpen,
       },
