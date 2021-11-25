@@ -1,5 +1,6 @@
 import logging
 import threading
+import traceback
 
 from django.core.mail import EmailMultiAlternatives
 from django.core.mail.backends.smtp import EmailBackend
@@ -128,17 +129,20 @@ class EmailSendTool(object):
         发送邮件
         :return:
         """
-        if self.content.is_html:
-            self.email_msg.attach_alternative(
-                self.content.fetch_html_content, "text/html")
-        if self.content.file:
-            self.email_msg.attach_file(
-                **self.content.fetch_file_kwargs()
-            )
-        elif self.content.file_content:
-            self.email_msg.attach(
-                **self.content.fetch_file_content()
-            )
+        try:
+            if self.content.is_html:
+                self.email_msg.attach_alternative(
+                    self.content.fetch_html_content, "text/html")
+            if self.content.file:
+                self.email_msg.attach_file(
+                    **self.content.fetch_file_kwargs()
+                )
+            elif self.content.file_content:
+                self.email_msg.attach(
+                    **self.content.fetch_file_content()
+                )
+        except Exception as e:
+            logger.error(f"发送邮件失败，失败原因： {str(e)}，详情为：{traceback.format_exc()}")
         try:
             count = self.email_msg.send()
         except Exception as e:
