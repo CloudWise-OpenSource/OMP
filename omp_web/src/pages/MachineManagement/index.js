@@ -19,7 +19,6 @@ import { useDispatch } from "react-redux";
 import getColumnsConfig, { DetailHost } from "./config/columns";
 import { DownOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 import { useHistory, useLocation } from "react-router-dom";
-import { use } from "echarts";
 
 const MachineManagement = () => {
   const location = useLocation();

@@ -1,9 +1,13 @@
 import BasicInfoItem from "../component/BasicInfoItem/index";
 import DependentInfoItem from "../component/DependentinfoItem/index";
-import { Form, Button } from "antd";
+import { Form, Button, message } from "antd";
 import { useEffect, useState } from "react";
 import { fetchPost } from "@/utils/request";
 import { useSelector, useDispatch } from "react-redux";
+import { apiRequest } from "@/config/requestApi";
+import { handleResponse } from "@/utils/utils";
+import { getStep1ChangeAction } from "../store/actionsCreators";
+import * as R from "ramda";
 
 const Step1 = ({ setStepNum }) => {
   // const [basic, setBasic] = useState([])
@@ -11,11 +15,14 @@ const Step1 = ({ setStepNum }) => {
   const data = useSelector((state) => state.installation.step1Data);
   const reduxDispatch = useDispatch();
 
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false);
 
   const uniqueKey = useSelector((state) => state.appStore.uniqueKey);
 
-  console.log(uniqueKey,"uniqueKey")
+  // 定义下一步是否可操作，只在第一次加载时判断
+  const [isContinue, setIsContinue] = useState(false);
+
+  console.log(uniqueKey, "uniqueKey");
 
   // let data = { is_continue: true };
   // data.basic = [
@@ -205,7 +212,7 @@ const Step1 = ({ setStepNum }) => {
 
   const dataProcessing = () => {
     let formBasicData = basicForm.getFieldsValue();
-    let formDependentData = dependentForm.getFieldsValue();;
+    let formDependentData = dependentForm.getFieldsValue();
     //setStepNum(1);
     let basic = JSON.parse(JSON.stringify(data.basic));
     let dependent = JSON.parse(JSON.stringify(data.dependence));
@@ -229,7 +236,7 @@ const Step1 = ({ setStepNum }) => {
               return {
                 name: i.name,
                 version: i.version,
-                deploy_mode: formBasicData[k],
+                deploy_mode: Number(formBasicData[k]),
               };
             } else {
               return {
@@ -273,19 +280,18 @@ const Step1 = ({ setStepNum }) => {
               // 取消了选中，当前为部署数量信息
               // 判断部署数量是否是数字
               if (kArr[1] == "num") {
-                deploy_mode = formDependentData[k];
+                // deploy_mode = formDependentData[k];
                 cluster_name = formDependentData[`${item.name}=name`];
                 vip = formDependentData[`${item.name}=vip`];
-                // if(isNaN(Number(formDependentData[k]))){
-                //   // 非数字代表单实例，主从，主主
-                //   console.log("主从主主",item.name,k)
-
-                // }else{
-                //   // 数字代表部署数量
-                //   console.log("数字",item.name)
-                //   // 数量
-                //   //cluster_name
-                // }
+                if (isNaN(Number(formDependentData[k]))) {
+                  // 非数字代表单实例，主从，主主
+                  deploy_mode = formDependentData[k];
+                } else {
+                  // 数字代表部署数量
+                  deploy_mode = Number(formDependentData[k]);
+                  // 数量
+                  //cluster_name
+                }
               }
             }
           }
@@ -308,25 +314,67 @@ const Step1 = ({ setStepNum }) => {
 
     return {
       basic: basic,
-      dependence: dependent
-    }
+      dependence: dependent,
+    };
   };
 
   // checkInstallInfo 基本信息提交操作，决定是否跳转服务分布以及数据校验回显
-  const checkInstallInfo = (data) => {
-    console.log(uniqueKey,data)
-    return 
+  const checkInstallInfo = (queryData) => {
+    // console.log(uniqueKey,data)
+    // return
     setLoading(true);
     fetchPost(apiRequest.appStore.checkInstallInfo, {
       body: {
-
-        ...data
+        unique_key: uniqueKey,
+        data: queryData,
       },
     })
       .then((res) => {
         //console.log(operateObj[operateAciton])
         handleResponse(res, (res) => {
-          
+          if (res.data && res.data.data) {
+            if (res.data.data.is_continue) {
+              // 校验通过，跳转，请求服务分布数据并跳转
+              setStepNum(1);
+            } else {
+              message.warn("校验未通过");
+              // 当校验未通过时不跳转，并回显数据
+              // 使用redux中已有的数据做基础，在其上添加失败的校验信息
+              let { basic, dependence } = R.clone(data);
+
+              let { basic: resBasic, dependence: resDependence } = R.clone(
+                res.data.data
+              );
+              // console.log(dependence);
+              // console.log(resDependence);
+              reduxDispatch(
+                getStep1ChangeAction({
+                  basic: basic.map((item) => {
+                    let d = R.clone(item);
+                    resBasic.map((i) => {
+                      if (i.error_msg) {
+                        if (d.name == i.name) {
+                          d.error_msg = i.error_msg;
+                        }
+                      }
+                    });
+                    return d;
+                  }),
+                  dependence: dependence.map((item) => {
+                    let d = R.clone(item);
+                    resDependence.map((i) => {
+                      if (i.error_msg) {
+                        if (d.name == i.name) {
+                          d.error_msg = i.error_msg;
+                        }
+                      }
+                    });
+                    return d;
+                  }),
+                })
+              );
+            }
+          }
         });
       })
       .catch((e) => console.log(e))
@@ -334,6 +382,10 @@ const Step1 = ({ setStepNum }) => {
         setLoading(false);
       });
   };
+
+  useEffect(() => {
+    setIsContinue(data.is_continue);
+  }, []);
 
   return (
     <>
@@ -457,10 +509,27 @@ const Step1 = ({ setStepNum }) => {
           <Button
             type="primary"
             loading={loading}
-            disabled={!data.is_continue}
+            disabled={!isContinue}
             onClick={() => {
-              console.log(dataProcessing())
-              checkInstallInfo(dataProcessing())
+              //console.log(dataProcessing());
+              //form.validateFields
+              //console.log(dependentForm.validateFields);
+              Promise.all([
+                dependentForm.validateFields(),
+                basicForm.validateFields(),
+              ])
+                .then((result) => {
+                  checkInstallInfo(dataProcessing());
+                  //console.log(result, "通过了");
+                })
+                .catch((e) => {
+                  //console.log(e, "没通过");
+                  message.warn("校验未通过");
+                  // reduxDispatch(getStep1ChangeAction({
+                  //   ...data,
+                  //   is_continue: false
+                  // }))
+                });
             }}
           >
             下一步

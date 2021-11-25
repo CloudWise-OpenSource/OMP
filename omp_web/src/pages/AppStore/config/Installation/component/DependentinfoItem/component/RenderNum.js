@@ -54,6 +54,12 @@ const RenderNum = ({ data, form }) => {
             label="集群名称"
             name={`${data.name}=name`}
             style={{ marginBottom: 0, width: 240 }}
+            rules={[
+              {
+                required: true,
+                message: "请输入集群名称",
+              },
+            ]}
           >
             <Input placeholder="请输入集群名称" />
           </Form.Item>
