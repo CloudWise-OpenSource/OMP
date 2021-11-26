@@ -33,14 +33,51 @@ class Prometheus:
         return f'127.0.0.1:{MONITOR_PORT.get("prometheus", 19011)}'  # 默认值
 
     @staticmethod
-    def get_host_threshold():
+    def get_host_threshold(env_id=1):
         host_threshold = {
             'cpu': (80, 90),
             'mem': (80, 90),
             'root_disk': (80, 90),
             'data_disk': (80, 90),
         }
-        # TODO 从库里获取真实值
+        try:
+            from db_models.models import HostThreshold
+            cpu_warning_ht = HostThreshold.objects.filter(env_id=env_id, index_type="cpu_used",
+                                                          alert_level="warning").first()
+            cpu_critical_ht = HostThreshold.objects.filter(env_id=env_id, index_type="cpu_used",
+                                                           alert_level="critical").first()
+            mem_warning_ht = HostThreshold.objects.filter(env_id=env_id, index_type="memory_used",
+                                                          alert_level="warning").first()
+            mem_critical_ht = HostThreshold.objects.filter(env_id=env_id, index_type="memory_used",
+                                                           alert_level="critical").first()
+            root_disk_warning_ht = HostThreshold.objects.filter(env_id=env_id, index_type="disk_root_used",
+                                                                alert_level="warning").first()
+            root_disk_critical_ht = HostThreshold.objects.filter(env_id=env_id, index_type="disk_root_used",
+                                                                 alert_level="critical").first()
+            data_disk_warning_ht = HostThreshold.objects.filter(env_id=env_id, index_type="disk_data_used",
+                                                                alert_level="warning").first()
+            data_disk_critical_ht = HostThreshold.objects.filter(env_id=env_id, index_type="disk_data_used",
+                                                                 alert_level="critical").first()
+            host_threshold.update(
+                cpu=(
+                    int(cpu_warning_ht.condition_value) if cpu_warning_ht else 0,
+                    int(cpu_critical_ht.condition_value) if cpu_critical_ht else 100,
+                ),
+                mem=(
+                    int(mem_warning_ht.condition_value) if mem_warning_ht else 0,
+                    int(mem_critical_ht.condition_value) if mem_critical_ht else 100,
+                ),
+                root_disk=(
+                    int(root_disk_warning_ht.condition_value) if root_disk_warning_ht else 0,
+                    int(root_disk_critical_ht.condition_value) if root_disk_critical_ht else 100,
+                ),
+                data_disk=(
+                    int(data_disk_warning_ht.condition_value) if data_disk_warning_ht else 0,
+                    int(data_disk_critical_ht.condition_value) if data_disk_critical_ht else 100,
+                )
+            )
+        except Exception as e:
+            logger.error(f"同步阈值至prometheus失败，详情为：{e}")
         return host_threshold
 
     def get_host_metric_status(self, metric, metric_value):

@@ -6,6 +6,7 @@ from django.test import TestCase
 from promemonitor.prometheus import Prometheus
 from db_models.models import MonitorUrl
 from unittest import mock
+from db_models.models import HostThreshold
 
 
 class MockResponse:
@@ -26,6 +27,18 @@ class TestPrometheus(TestCase):
     def setUp(self):
         MonitorUrl.objects.create(
             name='prometheus', monitor_url='127.0.0.1:19011')
+        hts = list()
+        for metric in ("cpu_used", "memory_used", "disk_root_used", "disk_data_used"):
+            for level in ("warning", "critical"):
+                hts.append(HostThreshold(
+                    index_type=metric,
+                    condition=">=",
+                    condition_value="80" if level == "warning" else "90",
+                    alert_level=level,
+                    # create_date="",
+                    env_id=1
+                ))
+        HostThreshold.objects.bulk_create(hts)
 
     @staticmethod
     def return_host_list():
@@ -139,3 +152,4 @@ class TestPrometheus(TestCase):
 
     def tearDown(self):
         MonitorUrl.objects.filter(name='prometheus').delete()
+        HostThreshold.objects.filter(env_id=1).delete()

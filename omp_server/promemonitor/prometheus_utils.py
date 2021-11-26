@@ -20,6 +20,7 @@ import requests
 # import requests
 from ruamel.yaml import YAML
 
+from db_models.models import HostThreshold, ServiceCustomThreshold
 from omp_server.settings import PROJECT_DIR
 from utils.parse_config import MONITOR_PORT
 
@@ -610,3 +611,57 @@ class PrometheusUtils(object):
             logger.error(e)
             logger.error("重载prometheus配置失败！")
         return True, "success"
+
+    def update_host_threshold(self, env="default", env_id=1):
+        rules_file_placeholder_script = [
+            {"ENV": env},
+            {"EMAIL_ADDRESS": self.email_address}
+        ]
+
+        node_rule_yml_file = os.path.join(
+            self.prometheus_rules_path,
+            f"{env}_node_rule.yml"
+        )
+        if not os.path.exists(node_rule_yml_file):
+            shutil.copy(
+                self.prometheus_node_rule_tpl,
+                node_rule_yml_file
+            )
+            self.replace_placeholder(
+                node_rule_yml_file,
+                rules_file_placeholder_script
+            )
+        from utils.prometheus.update_threshold import config_update
+        try:
+            # 调用自监控脚本更新环境阈值
+            host_thresholds = HostThreshold.objects.filter(
+                env_id=env_id).values(
+                'index_type', 'condition', 'condition_value', 'alert_level')
+            services_objs = ServiceCustomThreshold.objects.filter(
+                env_id=env_id
+            ).order_by("service_name", "index_type", "condition_value").values(
+                "service_name", "index_type", "condition",
+                "condition_value", "alert_level")
+            services_dict = {}
+            for services_obj in services_objs:
+                service_name = services_obj.pop("service_name")
+                info = services_dict.get(service_name)
+                if not info:
+                    services_dict[service_name] = [services_obj]
+                else:
+                    services_dict[service_name].append(services_obj)
+            params = {
+                'env_name': env,
+                'hosts': list(host_thresholds),
+                'services': services_dict
+            }
+            # data_dir = get_path_dir(env_id)
+            # if data_dir:
+            #     params.update(disk_data_path=data_dir)  # TODO 补充替换数据分区阈值的逻辑
+            update_result = config_update(params)
+            if not update_result:
+                return False, "failed"
+            return True, "success"
+        except Exception as e:
+            logger.error(f"同步监控指标出错:{e}")
+            return False, "failed"
