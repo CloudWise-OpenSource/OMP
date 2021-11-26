@@ -39,6 +39,7 @@ logger = logging.getLogger("server")
 
 DIR_KEY = "{data_path}"
 UNIQUE_KEY_ERROR = "后台无法追踪此流程,请重新进行安装操作!"
+WEB_CONTAINERS = ["tengine"]
 
 
 class RedisDB(object):
@@ -109,6 +110,28 @@ class BaseRedisData(object):
         if not _flag:
             raise ValidationError(UNIQUE_KEY_ERROR)
         return _data
+
+    def step_set_with_ser(self, data):
+        """
+        设置with服务范围，临时存储，在最终部署的时候添加回来
+        [
+            {"name": "xx", "version": "xxx", "with": "xxx"}
+        ]
+        :param data:
+        :return:
+        """
+        self.redis.set(
+            name=self.unique_key + "_with_ser",
+            data=data
+        )
+
+    def get_with_ser(self):
+        """
+        获取 with ser服务的列表
+        :return:
+        """
+        key = self.unique_key + "_with_ser"
+        return self._get(key=key)
 
     def step_1_set_unique_key(self, data):
         """
@@ -250,7 +273,8 @@ class BaseRedisData(object):
                 }
         for item in dependence:
             if item.get("is_use_exist"):
-                _data["use_exist"][item["name"]] = item.get("exist_instance")
+                _data["use_exist"][item["name"]] = item.get(
+                    "exist_instance", [])
                 continue
             _data["install"][item["name"]] = {
                 "version": item["version"],
@@ -308,6 +332,8 @@ class BaseRedisData(object):
         :type data: dict
         :return:
         """
+        # 覆盖第一步选择的安装数据
+        self.step_2_set_origin_install_data_args(data=data)
         self.redis.set(
             name=self.unique_key + "_step_3_checked_data",
             data=data
@@ -318,8 +344,8 @@ class BaseRedisData(object):
             cluster_name_map[item["name"]] = \
                 item.get("cluster_name")
             # 存储服务对应产品的集群名称
-            for el in item.get("services_list"):
-                cluster_name_map[el["name"]] = item.get("cluster_name")
+            # for el in item.get("services_list"):
+            #     cluster_name_map[el["name"]] = item.get("cluster_name")
         dependence = data.get("data", {}).get("dependence", [])
         for item in dependence:
             if item.get("is_use_exist"):
@@ -483,7 +509,10 @@ def check_package_exists(app_obj):
 class ProductServiceParse(object):
     """ 解析要安装的应用服务的基础信息 """
 
-    def __init__(self, pro_name, pro_version, high_availability=False):
+    def __init__(
+            self, pro_name, pro_version,
+            high_availability=False, unique_key=None
+    ):
         """
         产品、应用解析服务信息
         :param pro_name: 产品、应用名称
@@ -493,6 +522,7 @@ class ProductServiceParse(object):
         self.pro_name = pro_name
         self.pro_version = pro_version
         self.high_availability = high_availability
+        self.unique_key = unique_key
 
     def get_default_and_step(self, app_obj):
         """
@@ -504,10 +534,9 @@ class ProductServiceParse(object):
         if not self.high_availability:
             return 1, 0
         # 如果服务是和tengine进行强绑定的，那么需要限制其数量为1
+        # TODO 当前tengine不支持高可用模式
         if "affinity" in app_obj.extend_fields and \
-                app_obj.extend_fields.get(
-                    "affinity", {}).get(
-                    "serviceSelector", "") == "tengine":
+                app_obj.extend_fields.get("affinity") == "tengine":
             return 1, 0
         return 1, 1
 
@@ -525,6 +554,19 @@ class ProductServiceParse(object):
             app_name=_name,
             app_version=_version
         ).last()
+        # 解决服务强绑定依赖问题
+        if "affinity" in app_obj.extend_fields and \
+                app_obj.extend_fields["affinity"] in WEB_CONTAINERS:
+            return {
+                "name": _name,
+                "version": _version,
+                "with": app_obj.extend_fields["affinity"],
+                "with_flag": True,
+                "deploy_mode": {
+                    "default": 1,
+                    "step": 0
+                }
+            }
         _default_dic = {
             "name": _name,
             "version": _version,
@@ -699,6 +741,8 @@ class SerDependenceParseUtils(object):
         :type obj: ApplicationHub
         :return:
         """
+        if obj.is_base_env:
+            return True
         if not obj.extend_fields:
             return False
         is_base_env = obj.extend_fields.get("base_env", False)
@@ -1137,6 +1181,117 @@ class BaseEnvServiceUtils(object):
         return base_env_ser_lst
 
 
+class WithServiceUtils(object):
+    """ 解决带有with的服务场景 """
+
+    def __init__(self, all_install_service_lst, unique_key=None, run_user=None):
+        """
+        解决依赖于base_env服务的安装操作
+        :param all_install_service_lst: 所有需要安装的服务
+        :type all_install_service_lst: list
+        :param unique_key: 安装标识
+        :type unique_key: str
+        :param run_user: 运行用户
+        :type run_user: str
+        """
+        self.all = all_install_service_lst
+        self.unique_key = unique_key
+        self.run_user = run_user
+
+    def parse_single_service(self, ser_dic):
+        """
+        解析单个服务的with场景，并拼接为最终可安装的数据格式
+        :param ser_dic: 服务信息
+        :type ser_dic: dict
+        :return:
+        """
+        _ser = {
+            "name": ser_dic.get("name"),
+            "version": ser_dic.get("version")
+        }
+        _ser_lst = list()
+        with_ser = ser_dic.get("with")
+        is_found_flag = False   # 是否已经找到with服务的标识
+        for item in self.all:
+            _tmp_ser = deepcopy(_ser)
+            # 当需要被with的服务在需要安装的服务列表中时
+            if item.get("name") == with_ser:
+                ip = item.get("ip")
+                data_folder = item.get("data_folder")
+                run_user = item.get("run_user")
+                _app = ApplicationHub.objects.filter(
+                    app_name=_tmp_ser["name"],
+                    app_version=_tmp_ser["version"]
+                ).last()
+                install_args = ServiceArgsPortUtils(
+                    ip=ip,
+                    data_folder=data_folder,
+                    run_user=run_user
+                ).remake_install_args(obj=_app)
+                ports = ServiceArgsPortUtils(
+                    ip=ip,
+                    data_folder=data_folder,
+                    run_user=run_user
+                ).get_app_port(obj=_app)
+                instance_name = \
+                    _tmp_ser["name"] + "-" + "-".join(ip.split(".")[-2:])
+                _tmp_ser["ip"] = ip
+                _tmp_ser["data_folder"] = data_folder
+                _tmp_ser["run_user"] = run_user
+                _tmp_ser["install_args"] = install_args
+                _tmp_ser["ports"] = ports
+                _tmp_ser["instance_name"] = instance_name
+                _tmp_ser["cluster_name"] = None
+                _ser_lst.append(_tmp_ser)
+                is_found_flag = True
+        # 如果没有找到，则证明被with的服务是在复用的列表内的，需要查看当前系统内的该服务信息
+        if not is_found_flag:
+            with_ser_ips = Service.objects.filter(
+                service__app_name=with_ser).values("ip")
+            with_ser_ips = [el["ip"] for el in with_ser_ips]
+            for _ip in with_ser_ips:
+                _tmp_ser = deepcopy(_ser)
+                data_folder = Host.objects.filter(ip=_ip).last().data_folder
+                run_user = self.run_user
+                _app = ApplicationHub.objects.filter(
+                    app_name=_tmp_ser["name"],
+                    app_version=_tmp_ser["version"]
+                ).last()
+                install_args = ServiceArgsPortUtils(
+                    ip=_ip,
+                    data_folder=data_folder,
+                    run_user=run_user
+                ).remake_install_args(obj=_app)
+                ports = ServiceArgsPortUtils(
+                    ip=_ip,
+                    data_folder=data_folder,
+                    run_user=run_user
+                ).get_app_port(obj=_app)
+                instance_name = \
+                    _tmp_ser["name"] + "-" + "-".join(_ip.split(".")[-2:])
+                _tmp_ser["ip"] = _ip
+                _tmp_ser["data_folder"] = data_folder
+                _tmp_ser["run_user"] = run_user
+                _tmp_ser["install_args"] = install_args
+                _tmp_ser["ports"] = ports
+                _tmp_ser["instance_name"] = instance_name
+                _tmp_ser["cluster_name"] = None
+                _ser_lst.append(_tmp_ser)
+        return _ser_lst
+
+    def run(self):
+        """
+        运行方法
+        :return:
+        """
+        with_ser_lst = BaseRedisData(
+            unique_key=self.unique_key).get_with_ser()
+        ret_lst = list()
+        for item in with_ser_lst:
+            ret_lst.extend(self.parse_single_service(ser_dic=item))
+        return ret_lst
+
+
 class DataJson(object):
     """ 生成data.json数据 """
 
@@ -1431,17 +1586,19 @@ class CreateInstallPlan(object):
         :type dic: dict
         :return:
         """
-        if "cluster_name" not in dic or \
-                not dic["cluster_name"]:
-            return
         _obj = self.get_app_obj_for_service(dic)
         if not _obj or _obj.app_type != ApplicationHub.APP_TYPE_SERVICE:
             return
-        product_instance_name = dic["cluster_name"]
-        Product.objects.get_or_create(
-            product_instance_name=product_instance_name,
-            product=_obj.product
-        )
+        _data = BaseRedisData(
+            unique_key=self.unique_key).get_step_3_checked_data()
+        for item in _data.get("data", {}).get("basic", []):
+            if _obj.product.pro_name == item.get("name") and \
+                    _obj.product.pro_version == item.get("version"):
+                product_instance_name = item.get("cluster_name")
+                Product.objects.get_or_create(
+                    product_instance_name=product_instance_name,
+                    product=_obj.product
+                )
 
     def check_if_has_post_action(self, ser):    # NOQA
         """
@@ -1462,6 +1619,7 @@ class CreateInstallPlan(object):
         """
 
         try:
+            logger.info("start CreateInstallPlan.run!")
             with transaction.atomic():
                 # step0: 生成
                 # step1: 生成操作唯一uuid，创建主安装记录
@@ -1542,3 +1700,133 @@ class MakeServiceOrder(object):
         final_lst.extend(level_0_lst)
         final_lst.extend(level_1_lst)
         return final_lst
+
+
+class ValidateInstallServicePortArgs(object):
+    """ 检查要安装的服务信息是否准确 """
+
+    def __init__(self, data=None):
+        """
+        初始化方法
+        :param data: 要被检验的服务信息
+        :type data: list
+        """
+        if not data or not isinstance(data, list):
+            raise GeneralError(
+                "ValidateInstallService __init__ arg error: data"
+            )
+        self.data = data
+
+    def check_service_port(self, app_port, ip):     # NOQA
+        """
+        检查服务端口
+        :param app_port: 服务端口列表
+        :type app_port: list
+        :param ip: 主机ip地址
+        :type ip: str
+        :return:
+        """
+        salt_obj = SaltClient()
+        for el in app_port:
+            _port = el.get("default", "")
+            if not _port or not str(_port).isnumeric():
+                el["check_flag"] = False
+                el["check_msg"] = f"端口 {_port} 必须为数字"
+                continue
+            # method1: 从OMP本机查看端口是否已被占用
+            # _flag, _msg = public_utils.check_ip_port(ip=ip, port=int(_port))
+            # method2: 从目标服务器查看端口是否被占用
+            _flag, _msg = salt_obj.cmd(
+                target=ip,
+                command=f"</dev/tcp/{ip}/{_port}",
+                timeout=10
+            )
+            if _flag:
+                el["check_flag"] = False
+                el["error_msg"] = f"主机 {ip} 上的端口 {_port} 已被占用"
+        return app_port
+
+    def check_service_args(self, app_install_args, data_path, ip):  # NOQA
+        """
+        检查服务的安装参数，路径检查
+        :param app_install_args: 服务安装参数
+        :type app_install_args: list
+        :param data_path: 主机数据目录
+        :type data_path: str
+        :param ip: 主机ip地址
+        :type ip: str
+        :return:
+        """
+        _salt_obj = SaltClient()
+        for el in app_install_args:
+            if "dir_key" not in el:
+                continue
+            _tobe_check_path = el.get("default", "")
+            _cmd = \
+                f"test -d {_tobe_check_path} && echo 'EXISTS' || echo 'OK'"
+            _flag, _msg = _salt_obj.cmd(
+                target=ip,
+                command=_cmd,
+                timeout=10
+            )
+            if not _flag:
+                el["check_flag"] = False
+                el["error_msg"] = \
+                    f"无法确定该路径状态: {_tobe_check_path}; " \
+                    f"请检查主机及主机Agent状态是否正常"
+                continue
+            if "OK" not in _msg:
+                el["check_flag"] = False
+                el["error_msg"] = f"{_tobe_check_path} 在目标主机 {ip} 上已存在"
+        return app_install_args
+
+    def check_single_service(self, dic):    # NOQA
+        """
+        检查单个服务的安装信息
+        :param dic: 服务安装信息
+        :type dic: dict
+        :return:
+        """
+        _dic = deepcopy(dic)
+        _ip = _dic.get("ip")
+        _host_obj = Host.objects.filter(ip=_ip).last()
+        if not _host_obj:
+            _dic["check_flag"] = False
+            _dic["error_msg"] = f"主机 {_ip} 不存在"
+            return _dic
+        _data_path = _host_obj.data_folder
+        # 检查端口是否被占用
+        app_port = self.check_service_port(
+            app_port=_dic.get("ports", []),
+            ip=_ip
+        )
+        # 校验安装参数
+        app_install_args = self.check_service_args(
+            app_install_args=_dic.get("install_args", []),
+            data_path=_data_path,
+            ip=_ip
+        )
+        _dic["ports"] = app_port
+        _dic["install_args"] = app_install_args
+        return _dic
+
+    def run(self):
+        """
+        运行检查入口函数
+        :return:
+        """
+        thread_p = ThreadPoolExecutor(
+            max_workers=10, thread_name_prefix="check_install_service_"
+        )
+        # futures_list:[(item, future)]
+        futures_list = list()
+        for item in self.data:
+            future = thread_p.submit(self.check_single_service, item)
+            futures_list.append((item.get("instance_name"), future))
+        # result_list:[{}, ...]
+        result_list = list()
+        for f in futures_list:
+            result_list.append(f[1].result())
+        thread_p.shutdown(wait=True)
+        # TODO 整体服务间的关键校验
+        return result_list

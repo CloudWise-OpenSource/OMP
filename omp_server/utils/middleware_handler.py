@@ -12,6 +12,7 @@
 
 import json
 import ipware
+import logging
 
 from django.urls import resolve
 # from django.http import HttpRequest
@@ -23,6 +24,8 @@ from rest_framework_jwt.utils import jwt_decode_handler
 from jwt import DecodeError
 
 from db_models.models import OperateLog
+
+logger = logging.getLogger("server")
 
 
 class OperationLogMiddleware(MiddlewareMixin):
@@ -40,6 +43,8 @@ class OperationLogMiddleware(MiddlewareMixin):
         if _method == "get":
             return response
         _url = request.path
+        if _url.startswith("/proxy/v1/grafana"):
+            return response
         view_class = resolve(_url).func.cls
         if hasattr(view_class, f"{_method}_description"):
             _desc = getattr(view_class, f"{_method}_description")

@@ -17,7 +17,7 @@ from rest_framework.mixins import (
 
 from db_models.models import (
     ApplicationHub, ProductHub, Product, Service,
-    MainInstallHistory, DetailInstallHistory
+    MainInstallHistory, DetailInstallHistory, Host
 )
 from utils.common.exceptions import ValidationError
 from app_store.install_utils import ServiceArgsSerializer
@@ -48,7 +48,7 @@ class BatchInstallEntranceView(GenericViewSet, ListModelMixin):
         """
         检查应用产品是否安装过
         :param pro_name: 应用名称
-        :param pro_version: 应用版本
+        :param pro_version_lst: 应用版本
         :return:
         """
         if Product.objects.filter(
@@ -67,6 +67,9 @@ class BatchInstallEntranceView(GenericViewSet, ListModelMixin):
         :param kwargs:
         :return:
         """
+        if Host.objects.all().count() == 0:
+            raise ValidationError(
+                "当前系统内无可用主机，请先纳管主机后再执行安装操作！")
         product_name = request.query_params.get("product_name")
         if not product_name:
             product_queryset = ProductHub.objects.filter(
@@ -163,9 +166,7 @@ class GetInstallArgsByIpView(GenericViewSet, ListModelMixin):
             return Response(
                 data={"error_msg": "请求参数必须包含[unique_key]和[ip]"})
         _data = BaseRedisData(unique_key).get_step_5_host_service_map()
-        print(_data)
         check_data = BaseRedisData(unique_key).get_step_2_origin_data()
-        print(check_data)
         install_ser = check_data.get("install")
         services_lst = _data.get(ip, [])
         app_lst = ApplicationHub.objects.filter(app_name__in=services_lst)
@@ -212,11 +213,16 @@ class ListServiceByIpView(GenericViewSet, ListModelMixin):
         :param kwargs:
         :return:
         """
-        ip = request.query_params.get("ip")
-        _data = Service.objects.filter(ip=ip).values(
-            "service__app_name", "service_instance_name"
+        # ip = request.query_params.get("ip")
+        _data = Service.objects.filter().values(
+            "ip", "service__app_name", "service_instance_name"
         )
-        return Response(data=list(_data))
+        data = dict()
+        for item in _data:
+            if item["ip"] not in data:
+                data[item["ip"]] = list()
+            data[item["ip"]].append(item)
+        return Response(data=data)
 
 
 class ShowInstallProcessView(GenericViewSet, ListModelMixin):
