@@ -663,5 +663,6 @@ class PrometheusUtils(object):
                 return False, "failed"
             return True, "success"
         except Exception as e:
-            logger.error(f"同步监控指标出错:{e}")
+            import traceback
+            logger.error(f"同步监控指标出错:{e}{traceback.format_exc()}")
             return False, "failed"
