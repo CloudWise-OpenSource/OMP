@@ -19,6 +19,7 @@ from urllib.parse import urlparse
 from django.http import QueryDict
 # from django.http import HttpRequest
 from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 
 from db_models.models import MonitorUrl
 
@@ -93,6 +94,7 @@ def grafana_proxy(request, url, requests_args=None):
     return proxy_response
 
 
+@csrf_exempt
 def grafana_proxy_view(request, path):
     """
     获取grafana页面

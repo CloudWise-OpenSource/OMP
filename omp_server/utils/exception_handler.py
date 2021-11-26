@@ -11,6 +11,7 @@
 """
 
 import logging
+import traceback
 
 from rest_framework.views import exception_handler
 from rest_framework.response import Response
@@ -30,6 +31,7 @@ class ExceptionResponse:
 
     def err_response(self):
         logger.error(f"ExceptionResponse: {str(self.exc)}; {self.context}")
+        logger.error(f"ExceptionResponse: {traceback.format_exc()};")
         response = exception_handler(self.exc, self.context)
         response_status_code = 200
         if response:

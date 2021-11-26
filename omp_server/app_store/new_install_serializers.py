@@ -17,7 +17,6 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import Serializer
 
-
 from db_models.models import (
     ProductHub,
     Service,
@@ -37,7 +36,9 @@ from app_store.new_install_utils import (
     RedisDB,
     BaseRedisData,
     CreateInstallPlan,
-    MakeServiceOrder
+    MakeServiceOrder,
+    ValidateInstallServicePortArgs,
+    WithServiceUtils
 )
 
 logger = logging.getLogger("server")
@@ -94,7 +95,7 @@ class CreateInstallInfoSerializer(BaseInstallSerializer):
         read_only=True
     )
 
-    def check_product_dependence(self, pro_obj, all_dic):   # NOQA
+    def check_product_dependence(self, pro_obj, all_dic):  # NOQA
         """
 
         :param pro_obj: 应用对象
@@ -157,6 +158,7 @@ class CreateInstallInfoSerializer(BaseInstallSerializer):
             f"CreateInstallInfoSerializer.validated_data: {validated_data}")
         install_product = validated_data["install_product"]
         high_availability = validated_data["high_availability"]
+        unique_key = validated_data["unique_key"]
 
         _basic = list()
         # 遍历所有需要安装的产品，将产品下的服务信息收集并存储至_basic变量内
@@ -164,7 +166,8 @@ class CreateInstallInfoSerializer(BaseInstallSerializer):
             _pro_info = ProductServiceParse(
                 pro_name=item.get("name"),
                 pro_version=item.get("version"),
-                high_availability=high_availability
+                high_availability=high_availability,
+                unique_key=unique_key
             ).run()
             _basic.append(_pro_info)
 
@@ -172,7 +175,10 @@ class CreateInstallInfoSerializer(BaseInstallSerializer):
         _recheck_service = dict()
         # 遍历所有需要安装的自研服务信息，确定服务的依赖关系并存储至_dependence变量内
         _dependence = list()
+        # 将带有with标识的服务进行处理
+        with_ser_lst = list()
         for _pro in _basic:
+            _re_services_list = list()
             for item in _pro.get("services_list"):
                 _recheck_service.update({
                     item.get("name", "") + "-" + item.get("version", ""): True
@@ -183,6 +189,15 @@ class CreateInstallInfoSerializer(BaseInstallSerializer):
                     high_availability=high_availability
                 ).run_ser()
                 _dependence.extend(_dep)
+                if "with_flag" in item:
+                    with_ser_lst.append(item)
+                else:
+                    _re_services_list.append(item)
+            _pro["services_list"] = _re_services_list
+
+        # 将带有with标识的服务存放至redis数据中
+        BaseRedisData(
+            unique_key=unique_key).step_set_with_ser(data=with_ser_lst)
 
         # 使用make_lst_unique方法将服务依赖列表去重处理
         _dependence = make_lst_unique(
@@ -274,12 +289,11 @@ class CheckInstallInfoSerializer(BaseInstallSerializer):
                     item.get("deploy_mode", 0) == 1:
                 continue
             if isinstance(item.get("deploy_mode"), int) and \
-                    item.get("deploy_mode", 0) > 1 and \
-                    "cluster_name" not in item:
-                item["error_msg"] = f"{_name}应用集群实例名称[cluster_name]必须填写"
-                is_repeat = True
+                    item.get("deploy_mode", 0) == 1:
                 continue
-            if "cluster_name" not in item:
+            if (isinstance(item.get("deploy_mode"), int) and item.get(
+                    "deploy_mode",
+                    0) > 1 and "cluster_name" not in item) or "cluster_name" not in item:
                 item["error_msg"] = f"{_name}应用集群实例名称[cluster_name]必须填写"
                 is_repeat = True
                 continue
@@ -289,9 +303,17 @@ class CheckInstallInfoSerializer(BaseInstallSerializer):
                     f"{_name}应用集群实例名称: {item['cluster_name']} 不允许重复"
         return is_repeat, lst
 
+    def check_deploy_mode_num(self):
+        pass
+
     def validate_data(self, data):
         """
         校验请求数据、返回校验结果
+        data:
+        {
+            "basic": [],
+            "dependence": []
+        }
         :param data:
         :return:
         """
@@ -314,12 +336,13 @@ class CheckInstallInfoSerializer(BaseInstallSerializer):
             _data["is_continue"] = True
         return _data
 
-    def check_service(self, validated_data, use_exist, install):    # NOQA
+    def check_service(self, validated_data, use_exist, install):  # NOQA
         is_continue = True
         for item in validated_data["data"].get("basic", []):
             for el in item.get("services_list"):
                 if el.get("name") not in install or \
-                        el.get("version") != install[el.get("name")]["version"]:
+                    el.get("version") != install[el.get("name")][
+                        "version"]:
                     el["error_msg"] = f"无法追踪此服务: {el.get('name')}"
                     is_continue = False
         for item in validated_data["data"].get("use_exist", []):
@@ -391,12 +414,13 @@ class CreateServiceDistributionSerializer(BaseInstallSerializer):
         for item in data:
             services_list = item.get("services_list", [])
             for el in services_list:
+                _with_ser = SerWithUtils(
+                    ser_name=el.get("name"),
+                    ser_version=check_data[el["name"]]["version"]
+                ).run()
                 all_data[el.get("name")] = {
                     "num": el.get("deploy_mode"),
-                    "with": SerWithUtils(
-                        ser_name=el.get("name"),
-                        ser_version=check_data[el["name"]]["version"]
-                    ).run()
+                    "with": _with_ser
                 }
         return all_data
 
@@ -467,7 +491,8 @@ class CreateServiceDistributionSerializer(BaseInstallSerializer):
         lst.append({
             "name": "基础组件",
             "child": [
-                el.get("name") for el in data if not el.get("is_base_env")
+                el.get("name") for el in data
+                if not el.get("is_base_env") and not el.get("is_use_exist")
             ]
         })
         return lst
@@ -480,15 +505,15 @@ class CreateServiceDistributionSerializer(BaseInstallSerializer):
         """
         validated_data["data"] = dict()
         validated_data["data"]["host"] = self.get_host_info()
-        _re_obj = RedisDB()
-        flag, _data = _re_obj.get(
-            validated_data["unique_key"] + "_step_3_checked_data")
-        if not flag:
-            raise ValidationError(UNIQUE_KEY_ERROR)
-        check_flag, check_data = _re_obj.get(
-            validated_data["unique_key"] + "_step_2_origin_data")
-        if not check_flag:
-            raise ValidationError(UNIQUE_KEY_ERROR)
+
+        _data = BaseRedisData(
+            unique_key=validated_data["unique_key"]
+        ).get_step_3_checked_data()
+
+        check_data = BaseRedisData(
+            unique_key=validated_data["unique_key"]
+        ).get_step_2_origin_data()
+
         basic = _data.get("data", {}).get("basic", [])
         dependence = _data.get("data", {}).get("dependence", [])
         all_data = dict()
@@ -604,6 +629,8 @@ class CheckServiceDistributionSerializer(BaseInstallSerializer):
             host_list=list(validated_data["data"].keys()),
             host_service_map=validated_data["data"]
         )
+        validated_data["is_continue"] = True
+        validated_data["error_lst"] = list()
         return validated_data
 
 
@@ -650,7 +677,7 @@ class CreateInstallPlanSerializer(BaseInstallSerializer):
                     error_lst.append({key: f"此服务{el.get('name')}不在安装范围内"})
         return error_lst
 
-    def make_final_install_data(
+    def make_final_install_data(  # NOQA
             self, install_data, valid_data,
             run_user, host_ser_map, cluster_name_map
     ):
@@ -704,6 +731,20 @@ class CreateInstallPlanSerializer(BaseInstallSerializer):
                     all_install_service_lst.append(_dic)
         return all_install_service_lst
 
+    def check_error_msg(self, all_install_service_lst):  # NOQA
+        """
+        检查安装参数和端口的联通性是否存在错误，数据过滤
+        :param all_install_service_lst:
+        :return:
+        """
+        for item in all_install_service_lst:
+            lst = item.get("install_args", [])
+            lst.extend(item.get("ports"))
+            for el in lst:
+                if "error_msg" in el and el["error_msg"]:
+                    return False
+        return True
+
     def create(self, validated_data):
         """
         创建部署计划
@@ -740,15 +781,36 @@ class CreateInstallPlanSerializer(BaseInstallSerializer):
             host_ser_map=_host_ser_map,
             cluster_name_map=cluster_name_map
         )
+
         # 解决base_env服务的安装
         base_env_ser_lst = BaseEnvServiceUtils(
-            all_install_service_lst=all_install_service_lst).run()
+            all_install_service_lst=all_install_service_lst
+        ).run()
         all_install_service_lst.extend(base_env_ser_lst)
-        logger.info(
-            f"Install data:\n"
-            f"{json.dumps(all_install_service_lst, indent=2, ensure_ascii=False)}"
-        )
-        # TODO 生成部署计划 json文件 服务安装排序 依赖关系绑定
+        # 解决带有with标识服务的解析方法
+        with_ser_lst = WithServiceUtils(
+            all_install_service_lst=all_install_service_lst,
+            unique_key=unique_key,
+            run_user=run_user
+        ).run()
+        all_install_service_lst.extend(with_ser_lst)
+
+        # TODO 依赖关系绑定
+        all_install_service_lst = ValidateInstallServicePortArgs(
+            data=all_install_service_lst
+        ).run()
+        is_continue = self.check_error_msg(all_install_service_lst)
+        logger.info(f"Final check_error_msg: {is_continue}")
+        if not is_continue:
+            _re_data = {
+                el: [
+                    ser for ser in all_install_service_lst
+                    if ser.get("ip") == el
+                ] for el in validated_data["data"]
+            }
+            validated_data["data"] = _re_data
+            validated_data["is_continue"] = is_continue
+            return validated_data
         # 服务排序处理
         all_install_service_lst = MakeServiceOrder(
             all_service=all_install_service_lst
@@ -760,4 +822,5 @@ class CreateInstallPlanSerializer(BaseInstallSerializer):
         if not _flag:
             logger.error(f"Failed CreateInstallPlan: {_res}")
             raise _res
+        validated_data["is_continue"] = is_continue
         return validated_data

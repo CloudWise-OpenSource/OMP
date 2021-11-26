@@ -34,7 +34,8 @@ class SaltClient(object):
         :param config_path: salt-master的配置文件绝对路径
         """
         self.config_path = config_path
-        logger.info(f"Init salt client with config path: {self.config_path}!")
+        # logger.info(
+        #     f"Init salt client with config path: {self.config_path}!")
         self.client = salt.client.LocalClient(
             c_path=self.config_path, auto_reconnect=True)
 
