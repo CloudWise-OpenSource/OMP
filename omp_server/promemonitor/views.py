@@ -605,7 +605,12 @@ class HostThresholdView(GenericViewSet, ListModelMixin, CreateModelMixin):
                 HostThreshold.objects.bulk_create(_obj_lst)
 
             from promemonitor.prometheus_utils import PrometheusUtils
-            PrometheusUtils().update_host_threshold(env_id=env_id)
+            prometheus_util = PrometheusUtils()
+            prometheus_util.update_host_threshold(env_id=env_id)
+            data_disk_dir_list = list(Host.objects.all().values_list(
+                "data_folder", flat=True).distinct())
+            for ele in data_disk_dir_list:
+                prometheus_util.update_node_data_rule(ele)
 
             return Response({})
         except Exception as e:
