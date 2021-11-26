@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import argparse
-import json
 import os
 
 import requests
@@ -69,7 +68,7 @@ def update_node_rule_yaml(quotes_info):
     更新主机指标文件
     """
     env_name = quotes_info.get("env_name")
-    node_rule_yml_path = os.path.join(PROJECT_DIR, 'component'
+    node_rule_yml_path = os.path.join(PROJECT_DIR, 'component',
                                       'prometheus/conf/rules',
                                       '{}_node_rule.yml'.format(env_name))
     instance_alert = {
@@ -134,7 +133,7 @@ def update_service_rule_yaml(quotes_info):
     更新服务指标文件
     """
     env_name = quotes_info.get("env_name")
-    service_rule_yml_path = os.path.join(PROJECT_DIR, 'component'
+    service_rule_yml_path = os.path.join(PROJECT_DIR, 'component',
                                          'prometheus/conf/rules',
                                          '{}_service_status_rule.yml'.format(env_name))
     instance_alert = {
@@ -211,7 +210,7 @@ def config_update(quotes_info):
     }
     """
     logger.info('收到阈值更新json：{}'.format(quotes_info))
-    quotes_info = json.loads(quotes_info)
+    # quotes_info = json.loads(quotes_info)
     # 更新主机规则文件
     update_node_mark = update_node_rule_yaml(quotes_info)
     if not update_node_mark:
