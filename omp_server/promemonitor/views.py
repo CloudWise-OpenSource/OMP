@@ -603,6 +603,10 @@ class HostThresholdView(GenericViewSet, ListModelMixin, CreateModelMixin):
             with transaction.atomic():
                 HostThreshold.objects.filter(env_id=env_id).delete()
                 HostThreshold.objects.bulk_create(_obj_lst)
+
+            from promemonitor.prometheus_utils import PrometheusUtils
+            PrometheusUtils().update_host_threshold(env_id=env_id)
+
             return Response({})
         except Exception as e:
             logger.error(f"更新主机相关阈值过程中出错: {traceback.format_exc()}")
