@@ -174,6 +174,18 @@ class PrometheusUtils(object):
         :param env: 主机所属环境
         :return:
         """
+        try:
+            from db_models.models import HostThreshold
+            warning_obj = HostThreshold.objects.filter(env_id=1, index_type="disk_data_used",
+                                                       alert_level="warning").first()
+            critical_obj = HostThreshold.objects.filter(env_id=1, index_type="disk_data_used",
+                                                        alert_level="critical").first()
+            warning_threshold = warning_obj.condition_value if warning_obj else "0"
+            critical_threshold = critical_obj.condition_value if critical_obj else "100"
+        except Exception as e:
+            warning_threshold = "80"
+            critical_threshold = "90"
+            logger.error(f"更新数据分区告警于是失败！详情为：{e}")
         des = "主机 {{ $labels.instance }} 数据分区使用率为 " \
               "{{ $value | humanize }}%, 大于阈值 "
         return {
@@ -181,12 +193,11 @@ class PrometheusUtils(object):
             "annotations": {
                 "disk_data_path": f"{data_path}",
                 "consignee": f"{self.email_address}",
-                "description":
-                    des + "90%" if level == "critical" else des + "80%",
+                "description": des + f"{critical_threshold}%" if level == "critical" else des + f"{warning_threshold}%",
                 "summary": "disk_data_used (instance {{ $labels.instance }})"
             },
             "expr": self.get_expr(
-                90 if level == "critical" else 80, env, data_path),
+                critical_threshold if level == "critical" else warning_threshold, env, data_path),
             "for": "1m",
             "labels": {
                 "job": "nodeExporter",
@@ -471,7 +482,7 @@ class PrometheusUtils(object):
             json_dict["services"] = json.loads(json_dict["services"])
             json_dict['promtail_config'] = {
                 'http_listen_port': MONITOR_PORT.get('promtail'),
-                'loki_url': f'http://{LOCAL_IP}:{MONITOR_PORT.get("loki")}/loki/api/v1/push'   # NOQA
+                'loki_url': f'http://{LOCAL_IP}:{MONITOR_PORT.get("loki")}/loki/api/v1/push'  # NOQA
             }
             json_dict['agent_dir'] = host_agent_dir
             logger.info(f'向agent发送数据{json_dict}')
