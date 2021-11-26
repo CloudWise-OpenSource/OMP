@@ -60,20 +60,20 @@ class Prometheus:
                                                                  alert_level="critical").first()
             host_threshold.update(
                 cpu=(
-                    cpu_warning_ht.condition_value if cpu_warning_ht else 0,
-                    cpu_critical_ht.condition_value if cpu_critical_ht else 100,
+                    int(cpu_warning_ht.condition_value) if cpu_warning_ht else 0,
+                    int(cpu_critical_ht.condition_value) if cpu_critical_ht else 100,
                 ),
                 mem=(
-                    mem_warning_ht.condition_value if mem_warning_ht else 0,
-                    mem_critical_ht.condition_value if mem_critical_ht else 100,
+                    int(mem_warning_ht.condition_value) if mem_warning_ht else 0,
+                    int(mem_critical_ht.condition_value) if mem_critical_ht else 100,
                 ),
                 root_disk=(
-                    root_disk_warning_ht.condition_value if root_disk_warning_ht else 0,
-                    root_disk_critical_ht.condition_value if root_disk_critical_ht else 100,
+                    int(root_disk_warning_ht.condition_value) if root_disk_warning_ht else 0,
+                    int(root_disk_critical_ht.condition_value) if root_disk_critical_ht else 100,
                 ),
                 data_disk=(
-                    data_disk_warning_ht.condition_value if data_disk_warning_ht else 0,
-                    data_disk_critical_ht.condition_value if data_disk_critical_ht else 100,
+                    int(data_disk_warning_ht.condition_value) if data_disk_warning_ht else 0,
+                    int(data_disk_critical_ht.condition_value) if data_disk_critical_ht else 100,
                 )
             )
         except Exception as e:
