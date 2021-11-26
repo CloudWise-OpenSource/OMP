@@ -118,6 +118,13 @@ export const apiRequest = {
     queryListServiceByIp: "/api/appStore/listServiceByIp",
     // 服务批量安装服务分布确认操作
     checkServiceDistribution: "/api/appStore/checkServiceDistribution/",
+
+    // 服务批量安装修改配置ip初始查询
+    getInstallHostRange: "/api/appStore/getInstallHostRange/",
+    // 服务批量安装根据ip查询安装相应参数
+    getInstallArgsByIp: "/api/appStore/getInstallArgsByIp/",
+    // 服务批量安装开始安装操作
+    createInstallPlan: "/api/appStore/createInstallPlan/",
   },
   inspection: {
     inspectionList: "/api/inspection/history/",

@@ -256,7 +256,7 @@ const PatrolStrategy = () => {
         <Form
           name="setting"
           labelCol={{ span: 3 }}
-          wrapperCol={{ span: 6 }}
+          wrapperCol={{ span: 8 }}
           style={{ paddingTop: 40 }}
           onFinish={changeStrategy}
           form={form}
@@ -493,7 +493,7 @@ const PatrolStrategy = () => {
         <Form
           name="pushSetting"
           labelCol={{ span: 3 }}
-          wrapperCol={{ span: 6 }}
+          wrapperCol={{ span: 8 }}
           style={{ paddingTop: 40 }}
           onFinish={changePush}
           form={pushForm}

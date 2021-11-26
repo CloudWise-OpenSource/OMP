@@ -1,13 +1,19 @@
 import { Collapse, Form, Input, Tooltip, Spin } from "antd";
 import { CaretRightOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { getStep3ServiceChangeAction } from "../../store/actionsCreators";
 
 const { Panel } = Collapse;
 
-const ServiceConfigItem = ({ data, form, loading }) => {
+const ServiceConfigItem = ({ data, form, loading, ip }) => {
   let portData = data.ports || [];
   let installArgsData = data.install_args || [];
   const renderData = [...installArgsData, ...portData];
+
+  const dispatch = useDispatch();
+
+  const errInfo = useSelector((state) => state.installation.step3ErrorData);
 
   useEffect(() => {
     // 设置默认值
@@ -17,6 +23,20 @@ const ServiceConfigItem = ({ data, form, loading }) => {
       });
     });
   }, []);
+
+  useEffect(() => {
+    if (errInfo[ip] && errInfo[ip][data.name]) {
+      for (const key in errInfo[ip][data.name]) {
+        console.log(errInfo[ip][data.name][key])
+        form.setFields([
+          {
+            name: `${data.name}=${key}`,
+            errors: [errInfo[ip][data.name][key]],
+          },
+        ]);
+      }
+    }
+  }, [errInfo[ip]]);
 
   return (
     <div style={{ padding: 10 }}>
@@ -40,7 +60,7 @@ const ServiceConfigItem = ({ data, form, loading }) => {
                   key={item.key}
                   label={<div>{item.name}</div>}
                   name={`${data.name}=${item.key}`}
-                  style={{ marginTop: 10, width: 450 }}
+                  style={{ marginTop: 10, width: 500 }}
                   rules={[
                     {
                       required: true,
@@ -49,6 +69,17 @@ const ServiceConfigItem = ({ data, form, loading }) => {
                   ]}
                 >
                   <Input
+                    onChange={(e) => {
+                      //console.log(e.target.value);
+                      dispatch(
+                        getStep3ServiceChangeAction(
+                          ip,
+                          data.name,
+                          item.key,
+                          e.target.value
+                        )
+                      );
+                    }}
                     addonBefore={
                       item.dir_key ? (
                         <span style={{ color: "#b1b1b1" }}>/ 数据分区</span>

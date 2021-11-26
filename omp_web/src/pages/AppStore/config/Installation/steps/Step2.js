@@ -1,4 +1,4 @@
-import { Button, Form, Spin } from "antd";
+import { Button, Form, Spin, message } from "antd";
 import { useEffect, useState } from "react";
 import ServiceDistributionItem from "../component/ServiceDistributionItem/index.js";
 import { useSelector, useDispatch } from "react-redux";
@@ -228,9 +228,8 @@ const Step2 = ({ setStepNum }) => {
       .then((res) => {
         //console.log(operateObj[operateAciton])
         handleResponse(res, (res) => {
-          return;
           if (res.data && res.data.data) {
-            if (res.data.data.is_continue) {
+            if (res.data.is_continue) {
               // 校验通过，跳转，请求服务分布数据并跳转
               setStepNum(2);
             } else {
@@ -259,6 +258,7 @@ const Step2 = ({ setStepNum }) => {
           marginTop: 20,
           backgroundColor: "#fff",
           padding: 10,
+          paddingBottom:30
         }}
       >
         <Spin spinning={loading}>

@@ -1,5 +1,5 @@
 import * as actionTypes from "./constants";
-import * as R from "ramda"
+import * as R from "ramda";
 
 export const getDataSourceChangeAction = (value) => {
   const dataSource = R.clone(value);
@@ -49,14 +49,36 @@ export const getStep2ErrorLstChangeAction = (value) => {
       errorList: data,
     },
   };
-}
+};
 
-export const getStep3ChangeAction = (value) => {
+export const getStep3IpDataChangeAction = (value) => {
   const data = R.clone(value);
   return {
     type: actionTypes.CHANGE_STEP3DATA,
     payload: {
-      step3Data: data,
+      ipData: data,
+    },
+  };
+};
+
+export const getStep3ServiceChangeAction = (ip, name, key, value) => {
+  return {
+    type: actionTypes.CHANGE_STEP3SERVERDATA,
+    payload: {
+      ip,
+      name,
+      key,
+      value,
+    },
+  };
+};
+
+export const getStep3ErrorInfoChangeAction = (value) => {
+  console.log(value)
+  return {
+    type: actionTypes.CHANGE_STEP3ERRORDATA,
+    payload: {
+      err: value,
     },
   };
 };

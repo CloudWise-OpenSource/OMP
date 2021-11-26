@@ -127,7 +127,9 @@ const BasicInfoItem = ({ data, form }) => {
           );
         })}
       </div>
-      <div style={{ marginTop: 5, color: "red" }}>{data.error_msg}</div>
+      <div style={{ marginTop: 5, color: "red",whiteSpace: "pre-line" }}>
+        {data.error_msg}
+      </div>
     </>
   );
 };
