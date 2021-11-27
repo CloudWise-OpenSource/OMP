@@ -1117,10 +1117,10 @@ class BaseEnvServiceUtils(object):
     def _dep_parse(self, dep_lst, base_env_dic, base_env_ser_lst, item):  # NOQA
         """
         解析依赖关系
-        :param dep_lst:
-        :param base_env_dic:
-        :param base_env_ser_lst:
-        :param item:
+        :param dep_lst: 服务依赖列表
+        :param base_env_dic: 基础依赖字典，去重作用
+        :param base_env_ser_lst: 所有基础依赖服务数据
+        :param item: 要安装的某个服务的信息
         :return:
         """
         for el in dep_lst:
@@ -1129,6 +1129,13 @@ class BaseEnvServiceUtils(object):
                 app_version=el["version"]
             ).last()
             if not _dep_obj.is_base_env:
+                continue
+            # 当被依赖的基础服务已经被安装时，使用如下方法进行过滤处理
+            if Service.objects.filter(
+                ip=item["ip"],
+                service__app_name=el["name"],
+                service__app_version=el["version"]
+            ).count() > 0:
                 continue
             if item["ip"] in base_env_dic and \
                     el["name"] in base_env_dic[item["ip"]]:

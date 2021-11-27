@@ -760,6 +760,15 @@ class CreateInstallPlanSerializer(BaseInstallSerializer):
         _host_ser_map = BaseRedisData(
             unique_key).get_step_5_host_service_map()
         install_data = validated_data["data"]
+        # 查看前端发送的ip地址范围和后端存储的是否能够对应
+        _set_1 = set(_host_ser_map.keys()) - set(install_data.keys())
+        if len(_set_1) != 0:
+            raise ValidationError(
+                f"主机 [{','.join(list(_set_1))}] 缺失")
+        _set_2 = set(install_data.keys()) - set(_host_ser_map.keys())
+        if len(_set_2) != 0:
+            raise ValidationError(
+                f"主机 [{','.join(list(_set_2))}] 不在已选范围内")
         # 校验服务数量及合法性 TODO 后期可针对服务数量准确性进行详细校验
         error_lst = self.check_service_dis(
             host_service_map=_host_ser_map, install_data=install_data)
