@@ -16,6 +16,7 @@ import ApplicationInstallation from "@/pages/AppStore/config/ApplicationInstalla
 import Installation from "@/pages/AppStore/config/Installation";
 import EmailSettings from "src/pages/EmailSettings";
 import RuleCenter from "src/pages/RuleCenter";
+import InstallationRecord from "@/pages/InstallationRecord"
 import {
   DesktopOutlined,
   ClusterOutlined,
@@ -84,6 +85,11 @@ export default [
         path: "/application_management/app_store/installation",
         notInMenu: true,
         component: Installation,
+      },
+      {
+        title: "安装记录",
+        path: "/application-management/installation-record",
+        component: InstallationRecord,
       },
     ],
   },

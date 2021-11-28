@@ -125,6 +125,13 @@ export const apiRequest = {
     getInstallArgsByIp: "/api/appStore/getInstallArgsByIp/",
     // 服务批量安装开始安装操作
     createInstallPlan: "/api/appStore/createInstallPlan/",
+    // 批量安装-开始安装信息查询
+    queryInstallProcess: "/api/appStore/showInstallProcess",
+    // 批量安装-服务安装进度详情查询
+    showSingleServiceInstallLog:"/api/appStore/showSingleServiceInstallLog"
+  },
+  installHistoryPage:{
+    queryInstallHistoryList:"/api/appStore/mainInstallHistory"
   },
   inspection: {
     inspectionList: "/api/inspection/history/",
