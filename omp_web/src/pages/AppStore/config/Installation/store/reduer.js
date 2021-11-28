@@ -75,7 +75,6 @@ function reducer(state = defaultState, action) {
         }
         return item;
       });
-
       return {
         ...stateCopy,
         step3Data: {

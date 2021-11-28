@@ -9,7 +9,9 @@ import { handleResponse } from "@/utils/utils";
 import {
   getStep3IpDataChangeAction,
   getStep3ErrorInfoChangeAction,
+  getStep3ServiceChangeAction,
 } from "../store/actionsCreators";
+import * as R from "ramda";
 
 const Step3 = ({ setStepNum }) => {
   const dispatch = useDispatch();
@@ -25,7 +27,7 @@ const Step3 = ({ setStepNum }) => {
   const reduxData = useSelector((state) => state.installation.step3Data);
 
   const errInfo = useSelector((state) => state.installation.step3ErrorData);
-  console.log(errInfo["10.0.12.250"]);
+  //console.log(errInfo["10.0.12.250"]);
 
   const [checked, setChecked] = useState(false);
 
@@ -171,7 +173,7 @@ const Step3 = ({ setStepNum }) => {
     setLoadingIp(true);
     fetchGet(apiRequest.appStore.getInstallHostRange, {
       params: {
-        unique_key: uniqueKey,
+        unique_key: uniqueKey ,
       },
     })
       .then((res) => {
@@ -188,14 +190,21 @@ const Step3 = ({ setStepNum }) => {
   }
 
   const queryInstallArgsByIp = (ip) => {
+    //console.log("ip刷新了")
     // 如果redux中已经存了当前ip的数据就不再请求直接使用redux中的
     if (reduxData[ip]) {
+      // dispatch(
+      //   getStep3IpDataChangeAction({
+      //     [ip]: reduxData[ip],
+      //   })
+      // );
+      // console.log(reduxData)
       return;
     }
     setLoading(true);
     fetchGet(apiRequest.appStore.getInstallArgsByIp, {
       params: {
-        unique_key: uniqueKey,
+        unique_key: uniqueKey ,
         ip: ip,
       },
     })
@@ -221,7 +230,7 @@ const Step3 = ({ setStepNum }) => {
     ipList.map((ip) => {
       obj[ip] = [];
     });
-    console.log(data);
+    //console.log(data);
     return {
       ...obj,
       ...data,
@@ -242,20 +251,59 @@ const Step3 = ({ setStepNum }) => {
     //     },
     //   },
     // };
-    console.log(data);
+    //console.log(data);
     let result = {};
     for (const ip in data) {
       data[ip].map((service) => {
         [...service.install_args, ...service.ports].map((serv) => {
           if (!serv.check_flag) {
-            result[ip] = {};
-            result[ip][service.name] = {};
-            result[ip][service.name][serv.key] = serv.error_msg;
+            if (!result[ip]) {
+              result[ip] = {};
+            }
+            if (result[ip][service.name]) {
+              result[ip][service.name][serv.key] = serv.error_msg;
+            } else {
+              result[ip][service.name] = {};
+              result[ip][service.name][serv.key] = serv.error_msg;
+            }
           }
         });
       });
     }
-    console.log(result, "result");
+    // console.log(result, "result");
+    return result;
+  };
+
+  // 非空校验
+  const nonNullCheck = (queryData) => {
+    let result = {};
+    //console.log(queryData);
+    let data = R.clone(queryData);
+    // 这一步校验是为了解决非当前页面form的必填校验不到的问题
+    // 当key == vip 跳过校验（非必填）
+    // 首先去除当前页面ip的相关数据校验
+    data[checkIp] = [];
+    // console.log(data)
+    for (const ip in data) {
+      data[ip].map((service) => {
+        [...service.install_args, ...service.ports].map((serv) => {
+          // console.log(serv);
+          // 特殊处理，去除vip非空校验
+          if (!serv.default && serv.key !== "vip") {
+            if (!result[ip]) {
+              result[ip] = {};
+            }
+            if (result[ip][service.name]) {
+              result[ip][service.name][serv.key] = `请输入${serv.name}`;
+            } else {
+              result[ip][service.name] = {};
+              result[ip][service.name][serv.key] = `请输入${serv.name}`;
+            }
+          }
+        });
+      });
+    }
+
     return result;
   };
 
@@ -277,7 +325,7 @@ const Step3 = ({ setStepNum }) => {
               // 校验通过，跳转，请求服务分布数据并跳转
               setStepNum(3);
             } else {
-              message.warn("校验未通过");
+              message.warn("校验未通过，请检查");
               dispatch(
                 getStep3ErrorInfoChangeAction(getErrorInfo(res.data.data))
               );
@@ -408,7 +456,7 @@ const Step3 = ({ setStepNum }) => {
               }}
             >
               <Spin spinning={loadingIp}>
-                {currentIpList.map((item) => {
+                {currentIpList?.map((item) => {
                   return (
                     <div
                       key={item}
@@ -430,6 +478,27 @@ const Step3 = ({ setStepNum }) => {
                           backgroundColor: checkIp == item ? "#edf8fe" : "",
                         }}
                         onClick={() => {
+                          //console.log(checkIp);
+                          // 点击切换ip时再存redux，避免不必要的性能消耗
+                          let formData = serviceConfigform.getFieldValue();
+                          for (const key in formData) {
+                            let keyArr = key.split("=");
+                            //console.log(reduxData[checkIp]);
+                            reduxData[checkIp].map((item) => {
+                              if (keyArr[0] == item.name) {
+                                // console.log(formData[key])
+                                dispatch(
+                                  getStep3ServiceChangeAction(
+                                    checkIp,
+                                    item.name,
+                                    keyArr[1],
+                                    formData[key]
+                                  )
+                                );
+                              }
+                            });
+                          }
+
                           setCheckIp(item);
                         }}
                       >
@@ -468,8 +537,13 @@ const Step3 = ({ setStepNum }) => {
               <div style={{ width: "100%", height: 300 }}></div>
             </Spin>
           ) : (
-            <Form form={serviceConfigform} name="config" labelCol={{ span: 8 }} wrapperCol={{ span: 40 }}>
-              {reduxData[checkIp]?.map((item) => {
+            <Form
+              form={serviceConfigform}
+              name="config"
+              labelCol={{ span: 8 }}
+              wrapperCol={{ span: 40 }}
+            >
+              {reduxData[checkIp]?.map((item, idx) => {
                 return (
                   <ServiceConfigItem
                     ip={checkIp}
@@ -477,6 +551,7 @@ const Step3 = ({ setStepNum }) => {
                     data={item}
                     form={serviceConfigform}
                     loading={loading}
+                    idx={idx}
                   />
                 );
               })}
@@ -500,7 +575,7 @@ const Step3 = ({ setStepNum }) => {
           borderRadius: 2,
         }}
       >
-        <div style={{ paddingLeft: 20 }}>分布主机数量: {ipList.length}台</div>
+        <div style={{ paddingLeft: 20 }}>分布主机数量: {ipList?.length}台</div>
         <div>
           <Button
             type="primary"
@@ -520,10 +595,16 @@ const Step3 = ({ setStepNum }) => {
               //console.log(serviceConfigform.getFieldValue());
               serviceConfigform.validateFields().then(
                 (e) => {
-                  console.log("不一定成功了", e);
-                  createInstallPlan(dataProcessing(reduxData));
+                  let errData = nonNullCheck(reduxData);
+                  if (Object.keys(errData).length > 0) {
+                    message.warn("校验未通过，请检查");
+                    dispatch(getStep3ErrorInfoChangeAction(errData));
+                  } else {
+                    createInstallPlan(dataProcessing(reduxData));
+                  }
                 },
                 (e) => {
+                  message.warn("校验未通过，请检查");
                   console.log("失败了", e);
                 }
               );

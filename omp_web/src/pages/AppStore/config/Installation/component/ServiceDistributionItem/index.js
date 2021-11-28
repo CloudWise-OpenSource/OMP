@@ -399,10 +399,9 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
                   const { value, onClose, label } = e;
                   //console.log(value)
                   // label 可能是一级或者二级
-                  let checkedItem = options.filter((i) => {
-                    return i.label == label;
-                  });
-                  console.log();
+                  // let checkedItem = options.filter((i) => {
+                  //   return i.label == label;
+                  // });
                   return (
                     <Tag
                       //closable={allDataPool[label] && !allDataPool[label].with}
@@ -512,7 +511,7 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
                     } else {
                       // 点的是一级
                       // 在这个条件中还有一个情况是半选中状态
-                      console.log("点击一级");
+                      //console.log("点击一级");
                       let checkedArr = options
                         .filter((i) => {
                           return i.label == label;

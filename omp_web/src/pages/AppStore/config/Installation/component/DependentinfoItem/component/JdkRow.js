@@ -2,8 +2,8 @@ import { Checkbox } from "antd";
 const JdkRow = ({ data }) => {
   return (
     <>
-      <div style={{ flex: 2 }}>{data.name}</div>
-      <div style={{ flex: 2 }}>{data.version}</div>
+      <div style={{ flex: 1 }}>{data.name}</div>
+      <div style={{ flex: 1 }}>{data.version}</div>
       <div style={{ flex: 3 }}></div>
       <div
         style={{ flex: 5, display: "flex", justifyContent: "space-between" }}

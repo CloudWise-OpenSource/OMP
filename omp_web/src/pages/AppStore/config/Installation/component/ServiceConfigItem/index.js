@@ -2,32 +2,42 @@ import { Collapse, Form, Input, Tooltip, Spin } from "antd";
 import { CaretRightOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getStep3ServiceChangeAction } from "../../store/actionsCreators";
 
 const { Panel } = Collapse;
 
-const ServiceConfigItem = ({ data, form, loading, ip }) => {
+const ServiceConfigItem = ({ form, loading, ip, idx }) => {
+  let data = useSelector((state) => state.installation.step3Data)[ip][idx];
+
+  // console.log(data)
+
   let portData = data.ports || [];
   let installArgsData = data.install_args || [];
   const renderData = [...installArgsData, ...portData];
-
-  const dispatch = useDispatch();
+  // let instanceName = data.instance_name;
 
   const errInfo = useSelector((state) => state.installation.step3ErrorData);
 
   useEffect(() => {
     // 设置默认值
+    // form.setFieldsValue({
+    //   [`${data.name}=instance_name`]: data.instance_name,
+    // });
     renderData.map((i) => {
       form.setFieldsValue({
         [`${data.name}=${i.key}`]: i.default,
       });
     });
-  }, []);
+  }, [data]);
 
   useEffect(() => {
     if (errInfo[ip] && errInfo[ip][data.name]) {
+      // form.setFields([
+      //   {
+      //     name: `${data.name}=instance_name`,
+      //     errors: [errInfo[ip][data.name][key]],
+      //   },
+      // ]);
       for (const key in errInfo[ip][data.name]) {
-        console.log(errInfo[ip][data.name][key])
         form.setFields([
           {
             name: `${data.name}=${key}`,
@@ -63,23 +73,23 @@ const ServiceConfigItem = ({ data, form, loading, ip }) => {
                   style={{ marginTop: 10, width: 500 }}
                   rules={[
                     {
-                      required: true,
+                      required: item.key !== "vip",
                       message: `请输入${item.name}`,
                     },
                   ]}
                 >
                   <Input
-                    onChange={(e) => {
-                      //console.log(e.target.value);
-                      dispatch(
-                        getStep3ServiceChangeAction(
-                          ip,
-                          data.name,
-                          item.key,
-                          e.target.value
-                        )
-                      );
-                    }}
+                    // onChange={(e) => {
+                    //   //console.log(e.target.value);
+                    //   dispatch(
+                    //     getStep3ServiceChangeAction(
+                    //       ip,
+                    //       data.name,
+                    //       item.key,
+                    //       e.target.value
+                    //     )
+                    //   );
+                    // }}
                     addonBefore={
                       item.dir_key ? (
                         <span style={{ color: "#b1b1b1" }}>/ 数据分区</span>
