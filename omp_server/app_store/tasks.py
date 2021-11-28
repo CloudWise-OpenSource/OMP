@@ -717,7 +717,7 @@ def add_prometheus(main_history_id):
         if service_port is not None:
             # 获取数据目录、日志目录
             app_install_args = detail_obj.install_detail_args.get(
-                "app_install_args", [])
+                "install_args", [])
             data_dir = log_dir = ""
             username = password = ""
             for info in app_install_args:
