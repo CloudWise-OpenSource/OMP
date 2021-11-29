@@ -72,21 +72,24 @@ const Step2 = ({ setStepNum }) => {
         });
       })
       .catch((e) => console.log(e))
-      .finally(() => {
-      });
+      .finally(() => {});
   };
 
   // 提交前对数据进行处理
   const dataProcessing = () => {
     let data = form.getFieldValue();
     console.log(data);
-    let result = {}
+    let result = {};
     for (const key in data) {
-      result[key] = data[key].map(item=>{
-        return item[1]
-      })
+      if(data[key].length > 0){
+        result[key] = data[key].map((item) => {
+          return item[1];
+        });
+      }
     }
-    return result
+
+    console.log(result)
+    return result;
   };
 
   // 最后的提交操作
@@ -108,8 +111,7 @@ const Step2 = ({ setStepNum }) => {
               setStepNum(2);
             } else {
               message.warn("校验未通过");
-              reduxDispatch(
-                getStep2ErrorLstChangeAction(res.data.error_lst))
+              reduxDispatch(getStep2ErrorLstChangeAction(res.data.error_lst));
             }
           }
         });
@@ -123,6 +125,11 @@ const Step2 = ({ setStepNum }) => {
   useEffect(() => {
     queryCreateServiceDistribution();
     queryInstallServiceData();
+    return () => {
+      // 销毁时去除error信息
+      reduxDispatch(getStep2ErrorLstChangeAction([]));
+      reduxDispatch(getDataSourceChangeAction([]));
+    };
   }, []);
 
   return (
@@ -132,7 +139,7 @@ const Step2 = ({ setStepNum }) => {
           marginTop: 20,
           backgroundColor: "#fff",
           padding: 10,
-          paddingBottom:30
+          paddingBottom: 30,
         }}
       >
         <Spin spinning={loading}>

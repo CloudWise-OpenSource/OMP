@@ -36,7 +36,7 @@ const BatchInstallationModal = ({
 
   //选中的数据
   const [checkedList, setCheckedList] = useState({});
-
+  // console.log(checkedList)
   //应用服务选择的版本号
   const versionInfo = useRef({});
 
@@ -135,6 +135,12 @@ const BatchInstallationModal = ({
       });
   };
 
+  useEffect(() => {
+    setCheckedList({
+      data: dataSource.filter(item=>item.is_continue),
+    });
+  }, [dataSource]);
+  // console.log(checkedList)
   return (
     <Modal
       title={

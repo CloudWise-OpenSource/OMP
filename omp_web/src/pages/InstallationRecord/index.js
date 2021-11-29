@@ -56,7 +56,7 @@ const InstallationRecord = () => {
   const columns = [
     {
       title: "编号",
-      width: 80,
+      width: 40,
       key: "_idx",
       dataIndex: "_idx",
       //sorter: (a, b) => a.username - b.username,
@@ -135,7 +135,7 @@ const InstallationRecord = () => {
     {
       title: "操作",
       key: "1",
-      width: 80,
+      width: 50,
       dataIndex: "1",
       align: "center",
       fixed: "right",
@@ -217,6 +217,7 @@ const InstallationRecord = () => {
         }}
       >
         <OmpTable
+          noScroll={true}
           loading={loading}
           onChange={(e, filters, sorter) => {
             setTimeout(() => {
