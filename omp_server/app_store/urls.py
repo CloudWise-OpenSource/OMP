@@ -35,7 +35,8 @@ from app_store.new_install_view import (
     CreateInstallPlanView,
     ListServiceByIpView,
     ShowInstallProcessView,
-    ShowSingleServiceInstallLogView
+    ShowSingleServiceInstallLogView,
+    MainInstallHistoryView
 )
 
 router = DefaultRouter()
@@ -137,4 +138,9 @@ router.register(
     "showSingleServiceInstallLog",
     ShowSingleServiceInstallLogView,
     basename="showSingleServiceInstallLog"
+)
+router.register(
+    "mainInstallHistory",
+    MainInstallHistoryView,
+    basename="mainInstallHistory"
 )
