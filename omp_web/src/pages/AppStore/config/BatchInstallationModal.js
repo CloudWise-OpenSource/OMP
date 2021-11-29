@@ -17,14 +17,14 @@ import { handleResponse } from "@/utils/utils";
 import { OmpMessageModal, OmpTable } from "@/components";
 import { useHistory, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import {
-  getStep1ChangeAction,
-} from "./Installation/store/actionsCreators";
+import { getStep1ChangeAction } from "./Installation/store/actionsCreators";
+import { getUniqueKeyChangeAction } from "../store/actionsCreators";
 
 const BatchInstallationModal = ({
   bIModalVisibility,
   setBIModalVisibility,
   dataSource,
+  installTitle,
 }) => {
   const uniqueKey = useSelector((state) => state.appStore.uniqueKey);
 
@@ -85,7 +85,7 @@ const BatchInstallationModal = ({
   // 高可用是否开启
   const [highAvailabilityCheck, setHighAvailabilityCheck] = useState(false);
 
-  // 选择确认请求
+  // 批量安装/服务安装选择确认请求
   const createInstallInfo = (install_product) => {
     setLoading(true);
     fetchPost(apiRequest.appStore.createInstallInfo, {
@@ -98,8 +98,33 @@ const BatchInstallationModal = ({
       .then((res) => {
         //console.log(operateObj[operateAciton])
         handleResponse(res, (res) => {
-          if(res.data && res.data.data){
-            reduxDispatch(getStep1ChangeAction(res.data.data))
+          if (res.data && res.data.data) {
+            reduxDispatch(getStep1ChangeAction(res.data.data));
+          }
+          history.push("/application_management/app_store/installation");
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setLoading(false);
+      });
+  };
+
+  // 组件安装
+  const createComponentInstallInfo = (install_product) => {
+    setLoading(true);
+    fetchPost(apiRequest.appStore.createComponentInstallInfo, {
+      body: {
+        high_availability: highAvailabilityCheck,
+        install_component: install_product,
+      },
+    })
+      .then((res) => {
+        //console.log(operateObj[operateAciton])
+        handleResponse(res, (res) => {
+          if (res.data && res.data.data) {
+            reduxDispatch(getStep1ChangeAction(res.data.data));
+            reduxDispatch(getUniqueKeyChangeAction(res.data.unique_key));
           }
           history.push("/application_management/app_store/installation");
         });
@@ -117,10 +142,18 @@ const BatchInstallationModal = ({
           <span style={{ position: "relative", left: "-10px" }}>
             <CopyOutlined />
           </span>
-          <span>批量安装-选择应用服务</span>
+          <span>
+            {installTitle == "服务"
+              ? "服务安装-选择版本"
+              : installTitle == "组件"
+              ? "组件安装-选择版本"
+              : "批量安装-选择应用服务"}
+          </span>
         </span>
       }
-      afterClose={() => {}}
+      afterClose={() => {
+        setCheckedList({});
+      }}
       onCancel={() => {
         setBIModalVisibility(false);
       }}
@@ -204,7 +237,7 @@ const BatchInstallationModal = ({
             <Button onClick={() => setBIModalVisibility(false)}>取消</Button>
             <Button
               type="primary"
-              //style={{ marginRight: 16 }}
+              style={{ marginLeft: 16 }}
               loading={loading}
               disabled={
                 Object.keys(checkedList)
@@ -212,14 +245,26 @@ const BatchInstallationModal = ({
                   .flat(1).length == 0
               }
               onClick={() => {
-                let install_product = checkedList.data.map((item) => {
-                  return {
-                    name: item.name,
-                    version: versionInfo.current[item.name] || item.version[0],
-                  };
-                });
-                createInstallInfo(install_product);
-                // history.push("/application_management/app_store/installation")
+                if (installTitle == "组件") {
+                  let install_product = checkedList.data.map((item) => {
+                    return {
+                      name: item.name,
+                      version:
+                        versionInfo.current[item.name] || item.version[0],
+                    };
+                  });
+                  createComponentInstallInfo(install_product);
+                } else {
+                  let install_product = checkedList.data.map((item) => {
+                    return {
+                      name: item.name,
+                      version:
+                        versionInfo.current[item.name] || item.version[0],
+                    };
+                  });
+                  createInstallInfo(install_product);
+                  // history.push("/application_management/app_store/installation")
+                }
               }}
             >
               确认选择

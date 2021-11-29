@@ -8,7 +8,7 @@ import {
   Upload,
   message,
 } from "antd";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styles from "./index.module.less";
 import { SearchOutlined, DownloadOutlined } from "@ant-design/icons";
 import Card from "./config/card.js";
@@ -66,6 +66,9 @@ const AppStore = () => {
   // 批量安装的应用服务列表
   const [bIserviceList, setBIserviceList] = useState([]);
 
+  // 批量安装标题文案
+  const installTitle = useRef("批量");
+
   function fetchData(pageParams = { current: 1, pageSize: 8 }, searchParams) {
     setLoading(true);
     fetchGet(
@@ -110,14 +113,42 @@ const AppStore = () => {
   }
 
   // 获取批量安装应用服务列表
-  const queryBatchInstallationServiceList = () => {
+  const queryBatchInstallationServiceList = (queryData) => {
     setLoading(true);
-    fetchGet(apiRequest.appStore.queryBatchInstallationServiceList)
+    fetchGet(apiRequest.appStore.queryBatchInstallationServiceList, {
+      params: queryData,
+    })
       .then((res) => {
         handleResponse(res, (res) => {
           if (res.data && res.data.data) {
+            console.log(res.data.data);
             setBIserviceList(res.data.data);
             dispatch(getUniqueKeyChangeAction(res.data.unique_key));
+          }
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setLoading(false);
+      });
+  };
+
+  // 获取安装基础组件列表
+  const queryInstallComponent = (queryData) => {
+    fetchGet(apiRequest.appStore.ProductDetail, {
+      params: queryData,
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          console.log(res);
+          if (res.data) {
+            let serverlist = {};
+            serverlist.name = res.data.app_name;
+            serverlist.is_continue = true;
+            serverlist.version = res.data.versions.map((item) => {
+              return item.app_version;
+            });
+            setBIserviceList([serverlist]);
           }
         });
       })
@@ -262,6 +293,7 @@ const AppStore = () => {
               style={{ marginRight: 10 }}
               type="primary"
               onClick={() => {
+                installTitle.current = "批量";
                 queryBatchInstallationServiceList();
                 setBIModalVisibility(true);
               }}
@@ -363,6 +395,18 @@ const AppStore = () => {
                     idx={idx + 1}
                     info={item}
                     tabKey={tabKey}
+                    installOperation={(queryData, type) => {
+                      if (type == "服务") {
+                        installTitle.current = type;
+                        queryBatchInstallationServiceList(queryData);
+                      } else {
+                        installTitle.current = type;
+                        // 组件安装组件列表
+                        queryInstallComponent(queryData);
+                      }
+
+                      setBIModalVisibility(true);
+                    }}
                   />
                 );
               })}
@@ -409,6 +453,7 @@ const AppStore = () => {
         bIModalVisibility={bIModalVisibility}
         setBIModalVisibility={setBIModalVisibility}
         dataSource={bIserviceList}
+        installTitle={installTitle.current}
       />
     </div>
   );

@@ -38,12 +38,14 @@ const ServiceConfigItem = ({ form, loading, ip, idx }) => {
       //   },
       // ]);
       for (const key in errInfo[ip][data.name]) {
-        form.setFields([
-          {
-            name: `${data.name}=${key}`,
-            errors: [errInfo[ip][data.name][key]],
-          },
-        ]);
+        if(errInfo[ip][data.name][key]){
+          form.setFields([
+            {
+              name: `${data.name}=${key}`,
+              errors: [errInfo[ip][data.name][key]],
+            },
+          ]);
+        }
       }
     }
   }, [errInfo[ip]]);
@@ -68,9 +70,9 @@ const ServiceConfigItem = ({ form, loading, ip, idx }) => {
               return (
                 <Form.Item
                   key={item.key}
-                  label={<div>{item.name}</div>}
-                  name={`${data.name}=${item.key}`}
-                  style={{ marginTop: 10, width: 500 }}
+                  label={item?.name}
+                  name={`${data.name}=${item?.key}`}
+                  style={{ marginTop: 10, width: 600 }}
                   rules={[
                     {
                       required: item.key !== "vip",
@@ -95,7 +97,7 @@ const ServiceConfigItem = ({ form, loading, ip, idx }) => {
                         <span style={{ color: "#b1b1b1" }}>/ 数据分区</span>
                       ) : null
                     }
-                    style={{ width: 420 }}
+                    //style={{ width: 420 }}
                     placeholder={`请输入${item.name}`}
                     suffix={
                       item.dir_key ? (

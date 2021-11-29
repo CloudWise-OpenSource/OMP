@@ -12,9 +12,15 @@ import Step4 from "./steps/Step4";
 import { LeftOutlined } from "@ant-design/icons";
 // 安装页面
 const Installation = () => {
-  const [stepNum, setStepNum] = useState(0);
+  
   const dispatch = useDispatch();
   const history = useHistory();
+  const location = useLocation()
+
+  const defaultStep = location.state?.step
+  console.log(location, defaultStep)
+
+  const [stepNum, setStepNum] = useState(defaultStep || 0);
 
   return (
     <div>
@@ -41,7 +47,7 @@ const Installation = () => {
               // });
             }}
           />
-          批量安装
+          安装
         </div>
         <div style={{ width: 600, position: "relative", left: -60 }}>
           <Steps size="small" current={stepNum}>
