@@ -748,7 +748,10 @@ class MainInstallHistory(TimeStampMixin):
         (INSTALL_STATUS_SUCCESS, "安装成功"),
         (INSTALL_STATUS_FAILED, "安装失败"),
     )
-
+    operator = models.CharField(
+        "操作用户", max_length=32,
+        null=False, blank=False, default="admin", help_text="用户"
+    )
     operation_uuid = models.CharField(
         "部署操作uuid", max_length=36,
         null=False, blank=False, help_text="部署操作uuid")

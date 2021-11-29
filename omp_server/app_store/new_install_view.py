@@ -20,6 +20,7 @@ from db_models.models import (
     MainInstallHistory, DetailInstallHistory, Host
 )
 from utils.common.exceptions import ValidationError
+from utils.common.paginations import PageNumberPager
 from app_store.install_utils import ServiceArgsSerializer
 from app_store.new_install_utils import BaseRedisData
 
@@ -28,7 +29,8 @@ from app_store.new_install_serializers import (
     CheckInstallInfoSerializer,
     CreateServiceDistributionSerializer,
     CheckServiceDistributionSerializer,
-    CreateInstallPlanSerializer
+    CreateInstallPlanSerializer,
+    MainInstallHistorySerializer
 )
 
 logger = logging.getLogger("server")
@@ -175,10 +177,20 @@ class GetInstallArgsByIpView(GenericViewSet, ListModelMixin):
             if item.app_name not in install_ser or \
                     item.app_version == install_ser[item.app_name]:
                 continue
+            install_args = ServiceArgsSerializer().get_app_install_args(item)
+            install_args.insert(
+                0, {
+                    "key": "instance_name",
+                    "name": "实例名称",
+                    "default":
+                        item.app_name + "-" + "-".join(ip.split(".")[-2:]),
+                }
+            )
             _app = {
                 "name": item.app_name,
-                "install_args":
-                    ServiceArgsSerializer().get_app_install_args(item),
+                "instance_name":
+                    item.app_name + "-" + "-".join(ip.split(".")[-2:]),
+                "install_args": install_args,
                 "ports": ServiceArgsSerializer().get_app_port(item)
             }
             _ret_data.append(_app)
@@ -296,3 +308,9 @@ class ShowSingleServiceInstallLogView(GenericViewSet, ListModelMixin):
 
         log = get_log(detail)
         return Response(data={"log": log})
+
+
+class MainInstallHistoryView(GenericViewSet, ListModelMixin):
+    queryset = MainInstallHistory.objects.all().order_by("-id")
+    serializer_class = MainInstallHistorySerializer
+    pagination_class = PageNumberPager
