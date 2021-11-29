@@ -1766,6 +1766,12 @@ class ValidateInstallServicePortArgs(object):
         """
         _salt_obj = SaltClient()
         for el in app_install_args:
+            if el.get("key") == "instance_name" and Service.objects.filter(
+                service_instance_name=el.get("default")
+            ).count() != 0:
+                el["check_flag"] = False
+                el["error_msg"] = f"实例名称 {el.get('default')} 已存在"
+                continue
             if "dir_key" not in el:
                 continue
             _tobe_check_path = el.get("default", "")

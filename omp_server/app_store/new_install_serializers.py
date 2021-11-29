@@ -23,7 +23,8 @@ from db_models.models import (
     ClusterInfo,
     Product,
     Host,
-    ApplicationHub
+    ApplicationHub,
+    MainInstallHistory
 )
 
 from app_store.new_install_utils import (
@@ -695,6 +696,10 @@ class CreateInstallPlanSerializer(BaseInstallSerializer):
             data_folder = Host.objects.filter(ip=ip).last().data_folder
             if len(ser_lst) != 0:
                 for item in ser_lst:
+                    instance_name = None
+                    for el in item["install_args"]:
+                        if el.get("key") == "instance_name":
+                            instance_name = el.get("default")
                     item["ip"] = ip
                     item["version"] = valid_data[item["name"]]["version"]
                     item["install_args"] = ServiceArgsPortUtils(
@@ -702,6 +707,7 @@ class CreateInstallPlanSerializer(BaseInstallSerializer):
                     ).reformat_install_args(item["install_args"])
                     item["data_folder"] = data_folder
                     item["run_user"] = run_user
+                    item["instance_name"] = instance_name
                     item["cluster_name"] = cluster_name_map.get(item["name"])
                 all_install_service_lst.extend(ser_lst)
             else:
@@ -833,3 +839,16 @@ class CreateInstallPlanSerializer(BaseInstallSerializer):
             raise _res
         validated_data["is_continue"] = is_continue
         return validated_data
+
+
+class MainInstallHistorySerializer(serializers.ModelSerializer):
+    """ 历史安装记录 """
+    operator = serializers.CharField(max_length=32, help_text="操作用户")
+
+    class Meta:
+        """ 元数据 """
+        model = MainInstallHistory
+        fields = [
+            "operation_uuid", "task_id",
+            "install_status", "created", "modified", "operator"
+        ]
