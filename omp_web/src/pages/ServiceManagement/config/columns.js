@@ -382,7 +382,7 @@ const renderMenu = (
         </span>
       </Menu.Item>
       <Menu.Item
-        disabled={!record.operable}
+        //disabled={!record.operable}
         key="delete"
         onClick={() => {
           queryDeleteMsg([record])

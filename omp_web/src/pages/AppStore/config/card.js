@@ -4,7 +4,7 @@ import styles from "./index.module.less";
 import imgObj from "./img";
 import { useEffect, useState } from "react";
 
-const Card = ({ idx, history, info, tabKey }) => {
+const Card = ({ idx, history, info, tabKey, installOperation }) => {
   //定义命名
   let nameObj = {
     component: {
@@ -82,7 +82,13 @@ const Card = ({ idx, history, info, tabKey }) => {
           <div style={{ fontSize: 14, color: "#222222" }}>
             {info[nameObj[tabKey].name]}
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between",fontSize:12 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: 12,
+            }}
+          >
             <span>最新版本</span>
             <span>{info[nameObj[tabKey].version]}</span>
           </div>
@@ -97,7 +103,7 @@ const Card = ({ idx, history, info, tabKey }) => {
               position: "absolute",
               bottom: 2,
               right: 2,
-              fontSize:12
+              fontSize: 12,
             }}
           >
             已安装{info[nameObj[tabKey].instance_number]}个实例
@@ -119,11 +125,16 @@ const Card = ({ idx, history, info, tabKey }) => {
         </div>
         <div
           onClick={() => {
-            history?.push({
-              pathname: `${nameObj[tabKey].install_url}/${
-                info[nameObj[tabKey].name]
-              }`,
-            });
+            if (tabKey == "service") {
+              installOperation({ product_name: info.pro_name}, "服务");
+            } else {
+              installOperation({ app_name: info.app_name}, "组件");
+              // history?.push({
+              //   pathname: `${nameObj[tabKey].install_url}/${
+              //     info[nameObj[tabKey].name]
+              //   }`,
+              // });
+            }
           }}
         >
           安装

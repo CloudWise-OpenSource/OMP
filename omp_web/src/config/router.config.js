@@ -86,9 +86,15 @@ export default [
         notInMenu: true,
         component: Installation,
       },
+      // {
+      //   title: "服务安装",
+      //   path: "/application_management/app_store/installation-service",
+      //   notInMenu: true,
+      //   component: Installation,
+      // },
       {
         title: "安装记录",
-        path: "/application-management/installation-record",
+        path: "/application_management/install-record",
         component: InstallationRecord,
       },
     ],

@@ -115,7 +115,7 @@ export const apiRequest = {
     // 服务分布数据查询
     createServiceDistribution: "/api/appStore/createServiceDistribution/",
     // 服务分布已安装服务查询
-    queryListServiceByIp: "/api/appStore/listServiceByIp",
+    queryListServiceByIp: "/api/appStore/listServiceByIp/",
     // 服务批量安装服务分布确认操作
     checkServiceDistribution: "/api/appStore/checkServiceDistribution/",
 
@@ -128,7 +128,10 @@ export const apiRequest = {
     // 批量安装-开始安装信息查询
     queryInstallProcess: "/api/appStore/showInstallProcess",
     // 批量安装-服务安装进度详情查询
-    showSingleServiceInstallLog:"/api/appStore/showSingleServiceInstallLog"
+    showSingleServiceInstallLog:"/api/appStore/showSingleServiceInstallLog/",
+
+    // 批量安装-组件安装操作下发
+    createComponentInstallInfo: "/api/appStore/createComponentInstallInfo/"
   },
   installHistoryPage:{
     queryInstallHistoryList:"/api/appStore/mainInstallHistory"

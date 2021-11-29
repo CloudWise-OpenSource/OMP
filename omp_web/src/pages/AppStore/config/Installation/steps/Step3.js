@@ -50,130 +50,11 @@ const Step3 = ({ setStepNum }) => {
   // ip列表的数据源
   const [ipList, setIpList] = useState([]);
 
-  // const [dataSource, setDataSource] = useState([]);
-
-  // const dataSource = [
-  //   {
-  //     name: "doucApi",
-  //     install_args: [
-  //       {
-  //         name: "安装目录",
-  //         key: "base_dir",
-  //         default: "/app/doucApi",
-  //         dir_key: "{data_path}",
-  //       },
-  //       {
-  //         name: "日志目录",
-  //         key: "log_dir",
-  //         default: "/logs/doucApi",
-  //         dir_key: "{data_path}",
-  //       },
-  //       {
-  //         name: "数据目录",
-  //         key: "data_dir",
-  //         default: "/appData/doucApi",
-  //         dir_key: "{data_path}",
-  //       },
-  //       {
-  //         name: "启动内存",
-  //         key: "memory",
-  //         default: "1g",
-  //       },
-  //       {
-  //         name: "数据库",
-  //         key: "dbname",
-  //         default: "cw_douc",
-  //       },
-  //       {
-  //         name: "安装用户",
-  //         key: "run_user",
-  //         default: "commonuser",
-  //       },
-  //       {
-  //         name: "kafka_topic名字",
-  //         key: "kafka_topic",
-  //         default: "cw-logs",
-  //       },
-  //     ],
-  //     ports: [
-  //       {
-  //         name: "服务端口",
-  //         protocol: "TCP",
-  //         key: "service_port",
-  //         default: "18241",
-  //       },
-  //       {
-  //         name: "metric端口",
-  //         protocol: "TCP",
-  //         key: "metrics_port",
-  //         default: "18241",
-  //       },
-  //     ],
-  //   },
-  //   {
-  //     name: "doucSso",
-  //     install_args: [
-  //       {
-  //         name: "安装目录",
-  //         key: "base_dir",
-  //         default: "/app/doucSso",
-  //         dir_key: "{data_path}",
-  //       },
-  //       {
-  //         name: "日志目录",
-  //         key: "log_dir",
-  //         default: "/logs/doucSso",
-  //         dir_key: "{data_path}",
-  //       },
-  //       {
-  //         name: "数据目录",
-  //         key: "data_dir",
-  //         default: "/appData/doucSso",
-  //         dir_key: "{data_path}",
-  //       },
-  //       {
-  //         name: "启动内存",
-  //         key: "memory",
-  //         default: "1g",
-  //       },
-  //       {
-  //         name: "数据库",
-  //         key: "dbname",
-  //         default: "cw_douc",
-  //       },
-  //       {
-  //         name: "安装用户",
-  //         key: "run_user",
-  //         default: "commonuser",
-  //       },
-  //       {
-  //         name: "kafka_topic名字",
-  //         key: "kafka_topic",
-  //         default: "cw-logs",
-  //       },
-  //     ],
-  //     ports: [
-  //       {
-  //         name: "服务端口",
-  //         protocol: "TCP",
-  //         key: "service_port",
-  //         default: "18256",
-  //       },
-  //       {
-  //         name: "metric端口",
-  //         protocol: "TCP",
-  //         key: "metrics_port",
-  //         default: "18256",
-  //       },
-  //     ],
-  //   },
-  // ];
-
   function queryIpList() {
     setLoadingIp(true);
     fetchGet(apiRequest.appStore.getInstallHostRange, {
       params: {
-        unique_key: uniqueKey ,
+        unique_key: uniqueKey,
       },
     })
       .then((res) => {
@@ -190,21 +71,14 @@ const Step3 = ({ setStepNum }) => {
   }
 
   const queryInstallArgsByIp = (ip) => {
-    //console.log("ip刷新了")
     // 如果redux中已经存了当前ip的数据就不再请求直接使用redux中的
     if (reduxData[ip]) {
-      // dispatch(
-      //   getStep3IpDataChangeAction({
-      //     [ip]: reduxData[ip],
-      //   })
-      // );
-      // console.log(reduxData)
       return;
     }
     setLoading(true);
     fetchGet(apiRequest.appStore.getInstallArgsByIp, {
       params: {
-        unique_key: uniqueKey ,
+        unique_key: uniqueKey,
         ip: ip,
       },
     })
@@ -239,19 +113,6 @@ const Step3 = ({ setStepNum }) => {
 
   // 有校验失败的信息生成errlist
   const getErrorInfo = (data) => {
-    // return {
-    //   "10.0.12.243": {
-    //     doucAdmin: {
-    //       base_dir: "/test/app/jdk 在目标主机 10.0.12.243 上已存在",
-    //     },
-    //   },
-    //   "10.0.12.250": {
-    //     gatewayServer: {
-    //       base_dir: "/test/app/jdk 在目标主机 10.0.12.250 上已存在",
-    //     },
-    //   },
-    // };
-    //console.log(data);
     let result = {};
     for (const ip in data) {
       data[ip].map((service) => {
@@ -307,14 +168,44 @@ const Step3 = ({ setStepNum }) => {
     return result;
   };
 
+  const getCurrentData = (queryData) => {
+    let formData = serviceConfigform.getFieldValue();
+    for (const keyStr in formData) {
+      let keyArr = keyStr.split("=");
+      queryData[checkIp] = queryData[checkIp].map((item) => {
+        if (item.name == keyArr[0]) {
+          let obj = { ...item };
+          obj.install_args = obj.install_args.map((i) => {
+            if (i.key == keyArr[1]) {
+              i.default = formData[keyStr];
+            }
+            return i;
+          });
+          obj.ports = obj.ports.map((i) => {
+            if (i.key == keyArr[1]) {
+              i.default = formData[keyStr];
+            }
+            return i;
+          });
+          return obj;
+        }
+        return item;
+      });
+    }
+    return queryData;
+  };
+
   // 开始安装操作命令下发
   const createInstallPlan = (queryData) => {
+    // 这个queryData数据是用redux中来的，当前页面的数据是在页面销毁时才同步redux的
+    console.log(getCurrentData(queryData));
+    //return
     setLoading(true);
     fetchPost(apiRequest.appStore.createInstallPlan, {
       body: {
         unique_key: uniqueKey,
         run_user: runUser,
-        data: queryData,
+        data: getCurrentData(queryData),
       },
     })
       .then((res) => {
@@ -456,70 +347,74 @@ const Step3 = ({ setStepNum }) => {
               }}
             >
               <Spin spinning={loadingIp}>
-                {currentIpList?.map((item) => {
-                  return (
-                    <div
-                      key={item}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      <div
-                        style={{
-                          padding: 5,
-                          paddingLeft: 30,
-                          flex: 1,
-                          color: errInfo[item]
-                            ? "red"
-                            : checkIp == item
-                            ? "#4986f7"
-                            : "",
-                          backgroundColor: checkIp == item ? "#edf8fe" : "",
-                        }}
-                        onClick={() => {
-                          //console.log(checkIp);
-                          // 点击切换ip时再存redux，避免不必要的性能消耗
-                          let formData = serviceConfigform.getFieldValue();
-                          for (const key in formData) {
-                            let keyArr = key.split("=");
-                            //console.log(reduxData[checkIp]);
-                            reduxData[checkIp].map((item) => {
-                              if (keyArr[0] == item.name) {
-                                // console.log(formData[key])
-                                dispatch(
-                                  getStep3ServiceChangeAction(
-                                    checkIp,
-                                    item.name,
-                                    keyArr[1],
-                                    formData[key]
-                                  )
-                                );
-                              }
-                            });
-                          }
-
-                          setCheckIp(item);
-                        }}
-                      >
-                        {item}
-                      </div>
-                      {errInfo[item] && (
+                {currentIpList.length == 0 ? (
+                  <div style={{ height: 100 }}></div>
+                ) : (
+                  <>
+                    {currentIpList?.map((item) => {
+                      return (
                         <div
+                          key={item}
                           style={{
-                            width: 30,
-                            padding: 5,
-                            paddingLeft: 0,
-                            backgroundColor: checkIp == item ? "#edf8fe" : "",
-                            color: "red",
+                            display: "flex",
+                            justifyContent: "space-between",
                           }}
                         >
-                          <ExclamationOutlined />
+                          <div
+                            style={{
+                              padding: 5,
+                              paddingLeft: 30,
+                              flex: 1,
+                              color: errInfo[item]
+                                ? "red"
+                                : checkIp == item
+                                ? "#4986f7"
+                                : "",
+                              backgroundColor: checkIp == item ? "#edf8fe" : "",
+                            }}
+                            onClick={() => {
+                              // 点击切换ip时再存redux，避免不必要的性能消耗
+                              let formData = serviceConfigform.getFieldValue();
+                              for (const key in formData) {
+                                let keyArr = key.split("=");
+                                reduxData[checkIp].map((item) => {
+                                  if (keyArr[0] == item.name) {
+                                    dispatch(
+                                      getStep3ServiceChangeAction(
+                                        checkIp,
+                                        item.name,
+                                        keyArr[1],
+                                        formData[key]
+                                      )
+                                    );
+                                  }
+                                });
+                              }
+
+                              setCheckIp(item);
+                            }}
+                          >
+                            {item}
+                          </div>
+                          {errInfo[item] && (
+                            <div
+                              style={{
+                                width: 30,
+                                padding: 5,
+                                paddingLeft: 0,
+                                backgroundColor:
+                                  checkIp == item ? "#edf8fe" : "",
+                                color: "red",
+                              }}
+                            >
+                              <ExclamationOutlined />
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </>
+                )}
               </Spin>
             </div>
           </div>
@@ -588,11 +483,8 @@ const Step3 = ({ setStepNum }) => {
           <Button
             style={{ marginLeft: 10 }}
             type="primary"
-            //disabled={unassignedServices !== 0}
             loading={loading}
             onClick={() => {
-              //setStepNum(3);
-              //console.log(serviceConfigform.getFieldValue());
               serviceConfigform.validateFields().then(
                 (e) => {
                   let errData = nonNullCheck(reduxData);
@@ -605,7 +497,6 @@ const Step3 = ({ setStepNum }) => {
                 },
                 (e) => {
                   message.warn("校验未通过，请检查");
-                  console.log("失败了", e);
                 }
               );
             }}
