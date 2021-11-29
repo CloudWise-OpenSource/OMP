@@ -38,6 +38,12 @@ function reducer(state = defaultState, action) {
     case actionTypes.CHANGE_STEP2ERRORLISTDATA:
       return { ...state, errorList: action.payload.errorList };
     case actionTypes.CHANGE_STEP3DATA:
+      if(!action.payload.ipData){
+        return {
+          ...state,
+          step3Data:{}
+        }
+      }
       return {
         ...state,
         step3Data: {

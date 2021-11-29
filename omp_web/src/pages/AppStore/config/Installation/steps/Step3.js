@@ -217,9 +217,7 @@ const Step3 = ({ setStepNum }) => {
               setStepNum(3);
             } else {
               message.warn("校验未通过，请检查");
-              dispatch(
-                getStep3ErrorInfoChangeAction(getErrorInfo(res.data.data))
-              );
+              dispatch(getStep3ErrorInfoChangeAction(res.data.data));
 
               //reduxDispatch(getStep2ErrorLstChangeAction(res.data.error_lst));
             }
@@ -242,6 +240,12 @@ const Step3 = ({ setStepNum }) => {
     // 请求ip数据
     // currentIpList
     queryIpList();
+    return () => {
+      dispatch(getStep3ErrorInfoChangeAction({}));
+      dispatch(
+        getStep3IpDataChangeAction()
+      );
+    };
   }, []);
 
   return (
@@ -492,6 +496,7 @@ const Step3 = ({ setStepNum }) => {
                     message.warn("校验未通过，请检查");
                     dispatch(getStep3ErrorInfoChangeAction(errData));
                   } else {
+                    console.log(reduxData)
                     createInstallPlan(dataProcessing(reduxData));
                   }
                 },
