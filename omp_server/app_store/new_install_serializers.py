@@ -10,6 +10,7 @@
 安装过程中使用的各种序列化类
 """
 
+import uuid
 import json
 import logging
 
@@ -39,8 +40,10 @@ from app_store.new_install_utils import (
     CreateInstallPlan,
     MakeServiceOrder,
     ValidateInstallServicePortArgs,
-    WithServiceUtils
+    WithServiceUtils,
+    ComponentServiceParse
 )
+from app_store.tasks import install_service as install_service_task
 
 logger = logging.getLogger("server")
 
@@ -528,10 +531,24 @@ class CreateServiceDistributionSerializer(BaseInstallSerializer):
             all_data=all_data,
             check_data=check_data.get("install", {})
         )
+        # 如果all_data的变量为空，那么可能安装的是base_env为True的服务，如jdk
+        # 这些服务都应划归到基础组件级别
+        is_base_env_flag = False
+        base_env_ser_name = None
+        if not all_data:
+            is_base_env_flag = True
+            for key in check_data.get("install", {}).keys():
+                # base_env不存在集群，数量直接设置为1
+                base_env_ser_name = key
+                all_data[key] = {"num": 1, "with": None}
         validated_data["data"]["all"] = all_data
         product_lst = list()
         self.get_product_info(data=basic, lst=product_lst)
         self.get_basic_info(data=dependence, lst=product_lst)
+        if is_base_env_flag:
+            for item in product_lst:
+                if item.get("name") == "基础组件" and not item.get("child"):
+                    item["child"] = [base_env_ser_name]
         validated_data["data"]["product"] = product_lst
         BaseRedisData(
             validated_data['unique_key']
@@ -852,3 +869,156 @@ class MainInstallHistorySerializer(serializers.ModelSerializer):
             "operation_uuid", "task_id",
             "install_status", "created", "modified", "operator"
         ]
+
+
+class CreateComponentInstallInfoSerializer(Serializer):
+    """
+    请求格式：
+    {
+        "high_availability": true,
+        "install_component": [
+            {
+                "name": "jenkinsNB",
+                "version": "2.303.2"
+            }
+        ],
+        "unique_key": "abf7d622-6fc8-4a04-ad4c-49b57298ecdf"
+    }
+    """
+    unique_key = serializers.CharField(
+        help_text="操作唯一值", read_only=True
+    )
+    high_availability = serializers.BooleanField(
+        write_only=True, required=True,
+        help_text="是否选择高可用模式",
+        error_messages={"required": "必须包含[high_availability]字段"}
+    )
+    install_component = serializers.ListField(
+        child=serializers.DictField(),
+        help_text="产品列表，eg: [{'name': 'ser1', 'version': '1'}]",
+        write_only=True, required=True,
+        error_messages={"required": "必须包含[install_component]字段"}
+    )
+    data = serializers.DictField(
+        help_text="详细安装数据",
+        read_only=True
+    )
+
+    def validate_install_component(self, install_component):  # NOQA
+        """
+        校验即将安装的产品、应用是否在可支持范围内
+        :param install_component: 要安装的应用
+        :type install_component: list
+        :return:
+        """
+        for item in install_component:
+            _name = item.get("name")
+            _version = item.get("version")
+            component_obj = ApplicationHub.objects.filter(
+                app_name=_name,
+                app_version=_version,
+                is_release=True
+            ).last()
+            if not component_obj:
+                raise ValidationError(f"组件 [{_name}] [{_version}] 不存在")
+        return install_component
+
+    def create(self, validated_data):
+        """
+        构建前端可选安装数据
+        :param validated_data:
+        :return:
+        """
+        logger.info(
+            f"CreateComponentInstallInfoSerializer.validated_data: "
+            f"{validated_data}")
+        install_component = validated_data["install_component"]
+        high_availability = validated_data["high_availability"]
+        unique_key = str(uuid.uuid4())
+
+        _basic = list()
+        # 遍历所有需要安装的自研服务信息，确定服务的依赖关系并存储至_dependence变量内
+        _dependence = list()
+        for item in install_component:
+            _info = ComponentServiceParse(
+                ser_name=item["name"], ser_version=item["version"],
+                high_availability=high_availability, unique_key=unique_key
+            ).run()
+            _dependence.append(_info)
+        # 将带有with标识的服务进行处理
+        with_ser_lst = list()
+        for item in install_component:
+            _dep = SerDependenceParseUtils(
+                parse_name=item.get("name"),
+                parse_version=item.get("version"),
+                high_availability=high_availability
+            ).run_ser()
+            _dependence.extend(_dep)
+            if "with_flag" in item:
+                with_ser_lst.append(item)
+
+        # 将带有with标识的服务存放至redis数据中
+        BaseRedisData(
+            unique_key=unique_key).step_set_with_ser(data=with_ser_lst)
+
+        # 使用make_lst_unique方法将服务依赖列表去重处理
+        _dependence = make_lst_unique(
+            lst=_dependence, key_1="name", key_2="version")
+
+        # 判断最终用户可否进行下一步的标记
+        is_continue = True
+        for item in _basic:
+            if "error_msg" in item and item["error_msg"]:
+                is_continue = False
+                break
+        for item in _dependence:
+            if "error_msg" in item and item["error_msg"]:
+                is_continue = False
+        validated_data["data"] = {
+            "basic": _basic,
+            "dependence": _dependence,
+            "is_continue": is_continue
+        }
+        # 存储基础信息到redis
+        if is_continue:
+            BaseRedisData(
+                unique_key=unique_key
+            ).step_1_set_unique_key(data=validated_data)
+            BaseRedisData(
+                unique_key=unique_key
+            ).step_2_set_origin_install_data_args(data=validated_data)
+        validated_data["unique_key"] = unique_key
+        return validated_data
+
+
+class RetryInstallSerializer(Serializer):
+    """ 重试安装序列化 """
+    unique_key = serializers.CharField(
+        help_text="操作唯一值",
+        required=True,
+        error_messages={"required": "必须包含[unique_key]字段"}
+    )
+
+    def validate_unique_key(self, unique_key):      # NOQA
+        """
+        校验unique_key
+        :param unique_key:
+        :return:
+        """
+        if not MainInstallHistory.objects.filter(
+                operation_uuid=unique_key
+        ).exists():
+            raise ValidationError(f"无法找到[unique_key: {unique_key}]")
+        return unique_key
+
+    def create(self, validated_data):
+        """
+        :param validated_data:
+        :return:
+        """
+        unique_key = validated_data["unique_key"]
+        main_install_history = MainInstallHistory.objects.filter(
+            operation_uuid=unique_key
+        ).last()
+        install_service_task.delay(main_install_history.id)
+        return validated_data

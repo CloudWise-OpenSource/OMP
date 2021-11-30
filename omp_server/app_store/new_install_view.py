@@ -6,6 +6,7 @@
 # Version: 1.0
 # Introduction:
 
+import uuid
 import logging
 from collections import OrderedDict
 
@@ -30,7 +31,9 @@ from app_store.new_install_serializers import (
     CreateServiceDistributionSerializer,
     CheckServiceDistributionSerializer,
     CreateInstallPlanSerializer,
-    MainInstallHistorySerializer
+    MainInstallHistorySerializer,
+    CreateComponentInstallInfoSerializer,
+    RetryInstallSerializer
 )
 
 logger = logging.getLogger("server")
@@ -96,8 +99,8 @@ class BatchInstallEntranceView(GenericViewSet, ListModelMixin):
             }
             for key, value in tmp_dic.items()
         ]
-        # unique_key = str(uuid.uuid4())
-        unique_key = str("21e041a9-c9a5-4734-9673-7ed932625d21")
+        unique_key = str(uuid.uuid4())
+        # unique_key = str("21e041a9-c9a5-4734-9673-7ed932625d21")
         data = {
             "data": _data,
             "unique_key": unique_key
@@ -314,3 +317,13 @@ class MainInstallHistoryView(GenericViewSet, ListModelMixin):
     queryset = MainInstallHistory.objects.all().order_by("-id")
     serializer_class = MainInstallHistorySerializer
     pagination_class = PageNumberPager
+
+
+class CreateComponentInstallInfoView(GenericViewSet, CreateModelMixin):
+    serializer_class = CreateComponentInstallInfoSerializer
+    post_description = "创建基础组件安装数据"
+
+
+class RetryInstallView(GenericViewSet, CreateModelMixin):
+    serializer_class = RetryInstallSerializer
+    post_description = "重试安装"
