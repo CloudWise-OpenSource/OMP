@@ -217,7 +217,7 @@ const Step3 = ({ setStepNum }) => {
               setStepNum(3);
             } else {
               message.warn("校验未通过，请检查");
-              dispatch(getStep3ErrorInfoChangeAction(res.data.data));
+              dispatch(getStep3ErrorInfoChangeAction(getErrorInfo(res.data.data)));
 
               //reduxDispatch(getStep2ErrorLstChangeAction(res.data.error_lst));
             }
