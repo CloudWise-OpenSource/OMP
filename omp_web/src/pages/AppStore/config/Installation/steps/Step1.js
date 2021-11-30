@@ -249,6 +249,7 @@ const Step1 = ({ setStepNum }) => {
               <DependentInfoItem
                 key={data.dependence[0]?.name}
                 form={dependentForm}
+                isBaseEnv={true}
                 data={
                   data.dependence.length > 0
                     ? data.dependence[0]
