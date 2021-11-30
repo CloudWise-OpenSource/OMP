@@ -1,5 +1,5 @@
 import { Checkbox } from "antd";
-const JdkRow = ({ data }) => {
+const JdkRow = ({ data, isBaseEnv }) => {
   return (
     <>
       <div style={{ flex: 1 }}>{data.name}</div>
@@ -23,9 +23,11 @@ const JdkRow = ({ data }) => {
             paddingRight: 70,
           }}
         >
-          <Checkbox checked disabled>
-            安装依赖
-          </Checkbox>
+          {!isBaseEnv && (
+            <Checkbox checked disabled>
+              安装依赖
+            </Checkbox>
+          )}
         </div>
       </div>
     </>
