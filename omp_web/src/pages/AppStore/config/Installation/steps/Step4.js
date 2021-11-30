@@ -7,6 +7,7 @@ import { apiRequest } from "@/config/requestApi";
 import { fetchGet } from "@/utils/request";
 import { handleResponse } from "@/utils/utils";
 import { useHistory, useLocation } from "react-router-dom";
+import { fetchPost } from "src/utils/request";
 
 const { Link } = Anchor;
 // 状态渲染规则
@@ -18,6 +19,7 @@ const renderStatus = {
 };
 
 const Step4 = () => {
+  const history = useHistory();
   const viewHeight = useSelector((state) => state.layouts.viewSize.height);
   const [openName, setOpenName] = useState("");
   // 在轮训时使用ref存值
@@ -28,14 +30,14 @@ const Step4 = () => {
 
   const [loading, setLoading] = useState(true);
 
+  const [retryLoading, setRetryLoading] = useState(false)
+
   const [data, setData] = useState({
     detail: {},
     status: 0,
   });
 
   const [log, setLog] = useState("");
-
-  const history = useHistory();
 
   // 轮训的timer控制器
   const timer = useRef(null);
@@ -86,6 +88,28 @@ const Step4 = () => {
       .catch((e) => console.log(e))
       .finally(() => {
         //setLoading(false);
+      });
+  };
+
+  const retryInstall = () => {
+    setRetryLoading(true)
+    setOpenName("");
+    openNameRef.current = "";
+    fetchPost(apiRequest.appStore.retryInstall, {
+      body: {
+        unique_key: defaultUniqueKey || uniqueKey,
+      },
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          if (res.code == 0) {
+            queryInstallProcess();
+          }
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setRetryLoading(false)
       });
   };
 
@@ -204,6 +228,20 @@ const Step4 = () => {
           )}
         </div>
         <div>
+          {data.status == 3 && (
+            <Button
+              loading={retryLoading}
+              style={{ marginLeft: 10 }}
+              type="primary"
+              //disabled={unassignedServices !== 0}
+              onClick={() => {
+                retryInstall();
+              }}
+            >
+              重试
+            </Button>
+          )}
+
           <Button
             style={{ marginLeft: 10 }}
             type="primary"

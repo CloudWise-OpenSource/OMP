@@ -43,6 +43,9 @@ const RenderNum = ({ data, form }) => {
             step={data.deploy_mode.step}
             min={1}
             max={32}
+            style={{
+              width:100
+            }}
           />
         </Form.Item>
       </div>

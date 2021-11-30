@@ -128,13 +128,16 @@ export const apiRequest = {
     // 批量安装-开始安装信息查询
     queryInstallProcess: "/api/appStore/showInstallProcess",
     // 批量安装-服务安装进度详情查询
-    showSingleServiceInstallLog:"/api/appStore/showSingleServiceInstallLog/",
+    showSingleServiceInstallLog: "/api/appStore/showSingleServiceInstallLog/",
 
     // 批量安装-组件安装操作下发
-    createComponentInstallInfo: "/api/appStore/createComponentInstallInfo/"
+    createComponentInstallInfo: "/api/appStore/createComponentInstallInfo/",
+
+    // 批量安装-安装重试操作
+    retryInstall: "/api/appStore/retryInstall/",
   },
-  installHistoryPage:{
-    queryInstallHistoryList:"/api/appStore/mainInstallHistory"
+  installHistoryPage: {
+    queryInstallHistoryList: "/api/appStore/mainInstallHistory",
   },
   inspection: {
     inspectionList: "/api/inspection/history/",

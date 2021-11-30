@@ -47,7 +47,7 @@ const UserManagement = () => {
   const columns = [
     {
       title: "序列",
-      width: 80,
+      width: 40,
       key: "_idx",
       dataIndex: "_idx",
       //sorter: (a, b) => a.username - b.username,
@@ -59,7 +59,7 @@ const UserManagement = () => {
     {
       title: "用户名",
       key: "username",
-      width: 120,
+      width: 100,
       dataIndex: "username",
       //sorter: (a, b) => a.username - b.username,
       // sortDirections: ["descend", "ascend"],
@@ -101,7 +101,7 @@ const UserManagement = () => {
       key: "date_joined",
       dataIndex: "date_joined",
       align: "center",
-      width: 120,
+      width: 100,
       render: (text) => {
         if (text) {
           return moment(text).format("YYYY-MM-DD HH:mm:ss");
@@ -120,7 +120,7 @@ const UserManagement = () => {
     {
       title: "用户操作",
       key: "1",
-      width: 80,
+      width: 50,
       dataIndex: "1",
       align: "center",
       fixed: "right",
@@ -324,6 +324,7 @@ const UserManagement = () => {
         }}
       >
         <OmpTable
+          noScroll={true}
           loading={loading}
           onChange={(e, filters, sorter) => {
             let ordering = sorter.order
