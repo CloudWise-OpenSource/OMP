@@ -234,23 +234,22 @@ class PrometheusUtils(object):
             self.write_dic_to_yaml(node_data_rule_dic, data_rule_path)
             return True, "success by new create"
         node_data_rule_dic = self.get_dic_from_yaml(data_rule_path)
-        # for item in node_data_rule_dic.get("groups", []):
-        #     for el in item.get("rules", []):
-        #         if el.get("annotations", {}).get("disk_data_path") \
-        #                 == data_path and el.get("labels", {}).get("severity") \
-        #                 == "critical":
-        #             _critical_flag = False
-        #         if el.get("annotations", {}).get("disk_data_path") \
-        #                 == data_path and el.get("labels", {}).get(
-        #             "severity") \
-        #                 == "warning":
-        #             _warning_flag = False
-        for item in node_data_rule_dic.get("groups", []):
-            item["rules"] = list()
-            # if _critical_flag:
-            item["rules"].append(_critical)
-            # if _warning_flag:
-            item["rules"].append(_warning)
+        groups = node_data_rule_dic.get("groups", []).copy()
+        for item_index, item in enumerate(groups):
+            rules = item.get("rules", []).copy()
+            for el_index, el in enumerate(rules):
+                if el.get("annotations", {}).get("disk_data_path") \
+                        == data_path and el.get("labels", {}).get("severity") \
+                        == "critical":
+                    # _critical_flag = False
+                    item.get("rules", [])[el_index] = _critical
+                if el.get("annotations", {}).get("disk_data_path") \
+                        == data_path and el.get("labels", {}).get(
+                    "severity") \
+                        == "warning":
+                    # _warning_flag = False
+                    item.get("rules", [])[el_index] = _warning
+            node_data_rule_dic.get("groups", [])[item_index] = item
         self.write_dic_to_yaml(node_data_rule_dic, data_rule_path)
         return True, "success"
 
