@@ -2,7 +2,7 @@ import styles from "../index.module.less";
 import JdkRow from "./component/JdkRow";
 import DeployRow from "./component/DeployRow";
 
-const DependentInfoItem = ({ data, form }) => {
+const DependentInfoItem = ({ data, form, isBaseEnv }) => {
   //   useEffect(() => {
   //     form.setFieldsValue({
   //       [`${data.name}`]: `${data.name}-${randomNumber()}`,
@@ -18,7 +18,7 @@ const DependentInfoItem = ({ data, form }) => {
     <>
       <div className={styles.dependentinfoItem}>
         {data.is_base_env ? (
-          <JdkRow data={data} />
+          <JdkRow data={data} isBaseEnv={isBaseEnv} />
         ) : (
           <DeployRow data={data} form={form} />
         )}

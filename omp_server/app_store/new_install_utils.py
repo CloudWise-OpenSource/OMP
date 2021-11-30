@@ -636,6 +636,82 @@ class ProductServiceParse(object):
         return _dic
 
 
+class ComponentServiceParse(object):
+    """组件服务安祖昂解析"""
+
+    def __init__(
+            self, ser_name, ser_version,
+            high_availability=False, unique_key=None
+    ):
+        """
+        产品、应用解析服务信息
+        :param ser_name: 组件名称
+        :param ser_version: 组件版本
+        :param high_availability: 是否使用高可用
+        """
+        self.ser_name = ser_name
+        self.ser_version = ser_version
+        self.high_availability = high_availability
+        self.unique_key = unique_key
+
+    def get_deploy_mode(self, app_obj):
+        """
+        获取服务默认数量及步长
+        :param app_obj: 服务对象
+        :type app_obj ApplicationHub
+        :return:
+        """
+        pass
+
+    def parse_single_service(self):
+        """
+        解析单个服务的数据
+        :return:
+        """
+        app_obj = ApplicationHub.objects.filter(
+            app_type=ApplicationHub.APP_TYPE_COMPONENT,
+            app_name=self.ser_name,
+            app_version=self.ser_version
+        ).last()
+        # 解决服务强绑定依赖问题
+        _default_dic = {
+            "name": self.ser_name,
+            "version": self.ser_version,
+            "deploy_mode": self.get_deploy_mode(app_obj=app_obj),
+        }
+        # 如果产品下的服务不存在应该返回错误信息
+        if not app_obj:
+            _default_dic["error_msg"] = \
+                f"应用商店内无此服务 [{self.ser_name}({self.ser_version})]"
+            return _default_dic
+        _, is_pack_exist, msg = SerDependenceParseUtils(
+            parse_name=self.ser_name, parse_version=self.ser_version,
+            high_availability=self.high_availability
+        ).get_ser_instances(obj=app_obj)
+        if not is_pack_exist:
+            _default_dic["error_msg"] = \
+                f"{self.ser_name}安装包不存在，请查看 {msg}"
+        _default_dic["is_pack_exist"] = is_pack_exist
+        _default_dic["is_use_exist"] = False
+        _default_dic["exist_instance"] = list()
+        _default_dic["is_base_env"] = SerDependenceParseUtils(
+            parse_name=self.ser_name, parse_version=self.ser_version,
+            high_availability=self.high_availability
+        ).get_is_base_env(obj=app_obj)
+        _default_dic["deploy_mode"] = SerDeployModeUtils(
+            ser_name=self.ser_name,
+            high_availability=self.high_availability
+        ).get()
+        return _default_dic
+
+    def run(self):
+        """
+        解析入口
+        :return:
+        """
+        return self.parse_single_service()
+
+
 def make_lst_unique(lst, key_1, key_2):
     """
     去重列表内的字典
@@ -831,7 +907,7 @@ class SerDeployModeUtils(object):
     def __init__(self, ser_name, high_availability=False, host_num=0):
         self.ser_name = ser_name
         self.high_availability = high_availability
-        self.host_num = host_num
+        self.host_num = Host.objects.all().count()
 
     def get(self):
         """
@@ -1387,6 +1463,7 @@ class CreateInstallPlan(object):
 
         :param all_install_service_lst:
         """
+        logger.info(f"CreateInstallPlan.__init__: {all_install_service_lst}")
         self.install_services = all_install_service_lst
         self.unique_key = unique_key
 
@@ -1556,6 +1633,22 @@ class CreateInstallPlan(object):
             unique_key=self.unique_key
         ).get_step_2_origin_data().get("use_exist")
         for item in lst:
+            # 已存在的base_env服务依赖
+            _dep_obj = ApplicationHub.objects.filter(
+                app_name=item.get("name"),
+                app_version=item.get("version")
+            ).last()
+            if _dep_obj.is_base_env:
+                _ser_obj = Service.objects.filter(
+                    service=_dep_obj, ip=dic.get("ip")
+                ).last()
+                if _ser_obj:
+                    _dep_lst.append({
+                        "name": item.get("name"),
+                        "cluster_name": None,
+                        "instance_name": _ser_obj.service_instance_name
+                    })
+                    continue
             if item.get("name") in exist_data:
                 _de = exist_data[item["name"]]
                 _dep_lst.append(self._get_exist_dep(_de))

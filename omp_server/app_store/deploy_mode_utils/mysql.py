@@ -37,6 +37,10 @@ class MysqlUtils(BaseUtils):
                 {
                     "key": "master-master",
                     "name": "主主(vip)"
+                },
+                {
+                    "key": "single",
+                    "name": "单实例"
                 }
             ]
         return [
