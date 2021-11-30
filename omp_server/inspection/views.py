@@ -5,6 +5,7 @@
 # Description: 巡检视图
 import datetime
 import logging
+import traceback
 
 from django.core.validators import EmailValidator
 from rest_framework import status
@@ -254,7 +255,7 @@ class InspectionSendEmailSettingView(GenericViewSet, ListModelMixin, CreateModel
 
     def list(self, request, *args, **kwargs):
         # env_id = request.GET.get("env_id")
-        env_id = 0  # 单环境暂为0
+        env_id = 1  # 单环境暂为1
         email_setting = ModuleSendEmailSetting.get_email_settings(
             env_id, "inspection")  # TODO 暂写死为巡检
         if not email_setting:
@@ -285,7 +286,7 @@ class InspectionSendEmailSettingView(GenericViewSet, ListModelMixin, CreateModel
             ModuleSendEmailSetting.update_email_settings(
                 env_id, "inspection", send_email, to_users)  # TODO 暂写死为巡检
         except Exception as e:
-            logger.info(f"更新邮箱配置失败：{str(e)}")
+            logger.info(f"更新邮箱配置失败：{str(e)}，详情为：{traceback.format_exc()}")
             return Response(data={"code": 1, "message": "更新邮箱配置失败！"})
         return Response({})
 
