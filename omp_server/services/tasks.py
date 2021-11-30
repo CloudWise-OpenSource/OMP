@@ -21,6 +21,22 @@ logging.getLogger("paramiko").setLevel(logging.WARNING)
 logger = get_task_logger("celery_log")
 
 
+def delete_action(service_obj):
+    """
+    删除逻辑
+    """
+    install_detail = service_obj.detailinstallhistory_set.first().install_detail_args
+    dir_list = ["base_dir", "log_dir", "data_dir"]
+    valida_rm = []
+    for args in install_detail.get("install_args"):
+        if args.get("key") in dir_list:
+            dir_name = args.get("default")
+            if dir_name and len(dir_name) >= 5:
+                valida_rm.append(dir_name)
+    result = " ".join(valida_rm)
+    return result
+
+
 @shared_task
 def exec_action(action, instance, operation_user):
     # edit by vum: 增加服务的目标成功状态、失败状态
@@ -78,13 +94,9 @@ def exec_action(action, instance, operation_user):
         if exe_action:
             is_success, info = salt_obj.cmd(ip, exe_action, 600)
             logger.info(f"执行 [{action[0]}] 操作 {is_success}，原因: {info}")
-        install_detail = service_obj.detailinstallhistory_set.first().install_detail_args
-        base_dir = None
-        for args in install_detail.get("install_args"):
-            if args.get("key") == "base_dir":
-                base_dir = args.get("default")
+        base_dir = delete_action(service_obj)
         # 删除安装路径
-        if base_dir is not None and len(base_dir) >= 5:
+        if base_dir:
             is_success, info = salt_obj.cmd(ip, f"rm -rf {base_dir}", 600)
             logger.info(f"执行 [{action[0]}] 操作 {is_success}，原因: {info}")
         service_obj.delete()
