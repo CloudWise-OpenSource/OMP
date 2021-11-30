@@ -62,7 +62,8 @@ class ServiceSerializer(serializers.ModelSerializer):
         """ 获取集群类型 """
         cluster_type = "单实例"
         if obj.cluster is not None:
-            cluster_type = obj.cluster.cluster_type
+            # cluster_type = obj.cluster.cluster_type
+            cluster_type = "集群"
         return cluster_type
 
     def get_alert_count(self, obj):

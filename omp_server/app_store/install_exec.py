@@ -514,6 +514,10 @@ class InstallServiceExecutor:
         with ThreadPoolExecutor(THREAD_POOL_MAX_WORKERS) as executor:
             _future_list = []
             for detail_obj in detail_obj_lst:
+                # 更新单条安装记录的状态
+                detail_obj.install_step_status = \
+                    DetailInstallHistory.INSTALL_STATUS_INSTALLING
+                detail_obj.save()
                 future_obj = executor.submit(
                     self.single_service_executor, detail_obj
                 )
@@ -588,9 +592,9 @@ class InstallServiceExecutor:
             el: queue.Queue(maxsize=UNZIP_CONCURRENT_ONE_HOST) for el in ips
         }
 
-        # 所有子流程状态更新为 '安装中'
+        # 所有子流程状态更新为 '待安装'
         queryset.update(
-            install_step_status=DetailInstallHistory.INSTALL_STATUS_INSTALLING
+            install_step_status=DetailInstallHistory.INSTALL_STATUS_READY
         )
 
         # 对要执行安装的列表进行排序处理
