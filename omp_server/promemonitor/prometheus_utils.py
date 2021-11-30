@@ -218,8 +218,8 @@ class PrometheusUtils(object):
             self.prometheus_rules_path, f"{env}_node_data_rule.yml")
         _critical = self.make_data_node_rule("critical", data_path, env)
         _warning = self.make_data_node_rule("warning", data_path, env)
-        _critical_flag = True
-        _warning_flag = True
+        # _critical_flag = True
+        # _warning_flag = True
         if not os.path.exists(data_rule_path):
             node_data_rule_dic = {
                 "groups": [
@@ -234,22 +234,23 @@ class PrometheusUtils(object):
             self.write_dic_to_yaml(node_data_rule_dic, data_rule_path)
             return True, "success by new create"
         node_data_rule_dic = self.get_dic_from_yaml(data_rule_path)
+        # for item in node_data_rule_dic.get("groups", []):
+        #     for el in item.get("rules", []):
+        #         if el.get("annotations", {}).get("disk_data_path") \
+        #                 == data_path and el.get("labels", {}).get("severity") \
+        #                 == "critical":
+        #             _critical_flag = False
+        #         if el.get("annotations", {}).get("disk_data_path") \
+        #                 == data_path and el.get("labels", {}).get(
+        #             "severity") \
+        #                 == "warning":
+        #             _warning_flag = False
         for item in node_data_rule_dic.get("groups", []):
-            for el in item.get("rules", []):
-                if el.get("annotations", {}).get("disk_data_path") \
-                        == data_path and el.get("labels", {}).get("severity") \
-                        == "critical":
-                    _critical_flag = False
-                if el.get("annotations", {}).get("disk_data_path") \
-                        == data_path and el.get("labels", {}).get(
-                    "severity") \
-                        == "warning":
-                    _warning_flag = False
-        for item in node_data_rule_dic.get("groups", []):
-            if _critical_flag:
-                item["rules"].append(_critical)
-            if _warning_flag:
-                item["rules"].append(_warning)
+            item["rules"] = list()
+            # if _critical_flag:
+            item["rules"].append(_critical)
+            # if _warning_flag:
+            item["rules"].append(_warning)
         self.write_dic_to_yaml(node_data_rule_dic, data_rule_path)
         return True, "success"
 
