@@ -320,7 +320,7 @@ class Prometheus:
         query_url = f'{self.basic_url}/api/v1/targets'
         host_targets = list()
         try:
-            res_body = requests.get(url=query_url, headers=headers)
+            res_body = requests.get(url=f"http://{query_url}", headers=headers)  # NOQA
             res_dic = json.loads(res_body.text)
             if res_dic.get("status") != "success":
                 return False, {}
@@ -339,7 +339,7 @@ class Prometheus:
         query_url = f'{self.basic_url}/api/v1/targets'
         service_targets = list()
         try:
-            res_body = requests.get(url=query_url, headers=headers)
+            res_body = requests.get(url=f"http://{query_url}", headers=headers)  # NOQA
             res_dic = json.loads(res_body.text)
             if res_dic.get("status") != "success":
                 return False, {}
