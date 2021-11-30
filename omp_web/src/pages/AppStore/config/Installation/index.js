@@ -18,7 +18,7 @@ const Installation = () => {
   const location = useLocation()
 
   const defaultStep = location.state?.step
-  console.log(location, defaultStep)
+  //console.log(location, defaultStep)
 
   const [stepNum, setStepNum] = useState(defaultStep || 0);
 

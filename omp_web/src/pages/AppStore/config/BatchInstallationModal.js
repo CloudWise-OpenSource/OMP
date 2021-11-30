@@ -159,6 +159,7 @@ const BatchInstallationModal = ({
       }
       afterClose={() => {
         setCheckedList({});
+        setHighAvailabilityCheck(false)
       }}
       onCancel={() => {
         setBIModalVisibility(false);

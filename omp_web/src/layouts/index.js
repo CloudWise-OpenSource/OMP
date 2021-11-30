@@ -168,7 +168,7 @@ const OmpLayout = (props) => {
   };
 
   getViewSize();
-  
+
   useEffect(() => {
     window.onresize = () => {
       if (!antiShakeRef.current) {
@@ -252,6 +252,7 @@ const OmpLayout = (props) => {
             height: "calc(100% - 60px)",
             //paddingTop:3,
             borderRight: "1px solid #d7d9e1",
+            color: "rgba(0,0,0,0.65)",
           }}
           //theme="dark"
           onClick={onPathChange}
@@ -263,7 +264,9 @@ const OmpLayout = (props) => {
             if (e.isOpen) {
               return <CaretUpOutlined />;
             } else {
-              return <CaretDownOutlined />;
+              return (
+                <CaretDownOutlined style={{ color: "rgba(0,0,0,0.65)" }} />
+              );
             }
           }}
         >
@@ -371,7 +374,7 @@ const OmpLayout = (props) => {
           </div>
         </Header>
         <CustomBreadcrumb />
-        <Content style={{ margin: "0 16px" }}>
+        <Content style={{ margin: "0 16px", color: "rgba(0,0,0,0.65)" }}>
           <div
             style={{
               padding: 0,

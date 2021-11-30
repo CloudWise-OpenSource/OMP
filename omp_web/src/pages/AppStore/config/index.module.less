@@ -13,7 +13,7 @@
     .text {
       font-size: 12px;
       display: -webkit-box;
-      -webkit-line-clamp: 3;
+      -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       //height: r(210);
       //font-size: r(42);
@@ -36,9 +36,9 @@
       width: 50%;
       text-align: center;
     }
-    & > div:hover {
-      color: rgb(46, 124, 238);
-    }
+    // & > div:hover {
+    //   color: rgb(46, 124, 238);
+    // }
   }
 }
 .detailContainer {
@@ -65,10 +65,23 @@
     // background-color: aliceblue;
     align-items: center;
     .detailTitleDescribe {
+      height: 80px;
       padding-left: 60px;
-      word-wrap: break-word;
+      //word-wrap: break-word;
       width: calc(100% - 120px);
       color: #4f4f4f;
+      position: relative;
+      .detailTitleDescribeText {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        //height: r(210);
+        //font-size: r(42);
+        // white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        // /width: 100%;
+      }
     }
   }
   .detailContent {

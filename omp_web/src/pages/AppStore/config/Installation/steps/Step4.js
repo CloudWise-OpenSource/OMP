@@ -30,7 +30,7 @@ const Step4 = () => {
 
   const [loading, setLoading] = useState(true);
 
-  const [retryLoading, setRetryLoading] = useState(false)
+  const [retryLoading, setRetryLoading] = useState(false);
 
   const [data, setData] = useState({
     detail: {},
@@ -62,6 +62,11 @@ const Step4 = () => {
             timer.current = setTimeout(() => {
               queryInstallProcess();
             }, 5000);
+          } else {
+            if (openNameRef.current) {
+              let arr = openNameRef.current.split("=");
+              queryDetailInfo(defaultUniqueKey || uniqueKey, arr[1], arr[0]);
+            }
           }
         });
       })
@@ -92,7 +97,7 @@ const Step4 = () => {
   };
 
   const retryInstall = () => {
-    setRetryLoading(true)
+    setRetryLoading(true);
     setOpenName("");
     openNameRef.current = "";
     fetchPost(apiRequest.appStore.retryInstall, {
@@ -109,7 +114,7 @@ const Step4 = () => {
       })
       .catch((e) => console.log(e))
       .finally(() => {
-        setRetryLoading(false)
+        setRetryLoading(false);
       });
   };
 
