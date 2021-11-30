@@ -324,7 +324,7 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
   }, [value]);
 
   return (
-    <div style={{ marginBottom: 30, width: "45%" }}>
+    <div style={{ marginBottom: 40, width: "45%" }}>
       {/* <Button
         onClick={() => {
           console.log(value);

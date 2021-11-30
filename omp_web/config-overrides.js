@@ -34,7 +34,8 @@ module.exports = {
     // 使用less-loader对源码重的less的变量进行重新制定，设置antd自定义主题
     addLessLoader({
       javascriptEnabled: true,
-      modifyVars: { "@primary-color": "#4986f7" },
+      modifyVars: { "@primary-color": "#4986f7",
+    "@text-color":"rgba(0,0,0,0.65)" },
     }),
     // addPostcssPlugins([require("postcss-px2rem-exclude")({
     //     remUnit: 16,

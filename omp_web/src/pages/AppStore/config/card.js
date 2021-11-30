@@ -25,6 +25,8 @@ const Card = ({ idx, history, info, tabKey, installOperation }) => {
     },
   };
 
+  const [isHover, setIsHover] = useState(false)
+
   return (
     <div
       className={styles.cardContainer}
@@ -41,6 +43,12 @@ const Card = ({ idx, history, info, tabKey, installOperation }) => {
         backgroundColor: "#fff",
         paddingLeft: 10,
         paddingRight: 10,
+      }}
+      onMouseEnter={()=>{
+        setIsHover(true)
+      }}
+      onMouseLeave={()=>{
+        setIsHover(false)
       }}
     >
       <div className={styles.cardContent}>
@@ -79,7 +87,7 @@ const Card = ({ idx, history, info, tabKey, installOperation }) => {
             });
           }}
         >
-          <div style={{ fontSize: 14, color: "#222222" }}>
+          <div style={{ fontSize: 14, color: isHover?"#247fe6":"#222222", }}>
             {info[nameObj[tabKey].name]}
           </div>
           <div
@@ -87,22 +95,24 @@ const Card = ({ idx, history, info, tabKey, installOperation }) => {
               display: "flex",
               justifyContent: "space-between",
               fontSize: 12,
+              padding:"8px 10px 10px 0px",
+              //fontSize:12
             }}
           >
             <span>最新版本</span>
             <span>{info[nameObj[tabKey].version]}</span>
           </div>
           <p className={styles.text}>
-            <Tooltip placement="top" title={info[nameObj[tabKey].description]}>
+            {/* <Tooltip placement="top" title={info[nameObj[tabKey].description]}> */}
               {info[nameObj[tabKey].description]}
-            </Tooltip>
+            {/* </Tooltip> */}
           </p>
           <span
             style={{
               float: "right",
               position: "absolute",
-              bottom: 2,
-              right: 2,
+              bottom: 8,
+              right: 10,
               fontSize: 12,
             }}
           >
@@ -110,7 +120,7 @@ const Card = ({ idx, history, info, tabKey, installOperation }) => {
           </span>
         </div>
       </div>
-      <div className={styles.cardBtn}>
+      <div className={styles.cardBtn} style={{color: isHover?"#247fe6":"rgba(0,0,0,0.65)", }}>
         <div
           style={{ borderRight: "1px solid #e7e7e7" }}
           onClick={() => {
