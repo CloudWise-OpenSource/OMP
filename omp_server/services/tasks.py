@@ -66,6 +66,7 @@ def exec_action(action, instance, operation_user):
         raise ValueError("action动作不合法")
     if action[0] == 'delete':
         service_port = None
+        is_success = False
         if service_obj.service_port is not None:
             service_port_ls = json.loads(service_obj.service_port)
             if len(service_port_ls) > 0:
@@ -83,9 +84,6 @@ def exec_action(action, instance, operation_user):
             }
             PrometheusUtils().delete_service(service_data)
         # 删除hosts实例个数
-        if not service_obj.service.is_base_env:
-            Host.objects.filter(ip=service_obj.ip).update(
-                service_num=F("service_num") - 1)
         service_history_obj = ServiceHistory.objects.filter(
             service=service_obj)
         if len(service_history_obj) != 0:
@@ -106,8 +104,11 @@ def exec_action(action, instance, operation_user):
         for instance in host_instances:
             HostOperateLog.objects.create(username=operation_user,
                                           description=f"卸载服务 [{service_obj.service.app_name}]",
-                                          result="success",
+                                          result="success" if is_success else "failed",
                                           host=instance)
+        if not service_obj.service.is_base_env and is_success:
+            Host.objects.filter(ip=service_obj.ip).update(
+                service_num=F("service_num") - 1)
         return None
 
     exe_action = service_controllers.get(action[0])
