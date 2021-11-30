@@ -13,7 +13,9 @@ from utils.plugin.salt_client import SaltClient
 import time
 import json
 from promemonitor.prometheus_utils import PrometheusUtils
-from db_models.models import Host
+from db_models.models import (
+    Host, HostOperateLog
+)
 from django.db.models import F
 
 # 屏蔽celery任务日志中的paramiko日志
@@ -83,7 +85,7 @@ def exec_action(action, instance, operation_user):
         # 删除hosts实例个数
         if not service_obj.service.is_base_env:
             Host.objects.filter(ip=service_obj.ip).update(
-                service_num=F("service_num") + 1)
+                service_num=F("service_num") - 1)
         service_history_obj = ServiceHistory.objects.filter(
             service=service_obj)
         if len(service_history_obj) != 0:
@@ -100,6 +102,12 @@ def exec_action(action, instance, operation_user):
             is_success, info = salt_obj.cmd(ip, f"rm -rf {base_dir}", 600)
             logger.info(f"执行 [{action[0]}] 操作 {is_success}，原因: {info}")
         service_obj.delete()
+        host_instances = Host.objects.filter(ip=service_obj.ip)
+        for instance in host_instances:
+            HostOperateLog.objects.create(username=operation_user,
+                                          description=f"卸载服务 [{service_obj.service.app_name}]",
+                                          result="success",
+                                          host=instance)
         return None
 
     exe_action = service_controllers.get(action[0])
