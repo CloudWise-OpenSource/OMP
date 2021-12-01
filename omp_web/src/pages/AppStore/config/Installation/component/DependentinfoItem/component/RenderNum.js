@@ -1,9 +1,10 @@
 import { Select, Form, Checkbox, InputNumber, Input } from "antd";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { randomNumber } from "@/utils/utils";
 
 const RenderNum = ({ data, form }) => {
   const [num, setNum] = useState(data.deploy_mode.default);
+  const numRef = useRef(data.deploy_mode.default);
 
   useEffect(() => {
     if (num == 1) {
@@ -32,19 +33,33 @@ const RenderNum = ({ data, form }) => {
         >
           <InputNumber
             onChange={(e) => {
-              setNum(e);
-              if(e>1){
+              if (
+                e - data.deploy_mode.step == numRef.current ||
+                e + data.deploy_mode.step == numRef.current
+              ) {
+                numRef.current = e;
+                setNum(e);
+              } else {
                 form.setFieldsValue({
-                    [`${data.name}=name`]: `${data.name}-cluster-${randomNumber(7)}`,
-                  });
+                  [`${data.name}=num`]: numRef.current,
+                });
+              }
+
+              if (e > 1) {
+                form.setFieldsValue({
+                  [`${data.name}=name`]: `${data.name}-cluster-${randomNumber(
+                    7
+                  )}`,
+                });
               }
             }}
+            keyboard={false}
             disabled={data.deploy_mode.step == 0}
             step={data.deploy_mode.step}
             min={1}
             max={32}
             style={{
-              width:100
+              width: 100,
             }}
           />
         </Form.Item>

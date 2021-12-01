@@ -10,13 +10,15 @@ import {
   message,
   InputNumber,
 } from "antd";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { randomNumber } from "@/utils/utils";
 import { DownOutlined } from "@ant-design/icons";
 
 const BasicInfoItem = ({ data, form }) => {
   // step3的安装详情是否是展开状态 因为多个所以为对象
   const [isOpen, setIsOpen] = useState(false);
+
+  const numRef = useRef({});
 
   const step2Open = (num) => ({
     marginTop: 10,
@@ -44,6 +46,7 @@ const BasicInfoItem = ({ data, form }) => {
       [`${data.name}`]: `${data.name}-${randomNumber()}`,
     });
     data.services_list.map((item) => {
+      numRef.current[`${data.name}=${item.name}`] = `${item.deploy_mode.default}`
       form.setFieldsValue({
         [`${data.name}=${item.name}`]: `${item.deploy_mode.default}`,
       });
@@ -119,6 +122,19 @@ const BasicInfoItem = ({ data, form }) => {
                 <InputNumber
                   min={1}
                   max={32}
+                  onChange={(e)=>{
+                    if (
+                      e - item.deploy_mode.step == numRef.current[`${data.name}=${item.name}`] ||
+                      e + item.deploy_mode.step == numRef.current[`${data.name}=${item.name}`]
+                    ) {
+                      numRef.current[`${data.name}=${item.name}`] = e;
+                    } else {
+                      form.setFieldsValue({
+                        [`${data.name}=${item.name}`]: numRef.current[`${data.name}=${item.name}`],
+                      });
+                    }
+                  }}
+                  keyboard={false}
                   disabled={item.deploy_mode.step == 0}
                   step={item.deploy_mode.step}
                 />
