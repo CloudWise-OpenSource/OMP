@@ -223,9 +223,9 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
         let data = handleDataSourceData(withArr, -1);
         reduxDispatch(getDataSourceChangeAction(data));
         //console.log(value, result, )
-        setValue([...value, ...result]);
+        setValue([...result]);
         form.setFieldsValue({
-          [`${info.ip}`]: [...value, ...result],
+          [`${info.ip}`]: [...result],
         });
       } else if (isCheck === false) {
         // console.log("点击到了一级的取消选中");
