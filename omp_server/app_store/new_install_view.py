@@ -56,11 +56,19 @@ class BatchInstallEntranceView(GenericViewSet, ListModelMixin):
         :param pro_version_lst: 应用版本
         :return:
         """
-        if Product.objects.filter(
-                product__pro_name=pro_name,
-                product__pro_version__in=pro_version_lst
-        ).exists():
-            return True
+        queryset = Product.objects.filter(
+            product__pro_name=pro_name,
+            product__pro_version__in=pro_version_lst
+        )
+        if queryset.exists():
+            # 判断产品下是否还有服务，如果没有服务，那么
+            if Service.objects.filter(
+                service__product_id__in=queryset.values_list(
+                    "product_id", flat=True
+                )
+            ).exists():
+                return True
+            queryset.delete()
         return False
 
     def list(self, request, *args, **kwargs):
