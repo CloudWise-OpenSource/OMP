@@ -110,86 +110,6 @@ const Homepage = () => {
               }}
               className={styles.blockContent}
             >
-              {/* 主机状态 */}
-              <div className={styles.blockOverviewItem}>
-                <OmpProgress
-                  percent={calcPercentage(
-                    dataSource.host?.host_info_all_count -
-                      dataSource.host?.host_info_exc_count -
-                      dataSource.host?.host_info_no_monitor_count,
-                    dataSource.host?.host_info_all_count
-                  )}
-                  trafficWay={[
-                    {
-                      name: "异常",
-                      value: dataSource.host?.host_info_exc_count,
-                    },
-                    {
-                      name: "未监控",
-                      value: dataSource.host?.host_info_no_monitor_count,
-                    },
-                    {
-                      name: "正常",
-                      value:
-                        dataSource.host?.host_info_all_count -
-                        dataSource.host?.host_info_exc_count -
-                        dataSource.host?.host_info_no_monitor_count,
-                    },
-                  ]}
-                />
-                <div className={styles.progressInfo}>
-                  <div>主机状态</div>
-                  <div
-                    onClick={() =>
-                      dataSource.host?.host_info_all_count &&
-                      history.push({
-                        pathname: "/resource-management/machine-management",
-                      })
-                    }
-                    style={
-                      dataSource.host?.host_info_all_count
-                        ? { cursor: "pointer" }
-                        : {}
-                    }
-                  >
-                    主机总数：
-                    <span
-                      style={
-                        dataSource.host?.host_info_all_count
-                          ? { color: "#1890ff" }
-                          : {}
-                      }
-                    >
-                      {dataSource.host?.host_info_all_count}个
-                    </span>
-                  </div>
-                  <div
-                    style={
-                      dataSource.host?.host_info_exc_count > 0
-                        ? { cursor: "pointer" }
-                        : {}
-                    }
-                    onClick={() =>
-                      dataSource.host?.host_info_exc_count &&
-                      history.push({
-                        pathname: "/application-monitoring/exception-list",
-                      })
-                    }
-                  >
-                    异常主机：
-                    <span
-                      style={
-                        dataSource.host?.host_info_exc_count > 0
-                          ? { color: "#cf1322" }
-                          : {}
-                      }
-                    >
-                      {dataSource.host?.host_info_exc_count}个
-                    </span>
-                  </div>
-                </div>
-              </div>
-
               {/* 应用服务 */}
               <div className={styles.blockOverviewItem}>
                 <OmpProgress
@@ -458,7 +378,85 @@ const Homepage = () => {
                   </div>
                 </div>
               </div>
-
+              {/* 主机状态 */}
+              <div className={styles.blockOverviewItem}>
+                <OmpProgress
+                  percent={calcPercentage(
+                    dataSource.host?.host_info_all_count -
+                      dataSource.host?.host_info_exc_count -
+                      dataSource.host?.host_info_no_monitor_count,
+                    dataSource.host?.host_info_all_count
+                  )}
+                  trafficWay={[
+                    {
+                      name: "异常",
+                      value: dataSource.host?.host_info_exc_count,
+                    },
+                    {
+                      name: "未监控",
+                      value: dataSource.host?.host_info_no_monitor_count,
+                    },
+                    {
+                      name: "正常",
+                      value:
+                        dataSource.host?.host_info_all_count -
+                        dataSource.host?.host_info_exc_count -
+                        dataSource.host?.host_info_no_monitor_count,
+                    },
+                  ]}
+                />
+                <div className={styles.progressInfo}>
+                  <div>主机状态</div>
+                  <div
+                    onClick={() =>
+                      dataSource.host?.host_info_all_count &&
+                      history.push({
+                        pathname: "/resource-management/machine-management",
+                      })
+                    }
+                    style={
+                      dataSource.host?.host_info_all_count
+                        ? { cursor: "pointer" }
+                        : {}
+                    }
+                  >
+                    主机总数：
+                    <span
+                      style={
+                        dataSource.host?.host_info_all_count
+                          ? { color: "#1890ff" }
+                          : {}
+                      }
+                    >
+                      {dataSource.host?.host_info_all_count}个
+                    </span>
+                  </div>
+                  <div
+                    style={
+                      dataSource.host?.host_info_exc_count > 0
+                        ? { cursor: "pointer" }
+                        : {}
+                    }
+                    onClick={() =>
+                      dataSource.host?.host_info_exc_count &&
+                      history.push({
+                        pathname: "/application-monitoring/exception-list",
+                      })
+                    }
+                  >
+                    异常主机：
+                    <span
+                      style={
+                        dataSource.host?.host_info_exc_count > 0
+                          ? { color: "#cf1322" }
+                          : {}
+                      }
+                    >
+                      {dataSource.host?.host_info_exc_count}个
+                    </span>
+                  </div>
+                </div>
+              </div>
               {/* 三方组件 */}
               {/* <div className={styles.blockOverviewItem}>
                 <OmpProgress
@@ -567,31 +565,6 @@ const Homepage = () => {
             </p>
             <ExceptionList />
           </div>
-          <div className={styles.pageBlock}>
-            <OmpStateBlock
-              // key={"serviceData"}
-              // tag={"all"}
-              title={"主机运行状态"}
-              link={(data) => {
-                history.push({
-                  pathname: "/resource-management/machine-management",
-                  state: {
-                    ip: data.ip,
-                  },
-                });
-              }}
-              criticalLink={(data) => {
-                history.push({
-                  pathname: "/application-monitoring/exception-list",
-                  state: {
-                    ip: data.ip,
-                    type: "host",
-                  },
-                });
-              }}
-              data={dataAggregation(dataSource.host?.host_info_list, "ip")}
-            />
-          </div>
 
           <div className={styles.pageBlock}>
             <OmpStateBlock
@@ -685,7 +658,31 @@ const Homepage = () => {
               )}
             />
           </div>
-
+          <div className={styles.pageBlock}>
+            <OmpStateBlock
+              // key={"serviceData"}
+              // tag={"all"}
+              title={"主机运行状态"}
+              link={(data) => {
+                history.push({
+                  pathname: "/resource-management/machine-management",
+                  state: {
+                    ip: data.ip,
+                  },
+                });
+              }}
+              criticalLink={(data) => {
+                history.push({
+                  pathname: "/application-monitoring/exception-list",
+                  state: {
+                    ip: data.ip,
+                    type: "host",
+                  },
+                });
+              }}
+              data={dataAggregation(dataSource.host?.host_info_list, "ip")}
+            />
+          </div>
           {/* <div className={styles.pageBlock}>
             <OmpStateBlock
               // key={"serviceData"}

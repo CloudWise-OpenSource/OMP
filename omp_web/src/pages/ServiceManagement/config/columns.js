@@ -400,18 +400,14 @@ const renderMenu = (
 
 const renderStatus = (text) => {
   switch (text) {
-    case 0:
-      return <span>{renderDisc("normal", 7, -1)}正常</span>;
-    case 1:
-      return <span>{renderDisc("warning", 7, -1)}重启中</span>;
-    case 2:
-      return <span>{renderDisc("critical", 7, -1)}启动失败</span>;
-    case 3:
-      return <span>{renderDisc("warning", 7, -1)}部署中</span>;
-    case 4:
-      return <span>{renderDisc("critical", 7, -1)}部署失败</span>;
+    case "未监控":
+      return <span>{renderDisc("notMonitored", 7, -1)}{text}</span>;
+    case "启动中" || "停止中" || "重启中" || "未知" || "安装中":
+      return <span>{renderDisc("warning", 7, -1)}{text}</span>;
+    case "停止" || "安装失败":
+      return <span>{renderDisc("critical", 7, -1)}{text}</span>;
     default:
-      return "-";
+      return <span>{renderDisc("normal", 7, -1)}{text}</span>;
   }
 };
 
@@ -547,19 +543,7 @@ const getColumnsConfig = (
       align: "center",
       //ellipsis: true,
       render: (text) => {
-        let level = "normal";
-        if (
-          text == "启动中" ||
-          text == "停止中" ||
-          text == "重启中" ||
-          text == "未知" ||
-          text == "安装中"
-        ) {
-          level = "warning";
-        } else if (text == "停止" || text == "安装失败") {
-          level = "critical";
-        }
-        return <span style={{ color: colorConfig[level] }}>{text}</span>;
+        return renderStatus(text)
       },
     },
     {
