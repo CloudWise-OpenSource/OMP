@@ -83,7 +83,9 @@ export const DetailHost = ({
               }}
             >
               <div style={{ flex: 1 }}>实例名称</div>
-              <div style={{ flex: 1 }}>{isShowDrawer.record?.service_instance_name}</div>
+              <div style={{ flex: 1 }}>
+                {isShowDrawer.record?.service_instance_name}
+              </div>
             </div>
             <div
               style={{
@@ -262,10 +264,8 @@ export const DetailHost = ({
             >
               <div style={{ flex: 1 }}>安装时间</div>
               <div style={{ flex: 1 }}>
-                {(data?.created)
-                  ? moment(data?.created).format(
-                      "YYYY-MM-DD HH:mm:ss"
-                    )
+                {data?.created
+                  ? moment(data?.created).format("YYYY-MM-DD HH:mm:ss")
                   : "-"}
               </div>
             </div>
@@ -385,7 +385,7 @@ const renderMenu = (
         //disabled={!record.operable}
         key="delete"
         onClick={() => {
-          queryDeleteMsg([record])
+          queryDeleteMsg([record]);
           setOperateAciton(4);
           setServiceAcitonModal(true);
         }}
@@ -401,13 +401,75 @@ const renderMenu = (
 const renderStatus = (text) => {
   switch (text) {
     case "未监控":
-      return <span>{renderDisc("notMonitored", 7, -1)}{text}</span>;
-    case "启动中" || "停止中" || "重启中" || "未知" || "安装中":
-      return <span>{renderDisc("warning", 7, -1)}{text}</span>;
-    case "停止" || "安装失败":
-      return <span>{renderDisc("critical", 7, -1)}{text}</span>;
+      return (
+        <span>
+          {renderDisc("notMonitored", 7, -1)}
+          {text}
+        </span>
+      );
+    case "启动中":
+      return (
+        <span>
+          {renderDisc("warning", 7, -1)}
+          {text}
+        </span>
+      );
+    case "停止中":
+      return (
+        <span>
+          {renderDisc("warning", 7, -1)}
+          {text}
+        </span>
+      );
+    case "重启中":
+      return (
+        <span>
+          {renderDisc("warning", 7, -1)}
+          {text}
+        </span>
+      );
+    case "未知":
+      return (
+        <span>
+          {renderDisc("warning", 7, -1)}
+          {text}
+        </span>
+      );
+    case "安装中":
+      return (
+        <span>
+          {renderDisc("warning", 7, -1)}
+          {text}
+        </span>
+      );
+    case "待安装":
+      return (
+        <span>
+          {renderDisc("warning", 7, -1)}
+          {text}
+        </span>
+      );
+    case "停止":
+      return (
+        <span>
+          {renderDisc("critical", 7, -1)}
+          {text}
+        </span>
+      );
+    case "安装失败":
+      return (
+        <span>
+          {renderDisc("critical", 7, -1)}
+          {text}
+        </span>
+      );
     default:
-      return <span>{renderDisc("normal", 7, -1)}{text}</span>;
+      return (
+        <span>
+          {renderDisc("normal", 7, -1)}
+          {text}
+        </span>
+      );
   }
 };
 
@@ -543,7 +605,7 @@ const getColumnsConfig = (
       align: "center",
       //ellipsis: true,
       render: (text) => {
-        return renderStatus(text)
+        return renderStatus(text);
       },
     },
     {
