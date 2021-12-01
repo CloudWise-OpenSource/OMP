@@ -1831,7 +1831,7 @@ class ValidateInstallServicePortArgs(object):
             _port = el.get("default", "")
             if not _port or not str(_port).isnumeric():
                 el["check_flag"] = False
-                el["check_msg"] = f"端口 {_port} 必须为数字"
+                el["error_msg"] = f"端口 {_port} 必须为数字"
                 continue
             # method1: 从OMP本机查看端口是否已被占用
             # _flag, _msg = public_utils.check_ip_port(ip=ip, port=int(_port))

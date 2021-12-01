@@ -15,6 +15,7 @@ from app_store.deploy_mode_utils.mysql import MysqlUtils
 from app_store.deploy_mode_utils.odd_num import OddNumUtils
 # from app_store.deploy_mode_utils.even_num import EvenNumUtils
 from app_store.deploy_mode_utils.tengine import TengineUtils
+from app_store.deploy_mode_utils.rocketmq import RocketmqUtils
 
 
 SERVICE_MAP = {
@@ -22,5 +23,6 @@ SERVICE_MAP = {
     "zookeeper": OddNumUtils,
     "kafka": OddNumUtils,
     "nacos": OddNumUtils,
-    "tengine": TengineUtils
+    "tengine": TengineUtils,
+    "rocketmq": RocketmqUtils
 }

@@ -14,16 +14,24 @@ grafana默认的用户名密码均为admin，不做更改
 import os
 import sys
 import json
+import time
 
+import django
 import requests
 from ruamel import yaml
-from ruamel.yaml import YAML
+# from ruamel.yaml import YAML
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(os.path.dirname(CURRENT_DIR))
 GRAFANA_DASHBOARD_JSON = os.path.join(
     PROJECT_DIR, "package_hub/grafana_dashboard_json")
 AGREE = "http"
+sys.path.append(os.path.join(PROJECT_DIR, "omp_server"))
+
+# 加载Django环境
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "omp_server.settings")
+django.setup()
+from utils.plugin.synch_grafana import synch_grafana_info
 
 
 class Grafana(object):
@@ -302,3 +310,6 @@ if __name__ == '__main__':
         prometheus_ip=local_ip, prometheus_port=p_port
     )
     obj.run()
+    # 更新grafana的面板数据
+    time.sleep(30)
+    synch_grafana_info()

@@ -25,6 +25,9 @@ from db_models.models import UserProfile
 from db_models.models import MonitorUrl
 from utils.parse_config import MONITOR_PORT
 from db_models.models import Env
+from db_models.models import HostThreshold
+from db_models.models import ServiceThreshold
+from db_models.models import ServiceCustomThreshold
 
 
 def create_default_user():
@@ -53,11 +56,14 @@ def create_default_monitor_url():
     monitor_list = []
     local_ip = "127.0.0.1:"
     monitor_list.append(
-        MonitorUrl(id="1", name="prometheus", monitor_url=local_ip + str(MONITOR_PORT.get("prometheus", "19011"))))
+        MonitorUrl(id="1", name="prometheus", monitor_url=local_ip + str(
+            MONITOR_PORT.get("prometheus", "19011"))))
     monitor_list.append(
-        MonitorUrl(id="2", name="alertmanager", monitor_url=local_ip + str(MONITOR_PORT.get("alertmanager", "19013"))))
+        MonitorUrl(id="2", name="alertmanager", monitor_url=local_ip + str(
+            MONITOR_PORT.get("alertmanager", "19013"))))
     monitor_list.append(MonitorUrl(
-        id="3", name="grafana", monitor_url=local_ip + str(MONITOR_PORT.get("grafana", "19014"))))
+        id="3", name="grafana",
+        monitor_url=local_ip + str(MONITOR_PORT.get("grafana", "19014"))))
     MonitorUrl.objects.bulk_create(monitor_list)
 
 
@@ -72,6 +78,56 @@ def create_default_env():
     Env(name=env_name).save()
 
 
+def create_threshold():
+    """
+    为告警添加默认的告警阈值规则
+    :return:
+    """
+    host_threshold = [
+        {'index_type': 'cpu_used', 'condition': '>=', 'condition_value': '90',
+         'alert_level': 'critical'},
+        {'index_type': 'cpu_used', 'condition': '>=', 'condition_value': '80',
+         'alert_level': 'warning'},
+        {'index_type': 'memory_used', 'condition': '>=',
+         'condition_value': '90', 'alert_level': 'critical'},
+        {'index_type': 'memory_used', 'condition': '>=',
+         'condition_value': '80', 'alert_level': 'warning'},
+        {'index_type': 'disk_root_used', 'condition': '>=',
+         'condition_value': '90', 'alert_level': 'critical'},
+        {'index_type': 'disk_root_used', 'condition': '>=',
+         'condition_value': '80', 'alert_level': 'warning'},
+        {'index_type': 'disk_data_used', 'condition': '>=',
+         'condition_value': '90', 'alert_level': 'critical'},
+        {'index_type': 'disk_data_used', 'condition': '>=',
+         'condition_value': '80', 'alert_level': 'warning'}
+    ]
+    service_threshold = [
+        {'index_type': 'service_active', 'condition': '==',
+         'condition_value': 'False', 'alert_level': 'critical'},
+        {'index_type': 'service_cpu_used', 'condition': '>=',
+         'condition_value': '90', 'alert_level': 'critical'},
+        {'index_type': 'service_cpu_used', 'condition': '>=',
+         'condition_value': '80', 'alert_level': 'warning'},
+        {'index_type': 'service_memory_used', 'condition': '>=',
+         'condition_value': '90', 'alert_level': 'critical'},
+        {'index_type': 'service_memory_used', 'condition': '>=',
+         'condition_value': '80', 'alert_level': 'warning'}]
+    custom_threshold = [
+        {'index_type': 'kafka_consumergroup_lag', 'condition': '>=',
+         'condition_value': '5000', 'alert_level': 'critical'},
+        {'index_type': 'kafka_consumergroup_lag', 'condition': '>=',
+         'condition_value': '3000', 'alert_level': 'warning'}]
+    HostThreshold.objects.bulk_create(
+        [HostThreshold(**el) for el in host_threshold]
+    )
+    ServiceThreshold.objects.bulk_create(
+        [ServiceThreshold(**el) for el in service_threshold]
+    )
+    ServiceCustomThreshold.objects.bulk_create(
+        [ServiceCustomThreshold(**el) for el in custom_threshold]
+    )
+
+
 def main():
     """
     基础数据创建流程
@@ -83,6 +139,8 @@ def main():
     create_default_monitor_url()
     # 创建默认环境
     create_default_env()
+    # 添加默认告警阈值规则
+    create_threshold()
 
 
 if __name__ == '__main__':
