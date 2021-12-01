@@ -699,6 +699,60 @@ def publish_entry(uuid):
     exec_clear(clear_dir)
 
 
+def check_monitor_data(detail_obj):
+    """
+    根据部署详情信息，确认该服务的要监控的方式，并返回监控处理结果
+    {
+        "type": "JavaSpringBoot",
+        "metric_port": "{service_port}",
+        "process_name": ""
+    }
+    :param detail_obj: 部署详情对象
+    :type detail_obj: DetailInstallHistory
+    :return: (bool, _ret_dic)
+    """
+    def get_port(keyword):
+        """
+        根据关键字获取端口值
+        :param keyword:
+        :return:
+        """
+        service_port_ls = json.loads(detail_obj.service.service_port)
+        for item in service_port_ls:
+            if item.get("key") == keyword:
+                return item.get("default")
+        return None
+    _ret_dic = {
+        "listen_port": None,
+        "metric_port": None,
+        "only_process": False,
+        "process_key_word": None,
+        "type": None
+    }
+    app_monitor = detail_obj.service.service.app_monitor
+    if not app_monitor:
+        return False, _ret_dic
+    _ret_dic["type"] = app_monitor.get("type")
+    _ret_dic["process_key_word"] = app_monitor.get("process_name")
+
+    if isinstance(app_monitor.get("metric_port"), str):
+        _metric_port_key = app_monitor.get(
+            "metric_port", "").replace("{", "").replace("}", "")
+    elif isinstance(app_monitor.get("metric_port"), dict):
+        _metric_port_key = list(app_monitor.get("metric_port", {}).keys())[0]
+    else:
+        _metric_port_key = None
+    if detail_obj.service.service_port is not None:
+        _ret_dic["listen_port"] = get_port("service_port")
+        _ret_dic["metric_port"] = get_port(_metric_port_key)
+    if _ret_dic["metric_port"]:
+        return True, _ret_dic
+    if _ret_dic["process_key_word"]:
+        _ret_dic["only_process"] = True
+        return True, _ret_dic
+    return False, _ret_dic
+
+
 def add_prometheus(main_history_id):
     """ 添加服务到 Prometheus """
     logger.info("Add Prometheus Begin")
@@ -707,44 +761,54 @@ def add_prometheus(main_history_id):
     queryset = DetailInstallHistory.objects.filter(
         main_install_history_id=main_history_id)
     for detail_obj in queryset:
+        try:
+            _flag, _monitor_dic = check_monitor_data(detail_obj=detail_obj)
+            logger.info(
+                f"Add Prometheus get monitor_dic for "
+                f"{detail_obj}: {_monitor_dic}")
+        except Exception as e:
+            logger.info(
+                f"Add Prometheus get monitor_dic Failed: "
+                f"{detail_obj}; {str(e)}")
+            continue
+        if not _flag:
+            continue
         # TODO 已是否具有端口作为是否需要添加监控的依据，后续版本优化
         instance_name = detail_obj.service.service_instance_name
-        service_port = None
-        if detail_obj.service.service_port is not None:
-            service_port_ls = json.loads(detail_obj.service.service_port)
-            if len(service_port_ls) > 0:
-                service_port = service_port_ls[0].get("default", "")
-        if service_port is not None:
-            # 获取数据目录、日志目录
-            app_install_args = detail_obj.install_detail_args.get(
-                "install_args", [])
-            data_dir = log_dir = ""
-            username = password = ""
-            for info in app_install_args:
-                if info.get("key", "") == "data_dir":
-                    data_dir = info.get("default", "")
-                if info.get("key", "") == "log_dir":
-                    log_dir = info.get("default", "")
-                if info.get("key", "") == "username":
-                    username = info.get("default", "")
-                if info.get("key", "") == "password":
-                    password = info.get("default", "")
-            # 添加服务到 prometheus
-            is_success, message = prometheus.add_service({
-                "service_name": detail_obj.service.service.app_name,
-                "instance_name": instance_name,
-                "data_path": data_dir,
-                "log_path": log_dir,
-                "env": "default",
-                "ip": detail_obj.service.ip,
-                "listen_port": service_port,
-                "username": username,
-                "password": password,
-            })
-            if not is_success:
-                logger.error(
-                    f"Add Prometheus Failed {instance_name}, error: {message}")
-                continue
+        service_port = _monitor_dic.get("listen_port")
+        # 获取数据目录、日志目录
+        app_install_args = detail_obj.install_detail_args.get(
+            "install_args", [])
+        data_dir = log_dir = ""
+        username = password = ""
+        for info in app_install_args:
+            if info.get("key", "") == "data_dir":
+                data_dir = info.get("default", "")
+            if info.get("key", "") == "log_dir":
+                log_dir = info.get("default", "")
+            if info.get("key", "") == "username":
+                username = info.get("default", "")
+            if info.get("key", "") == "password":
+                password = info.get("default", "")
+        # 添加服务到 prometheus
+        is_success, message = prometheus.add_service({
+            "service_name": detail_obj.service.service.app_name,
+            "instance_name": instance_name,
+            "data_path": data_dir,
+            "log_path": log_dir,
+            "env": "default",
+            "ip": detail_obj.service.ip,
+            "listen_port": service_port,
+            "metric_port": _monitor_dic.get("metric_port"),
+            "only_process": _monitor_dic.get("only_process"),
+            "process_key_word": _monitor_dic.get("process_key_word"),
+            "username": username,
+            "password": password,
+        })
+        if not is_success:
+            logger.error(
+                f"Add Prometheus Failed {instance_name}, error: {message}")
+            continue
         logger.info(f"Add Prometheus Success {instance_name}")
     logger.info("Add Prometheus End")
 
