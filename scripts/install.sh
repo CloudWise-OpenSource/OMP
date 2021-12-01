@@ -28,10 +28,32 @@ function install_omp() {
   bash $OMP_SCRIPT all start
 }
 
+function check_grafana_up() {
+  cat config/omp.yaml |grep 'grafana: ' |grep -E '[0-9]'
+  CONF_PATH="${PROJECT_FOLDER}/config/omp.yaml"
+  port_flag=$(cat ${CONF_PATH} |grep 'grafana: ' | tr "grafana:" " ")
+  port=${port_flag// /}
+  grafana_url="http://127.0.0.1:${port}/proxy/v1/grafana/login"
+  # 等待grafana在5分钟内启动成功
+  i=0
+  while [ $i -le 10 ]
+  do
+    curl -H "Content-Type: application/json" -X POST -d '{"user": "admin", "password": "admin"}' "${grafana_url}" |grep 'Logged in'
+    if [[ $? -eq 0 ]]; then
+      return 0
+    fi
+    sleep 30
+    let i++
+  done
+  echo "Grafana start failed in 300s, please check!"
+  exit 1
+}
+
 # 监控端安装逻辑
 function install_monitor_server() {
   bash $OMP_SCRIPT grafana start
-  sleep 30
+  # 确认grafana能够成功启动后，再更新grafana的数据
+  check_grafana_up
   update_grafana_path="${PROJECT_FOLDER}/scripts/source/update_grafana.py"
   $PYTHON3 $update_grafana_path $1
   if [[ $? -ne 0 ]]; then

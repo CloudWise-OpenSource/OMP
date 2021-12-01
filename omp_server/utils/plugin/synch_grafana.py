@@ -1,7 +1,33 @@
-from db_models.models import MonitorUrl, GrafanaMainPage
 import json
+import time
+
 import requests
+
+from db_models.models import MonitorUrl, GrafanaMainPage
 from utils.parse_config import GRAFANA_API_KEY
+
+
+def make_request(url, headers, payload):
+    """
+    请求
+    :param url:
+    :param headers:
+    :param payload:
+    :return:
+    """
+    flag = 0
+    while flag < 5:
+        response = requests.request(
+            "GET", url, headers=headers, data=payload)
+        r = json.loads(response.text)
+        for url in r:
+            if not isinstance(url, dict):
+                break
+        else:
+            return True, r
+        flag += 1
+        time.sleep(30)
+    return False, None
 
 
 def synch_grafana_info():
@@ -19,8 +45,9 @@ def synch_grafana_info():
         'Authorization': f'Bearer {GRAFANA_API_KEY}'
     }
     try:
-        response = requests.request("GET", url, headers=headers, data=payload)
-        r = json.loads(response.text)
+        flag, r = make_request(url=url, headers=headers, payload=payload)
+        if not flag:
+            return
     except Exception as e:
         print(e)
         return
