@@ -435,7 +435,8 @@ class PrometheusUtils(object):
                     service_temp_data['exporter_port'] = self.get_service_port(
                         '{}Exporter'.format(sd.get('service_name')))
                 else:
-                    service_temp_data['exporter_port'] = 0
+                    service_temp_data['exporter_port'] = sd.get(
+                        'metric_port', 0)
                 if sd.get('service_name') in METRICS.keys():
                     service_temp_data['exporter_metric'] = METRICS.get(
                         sd.get('service_name'), 0)
@@ -513,6 +514,7 @@ class PrometheusUtils(object):
             "env": "default",
             "ip": "127.0.0.1",
             "listen_port": "3306"
+            "metric_port": "19018"
         }
         添加有exporter的组件信息到各自的exporter监控
         :param service_data: 新增的服务信息
