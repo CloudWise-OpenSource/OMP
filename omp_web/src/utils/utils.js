@@ -1812,6 +1812,7 @@ export const colorConfig = {
   normal: "#76ca68",
   warning: "#ffbf00",
   critical: "#f04134",
+  notMonitored: "rgb(170, 170, 170)"
 };
 
 export const renderDisc = (level = "normal", size = 5, top = 0, left = 0) => {
