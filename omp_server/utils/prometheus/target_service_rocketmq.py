@@ -101,7 +101,8 @@ class ServiceRocketmqCrawl(Prometheus):
     def run(self):
         """统一执行实例方法"""
         target = ['service_status', 'run_time', 'cpu_usage', 'mem_usage',
-                  'thread_num', 'max_memory', 'salt_json']
+                  'broker_tps', 'broker_qps', 'message_accumulation',
+                  'salt_json']
         for t in target:
             if getattr(self, t):
                 getattr(self, t)()
