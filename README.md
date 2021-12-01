@@ -176,4 +176,4 @@ V0.1.0 (2021.11.30)
 欢迎加入
 获取更多关于OMP的技术资料，或加入OMP开发者交流群，可扫描下方二维码咨询
 
-![img.png](wechat.png#)
+<img src="./wechat.png" width="400px" height="300px" />
