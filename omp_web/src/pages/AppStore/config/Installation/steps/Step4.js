@@ -1,4 +1,4 @@
-import { Button, Anchor, Spin } from "antd";
+import { Button, Anchor, Spin, Progress } from "antd";
 import { useSelector } from "react-redux";
 import InstallInfoItem from "../component/InstallInfoItem";
 import { useEffect, useRef, useState } from "react";
@@ -226,13 +226,18 @@ const Step4 = () => {
           borderRadius: 2,
         }}
       >
-        <div style={{ paddingLeft: 20 }}>
-          {renderStatus[data.status]}
-          {(data.status == 0 || data.status == 1) && (
-            <LoadingOutlined style={{ marginLeft: 10, fontWeight: 600 }} />
-          )}
+        <div style={{ paddingLeft: 20, display: "flex" }}>
+          <div style={{ width: 100 }}>
+            {renderStatus[data.status]}
+            {(data.status == 0 || data.status == 1) && (
+              <LoadingOutlined style={{ marginLeft: 10, fontWeight: 600 }} />
+            )}
+          </div>
         </div>
-        <div>
+        <div style={{ width: "70%" }}>
+          <Progress percent={data.percentage} status={data.status == 3 && "exception"}/>
+        </div>
+        <div style={{paddingLeft:60}}>
           {data.status == 3 && (
             <Button
               loading={retryLoading}
