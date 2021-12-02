@@ -125,6 +125,23 @@ const InstallationRecord = () => {
         }
       },
     },
+    {
+      title: "结束时间",
+      key: "modified",
+      dataIndex: "modified",
+      align: "center",
+      width: 120,
+      render: (text, record) => {
+        if(record.install_status == 1){
+          return "-"
+        }
+        if (text) {
+          return moment(text).format("YYYY-MM-DD HH:mm:ss");
+        } else {
+          return "-";
+        }
+      },
+    },
     // {
     //   title: "描述",
     //   key: "describe",
