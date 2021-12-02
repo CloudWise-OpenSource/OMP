@@ -31,15 +31,18 @@ OMP（Operation Management Platform）是云智慧公司自主设计、研发的
 ![img.png](img.png)
 
 # 环境依赖
-后端技术栈：
+
+## 后端技术栈：
 - Python 3.8.7
 - Django 3.1.4
 - Saltstack 3002.2
 - Uwsgi 2.0.19.1
-前端技术栈：
+
+## 前端技术栈：
 - Tengine 2.3.2
 - React 17.0.1
-监控技术栈：
+
+## 监控技术栈：
 - Prometheus 2.25.1
 - Alertmanager 0.21.0
 - Grafana  7.4.3
