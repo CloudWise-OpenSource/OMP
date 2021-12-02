@@ -758,8 +758,11 @@ def add_prometheus(main_history_id):
     logger.info("Add Prometheus Begin")
     prometheus = PrometheusUtils()
     # TODO 不同类型服务添加监控方式不同，后续版本优化
+    # 仅更新已经安装完成的最新服务
     queryset = DetailInstallHistory.objects.filter(
-        main_install_history_id=main_history_id)
+        main_install_history_id=main_history_id,
+        install_step_status=DetailInstallHistory.INSTALL_STATUS_SUCCESS
+    )
     for detail_obj in queryset:
         try:
             _flag, _monitor_dic = check_monitor_data(detail_obj=detail_obj)
@@ -823,10 +826,9 @@ def install_service(main_history_id, username="admin"):
     """
     try:
         executor = InstallServiceExecutor(main_history_id, username)
-        is_err = executor.main()
+        executor.main()
         logger.error(f"Install Service Task Success [{main_history_id}]")
     except Exception as err:
-        is_err = True
         import traceback
         logger.error(f"Install Service Task Failed [{main_history_id}], "
                      f"err: {err}")
@@ -837,5 +839,4 @@ def install_service(main_history_id, username="admin"):
             install_status=MainInstallHistory.INSTALL_STATUS_FAILED)
 
     # 安装成功，则注册服务至监控
-    if not is_err:
-        add_prometheus(main_history_id)
+    add_prometheus(main_history_id)

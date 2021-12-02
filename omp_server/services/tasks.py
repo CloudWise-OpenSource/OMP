@@ -17,6 +17,7 @@ from db_models.models import (
     Host, HostOperateLog
 )
 from django.db.models import F
+from django.db import transaction
 
 # 屏蔽celery任务日志中的paramiko日志
 logging.getLogger("paramiko").setLevel(logging.WARNING)
@@ -107,8 +108,9 @@ def exec_action(action, instance, operation_user):
                                           result="success" if is_success else "failed",
                                           host=instance)
         if not service_obj.service.is_base_env and is_success:
-            Host.objects.filter(ip=service_obj.ip).update(
-                service_num=F("service_num") - 1)
+            with transaction.atomic():
+                Host.objects.filter(ip=service_obj.ip).update(
+                    service_num=F("service_num") - 1)
         return None
 
     exe_action = service_controllers.get(action[0])
