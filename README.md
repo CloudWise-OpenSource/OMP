@@ -59,16 +59,16 @@ OMP（Operation Management Platform）是云智慧公司自主设计、研发，
 
 OMP 安装包内部包含了其使用的绝大部分组件，但是缺少 `MySQL` 和 `Redis`，当前版本需要用户自行配置使用，建议将 OMP 部署在 `/data/` 下，当前版本部署流程如下：
 
-- step0：下载/解压安装包
+- step0：克隆项目
 
 ```shell
-# omp_open-0.1.tar.gz  omp_monitor_agent-0.1.tar.gz
-$ tar -xf omp_open-0.1.tar.gz -C /data && mv omp_monitor_agent-0.1.tar.gz /data/omp/package_hub/
+$ git clone https://github.com/CloudWise-OpenSource/OMP.git
+$ cd OMP
 ```
 
 - step1：依赖环境配置
 
-编辑文件 `vim /data/omp/config/omp.yaml`
+编辑文件 `vim config/omp.yaml`
 
 *当前版本需要自行安装 `MySQL` 及 `Redis` 环境，安装方式请自行解决，配置信息如下：*
 
@@ -97,7 +97,7 @@ flush privileges;
 - step2：执行安装脚本
 
 ```shell
-$ cd /data/omp && bash scripts/install.sh local_ip
+$ bash scripts/install.sh <local-ip>
 # 注意1：local_ip为当前主机的ip地址，如主机上存在多网卡多IP情况，需要根据业务需求自行判断使用哪个ip地址
 # 注意2：当前执行操作的用户即为OMP中各个服务进程的运行用户，在以后的维护中，也应使用此用户进行操作
 ```
@@ -107,13 +107,13 @@ $ cd /data/omp && bash scripts/install.sh local_ip
 ```shell
 # 如果在安装过程中出现了grafana相关安装错误，需要确认grafana是否已经启动
 # 在grafana启动的前提下执行其更新命令
-$ /data/omp/component/env/bin/python3 /data/omp/scripts/source/update_grafana.py local_ip
+$ python3 scripts/source/update_grafana.py <local-ip>
 ```
 
 - step4：grafana 跳转面板初始化（在跳转 grafana 出错情况下使用）
 
 ```shell
-$ /data/omp/component/env/bin/python3 /data/omp/omp_server/manage.py shell
+$ python3 omp_server/manage.py shell
 Python 3.8.7 (default, Dec 22 2020, 06:47:35)
 [GCC 4.8.5 20150623 (Red Hat 4.8.5-44)] on linux
 Type "help", "copyright", "credits" or "license" for more information.
@@ -137,37 +137,35 @@ Type "help", "copyright", "credits" or "license" for more information.
 
 ```shell
 # 停止所有服务
-$ bash /data/omp/scripts/omp all stop
-# 删除文件
-$ rm -rf /data/omp
+$ bash scripts/omp all stop
 ```
 
 ### 脚本说明
 
-OMP 的控制脚本位于 `omp/scripts/omp` 其具体使用方式如下：
+OMP 的控制脚本位于 `scripts/omp` 其具体使用方式如下：
 
 ```shell
-bash omp [all|tengine|uwsgi|worker|cron|salt|prometheus|alertmanager|grafana|loki] [status|start|stop|restart]
+$ bash omp [all|tengine|uwsgi|worker|cron|salt|prometheus|alertmanager|grafana|loki] [status|start|stop|restart]
 # OMP的所有组件的控制参数
-bash omp all [status|start|stop|restart]
+$ bash omp all [status|start|stop|restart]
 # 控制tengine的启停，影响页面访问
-bash omp tengine [status|start|stop|restart]
+$ bash omp tengine [status|start|stop|restart]
 # 控制django后端程序启停，影响页面访问
-bash omp uwsgi [status|start|stop|restart]
+$ bash omp uwsgi [status|start|stop|restart]
 # 控制celery异步任务启停，影响异步任务执行
-bash omp worker [status|start|stop|restart]
+$ bash omp worker [status|start|stop|restart]
 # 控制celery定时任务，影响定时任务执行
-bash omp cron [status|start|stop|restart]
+$ bash omp cron [status|start|stop|restart]
 # 控制salt-master的启停，影响服务端对Agent端的控制
-bash omp salt [status|start|stop|restart]
+$ bash omp salt [status|start|stop|restart]
 # 控制prometheus的启停，影响页面监控数据
-bash omp prometheus [status|start|stop|restart]
+$ bash omp prometheus [status|start|stop|restart]
 # 控制alertmanager的启停，影响告警邮件的发送，页面告警信息展示
-bash omp alertmanager [status|start|stop|restart]
+$ bash omp alertmanager [status|start|stop|restart]
 # 控制grafana的启停，影响页面grafana iframe数据、页面展示
-bash omp grafana [status|start|stop|restart]
+$ bash omp grafana [status|start|stop|restart]
 # 控制loki的启停，影响日志采集、页面展示服务日志问题
-bash omp loki [status|start|stop|restart]
+$ bash omp loki [status|start|stop|restart]
 ```
 
 ## 更新日志

@@ -305,8 +305,7 @@ def update_nginx():
     更新tengine的配置文件
     :return:
     """
-    nginx_conf_path = os.path.join(
-        PROJECT_FOLDER, "component/tengine/conf/nginx.conf")
+    nginx_conf_path = os.path.join(PROJECT_FOLDER, "component/tengine/conf/nginx.conf")
     settings = get_config_dic()
     # run_user = settings.get("tengine", {}).get("run_user")
     run_user = settings.get("global_user", "commonuser")
