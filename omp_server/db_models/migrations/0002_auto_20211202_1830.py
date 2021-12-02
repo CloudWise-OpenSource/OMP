@@ -13,7 +13,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='service',
             name='service_status',
-            field=models.IntegerField(choices=[(0, '正常'), (1, '启动中'), (2, '停止中'), (3, '重启中'), (4, '停止'), (
-                5, '未知'), (6, '安装中'), (7, '安装失败'), (8, '待安装')], default=5, help_text='服务状态', verbose_name='服务状态'),
+            field=models.IntegerField(choices=[(0, '正常'), (1, '启动中'), (2, '停止中'), (3, '重启中'), (4, '停止'), (5, '未知'), (6, '安装中'), (7, '安装失败'), (8, '待安装')], default=5, help_text='服务状态', verbose_name='服务状态'),
         ),
     ]

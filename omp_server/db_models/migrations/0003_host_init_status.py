@@ -13,7 +13,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='host',
             name='init_status',
-            field=models.CharField(choices=[(0, '未执行'), (1, '成功'), (
-                2, '失败')], default=0, help_text='主机初始化状态', max_length=16, verbose_name='主机初始化状态'),
+            field=models.CharField(choices=[(0, '未执行'), (1, '成功'), (2, '失败')], default=0, help_text='主机初始化状态', max_length=16, verbose_name='主机初始化状态'),
         ),
     ]
