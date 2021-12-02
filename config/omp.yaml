@@ -92,27 +92,27 @@ monitor_port:
 # 安装时顺序从小到大执行，同级别并发执行
 basic_order:
   0:
-  - jdk
+    - jdk
   1:
-  - tengine
-  - mysql
-  - redis
-  - arangodb
-  - minio
-  - httpd
-  - elasticsearch
-  - ignite
-  - zookeeper
-  - rocketmq
-  - postgreSql
-  - prometheus
-  - pushgateway
-  - wkhtmltox
-  - tomcat
+    - tengine
+    - mysql
+    - redis
+    - arangodb
+    - minio
+    - httpd
+    - elasticsearch
+    - ignite
+    - zookeeper
+    - rocketmq
+    - postgreSql
+    - prometheus
+    - pushgateway
+    - wkhtmltox
+    - tomcat
   2:
-  - nacos
-  - xxlJob
-  - kafka
-  - clickhouse
-  - hadoop
-  - flink
+    - nacos
+    - xxlJob
+    - kafka
+    - clickhouse
+    - hadoop
+    - flink
