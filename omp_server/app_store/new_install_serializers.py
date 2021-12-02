@@ -44,6 +44,7 @@ from app_store.new_install_utils import (
     ComponentServiceParse
 )
 from app_store.tasks import install_service as install_service_task
+from utils.plugin.salt_client import SaltClient
 
 logger = logging.getLogger("server")
 
@@ -567,6 +568,13 @@ class CheckServiceDistributionSerializer(BaseInstallSerializer):
         read_only=True
     )
 
+    def check_agent_status(self, ip):
+        """
+        校验主机状态
+        :param ip:
+        :return:
+        """
+
     def validate_data(self, data):  # NOQA
         """
         校验安装数据分布的合法性
@@ -581,9 +589,17 @@ class CheckServiceDistributionSerializer(BaseInstallSerializer):
         # 校验主机及主机上的服务是否存在
         ip_lst = [el["ip"] for el in Host.objects.values("ip")]
         error_lst = list()
+        _salt = SaltClient()
         for key, value in data.items():
             if key not in ip_lst:
                 error_lst.append({"ip": key, "error_msg": f"无法找到主机{key}"})
+                continue
+            _flag, _ = _salt.fun(target=key, fun="test.ping")
+            if not _flag:
+                error_lst.append({
+                    "ip": key,
+                    "error_msg": f"主机 [{key}] Agent当前不在线，无法使用该主机"
+                })
                 continue
             exist_services = Service.objects.filter(
                 ip=key, service__app_name__in=value

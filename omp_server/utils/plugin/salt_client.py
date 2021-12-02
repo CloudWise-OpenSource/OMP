@@ -160,6 +160,8 @@ class SaltClient(object):
                 return False, SALT_ERROR_MSG
             if target not in cmd_res:
                 return False, AGENT_OFFLINE_MSG
+            if cmd_res[target] is False:
+                return False, AGENT_OFFLINE_MSG
             if 'retcode' not in cmd_res[target]:
                 return False, f"当前执行未出现预期结果，详情如下: {cmd_res[target]}"
             if cmd_res[target]["retcode"] != 0:
