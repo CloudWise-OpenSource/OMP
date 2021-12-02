@@ -265,12 +265,13 @@ class ShowInstallProcessView(GenericViewSet, ListModelMixin):
         main_status = main_obj.install_status
         install_detail_queryset = DetailInstallHistory.objects.filter(
             main_install_history=main_obj
-        ).values(
+        ).exclude(service=None).values(
             "service__service__app_name",
             "service__ip",
             "install_step_status"
         )
         detail_dic = OrderedDict()
+        install_success_num = total_num = 0
         for item in install_detail_queryset:
             app_name = item["service__service__app_name"]
             if app_name not in detail_dic:
@@ -279,9 +280,23 @@ class ShowInstallProcessView(GenericViewSet, ListModelMixin):
                 "ip": item["service__ip"],
                 "status": item["install_step_status"]
             })
+            if item["install_step_status"] == \
+                    DetailInstallHistory.INSTALL_STATUS_SUCCESS:
+                install_success_num += 1
+        if total_num != 0:
+            percentage = (install_success_num / total_num) * 100
+            if main_status != MainInstallHistory.INSTALL_STATUS_SUCCESS and \
+                    percentage == 100:
+                percentage = 95
+        else:
+            if main_status == MainInstallHistory.INSTALL_STATUS_SUCCESS:
+                percentage = 100
+            else:
+                percentage = 10
         data = {
             "status": main_status,
-            "detail": detail_dic
+            "detail": detail_dic,
+            "percentage": percentage
         }
         return Response(data=data)
 

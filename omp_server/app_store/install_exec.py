@@ -10,7 +10,7 @@ import logging
 from concurrent.futures import (
     ThreadPoolExecutor, as_completed
 )
-from django.db.models import F
+# from django.db.models import F
 
 from db_models.models import (
     Host, Service, HostOperateLog, ServiceHistory,
@@ -61,9 +61,10 @@ class InstallServiceExecutor:
             result="success" if is_success else "failed",
             service=detail_obj.service)
         # 主机服务数量+1
-        if is_success:
-            Host.objects.filter(ip=target_ip).update(
-                service_num=F("service_num") + 1)
+        # 屏蔽安装完成后服务数 +1 逻辑
+        # if is_success:
+        #     Host.objects.filter(ip=target_ip).update(
+        #         service_num=F("service_num") + 1)
 
     def send(self, detail_obj):
         """ 发送服务包 """
