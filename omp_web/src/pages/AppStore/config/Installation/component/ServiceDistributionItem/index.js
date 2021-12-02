@@ -222,10 +222,17 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
         });
         let data = handleDataSourceData(withArr, -1);
         reduxDispatch(getDataSourceChangeAction(data));
-        //console.log(value, result, )
-        setValue([...result]);
+        // console.log(value, result, label)
+        let dealValue = value.filter(i=>{
+          if(i[0] !== label){
+            return true
+          }
+          //console.log(i)
+          return false
+        })
+        setValue(Array.from(new Set([...dealValue,...result])));
         form.setFieldsValue({
-          [`${info.ip}`]: [...result],
+          [`${info.ip}`]: Array.from(new Set([...dealValue,...result])),
         });
       } else if (isCheck === false) {
         // console.log("点击到了一级的取消选中");
