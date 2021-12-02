@@ -135,6 +135,7 @@ const AppStore = () => {
 
   // 获取安装基础组件列表
   const queryInstallComponent = (queryData) => {
+    setLoading(true);
     fetchGet(apiRequest.appStore.ProductDetail, {
       params: queryData,
     })
@@ -454,6 +455,7 @@ const AppStore = () => {
         setBIModalVisibility={setBIModalVisibility}
         dataSource={bIserviceList}
         installTitle={installTitle.current}
+        initLoading={loading}
       />
     </div>
   );

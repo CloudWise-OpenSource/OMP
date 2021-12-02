@@ -1451,6 +1451,13 @@ class DataJson(object):
         json_lst = list()
         for item in all_ser_lst:
             json_lst.append(self.parse_single_service(obj=item))
+        # 在json文件中标记该服务所在主机上的agent的地址
+        ip_agent_dir_dir = {
+            el["ip"]: el["agent_dir"] for el in
+            Host.objects.values("ip", "agent_dir")
+        }
+        for item in json_lst:
+            item["agent_dir"] = ip_agent_dir_dir.get(item.get("ip"))
         # step2: 生成data.json
         self.make_data_json(json_lst=json_lst)
 

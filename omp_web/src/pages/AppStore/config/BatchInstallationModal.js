@@ -25,6 +25,7 @@ const BatchInstallationModal = ({
   setBIModalVisibility,
   dataSource,
   installTitle,
+  initLoading
 }) => {
   const uniqueKey = useSelector((state) => state.appStore.uniqueKey);
 
@@ -179,7 +180,7 @@ const BatchInstallationModal = ({
           <OmpTable
             size="small"
             scroll={{ y: 270 }}
-            loading={loading}
+            loading={loading || initLoading}
             //scroll={{ x: 1900 }}
             columns={columns}
             dataSource={dataSource}
@@ -245,7 +246,7 @@ const BatchInstallationModal = ({
             <Button
               type="primary"
               style={{ marginLeft: 16 }}
-              loading={loading}
+              loading={loading || initLoading}
               disabled={
                 Object.keys(checkedList)
                   .map((k) => checkedList[k])

@@ -10,7 +10,7 @@ import logging
 from concurrent.futures import (
     ThreadPoolExecutor, as_completed
 )
-from django.db.models import F
+# from django.db.models import F
 
 from db_models.models import (
     Host, Service, HostOperateLog, ServiceHistory,
@@ -61,9 +61,10 @@ class InstallServiceExecutor:
             result="success" if is_success else "failed",
             service=detail_obj.service)
         # 主机服务数量+1
-        if is_success:
-            Host.objects.filter(ip=target_ip).update(
-                service_num=F("service_num") + 1)
+        # 屏蔽安装完成后服务数 +1 逻辑
+        # if is_success:
+        #     Host.objects.filter(ip=target_ip).update(
+        #         service_num=F("service_num") + 1)
 
     def send(self, detail_obj):
         """ 发送服务包 """
@@ -494,6 +495,9 @@ class InstallServiceExecutor:
         :type detail_obj: DetailInstallHistory
         :return:
         """
+        # 更改服务状态为安装中状态
+        detail_obj.service.service_status = Service.SERVICE_STATUS_INSTALLING
+        detail_obj.service.save()
         # 针对单个服务执行循环("send", "unzip", "install", "init", "start")
         # 跳过单个服务的已经成功的单个步骤不再重复执行
         for action in self.ACTION_LS:
@@ -594,8 +598,13 @@ class InstallServiceExecutor:
 
         # 所有子流程状态更新为 '待安装'
         queryset.update(
-            install_step_status=DetailInstallHistory.INSTALL_STATUS_READY
+            install_step_status=DetailInstallHistory.INSTALL_STATUS_READY,
         )
+        # 将要安装的服务实例更新为 '待安装'
+        service_ids = queryset.values_list("service_id", flat=True)
+        Service.objects.filter(
+            id__in=service_ids
+        ).update(service_status=Service.SERVICE_STATUS_READY)
 
         # 对要执行安装的列表进行排序处理
         tobe_execute_lst = self.make_install_order(queryset)
@@ -627,13 +636,14 @@ class InstallServiceExecutor:
             main_obj.install_status = \
                 MainInstallHistory.INSTALL_STATUS_FAILED
             main_obj.save()
+            # 安装完成后不再更改服务的状态
             # 状态为 '待安装'/'安装中' 的记录，则记为 '失败'
-            queryset.filter(install_step_status__in=(
-                DetailInstallHistory.INSTALL_STATUS_READY,
-                DetailInstallHistory.INSTALL_STATUS_INSTALLING
-            )).update(
-                install_step_status=DetailInstallHistory.INSTALL_STATUS_FAILED
-            )
+            # queryset.filter(install_step_status__in=(
+            #     DetailInstallHistory.INSTALL_STATUS_READY,
+            #     DetailInstallHistory.INSTALL_STATUS_INSTALLING
+            # )).update(
+            #     install_step_status=DetailInstallHistory.INSTALL_STATUS_FAILED
+            # )
             logger.info(f"Main Install Failed, id[{self.main_id}]")
             return self.is_error
 

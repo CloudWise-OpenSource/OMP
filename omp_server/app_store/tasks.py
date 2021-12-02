@@ -9,6 +9,7 @@ import json
 import redis
 import logging
 
+from django.db.models import F
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from utils.plugin import public_utils
@@ -18,7 +19,7 @@ from utils.parse_config import (
 
 from db_models.models import (
     UploadPackageHistory, ApplicationHub, ProductHub,
-    MainInstallHistory, DetailInstallHistory
+    MainInstallHistory, DetailInstallHistory, Host
 )
 from app_store.upload_task import CreateDatabase
 from app_store.install_exec import InstallServiceExecutor
@@ -758,8 +759,11 @@ def add_prometheus(main_history_id):
     logger.info("Add Prometheus Begin")
     prometheus = PrometheusUtils()
     # TODO 不同类型服务添加监控方式不同，后续版本优化
+    # 仅更新已经安装完成的最新服务
     queryset = DetailInstallHistory.objects.filter(
-        main_install_history_id=main_history_id)
+        main_install_history_id=main_history_id,
+        install_step_status=DetailInstallHistory.INSTALL_STATUS_SUCCESS
+    )
     for detail_obj in queryset:
         try:
             _flag, _monitor_dic = check_monitor_data(detail_obj=detail_obj)
@@ -822,11 +826,21 @@ def install_service(main_history_id, username="admin"):
     :return:
     """
     try:
+        # 更新主机上的服务数量
+        _ser_ip_lst = DetailInstallHistory.objects.filter(
+            main_install_history_id=main_history_id).values("service__ip")
+        _tmp_dic = dict()
+        for item in _ser_ip_lst:
+            if item["service__ip"] not in _tmp_dic:
+                _tmp_dic[item["service__ip"]] = 0
+            _tmp_dic[item["service__ip"]] += 1
+        for key, value in _tmp_dic.items():
+            Host.objects.filter(ip=key).update(
+                service_num=F("service_num") + value)
         executor = InstallServiceExecutor(main_history_id, username)
-        is_err = executor.main()
+        executor.main()
         logger.error(f"Install Service Task Success [{main_history_id}]")
     except Exception as err:
-        is_err = True
         import traceback
         logger.error(f"Install Service Task Failed [{main_history_id}], "
                      f"err: {err}")
@@ -837,5 +851,4 @@ def install_service(main_history_id, username="admin"):
             install_status=MainInstallHistory.INSTALL_STATUS_FAILED)
 
     # 安装成功，则注册服务至监控
-    if not is_err:
-        add_prometheus(main_history_id)
+    add_prometheus(main_history_id)

@@ -56,11 +56,19 @@ class BatchInstallEntranceView(GenericViewSet, ListModelMixin):
         :param pro_version_lst: 应用版本
         :return:
         """
-        if Product.objects.filter(
-                product__pro_name=pro_name,
-                product__pro_version__in=pro_version_lst
-        ).exists():
-            return True
+        queryset = Product.objects.filter(
+            product__pro_name=pro_name,
+            product__pro_version__in=pro_version_lst
+        )
+        if queryset.exists():
+            # 判断产品下是否还有服务，如果没有服务，那么
+            if Service.objects.filter(
+                service__product_id__in=queryset.values_list(
+                    "product_id", flat=True
+                )
+            ).exists():
+                return True
+            queryset.delete()
         return False
 
     def list(self, request, *args, **kwargs):
@@ -257,12 +265,13 @@ class ShowInstallProcessView(GenericViewSet, ListModelMixin):
         main_status = main_obj.install_status
         install_detail_queryset = DetailInstallHistory.objects.filter(
             main_install_history=main_obj
-        ).values(
+        ).exclude(service=None).values(
             "service__service__app_name",
             "service__ip",
             "install_step_status"
         )
         detail_dic = OrderedDict()
+        install_success_num = total_num = 0
         for item in install_detail_queryset:
             app_name = item["service__service__app_name"]
             if app_name not in detail_dic:
@@ -271,9 +280,23 @@ class ShowInstallProcessView(GenericViewSet, ListModelMixin):
                 "ip": item["service__ip"],
                 "status": item["install_step_status"]
             })
+            if item["install_step_status"] == \
+                    DetailInstallHistory.INSTALL_STATUS_SUCCESS:
+                install_success_num += 1
+        if total_num != 0:
+            percentage = (install_success_num / total_num) * 100
+            if main_status != MainInstallHistory.INSTALL_STATUS_SUCCESS and \
+                    percentage == 100:
+                percentage = 95
+        else:
+            if main_status == MainInstallHistory.INSTALL_STATUS_SUCCESS:
+                percentage = 100
+            else:
+                percentage = 10
         data = {
             "status": main_status,
-            "detail": detail_dic
+            "detail": detail_dic,
+            "percentage": percentage
         }
         return Response(data=data)
 
