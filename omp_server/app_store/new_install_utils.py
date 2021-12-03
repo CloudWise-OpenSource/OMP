@@ -22,7 +22,7 @@ from omp_server.settings import PROJECT_DIR
 from db_models.models import (
     ProductHub, ApplicationHub, ClusterInfo, Service, Host,
     Env, ServiceConnectInfo, Product, MainInstallHistory,
-    DetailInstallHistory
+    DetailInstallHistory, PreInstallHistory
 )
 from app_store.tasks import install_service as install_service_task
 from app_store.deploy_mode_utils import SERVICE_MAP
@@ -532,7 +532,7 @@ class ProductServiceParse(object):
         :return:
         """
         if not self.high_availability:
-            return 1, 0
+            return 1, 1
         # 如果服务是和tengine进行强绑定的，那么需要限制其数量为1
         # TODO 当前tengine不支持高可用模式
         if "affinity" in app_obj.extend_fields and \
@@ -1719,12 +1719,25 @@ class CreateInstallPlan(object):
             return True
         return False
 
+    def create_pre_install_history(self, main_obj):
+        """
+        创建安装计划，在执行安装计划时，优先执行此处的操作记录
+        :param main_obj:
+        :return:
+        """
+        _data = BaseRedisData(
+            unique_key=self.unique_key).get_step_5_host_list()
+        for item in _data:
+            PreInstallHistory(
+                main_install_history=main_obj,
+                ip=item
+            ).save()
+
     def run(self):
         """
         服务部署信息入库操作
         :return:
         """
-
         try:
             logger.info("start CreateInstallPlan.run!")
             with transaction.atomic():
@@ -1737,6 +1750,7 @@ class CreateInstallPlan(object):
                     install_args=self.install_services
                 )
                 main_obj.save()
+                self.create_pre_install_history(main_obj)
                 # step2: 创建安装细节表
                 for item in self.install_services:
                     # 创建服务实例对象

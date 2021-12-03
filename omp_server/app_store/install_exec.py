@@ -3,6 +3,7 @@
 前提：所有的公共组件都由OMP进行安装处理
 目标：根据数据库中给出的安装记录进行服务安装
 """
+import json
 import os
 import time
 import queue
@@ -14,12 +15,14 @@ from concurrent.futures import (
 
 from db_models.models import (
     Host, Service, HostOperateLog, ServiceHistory,
-    MainInstallHistory, DetailInstallHistory, ApplicationHub
+    MainInstallHistory, DetailInstallHistory, ApplicationHub,
+    PreInstallHistory
 )
 from utils.plugin.salt_client import SaltClient
 from utils.parse_config import BASIC_ORDER
 from utils.parse_config import THREAD_POOL_MAX_WORKERS
 from utils.common.exceptions import GeneralError
+from omp_server.settings import PROJECT_DIR
 
 UNZIP_CONCURRENT_ONE_HOST = 3
 logger = logging.getLogger("server")
@@ -37,6 +40,121 @@ class InstallServiceExecutor:
         self.is_error = False
         # 控制安装过程中单主机上的安装包解压并发数 TODO 暂时使用阻塞等待方式进行处理！！
         self.unzip_concurrent_controller = dict()
+
+    def parse_origin_data(self, json_source_path):
+        """
+        解析数据
+        :param json_source_path:
+        :return:
+        """
+        _file_name = os.path.join(PROJECT_DIR, "package_hub", json_source_path)
+        with open(_file_name, "r") as fp:
+            content = json.loads(fp.read())
+            if not isinstance(content, list):
+                raise GeneralError("json文件不符合格式要求!")
+        ip_data_folder_map = {
+            el["ip"]: el["data_folder"]
+            for el in list(Host.objects.all().values("ip", "data_folder"))
+        }
+        ip_user_map = dict()
+        for item in content:
+            if item["ip"] not in ip_user_map:
+                ip_user_map[item["ip"]] = list()
+            if "install_args" not in item:
+                continue
+            for el in item["install_args"]:
+                if el.get("key") == "run_user" and el.get("default"):
+                    ip_user_map[item["ip"]].append(el.get("default"))
+                    break
+        return ip_data_folder_map, ip_user_map
+
+    def _execute_pre_install(
+            self, ip_data_folder_map,
+            key, value, main_obj,
+            json_source_path, salt_client, pre_install_obj
+    ):
+        """
+
+        :param ip_data_folder_map:
+        :param key:
+        :param value:
+        :param main_obj:
+        :param json_source_path:
+        :param salt_client:
+        :param pre_install_obj:
+        :return:
+        """
+        json_target_path = os.path.join(
+            ip_data_folder_map[key], "omp_packages",
+            f"{main_obj.operation_uuid}.json")
+        pre_install_obj.install_log += f"{self.now_time()} 开始发送json文件\n"
+        pre_install_obj.save()
+        # 发送 json 文件
+        is_success, message = salt_client.cp_file(
+            target=key,
+            source_path=json_source_path,
+            target_path=json_target_path)
+        if not is_success:
+            pre_install_obj.install_log += \
+                f"{self.now_time()} 发送json文件失败: {message}\n"
+            pre_install_obj.install_flag = 3
+            pre_install_obj.save()
+            raise GeneralError(f"发送 json 文件失败: {message}")
+        for el in set(value):
+            _cmd = f"id {el} || useradd -s /bin/bash {el}"
+            pre_install_obj.install_log += \
+                f"{self.now_time()} 开始执行创建用户命令: {_cmd}\n"
+            pre_install_obj.save()
+            flag, msg = salt_client.cmd(
+                target=key,
+                command=_cmd,
+                timeout=60
+            )
+            logger.info(f"为主机 [{key}] 创建用户 [{el}] 结果 {msg}")
+            if not flag:
+                pre_install_obj.install_log += \
+                    f"{self.now_time()} 创建用户命令执行失败: {msg}\n"
+                pre_install_obj.install_flag = 3
+                pre_install_obj.save()
+                raise GeneralError(f"为主机 [{key}] 创建用户 [{el}] 失败!")
+        pre_install_obj.install_log += \
+            f"{self.now_time()} 前置安装操作完成\n"
+        pre_install_obj.install_flag = 2
+        pre_install_obj.save()
+
+    def create_user_and_send_json(self, main_obj):
+        """
+        下发json文件并创建run_user用户
+        :return:
+        """
+        # 获取 json 文件路径
+        salt_client = SaltClient()
+        json_source_path = os.path.join(
+            "data_files",
+            f"{main_obj.operation_uuid}.json")
+        ip_data_folder_map, ip_user_map = self.parse_origin_data(
+            json_source_path=json_source_path
+        )
+        for key, value in ip_user_map.items():
+            pre_install_obj = PreInstallHistory.objects.filter(
+                main_install_history=main_obj, ip=key
+            ).last()
+            if not pre_install_obj or pre_install_obj.install_flag == 2:
+                continue
+            try:
+                pre_install_obj.install_flag = 1
+                pre_install_obj.install_log += \
+                    f"{self.now_time()} 开始执行前置安装操作\n"
+                pre_install_obj.save()
+                self._execute_pre_install(
+                    ip_data_folder_map, key, value, main_obj,
+                    json_source_path, salt_client, pre_install_obj
+                )
+            except GeneralError as e:
+                pre_install_obj.install_log += \
+                    f"{self.now_time()} 前置安装操作失败: {str(e)}\n"
+                pre_install_obj.install_flag = 3
+                pre_install_obj.save()
 
     @staticmethod
     def now_time():
@@ -572,6 +690,23 @@ class InstallServiceExecutor:
         )
         return execute_lst
 
+    def execute_pre_install(self, main_obj):
+        """
+        执行前置安装入口
+        :param main_obj:
+        :return:
+        """
+        try:
+            self.create_user_and_send_json(main_obj)
+        except Exception as e:
+            logger.error(f"Pre-install failed: {str(e)}")
+        if PreInstallHistory.objects.filter(
+                main_install_history=main_obj,
+                install_flag__in=[0, 1, 3]
+        ).exists():
+            return False
+        return True
+
     def main(self):
         """ 主函数 """
         logger.info(f"Main Install Begin, id[{self.main_id}]")
@@ -582,6 +717,13 @@ class InstallServiceExecutor:
         main_obj.install_status = \
             MainInstallHistory.INSTALL_STATUS_INSTALLING
         main_obj.save()
+
+        # 执行安装前的操作
+        pre_install_flag = self.execute_pre_install(main_obj=main_obj)
+        if not pre_install_flag:
+            main_obj.install_status = MainInstallHistory.INSTALL_STATUS_FAILED
+            main_obj.save()
+            return
 
         # 获取所有安装细节表，排除已经安装成功的记录，不再重复安装
         queryset = DetailInstallHistory.objects.select_related(
@@ -629,6 +771,9 @@ class InstallServiceExecutor:
             ).filter(main_install_history_id=self.main_id).exclude(
                 post_action_flag__in=[2, 4]
             )
+            main_obj.install_status = \
+                MainInstallHistory.INSTALL_STATUS_REGISTER
+            main_obj.save()
             self.execute_post_action(post_action_queryset)
 
         if self.is_error:
