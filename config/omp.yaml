@@ -40,23 +40,23 @@ grafana_api_key: test
 # 关联邮件设置,谨慎修改
 alert_manager:
   # 是否开启发送邮件配置，默认不开启
-  send_email: false
+  send_email: true
   # 发件人邮箱配置
-  EMAIL_SEND: 17310665388@163.com
+  EMAIL_SEND: 123456789@qq.com
   # smtp服务器地址端口配置
   SMTP_SMARTHOST: smtp.163.com:465
   # 解释待定？？？？
   SMTP_HELLO: 163.com
   # 发件人的用户名配置
-  EMAIL_SEND_USER: 17310665388@163.com
+  EMAIL_SEND_USER: 123456789@qq.com
   # 发件人邮箱秘钥
-  EMAIL_SEND_PASSWORD: RLJYMCQKMQALUQZV
+  EMAIL_SEND_PASSWORD: '12345'
   # 发送频率(同一条报警消息的发送频率,s、m、h对应 秒、分、小时)
   EMAIL_SEND_INTERVAL: 30m
   # 接收代号
-  RECEIVER: commonuser
+  RECEIVER: cloudwise
   # 收件人
-  EMAIL_ADDRESS: 987654321@qq.com
+  EMAIL_ADDRESS: 123@qq.com
   # webhook地址，仅在手动维护OMP各个组件时才可能用到，其他情况下不建议修改
   WEBHOOK_URL: http://127.0.0.1:19001/api/promemonitor/receiveAlert/
 # 监控使用相关端口配置

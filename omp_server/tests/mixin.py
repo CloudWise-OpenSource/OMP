@@ -213,6 +213,9 @@ class ApplicationResourceMixin(LabelsResourceMixin, UploadPackageHistoryMixin):
         extend_fields = {
             "base_env": random.choice((
                 True, False, "True", "False"
+            )),
+            "affinity": random.choice((
+                "", "tengine"
             ))
         }
         app_obj = ApplicationHub(

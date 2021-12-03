@@ -87,6 +87,15 @@ class Host(TimeStampMixin, DeleteMixin):
         (AGENT_DEPLOY_ERROR, "部署失败")
     )
 
+    INIT_NOT_EXECUTED = 0
+    INIT_SUCCESS = 1
+    INIT_FAILED = 2
+    INIT_STATUS_CHOICES = (
+        (INIT_NOT_EXECUTED, "未执行"),
+        (INIT_SUCCESS, "成功"),
+        (INIT_FAILED, "失败")
+    )
+
     objects = None
     instance_name = models.CharField(
         "实例名", max_length=64, help_text="实例名")
@@ -134,6 +143,9 @@ class Host(TimeStampMixin, DeleteMixin):
     env = models.ForeignKey(
         Env, null=True, on_delete=models.SET_NULL,
         verbose_name="环境", help_text="环境")
+    init_status = models.CharField(
+        "主机初始化状态", max_length=16, help_text="主机初始化状态",
+        choices=INIT_STATUS_CHOICES, default=INIT_NOT_EXECUTED)
 
     class Meta:
         """ 元数据 """
