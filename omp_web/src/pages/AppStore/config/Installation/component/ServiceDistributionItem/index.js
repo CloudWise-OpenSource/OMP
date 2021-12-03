@@ -719,17 +719,21 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
                   mouseEnterDelay={0.3}
                   placement="right"
                   color="#fff"
+                  overlayStyle={{
+                    minWidth:300
+                  }}
                   title={
                     <div
                       style={{
                         color: "rgba(0, 0, 0, 0.85)",
                         padding: 5,
+                        height: 240,
                       }}
                     >
                       <div
                         style={{
                           borderBottom: "1px solid #d9d9d9",
-                          fontSize: 13,
+                          fontSize: 14,
                           paddingBottom: 5,
                         }}
                       >
@@ -738,13 +742,13 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
                       <div
                         style={{
                           overflowY: "auto",
-                          height: 100,
+                          height: 240,
                         }}
                       >
                         {value.map((item) => {
                           return (
                             <div
-                              style={{ paddingTop: 5, fontSize: 13 }}
+                              style={{ paddingTop: 5, fontSize: 14 }}
                               key={`${item[0]}/${item[1]}`}
                             >
                               {`${item[0]} / ${item[1]}`}
