@@ -16,6 +16,7 @@ const renderStatus = {
   1: "正在安装",
   2: "安装成功",
   3: "安装失败",
+  4: "正在注册"
 };
 
 const Step4 = () => {
@@ -52,7 +53,7 @@ const Step4 = () => {
       .then((res) => {
         handleResponse(res, (res) => {
           setData(res.data);
-          if (res.data.status == 0 || res.data.status == 1) {
+          if (res.data.status == 0 || res.data.status == 1 || res.data.status == 4 ) {
             // 状态为未安装或者安装中
             if (openNameRef.current) {
               let arr = openNameRef.current.split("=");
@@ -237,7 +238,7 @@ const Step4 = () => {
         <div style={{ paddingLeft: 20, display: "flex" }}>
           <div style={{ width: 100 }}>
             {renderStatus[data.status]}
-            {(data.status == 0 || data.status == 1) && (
+            {(data.status == 0 || data.status == 1 || data.status == 4) && (
               <LoadingOutlined style={{ marginLeft: 10, fontWeight: 600 }} />
             )}
           </div>
