@@ -150,6 +150,7 @@ gen
 
 # General
 .DS_Store
+omp_web/.DS_Store
 .AppleDouble
 .LSOverride
 

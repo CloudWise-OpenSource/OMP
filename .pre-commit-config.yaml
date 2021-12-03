@@ -15,6 +15,7 @@ repos:
     - id: flake8
       args:
       - --ignore=E501,E402
+      exclude: package_hub/_modules/init_host.py
     - id: check-docstring-first
     - id: trailing-whitespace
     - id: check-ast

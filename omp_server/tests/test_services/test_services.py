@@ -32,6 +32,15 @@ class ListServiceTest(AutoLoginTest, ServicesResourceMixin):
             self.service_ls.filter(
                 service__is_base_env=False).count()
         )
+        # 所有服务冗余字段 '亲和力' 为 tengine 的字段，视为前端服务，状态设置为 '正常'
+        res_ls = resp.get("data").get("results")
+        id_ls = []
+        for service in self.service_ls:
+            if service.service.extend_fields.get("affinity", "") == "tengine":
+                id_ls.append(service.id)
+        for service in res_ls:
+            if service.get("id") in id_ls:
+                self.assertEqual(service.get("service_status"), "正常")
 
         # IP 过滤 -> 模糊匹配
         ip_field = str(random.randint(1, 20))
