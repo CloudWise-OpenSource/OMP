@@ -251,10 +251,10 @@
 }
 
 .basicCardItem {
-  width: 40%;
   padding: 5px;
   margin-right: 10px;
   margin-bottom: 10px;
+  width: 300px;
 }
 .buttonContainer {
   width: 100%;

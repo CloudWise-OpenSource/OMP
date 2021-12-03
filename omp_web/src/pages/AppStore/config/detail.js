@@ -379,7 +379,7 @@ const AppStoreDetail = () => {
             {currentVersionDataSource.pro_services ? (
               <div
                 className={styles.detailDependenceTable}
-                style={{ width: 800 }}
+                //style={{ width: 800 }}
               >
                 <Table
                   size="middle"
@@ -455,7 +455,7 @@ const AppStoreDetail = () => {
             </div>
             <div
               className={styles.detailDependenceTable}
-              style={{ width: 800 }}
+              //style={{ width: 800 }}
             >
               <Table
                 size="middle"
@@ -543,7 +543,7 @@ const AppStoreDetail = () => {
             </div>
             <div
               className={styles.detailDependenceTable}
-              style={{ width: 800 }}
+              //style={{ width: "100%" }}
             >
               <Table
                 size="middle"

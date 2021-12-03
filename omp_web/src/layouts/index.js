@@ -213,6 +213,11 @@ const OmpLayout = (props) => {
         collapsed={collapsed}
         onCollapse={toggle}
         collapsedWidth={50}
+        style={{
+          // height:"100%",
+          // position:"fixed",
+          // zIndex:1000,
+        }}
       >
         <div
           style={{
@@ -253,6 +258,8 @@ const OmpLayout = (props) => {
             //paddingTop:3,
             borderRight: "1px solid #d7d9e1",
             color: "rgba(0,0,0,0.65)",
+            // position:"fixed",
+            // zIndex:1000,
           }}
           //theme="dark"
           onClick={onPathChange}
@@ -290,13 +297,17 @@ const OmpLayout = (props) => {
           })}
         </Menu>
       </Sider>
-      <Layout className="site-layout">
+      <Layout className="site-layout" style={{width:"100%"}}>
         <Header
           className="site-layout-background"
           style={{
             padding: 0,
             display: "flex",
             justifyContent: "space-between",
+            position:"fixed",
+            zIndex:1000,
+            width:"calc(100% - 200px)",
+            marginLeft:200
           }}
         >
           <div style={{ display: "flex" }}>
@@ -377,9 +388,11 @@ const OmpLayout = (props) => {
         <Content style={{ margin: "0 16px", color: "rgba(0,0,0,0.65)" }}>
           <div
             style={{
+              marginTop:120,
+              marginLeft:200,
               padding: 0,
               paddingBottom: 30,
-              height: "calc(100% - 10px)",
+              height: "calc(100% - 130px)",
               // 应用商店content大背景不是白色，特殊处理
               backgroundColor:
                 location.pathname == "/application_management/app_store" ||

@@ -201,9 +201,17 @@ const Step4 = () => {
               }}
             >
               {Object.keys(data.detail).map((key) => {
+                console.log(data.detail[key]);
+                let hasError =
+                  data.detail[key].filter((a) => a.status == 3).length !== 0;
                 return (
                   <div style={{ padding: 5 }}>
-                    <Link href={`#a${key}`} title={key} />
+                    <Link
+                      href={`#a${key}`}
+                      title={
+                        <span style={{ color: hasError && "rgb(218, 78, 72)" }}>{key}</span>
+                      }
+                    />
                   </div>
                 );
               })}
@@ -235,9 +243,12 @@ const Step4 = () => {
           </div>
         </div>
         <div style={{ width: "70%" }}>
-          <Progress percent={data.percentage} status={data.status == 3 && "exception"}/>
+          <Progress
+            percent={data.percentage}
+            status={data.status == 3 && "exception"}
+          />
         </div>
-        <div style={{paddingLeft:60}}>
+        <div style={{ paddingLeft: 60 }}>
           {data.status == 3 && (
             <Button
               loading={retryLoading}
