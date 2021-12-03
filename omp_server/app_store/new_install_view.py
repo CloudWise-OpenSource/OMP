@@ -18,7 +18,8 @@ from rest_framework.mixins import (
 
 from db_models.models import (
     ApplicationHub, ProductHub, Product, Service,
-    MainInstallHistory, DetailInstallHistory, Host
+    MainInstallHistory, DetailInstallHistory, Host,
+    PreInstallHistory
 )
 from utils.common.exceptions import ValidationError
 from utils.common.paginations import PageNumberPager
@@ -186,7 +187,7 @@ class GetInstallArgsByIpView(GenericViewSet, ListModelMixin):
         _ret_data = list()
         for item in app_lst:
             if item.app_name not in install_ser or \
-                    item.app_version == install_ser[item.app_name]:
+                    item.app_version != install_ser[item.app_name].get("version"):
                 continue
             install_args = ServiceArgsSerializer().get_app_install_args(item)
             install_args.insert(
@@ -270,8 +271,22 @@ class ShowInstallProcessView(GenericViewSet, ListModelMixin):
             "service__ip",
             "install_step_status"
         )
+        pre_queryset = PreInstallHistory.objects.filter(
+            main_install_history=main_obj
+        ).values("ip", "install_flag", "install_log", "name")
         detail_dic = OrderedDict()
         install_success_num = total_num = 0
+        for item in pre_queryset:
+            app_name = item.get("name")
+            if app_name not in detail_dic:
+                detail_dic[app_name] = list()
+            detail_dic[app_name].append({
+                "ip": item["ip"],
+                "status": item["install_flag"]
+            })
+            if item["install_flag"] == 2:
+                install_success_num += 1
+            total_num += 1
         for item in install_detail_queryset:
             app_name = item["service__service__app_name"]
             if app_name not in detail_dic:
@@ -283,8 +298,9 @@ class ShowInstallProcessView(GenericViewSet, ListModelMixin):
             if item["install_step_status"] == \
                     DetailInstallHistory.INSTALL_STATUS_SUCCESS:
                 install_success_num += 1
+            total_num += 1
         if total_num != 0:
-            percentage = (install_success_num / total_num) * 100
+            percentage = int((install_success_num / total_num) * 100)
             if main_status != MainInstallHistory.INSTALL_STATUS_SUCCESS and \
                     percentage == 100:
                 percentage = 95
@@ -292,7 +308,7 @@ class ShowInstallProcessView(GenericViewSet, ListModelMixin):
             if main_status == MainInstallHistory.INSTALL_STATUS_SUCCESS:
                 percentage = 100
             else:
-                percentage = 10
+                percentage = 5
         data = {
             "status": main_status,
             "detail": detail_dic,
@@ -302,6 +318,18 @@ class ShowInstallProcessView(GenericViewSet, ListModelMixin):
 
 
 class ShowSingleServiceInstallLogView(GenericViewSet, ListModelMixin):
+
+    def get_pre_install_log(self, main_obj, ip):
+        """
+        获取日志
+        :param main_obj:
+        :param ip:
+        :return:
+        """
+        _pre_obj = PreInstallHistory.objects.filter(
+            main_install_history=main_obj, ip=ip).last()
+        return _pre_obj.install_log
+
     def list(self, request, *args, **kwargs):
         """
         查找某服务的安装日志
@@ -320,6 +348,9 @@ class ShowSingleServiceInstallLogView(GenericViewSet, ListModelMixin):
         main_obj = MainInstallHistory.objects.filter(
             operation_uuid=unique_key
         ).last()
+        if app_name == "preInstall":
+            log = self.get_pre_install_log(main_obj=main_obj, ip=ip)
+            return Response(data={"log": log})
         detail = DetailInstallHistory.objects.filter(
             main_install_history=main_obj,
             service__service__app_name=app_name,

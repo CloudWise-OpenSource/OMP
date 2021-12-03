@@ -137,9 +137,15 @@ def get_prometheus_data(env_id, hosts, services, history_id, report_id, handle):
         ret = joint_json_data(_h.inspection_type, _r, _h)
         create_html_tar(file_name, ret)
         if _h.inspection_status == 2:
-            email_users = ModuleSendEmailSetting.get_email_settings(
-                env_id, "inspection").to_users.split(",")
-            send_email(_h, email_users)
+            mses = ModuleSendEmailSetting.get_email_settings(
+                env_id, "inspection")
+            if not mses:
+                return
+            if mses.send_email == 0:
+                return
+            email_users = mses.to_users.split(",")
+            if len(email_users) > 0:
+                send_email(_h, email_users)
     except Exception as e:
         logger.error(
             f"Inspection man task failed with error: {traceback.format_exc(e)}")
