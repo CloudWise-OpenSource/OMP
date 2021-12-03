@@ -31,12 +31,6 @@ const ServiceConfigItem = ({ form, loading, ip, idx }) => {
 
   useEffect(() => {
     if (errInfo[ip] && errInfo[ip][data.name]) {
-      // form.setFields([
-      //   {
-      //     name: `${data.name}=instance_name`,
-      //     errors: [errInfo[ip][data.name][key]],
-      //   },
-      // ]);
       for (const key in errInfo[ip][data.name]) {
         if(errInfo[ip][data.name][key]){
           form.setFields([
@@ -47,6 +41,9 @@ const ServiceConfigItem = ({ form, loading, ip, idx }) => {
           ]);
         }
       }
+    }
+    return ()=>{
+      form.resetFields()
     }
   }, [errInfo[ip]]);
 

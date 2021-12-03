@@ -117,7 +117,7 @@ const Step3 = ({ setStepNum }) => {
     for (const ip in data) {
       data[ip].map((service) => {
         [...service.install_args, ...service.ports].map((serv) => {
-          if (!serv.check_flag) {
+          if (serv.check_flag == false) {
             if (!result[ip]) {
               result[ip] = {};
             }
@@ -217,7 +217,9 @@ const Step3 = ({ setStepNum }) => {
               setStepNum(3);
             } else {
               message.warn("校验未通过，请检查");
-              dispatch(getStep3ErrorInfoChangeAction(getErrorInfo(res.data.data)));
+              dispatch(
+                getStep3ErrorInfoChangeAction(getErrorInfo(res.data.data))
+              );
 
               //reduxDispatch(getStep2ErrorLstChangeAction(res.data.error_lst));
             }
@@ -242,9 +244,7 @@ const Step3 = ({ setStepNum }) => {
     queryIpList();
     return () => {
       dispatch(getStep3ErrorInfoChangeAction({}));
-      dispatch(
-        getStep3IpDataChangeAction()
-      );
+      dispatch(getStep3IpDataChangeAction());
     };
   }, []);
 
@@ -368,6 +368,7 @@ const Step3 = ({ setStepNum }) => {
                             style={{
                               padding: 5,
                               paddingLeft: 30,
+                              cursor: "pointer",
                               flex: 1,
                               color: errInfo[item]
                                 ? "red"
@@ -394,7 +395,6 @@ const Step3 = ({ setStepNum }) => {
                                   }
                                 });
                               }
-
                               setCheckIp(item);
                             }}
                           >
@@ -496,7 +496,6 @@ const Step3 = ({ setStepNum }) => {
                     message.warn("校验未通过，请检查");
                     dispatch(getStep3ErrorInfoChangeAction(errData));
                   } else {
-                    console.log(reduxData)
                     createInstallPlan(dataProcessing(reduxData));
                   }
                 },
