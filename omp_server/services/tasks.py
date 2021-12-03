@@ -93,7 +93,11 @@ def exec_action(action, instance, operation_user):
         exe_action = service_controllers.get("stop")
         # 存在stop脚本先执行stop脚本后执行删除
         if exe_action:
-            is_success, info = salt_obj.cmd(ip, exe_action, 600)
+            for count in range(10):
+                is_success, info = salt_obj.cmd(ip, exe_action, 600)
+                time.sleep(count + 1)
+                if is_success == "success":
+                    break
             logger.info(f"执行 [{action[0]}] 操作 {is_success}，原因: {info}")
         base_dir = delete_action(service_obj)
         # 删除安装路径
