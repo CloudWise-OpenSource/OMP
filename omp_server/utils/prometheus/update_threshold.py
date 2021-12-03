@@ -12,8 +12,8 @@ from omp_server.settings import PROJECT_DIR
 logger = logging.getLogger("server")
 
 description = {
-    "cpu_used": "主机 {{ $labels.instance }} CPU 使用率为 {{ $value | humanize }}%, 大于阈值 $condition_value$",
-    "memory_used": "主机 {{ $labels.instance }} 内存使用率高于 $condition_value$%，当前值为{{ $value | humanize }}%",
+    "cpu_used": "主机 {{ $labels.instance }} CPU 使用率为 {{ $value | humanize }}%, 大于阈值 $condition_value$%",
+    "memory_used": "主机 {{ $labels.instance }} 内存使用率为 {{ $value | humanize }}%，大于阈值 $condition_value$%",
     "disk_root_used": "主机 {{ $labels.instance }} 根分区使用率为 {{ $value | humanize }}%, 大于 阈值 $condition_value$%",
     "disk_data_used": "主机 {{ $labels.instance }} 数据分区使用率为 {{ $value | humanize }}%, 大于 阈值 $condition_value$%",
     "kafka_consumergroup_lag": "Kafka 消费组{{ $labels.consumergroup }}消息堆积数过多  {{ humanize $value }}"
