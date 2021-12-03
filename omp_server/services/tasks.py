@@ -14,7 +14,7 @@ import time
 import json
 from promemonitor.prometheus_utils import PrometheusUtils
 from db_models.models import (
-    Host, HostOperateLog
+    Host, HostOperateLog, ClusterInfo
 )
 from django.db.models import F
 from django.db import transaction
@@ -115,6 +115,12 @@ def exec_action(action, instance, operation_user):
             with transaction.atomic():
                 Host.objects.filter(ip=service_obj.ip).update(
                     service_num=F("service_num") - 1)
+                if Service.objects.filter(
+                        cluster=service_obj.cluster
+                ).count() == 0:
+                    ClusterInfo.objects.filter(
+                        id=service_obj.cluster.id
+                    ).delete()
         return None
 
     exe_action = service_controllers.get(action[0])

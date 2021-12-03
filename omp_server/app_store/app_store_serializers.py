@@ -16,7 +16,7 @@ from app_store.tmp_exec_back_task import front_end_verified_init
 
 from db_models.models import (
     ApplicationHub, ProductHub, UploadPackageHistory,
-    Service, DetailInstallHistory, MainInstallHistory
+    Service, DetailInstallHistory, MainInstallHistory, Product
 )
 
 from app_store.install_utils import (
@@ -57,8 +57,9 @@ class ServiceListSerializer(ModelSerializer):
 
     def get_instance_number(self, obj):
         """ 获取组件已安装实例数量 """
-        return Service.objects.filter(
-            service__product__pro_name=obj.pro_name).count()
+        # return Service.objects.filter(
+        #     service__product__pro_name=obj.pro_name).count()
+        return Product.objects.filter(product=obj).count()
 
 
 class UploadPackageSerializer(Serializer):

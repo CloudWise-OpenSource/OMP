@@ -756,11 +756,13 @@ class MainInstallHistory(TimeStampMixin):
     INSTALL_STATUS_INSTALLING = 1
     INSTALL_STATUS_SUCCESS = 2
     INSTALL_STATUS_FAILED = 3
+    INSTALL_STATUS_REGISTER = 4
     INSTALL_STATUS_CHOICES = (
         (INSTALL_STATUS_READY, "待安装"),
         (INSTALL_STATUS_INSTALLING, "安装中"),
         (INSTALL_STATUS_SUCCESS, "安装成功"),
         (INSTALL_STATUS_FAILED, "安装失败"),
+        (INSTALL_STATUS_REGISTER, "正在注册"),
     )
     operator = models.CharField(
         "操作用户", max_length=32,
@@ -784,6 +786,29 @@ class MainInstallHistory(TimeStampMixin):
         """元数据"""
         db_table = "omp_main_install_history"
         verbose_name = verbose_name_plural = "主安装记录表"
+
+
+class PreInstallHistory(TimeStampMixin):
+    """ 记录安装过程中主机的操作记录内容 """
+    objects = None
+    main_install_history = models.ForeignKey(
+        MainInstallHistory, null=True, blank=True,
+        on_delete=models.SET_NULL, help_text="关联主安装记录")
+    name = models.CharField(
+        "名称", max_length=32, blank=False, null=False,
+        default="preInstall", help_text="名称"
+    )
+    ip = models.GenericIPAddressField(
+        "主机ip地址", blank=False, null=False, help_text="主机ip地址")
+    install_flag = models.IntegerField(
+        "安装标志", default=0,
+        help_text="0-待安装 1-安装中 2-安装成功 3-安装失败")
+    install_log = models.TextField("主机层安装日志", help_text="主机层安装日志")
+
+    class Meta:
+        """元数据"""
+        db_table = "omp_pre_install_history"
+        verbose_name = verbose_name_plural = "前置安装记录"
 
 
 class DetailInstallHistory(TimeStampMixin):

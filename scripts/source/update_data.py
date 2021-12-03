@@ -117,15 +117,33 @@ def create_threshold():
          'condition_value': '5000', 'alert_level': 'critical'},
         {'index_type': 'kafka_consumergroup_lag', 'condition': '>=',
          'condition_value': '3000', 'alert_level': 'warning'}]
-    HostThreshold.objects.bulk_create(
-        [HostThreshold(**el) for el in host_threshold]
-    )
-    ServiceThreshold.objects.bulk_create(
-        [ServiceThreshold(**el) for el in service_threshold]
-    )
-    ServiceCustomThreshold.objects.bulk_create(
-        [ServiceCustomThreshold(**el) for el in custom_threshold]
-    )
+    # 保持更新数据的幂等性
+    for item in host_threshold:
+        if HostThreshold.objects.filter(
+                index_type=item.get("index_type"),
+                condition=item.get("condition"),
+                alert_level=item.get("alert_level")
+        ).exists():
+            continue
+        HostThreshold(**item).save()
+
+    for item in service_threshold:
+        if ServiceThreshold.objects.filter(
+                index_type=item.get("index_type"),
+                condition=item.get("condition"),
+                alert_level=item.get("alert_level")
+        ).exists():
+            continue
+        ServiceThreshold(**item).save()
+
+    for item in custom_threshold:
+        if ServiceCustomThreshold.objects.filter(
+                index_type=item.get("index_type"),
+                condition=item.get("condition"),
+                alert_level=item.get("alert_level")
+        ).exists():
+            continue
+        ServiceCustomThreshold(**item).save()
 
 
 def main():
