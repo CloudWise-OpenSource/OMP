@@ -828,7 +828,9 @@ def install_service(main_history_id, username="admin"):
     try:
         # 更新主机上的服务数量
         _ser_ip_lst = DetailInstallHistory.objects.filter(
-            main_install_history_id=main_history_id).values("service__ip")
+            main_install_history_id=main_history_id,
+            service__service__is_base_env=False
+        ).values("service__ip")
         _tmp_dic = dict()
         for item in _ser_ip_lst:
             if item["service__ip"] not in _tmp_dic:

@@ -16,6 +16,14 @@ function check_user() {
   fi
 }
 
+function mysql() {
+  bash $PROJECT_FOLDER/component/mysql/scripts/mysql $1
+}
+
+function redis() {
+  bash $PROJECT_FOLDER/component/redis/scripts/redis $1
+}
+
 function tengine() {
   bash $PROJECT_FOLDER/scripts/source/tengine $1
 }
