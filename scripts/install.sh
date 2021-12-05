@@ -21,12 +21,12 @@ function install_omp() {
     echo "OMP配置更新失败"
     exit 1
   fi
-  # install_mysql_redis_path="${PROJECT_FOLDER}/scripts/source/install_mysql_redis.py"
-  # $PYTHON3 $install_mysql_redis_path
-  # if [[ $? -ne 0 ]]; then
-  #   echo "mysql+redis安装失败"
-  #   exit 1
-  # fi
+  install_mysql_redis_path="${PROJECT_FOLDER}/scripts/source/install_mysql_redis.py"
+  $PYTHON3 $install_mysql_redis_path
+  if [[ $? -ne 0 ]]; then
+   echo "mysql+redis安装失败"
+   exit 1
+  fi
   MANAGE_PATH="${PROJECT_FOLDER}/omp_server/manage.py"
   $PYTHON3 $MANAGE_PATH migrate
   UPDATE_DATA_PATH="${PROJECT_FOLDER}/scripts/source/update_data.py"
@@ -49,6 +49,9 @@ function check_grafana_up() {
       return 0
     fi
     sleep 30
+    if [[ $i -eq 5 ]]; then
+      bash $OMP_SCRIPT grafana start
+    fi
     let i++
   done
   echo "Grafana start failed in 300s, please check!"
