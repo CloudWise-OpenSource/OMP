@@ -1,5 +1,6 @@
 import json
 import time
+import traceback
 
 import requests
 
@@ -37,19 +38,29 @@ def synch_grafana_info():
     monitor_url = monitor_ip[0].monitor_url if len(
         monitor_ip) else "127.0.0.1:19014"
 
-    url = """http://{0}/proxy/v1/grafana/api/search?query=&
-          starred=false&skipRecent=false&
-          skipStarred=false&folderIds=0&layout=folders""".format(monitor_url)
+    url = "http://{0}/proxy/v1/grafana/api/search?" \
+          "query=&starred=false&skipRecent=false&skipStarred=false&" \
+          "folderIds=0&layout=folders".format(monitor_url)
     payload = {}
     headers = {
         'Authorization': f'Bearer {GRAFANA_API_KEY}'
     }
-    try:
-        flag, r = make_request(url=url, headers=headers, payload=payload)
-        if not flag:
+    try_times = 0
+    while try_times <= 3:
+        try:
+            try_times += 1
+            print(f"start request to: {url}")
+            flag, r = make_request(url=url, headers=headers, payload=payload)
+            if not flag:
+                return
+            break
+        except requests.exceptions.MissingSchema as e:
+            print(f"grafana error: {str(e)}, try again after 10s!")
+        except Exception as e:
+            print(e)
+            print(traceback.format_exc())
             return
-    except Exception as e:
-        print(e)
+    else:
         return
     url_type = {"service": "fu", "node": "zhu", "log": "applogs"}
     url_dict = {}
