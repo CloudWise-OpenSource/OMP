@@ -99,6 +99,9 @@ DATABASES = {
             'CHARSET': 'utf8',
             'COLLATION': 'utf8_general_ci',
             "NAME": f"test_omp_{random.randint(100, 200)}"
+        },
+        'OPTIONS': {
+            'init_command': 'SET sql_mode=STRICT_TRANS_TABLES',
         }
     }
 }
