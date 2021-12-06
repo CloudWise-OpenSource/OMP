@@ -66,7 +66,7 @@ def exec_action(action, instance, operation_user):
         logger.error("action动作不合法")
         raise ValueError("action动作不合法")
     if action[0] == 'delete':
-        service_obj.service_status = 9
+        service_obj.service_status = Service.SERVICE_STATUS_DELETING
         service_obj.save()
         service_port = None
         is_success = False
