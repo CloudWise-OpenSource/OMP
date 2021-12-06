@@ -21,7 +21,7 @@ from django_filters.rest_framework.backends import DjangoFilterBackend
 from db_models.models import (Env, Host, HostOperateLog)
 from utils.plugin.crypto import AESCryptor
 from utils.common.paginations import PageNumberPager
-from hosts.tasks import deploy_agent
+from hosts.tasks import insert_host_celery_task
 from hosts.hosts_filters import (HostFilter, HostOperateFilter)
 from hosts.hosts_serializers import (
     HostSerializer, HostMaintenanceSerializer,
@@ -275,7 +275,7 @@ class HostBatchImportView(GenericViewSet, CreateModelMixin):
                     host=instance,
                 ))
                 # 异步下发 agent 任务
-                deploy_agent.delay(instance.id)
+                insert_host_celery_task.delay(instance.id, init=False)
             HostOperateLog.objects.bulk_create(operate_log_objs)
         return Response("添加成功")
 

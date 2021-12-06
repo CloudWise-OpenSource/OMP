@@ -102,7 +102,7 @@ class HostSerializer(ModelSerializer):
         error_messages={"does_not_exist": "未找到对应环境"})
     init_host = serializers.BooleanField(
         help_text="是否初始化",
-        required=True, write_only=True,
+        required=False, default=False, write_only=True,
         error_messages={"required": "必须包含[init_host]字段"}
     )
 
@@ -158,7 +158,7 @@ class HostSerializer(ModelSerializer):
         username = attrs.get("username")
         password = attrs.get("password")
         data_folder = attrs.get("data_folder")
-        init_host = attrs.get("init_host")
+        init_host = attrs.get("init_host", False)
 
         # 校验主机 SSH 连通性
         ssh = SSH(ip, port, username, password)
@@ -198,7 +198,7 @@ class HostSerializer(ModelSerializer):
     def create(self, validated_data):
         """ 创建主机 """
         ip = validated_data.get("ip")
-        init_host = validated_data.pop("init_host")
+        init_flag = validated_data.pop("init_host", False)
         # 指定 Agent 安装目录为 data_folder
         validated_data["agent_dir"] = validated_data.get("data_folder")
         instance = super(HostSerializer, self).create(validated_data)
@@ -211,12 +211,13 @@ class HostSerializer(ModelSerializer):
         # 下发异步任务: 初始化主机、安装 Agent
         logger.info(f"host[{ip}] - ADD celery task")
         insert_host_celery_task.delay(
-            instance.id, init=init_host)
+            instance.id, init=init_flag)
         # deploy_agent.delay(instance.id)
         return instance
 
     def update(self, instance, validated_data):
         """ 更新主机 """
+        validated_data.pop("init_host", False)
         log_ls = []
         username = self.context["request"].user.username
 
