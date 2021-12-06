@@ -1,11 +1,3 @@
-/*
- * @Author: your name
- * @Date: 2021-06-28 16:04:55
- * @LastEditTime: 2021-06-28 16:41:31
- * @LastEditors: Please set LastEditors
- * @Description: In User Settings Edit
- * @FilePath: /omp-fontend123/src/components/OmpTable/index.js
- */
 import { Table, Pagination, Tree } from "antd";
 import styles from "./index.module.less";
 import { useEffect, useLayoutEffect, useState } from "react";
@@ -164,28 +156,30 @@ const OmpTable = ({
       rowSelection={
         checkedState && {
           onSelect: (record, selected, selectedRows) => {
-            setCheckedList({
-              ...checkedList,
-              [residualParam.pagination.current || "data"]: selectedRows,
-            });
+            if (selected) {
+              setCheckedList([...checkedList, record]);
+            } else {
+              setCheckedList(checkedList.filter((m) => m.id !== record.id));
+            }
           },
           onSelectAll: (selected, selectedRows, changeRows) => {
-            setCheckedList({
-              ...checkedList,
-              [residualParam.pagination.current || "data"]: selectedRows.filter(
-                (item) => item
-              ),
-            });
+            if (selected) {
+              setCheckedList([...checkedList, ...changeRows]);
+            } else {
+              setCheckedList((ls) => {
+                return ls.filter((l) => {
+                  let ids = changeRows.map((m) => m.id);
+                  return !ids.includes(l.id);
+                });
+              });
+            }
           },
           getCheckboxProps:
             notSelectable ||
             ((record) => ({
               disabled: record.is_read === 1,
             })),
-          selectedRowKeys: Object.keys(checkedList)
-            .map((k) => checkedList[k])
-            .flat(1)
-            .map((item) => item?.id),
+          selectedRowKeys: checkedList.map((item) => item?.id),
           // 传入rowselect优先使用传入的
           ...residualParam.rowSelection,
         }

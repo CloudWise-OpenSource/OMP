@@ -9,7 +9,7 @@ import {
   nonEmptyProcessing,
   logout,
   isPassword,
-  renderDisc
+  renderDisc,
 } from "@/utils/utils";
 import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
@@ -34,6 +34,8 @@ const renderStatus = (text) => {
       return <span>{renderDisc("normal", 7, -1)}成功</span>;
     case 3:
       return <span>{renderDisc("critical", 7, -1)}失败</span>;
+    case 4:
+      return <span>{renderDisc("notMonitored", 7, -1)}正在注册</span>;
     default:
       return "-";
   }
@@ -132,8 +134,8 @@ const InstallationRecord = () => {
       align: "center",
       width: 120,
       render: (text, record) => {
-        if(record.install_status == 1){
-          return "-"
+        if (record.install_status == 1) {
+          return "-";
         }
         if (text) {
           return moment(text).format("YYYY-MM-DD HH:mm:ss");
@@ -164,7 +166,7 @@ const InstallationRecord = () => {
                 pathname: "/application_management/app_store/installation",
                 state: {
                   uniqueKey: record.operation_uuid,
-                  step:3
+                  step: 3,
                 },
               });
             }}
