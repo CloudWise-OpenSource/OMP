@@ -51,6 +51,9 @@ OMP（Operation Management Platform）是云智慧公司自主设计、研发的
 OMP安装包内部包含了其使用的绝大部分组件，但是缺少MySQL和redis，当前版本需要用户自行配置使用，建议将OMP部署在 /data/ 下，当前版本部署流程如下：   \
 step0：下载/解压安装包
 ```shell
+# 安装包下载地址
+# server端：curl -O http://omp.cloudwise.com/download-inspection/omp_open-0.1.tar.gz .
+# Agent端：curl -O http://omp.cloudwise.com/download-inspection/omp_monitor_agent-0.1.tar.gz .
 # omp_open-0.1.tar.gz  omp_monitor_agent-0.1.tar.gz
 tar -xf omp_open-0.1.tar.gz -C /data && mv omp_monitor_agent-0.1.tar.gz /data/omp/package_hub/
 ```
