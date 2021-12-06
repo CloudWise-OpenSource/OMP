@@ -318,17 +318,14 @@ const MachineManagement = () => {
   const fetchInitHostAgent = () => {
     setLoading(true);
     let hostIdArr = [];
-    hostIdArr = Object.keys(checkedList)
-      .map((k) => checkedList[k])
-      .flat(1)
-      .filter((item) => {
+    hostIdArr = checkedList.filter((item) => {
         return item.init_status === 1 || item.init_status === 3;
       })
       .map((item) => item.id);
     if (hostIdArr.length === 0) {
       setLoading(false);
       setIninHostModal(false);
-      setCheckedList({});
+      setCheckedList([]);
       fetchData(
         { current: pagination.current, pageSize: pagination.pageSize },
         { ip: selectValue },
@@ -356,7 +353,7 @@ const MachineManagement = () => {
       .finally(() => {
         setLoading(false);
         setIninHostModal(false);
-        setCheckedList({});
+        setCheckedList([]);
         fetchData(
           { current: pagination.current, pageSize: pagination.pageSize },
           { ip: selectValue },
@@ -501,10 +498,7 @@ const MachineManagement = () => {
                 key="initHost"
                 style={{ textAlign: "center" }}
                 disabled={
-                  Object.keys(checkedList)
-                    .map((k) => checkedList[k])
-                    .flat(1)
-                    .map((item) => item.id).length == 0
+                  checkedList.map((item) => item.id).length == 0
                 }
                 onClick={() => {
                   setIninHostModal(true);
@@ -847,9 +841,7 @@ const MachineManagement = () => {
           确定要对{" "}
           <span style={{ fontWeight: 500 }}>
             {
-              Object.keys(checkedList)
-                .map((k) => checkedList[k])
-                .flat(1).length
+              checkedList.length
             }
             台
           </span>{" "}
