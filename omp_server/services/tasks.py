@@ -97,8 +97,8 @@ def exec_action(action, instance, operation_user):
         if exe_action:
             for count in range(2):
                 is_success, info = salt_obj.cmd(ip, exe_action, 600)
-                time.sleep(count + 5)
-                if is_success == "success":
+                time.sleep(count + 1)
+                if is_success is True:
                     break
             logger.info(f"执行 [{action[0]}] 操作 {is_success}，原因: {info}")
         base_dir = delete_action(service_obj)
