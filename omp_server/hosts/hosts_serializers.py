@@ -158,7 +158,7 @@ class HostSerializer(ModelSerializer):
         username = attrs.get("username")
         password = attrs.get("password")
         data_folder = attrs.get("data_folder")
-        init_host = attrs.get("init_host", False)
+        init_flag = attrs.get("init_host", False)
 
         # 校验主机 SSH 连通性
         ssh = SSH(ip, port, username, password)
@@ -169,7 +169,7 @@ class HostSerializer(ModelSerializer):
             raise ValidationError({"ip": "SSH登录失败"})
 
         # 当需要执行主机初始化时
-        if init_host:
+        if init_flag:
             # 校验用户是否具有 sudo 权限
             is_sudo, _ = ssh.is_sudo()
             if not is_sudo:
@@ -475,7 +475,7 @@ class HostInitSerializer(HostIdsSerializer):
         """ 主机初始化 """
         host_ids = validated_data.get("host_ids", [])
         for host_id in host_ids:
-            init_host.deply(host_id)
+            init_host.delay(host_id)
         # 下发任务后批量更新主机初始化状态
         Host.objects.filter(
             id__in=host_ids
