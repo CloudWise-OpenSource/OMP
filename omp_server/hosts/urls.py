@@ -12,7 +12,7 @@ from hosts.views import (
     HostListView, HostDetailView, HostUpdateView,
     HostFieldCheckView, IpListView, HostMaintenanceView,
     HostAgentRestartView, HostOperateLogView, HostBatchValidateView,
-    HostBatchImportView
+    HostBatchImportView, HostInitView
 )
 
 router = DefaultRouter()
@@ -29,3 +29,5 @@ router.register("batchValidate", HostBatchValidateView,
                 basename="batchValidate")
 router.register("batchImport", HostBatchImportView,
                 basename="batchImport")
+router.register("hostInit", HostInitView,
+                basename="hostInit")

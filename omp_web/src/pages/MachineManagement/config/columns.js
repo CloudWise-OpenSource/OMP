@@ -423,6 +423,19 @@ const renderStatus = (text) => {
   }
 };
 
+const renderInitStatue = (text) => {
+  switch (text) {
+    case 0:
+      return <span>{renderDisc("normal", 7, -1)}成功</span>;
+    case 1:
+      return <span>{renderDisc("notMonitored", 7, -1)}未执行</span>;
+    case 2:
+      return <span>{renderDisc("warning", 7, -1)}执行中</span>;
+    case 3:
+      return <span>{renderDisc("critical", 7, -1)}失败</span>;
+  }
+}
+
 const getColumnsConfig = (
   setIsShowDrawer,
   setRow,
@@ -579,6 +592,16 @@ const getColumnsConfig = (
       render: (text) => {
         if (nonEmptyProcessing(text) == "-") return "-";
         return text ? "是" : "否";
+      },
+    },
+    {
+      title: "主机初始化",
+      key: "init_status",
+      dataIndex: "init_status",
+      align: "center",
+      //ellipsis: true,
+      render: (text) => {
+        return renderInitStatue(text);
       },
     },
     {

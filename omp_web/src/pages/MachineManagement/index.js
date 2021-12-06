@@ -93,6 +93,9 @@ const MachineManagement = () => {
   // 关闭维护（单次）
   const [closeMaintainOneModal, setCloseMaintainOneModal] = useState(false);
 
+  // 初始化主机
+  const [ininHostModal, setIninHostModal] = useState(false);
+
   const [showIframe, setShowIframe] = useState({});
 
   // 列表查询
@@ -112,6 +115,7 @@ const MachineManagement = () => {
     })
       .then((res) => {
         handleResponse(res, (res) => {
+          console.log(res.data.results);
           setDataSource(res.data.results);
           setPagination({
             ...pagination,
@@ -150,6 +154,7 @@ const MachineManagement = () => {
     data.ip = data.IPtext;
     delete data.IPtext;
     data.port = `${data.port}`;
+    delete data.icon;
     fetchPost(apiRequest.machineManagement.hosts, {
       body: {
         ...data,
@@ -306,6 +311,43 @@ const MachineManagement = () => {
       .finally(() => {
         setLoading(false);
         setRestartHostAgentModal(false);
+        setCheckedList({});
+        fetchData(
+          { current: pagination.current, pageSize: pagination.pageSize },
+          { ip: selectValue },
+          pagination.ordering
+        );
+      });
+  };
+
+  // 初始化主机
+  const fetchInitHostAgent = () => {
+    setLoading(true);
+    fetchPost(apiRequest.machineManagement.hostInit, {
+      body: {
+        host_ids: Object.keys(checkedList)
+          .map((k) => checkedList[k])
+          .flat(1)
+          .filter((item) => {
+            return item.init_status === 1 || item.init_status === 3;
+          })
+          .map((item) => item.id),
+      },
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          if (res.code == 0) {
+            message.success("初始化主机任务已下发");
+          }
+          if (res.code == 1) {
+            message.warning(res.message);
+          }
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setLoading(false);
+        setIninHostModal(false);
         setCheckedList({});
         fetchData(
           { current: pagination.current, pageSize: pagination.pageSize },
@@ -472,6 +514,21 @@ const MachineManagement = () => {
                 }}
               >
                 重启监控Agent
+              </Menu.Item>
+              <Menu.Item
+                key="initHost"
+                style={{ textAlign: "center" }}
+                disabled={
+                  Object.keys(checkedList)
+                    .map((k) => checkedList[k])
+                    .flat(1)
+                    .map((item) => item.id).length == 0
+                }
+                onClick={() => {
+                  setIninHostModal(true);
+                }}
+              >
+                初始化主机
               </Menu.Item>
             </Menu>
           }
@@ -816,6 +873,41 @@ const MachineManagement = () => {
         <div style={{ padding: "20px" }}>
           确定要对 <span style={{ fontWeight: 500 }}>当前</span> 主机下发{" "}
           <span style={{ fontWeight: 500 }}>关闭维护模式</span> 操作？
+        </div>
+      </OmpMessageModal>
+
+      <OmpMessageModal
+        visibleHandle={[ininHostModal, setIninHostModal]}
+        title={
+          <span>
+            <ExclamationCircleOutlined
+              style={{
+                fontSize: 20,
+                color: "#f0a441",
+                paddingRight: "10px",
+                position: "relative",
+                top: 2,
+              }}
+            />
+            提示
+          </span>
+        }
+        loading={loading}
+        onFinish={() => {
+          fetchInitHostAgent();
+        }}
+      >
+        <div style={{ padding: "20px" }}>
+          确定要对{" "}
+          <span style={{ fontWeight: 500 }}>
+            {
+              Object.keys(checkedList)
+                .map((k) => checkedList[k])
+                .flat(1).length
+            }
+            台
+          </span>{" "}
+          主机 <span style={{ fontWeight: 500 }}>执行初始化</span> ？
         </div>
       </OmpMessageModal>
       <BatchImportMachineModal

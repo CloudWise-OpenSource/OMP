@@ -27,7 +27,8 @@ from hosts.hosts_serializers import (
     HostSerializer, HostMaintenanceSerializer,
     HostFieldCheckSerializer, HostAgentRestartSerializer,
     HostOperateLogSerializer, HostBatchValidateSerializer,
-    HostBatchImportSerializer, HostDetailSerializer
+    HostBatchImportSerializer, HostDetailSerializer,
+    HostInitSerializer
 )
 from promemonitor.prometheus import Prometheus
 from promemonitor.grafana_url import explain_url
@@ -277,3 +278,14 @@ class HostBatchImportView(GenericViewSet, CreateModelMixin):
                 deploy_agent.delay(instance.id)
             HostOperateLog.objects.bulk_create(operate_log_objs)
         return Response("添加成功")
+
+
+class HostInitView(GenericViewSet, CreateModelMixin):
+    """
+        create:
+        主机初始化
+    """
+    queryset = Host.objects.filter(is_deleted=False)
+    serializer_class = HostInitSerializer
+    # 操作信息描述
+    post_description = "主机初始化"
