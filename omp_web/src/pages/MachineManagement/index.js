@@ -318,7 +318,8 @@ const MachineManagement = () => {
   const fetchInitHostAgent = () => {
     setLoading(true);
     let hostIdArr = [];
-    hostIdArr = checkedList.filter((item) => {
+    hostIdArr = checkedList
+      .filter((item) => {
         return item.init_status === 1 || item.init_status === 3;
       })
       .map((item) => item.id);
@@ -326,13 +327,8 @@ const MachineManagement = () => {
       setLoading(false);
       setIninHostModal(false);
       setCheckedList([]);
-      fetchData(
-        { current: pagination.current, pageSize: pagination.pageSize },
-        { ip: selectValue },
-        pagination.ordering
-      );
       message.success("所选主机已经初始化完成");
-      return
+      return;
     }
     fetchPost(apiRequest.machineManagement.hostInit, {
       body: {
@@ -497,9 +493,7 @@ const MachineManagement = () => {
               <Menu.Item
                 key="initHost"
                 style={{ textAlign: "center" }}
-                disabled={
-                  checkedList.map((item) => item.id).length == 0
-                }
+                disabled={checkedList.map((item) => item.id).length == 0}
                 onClick={() => {
                   setIninHostModal(true);
                 }}
@@ -839,13 +833,8 @@ const MachineManagement = () => {
       >
         <div style={{ padding: "20px" }}>
           确定要对{" "}
-          <span style={{ fontWeight: 500 }}>
-            {
-              checkedList.length
-            }
-            台
-          </span>{" "}
-          主机 <span style={{ fontWeight: 500 }}>执行初始化</span> ？
+          <span style={{ fontWeight: 500 }}>{checkedList.length}台</span> 主机{" "}
+          <span style={{ fontWeight: 500 }}>执行初始化</span> ？
         </div>
       </OmpMessageModal>
       <BatchImportMachineModal
