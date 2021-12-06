@@ -93,6 +93,7 @@ monitor_port:
 basic_order:
   0:
   - jdk
+  - safeRM
   1:
   - tengine
   - mysql

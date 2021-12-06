@@ -849,6 +849,7 @@ class CreateInstallPlanSerializer(BaseInstallSerializer):
         ).run()
         is_continue = self.check_error_msg(all_install_service_lst)
         logger.info(f"Final check_error_msg: {is_continue}")
+        logger.info(f"Final check service: {all_install_service_lst}")
         if not is_continue:
             _re_data = {
                 el: [

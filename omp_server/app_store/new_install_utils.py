@@ -16,6 +16,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import redis
 from django.db import transaction
+from django.db.models import F
 from rest_framework.exceptions import ValidationError
 
 from omp_server.settings import PROJECT_DIR
@@ -1725,9 +1726,11 @@ class CreateInstallPlan(object):
         :param main_obj:
         :return:
         """
-        _data = BaseRedisData(
-            unique_key=self.unique_key).get_step_5_host_list()
-        for item in _data:
+        _data = list(DetailInstallHistory.objects.filter(
+            main_install_history=main_obj
+        ).values_list("service__ip", flat=True))
+
+        for item in set(_data):
             PreInstallHistory(
                 main_install_history=main_obj,
                 ip=item
@@ -1771,7 +1774,6 @@ class CreateInstallPlan(object):
                     install_args=self.install_services
                 )
                 main_obj.save()
-                self.create_pre_install_history(main_obj)
                 # step2: 创建安装细节表
                 for item in self.install_services:
                     # 创建服务实例对象
@@ -1786,6 +1788,8 @@ class CreateInstallPlan(object):
                         install_detail_args=item,
                         post_action_flag=post_action_flag
                     ).save()
+                # 创建安装前的操作记录
+                self.create_pre_install_history(main_obj)
                 # 创建安装后操作日志
                 self.create_post_install_history(main_obj)
                 _json_obj = DataJson(operation_uuid=operation_uuid)
@@ -1795,6 +1799,19 @@ class CreateInstallPlan(object):
                 MainInstallHistory.objects.filter(id=main_obj.id).update(
                     task_id=task_id
                 )
+                # 更新主机上的服务数量
+                _ser_ip_lst = DetailInstallHistory.objects.filter(
+                    main_install_history=main_obj,
+                    service__service__is_base_env=False
+                ).values("service__ip")
+                _tmp_dic = dict()
+                for item in _ser_ip_lst:
+                    if item["service__ip"] not in _tmp_dic:
+                        _tmp_dic[item["service__ip"]] = 0
+                    _tmp_dic[item["service__ip"]] += 1
+                for key, value in _tmp_dic.items():
+                    Host.objects.filter(ip=key).update(
+                        service_num=F("service_num") + value)
         except Exception as e:
             logger.error(
                 f"CreateInstallPlan.run failed with error: \n"
