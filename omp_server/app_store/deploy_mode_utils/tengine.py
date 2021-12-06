@@ -23,7 +23,7 @@ class TengineUtils(BaseUtils):
         """
         return {
             "default": 1,
-            "step": 0
+            "step": 1
         }
 
     def check(self, mode):
@@ -33,6 +33,6 @@ class TengineUtils(BaseUtils):
         :type mode: int
         :return:
         """
-        if mode != 1:
-            return False
+        # if mode != 1:
+        #     return False
         return True
