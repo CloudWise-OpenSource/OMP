@@ -13,7 +13,7 @@ correct_prometheus_data = {
         "alerts": [
             {
                 "labels": {
-                    "alertname": "instance down",
+                    "alertname": "实例宕机",
                     "instance": "10.0.3.72",
                     "job": "nodeExporter",
                     "severity": "critical"
@@ -21,7 +21,7 @@ correct_prometheus_data = {
                 "annotations": {
                     "consignee": "987654321@qq.com",
                     "description": "实例 10.0.3.72 已宕机超过1分钟",
-                    "summary": "instance down alert(10.0.3.72)"
+                    "summary": "实例宕机(10.0.3.72)"
                 },
                 "state": "firing",
                 "activeAt": "2021-09-27T07:08:05.68330499Z",
@@ -29,7 +29,7 @@ correct_prometheus_data = {
             },
             {
                 "labels": {
-                    "alertname": "instance down",
+                    "alertname": "实例宕机",
                     "instance": "10.0.3.73",
                     "job": "nodeExporter",
                     "severity": "critical"
@@ -37,7 +37,7 @@ correct_prometheus_data = {
                 "annotations": {
                     "consignee": "987654321@qq.com",
                     "description": "实例 10.0.3.71 已宕机超过1分钟",
-                    "summary": "instance down alert(10.0.3.71)"
+                    "summary": "实例宕机(10.0.3.71)"
                 },
                 "state": "firing",
                 "activeAt": "2021-09-27T07:07:24.495164774Z",
