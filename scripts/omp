@@ -16,6 +16,16 @@ function check_user() {
   fi
 }
 
+function mysql() {
+  test -d $PROJECT_FOLDER/component/mysql || return 0
+  bash $PROJECT_FOLDER/component/mysql/scripts/mysql $1
+}
+
+function redis() {
+  test -d $PROJECT_FOLDER/component/redis || return 0
+  bash $PROJECT_FOLDER/component/redis/scripts/redis $1
+}
+
 function tengine() {
   bash $PROJECT_FOLDER/scripts/source/tengine $1
 }
@@ -53,6 +63,8 @@ function loki() {
 }
 
 function all() {
+  mysql $1
+  redis $1
   tengine $1
   uwsgi $1
   worker $1
@@ -67,12 +79,20 @@ function all() {
 check_user
 
 if [[ $# -eq 0 ]]; then
-  echo "bash omp [all|tengine|uwsgi|worker|cron|salt|prometheus|alertmanager|grafana|loki] [status|start|stop|restart]"
+  echo "bash omp [all|mysql|redis|tengine|uwsgi|worker|cron|salt|prometheus|alertmanager|grafana|loki] [status|start|stop|restart]"
 else
   case $1 in
   all)
     shift
     all "$@"
+    ;;
+  mysql)
+    shift
+    mysql "$@"
+    ;;
+  redis)
+    shift
+    redis "$@"
     ;;
   tengine)
     shift
