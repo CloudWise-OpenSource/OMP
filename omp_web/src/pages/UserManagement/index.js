@@ -24,9 +24,6 @@ const UserManagement = () => {
 
   const [searchLoading, setSearchLoading] = useState(false);
 
-  //选中的数据
-  const [checkedList, setCheckedList] = useState({});
-
   //table表格数据
   const [dataSource, setDataSource] = useState([]);
   const [userListSource, setUserListSource] = useState([]);

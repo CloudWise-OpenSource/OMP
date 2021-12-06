@@ -171,7 +171,7 @@ const getColumnsConfig = (
       fixed: "right",
       align: "center",
       render: function renderFunc(text, record, index) {
-        console.log(record);
+        //console.log(record);
         return (
           <div style={{ display: "flex", justifyContent: "space-around" }}>
             {record.monitor_path ? (

@@ -40,7 +40,7 @@ const MachineManagement = () => {
   const [batchImport, setBatchImport] = useState(false);
 
   //选中的数据
-  const [checkedList, setCheckedList] = useState({});
+  const [checkedList, setCheckedList] = useState([]);
 
   //table表格数据
   const [dataSource, setDataSource] = useState([]);
@@ -257,10 +257,7 @@ const MachineManagement = () => {
     setLoading(true);
     fetchPost(apiRequest.machineManagement.restartMonitorAgent, {
       body: {
-        host_ids: Object.keys(checkedList)
-          .map((k) => checkedList[k])
-          .flat(1)
-          .map((item) => item.id),
+        host_ids: checkedList.map((item) => item.id),
       },
     })
       .then((res) => {
@@ -277,7 +274,7 @@ const MachineManagement = () => {
       .finally(() => {
         setLoading(false);
         setRestartMonterAgentModal(false);
-        setCheckedList({});
+        setCheckedList([]);
         fetchData(
           { current: pagination.current, pageSize: pagination.pageSize },
           { ip: selectValue },
@@ -291,10 +288,7 @@ const MachineManagement = () => {
     setLoading(true);
     fetchPost(apiRequest.machineManagement.restartHostAgent, {
       body: {
-        host_ids: Object.keys(checkedList)
-          .map((k) => checkedList[k])
-          .flat(1)
-          .map((item) => item.id),
+        host_ids: checkedList.map((item) => item.id),
       },
     })
       .then((res) => {
@@ -311,7 +305,7 @@ const MachineManagement = () => {
       .finally(() => {
         setLoading(false);
         setRestartHostAgentModal(false);
-        setCheckedList({});
+        setCheckedList([]);
         fetchData(
           { current: pagination.current, pageSize: pagination.pageSize },
           { ip: selectValue },
@@ -324,17 +318,14 @@ const MachineManagement = () => {
   const fetchInitHostAgent = () => {
     setLoading(true);
     let hostIdArr = [];
-    hostIdArr = Object.keys(checkedList)
-      .map((k) => checkedList[k])
-      .flat(1)
-      .filter((item) => {
+    hostIdArr = checkedList.filter((item) => {
         return item.init_status === 1 || item.init_status === 3;
       })
       .map((item) => item.id);
     if (hostIdArr.length === 0) {
       setLoading(false);
       setIninHostModal(false);
-      setCheckedList({});
+      setCheckedList([]);
       fetchData(
         { current: pagination.current, pageSize: pagination.pageSize },
         { ip: selectValue },
@@ -362,7 +353,7 @@ const MachineManagement = () => {
       .finally(() => {
         setLoading(false);
         setIninHostModal(false);
-        setCheckedList({});
+        setCheckedList([]);
         fetchData(
           { current: pagination.current, pageSize: pagination.pageSize },
           { ip: selectValue },
@@ -375,19 +366,13 @@ const MachineManagement = () => {
   const fetchMaintainChange = (e, checkedList) => {
     let host_arr = [];
     if (e) {
-      host_arr = Object.keys(checkedList)
-        .map((k) => checkedList[k])
-        .flat(1)
-        .filter((item) => {
-          return !item.is_maintenance;
-        });
+      host_arr = checkedList.filter((item) => {
+        return !item.is_maintenance;
+      });
     } else {
-      host_arr = Object.keys(checkedList)
-        .map((k) => checkedList[k])
-        .flat(1)
-        .filter((item) => {
-          return item.is_maintenance;
-        });
+      host_arr = checkedList.filter((item) => {
+        return item.is_maintenance;
+      });
     }
     if (host_arr.length == 0) {
       setLoading(false);
@@ -395,7 +380,7 @@ const MachineManagement = () => {
       setCloseMaintainOneModal(false);
       setOpenMaintainModal(false);
       setCloseMaintainModal(false);
-      setCheckedList({});
+      setCheckedList([]);
       if (e) {
         message.success("主机开启维护模式成功");
       } else {
@@ -429,7 +414,7 @@ const MachineManagement = () => {
         setCloseMaintainOneModal(false);
         setOpenMaintainModal(false);
         setCloseMaintainModal(false);
-        setCheckedList({});
+        setCheckedList([]);
         fetchData(
           { current: pagination.current, pageSize: pagination.pageSize },
           { ip: selectValue },
@@ -475,24 +460,14 @@ const MachineManagement = () => {
                 key="openMaintain"
                 style={{ textAlign: "center" }}
                 onClick={() => setOpenMaintainModal(true)}
-                disabled={
-                  Object.keys(checkedList)
-                    .map((k) => checkedList[k])
-                    .flat(1)
-                    .map((item) => item.id).length == 0
-                }
+                disabled={checkedList.map((item) => item.id).length == 0}
               >
                 开启维护模式
               </Menu.Item>
               <Menu.Item
                 key="closeMaintain"
                 style={{ textAlign: "center" }}
-                disabled={
-                  Object.keys(checkedList)
-                    .map((k) => checkedList[k])
-                    .flat(1)
-                    .map((item) => item.id).length == 0
-                }
+                disabled={checkedList.length == 0}
                 onClick={() => {
                   setCloseMaintainModal(true);
                 }}
@@ -502,12 +477,7 @@ const MachineManagement = () => {
               <Menu.Item
                 key="reStartHost"
                 style={{ textAlign: "center" }}
-                disabled={
-                  Object.keys(checkedList)
-                    .map((k) => checkedList[k])
-                    .flat(1)
-                    .map((item) => item.id).length == 0
-                }
+                disabled={checkedList.length == 0}
                 onClick={() => {
                   setRestartHostAgentModal(true);
                 }}
@@ -517,12 +487,7 @@ const MachineManagement = () => {
               <Menu.Item
                 key="reStartMonitor"
                 style={{ textAlign: "center" }}
-                disabled={
-                  Object.keys(checkedList)
-                    .map((k) => checkedList[k])
-                    .flat(1)
-                    .map((item) => item.id).length == 0
-                }
+                disabled={checkedList.length == 0}
                 onClick={() => {
                   setRestartMonterAgentModal(true);
                 }}
@@ -533,10 +498,7 @@ const MachineManagement = () => {
                 key="initHost"
                 style={{ textAlign: "center" }}
                 disabled={
-                  Object.keys(checkedList)
-                    .map((k) => checkedList[k])
-                    .flat(1)
-                    .map((item) => item.id).length == 0
+                  checkedList.map((item) => item.id).length == 0
                 }
                 onClick={() => {
                   setIninHostModal(true);
@@ -579,7 +541,7 @@ const MachineManagement = () => {
             onClick={() => {
               //location.state = {}
               dispatch(refreshTime());
-              setCheckedList({});
+              setCheckedList([]);
               fetchData(
                 { current: pagination.current, pageSize: pagination.pageSize },
                 { ip: selectValue },
@@ -636,15 +598,7 @@ const MachineManagement = () => {
                   lineHeight: 2.8,
                 }}
               >
-                <p>
-                  已选中{" "}
-                  {
-                    Object.keys(checkedList)
-                      .map((k) => checkedList[k])
-                      .flat(1).length
-                  }{" "}
-                  条
-                </p>
+                <p>已选中 {checkedList.length} 条</p>
                 <p style={{ color: "rgb(152, 157, 171)" }}>
                   共计{" "}
                   <span style={{ color: "rgb(63, 64, 70)" }}>
@@ -719,15 +673,8 @@ const MachineManagement = () => {
       >
         <div style={{ padding: "20px" }}>
           确定要重启{" "}
-          <span style={{ fontWeight: 500 }}>
-            {
-              Object.keys(checkedList)
-                .map((k) => checkedList[k])
-                .flat(1).length
-            }
-            台
-          </span>{" "}
-          主机 <span style={{ fontWeight: 500 }}>主机Agent</span> ？
+          <span style={{ fontWeight: 500 }}>{checkedList.length}台</span> 主机{" "}
+          <span style={{ fontWeight: 500 }}>主机Agent</span> ？
         </div>
       </OmpMessageModal>
 
@@ -754,15 +701,8 @@ const MachineManagement = () => {
       >
         <div style={{ padding: "20px" }}>
           确定要重启{" "}
-          <span style={{ fontWeight: 500 }}>
-            {
-              Object.keys(checkedList)
-                .map((k) => checkedList[k])
-                .flat(1).length
-            }
-            台
-          </span>{" "}
-          主机 <span style={{ fontWeight: 500 }}>监控Agent</span> ？
+          <span style={{ fontWeight: 500 }}>{checkedList.length}台</span> 主机{" "}
+          <span style={{ fontWeight: 500 }}>监控Agent</span> ？
         </div>
       </OmpMessageModal>
 
@@ -789,14 +729,7 @@ const MachineManagement = () => {
       >
         <div style={{ padding: "20px" }}>
           确定要对{" "}
-          <span style={{ fontWeight: 500 }}>
-            {
-              Object.keys(checkedList)
-                .map((k) => checkedList[k])
-                .flat(1).length
-            }
-            台
-          </span>{" "}
+          <span style={{ fontWeight: 500 }}>{checkedList.length}台</span>{" "}
           主机下发 <span style={{ fontWeight: 500 }}>开启维护模式</span> 操作？
         </div>
       </OmpMessageModal>
@@ -824,14 +757,7 @@ const MachineManagement = () => {
       >
         <div style={{ padding: "20px" }}>
           确定要对{" "}
-          <span style={{ fontWeight: 500 }}>
-            {
-              Object.keys(checkedList)
-                .map((k) => checkedList[k])
-                .flat(1).length
-            }
-            台
-          </span>{" "}
+          <span style={{ fontWeight: 500 }}>{checkedList.length}台</span>{" "}
           主机下发 <span style={{ fontWeight: 500 }}>关闭维护模式</span> 操作？
         </div>
       </OmpMessageModal>
@@ -915,9 +841,7 @@ const MachineManagement = () => {
           确定要对{" "}
           <span style={{ fontWeight: 500 }}>
             {
-              Object.keys(checkedList)
-                .map((k) => checkedList[k])
-                .flat(1).length
+              checkedList.length
             }
             台
           </span>{" "}

@@ -26,7 +26,7 @@ const AlarmLog = () => {
   const [searchLoading, setSearchLoading] = useState(false);
 
   //选中的数据
-  const [checkedList, setCheckedList] = useState({});
+  const [checkedList, setCheckedList] = useState([]);
 
   //table表格数据
   const [dataSource, setDataSource] = useState([]);
@@ -114,7 +114,7 @@ const AlarmLog = () => {
       })
       .catch((e) => console.log(e))
       .finally(() => {
-        setCheckedList({});
+        setCheckedList([]);
         setLoading(false);
         fetchData(
           { current: pagination.current, pageSize: pagination.pageSize },
@@ -134,16 +134,10 @@ const AlarmLog = () => {
         <Button
           type="primary"
           disabled={
-            Object.keys(checkedList)
-              .map((k) => checkedList[k])
-              .flat(1)
-              .map((item) => item.id).length == 0
+            checkedList.length == 0
           }
           onClick={() => {
-            let ids = Object.keys(checkedList)
-              .map((k) => checkedList[k])
-              .flat(1)
-              .map((item) => item.id);
+            let ids = checkedList.map((item) => item.id);
             updateAlertRead(ids);
           }}
         >
@@ -358,9 +352,7 @@ const AlarmLog = () => {
                 <p>
                   已选中{" "}
                   {
-                    Object.keys(checkedList)
-                      .map((k) => checkedList[k])
-                      .flat(1).length
+                    checkedList.length
                   }{" "}
                   条
                 </p>

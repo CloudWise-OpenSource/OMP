@@ -32,7 +32,7 @@ const ServiceConfigItem = ({ form, loading, ip, idx }) => {
   useEffect(() => {
     if (errInfo[ip] && errInfo[ip][data.name]) {
       for (const key in errInfo[ip][data.name]) {
-        if(errInfo[ip][data.name][key]){
+        if (errInfo[ip][data.name][key]) {
           form.setFields([
             {
               name: `${data.name}=${key}`,
@@ -42,9 +42,9 @@ const ServiceConfigItem = ({ form, loading, ip, idx }) => {
         }
       }
     }
-    return ()=>{
-      form.resetFields()
-    }
+    return () => {
+      form.resetFields();
+    };
   }, [errInfo[ip]]);
 
   return (
@@ -78,6 +78,7 @@ const ServiceConfigItem = ({ form, loading, ip, idx }) => {
                   ]}
                 >
                   <Input
+                    disabled={!item.editable}
                     // onChange={(e) => {
                     //   //console.log(e.target.value);
                     //   dispatch(
