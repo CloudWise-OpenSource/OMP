@@ -63,6 +63,7 @@ OMP 安装包内部包含了其使用的绝大部分组件，但是缺少 `MySQL
 
 ```shell
 # 安装包下载地址
+# 注意：使用此安装包进行部署时可不再参考mysql+redis配置，安装包中已包含了相关程序及管理脚本
 # server端：curl -O http://omp.cloudwise.com/download-inspection/omp_open-0.1.tar.gz .
 # Agent端：curl -O http://omp.cloudwise.com/download-inspection/omp_monitor_agent-0.1.tar.gz .
 # omp_open-0.1.tar.gz  omp_monitor_agent-0.1.tar.gz
