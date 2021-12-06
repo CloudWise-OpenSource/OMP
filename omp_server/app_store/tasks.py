@@ -724,7 +724,7 @@ def check_monitor_data(detail_obj):
                 return item.get("default")
         return None
     _ret_dic = {
-        "listen_port": None,
+        "listen_port": get_port("service_port"),
         "metric_port": None,
         "only_process": False,
         "process_key_word": None,

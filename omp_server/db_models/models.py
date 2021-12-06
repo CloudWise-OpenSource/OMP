@@ -668,7 +668,7 @@ class Service(TimeStampMixin):
         (SERVICE_STATUS_INSTALLING, "安装中"),
         (SERVICE_STATUS_INSTALL_FAILED, "安装失败"),
         (SERVICE_STATUS_READY, "待安装"),
-        (SERVICE_STATUS_DELETING, "删除中")
+        (SERVICE_STATUS_DELETING, "删除中"),
     )
 
     # 是否用外键关联？
@@ -800,7 +800,7 @@ class PreInstallHistory(TimeStampMixin):
         on_delete=models.SET_NULL, help_text="关联主安装记录")
     name = models.CharField(
         "名称", max_length=32, blank=False, null=False,
-        default="preInstall", help_text="名称"
+        default="初始化安装流程", help_text="名称"
     )
     ip = models.GenericIPAddressField(
         "主机ip地址", blank=False, null=False, help_text="主机ip地址")
@@ -813,6 +813,30 @@ class PreInstallHistory(TimeStampMixin):
         """元数据"""
         db_table = "omp_pre_install_history"
         verbose_name = verbose_name_plural = "前置安装记录"
+
+
+class PostInstallHistory(TimeStampMixin):
+    """ 记录安装完成后的其他操作，如注册、tengine、nacos更新 """
+    objects = None
+    main_install_history = models.ForeignKey(
+        MainInstallHistory, null=True, blank=True,
+        on_delete=models.SET_NULL, help_text="关联主安装记录")
+    name = models.CharField(
+        "名称", max_length=32, blank=False, null=False,
+        default="安装后续任务", help_text="名称"
+    )
+    ip = models.CharField(
+        "fake主机ip地址", blank=False, null=False, default="postAction",
+        max_length=128, help_text="主机ip地址")
+    install_flag = models.IntegerField(
+        "安装标志", default=0,
+        help_text="0-待执行 1-执行中 2-执行成功 3-执行失败")
+    install_log = models.TextField("安装后续任务日志", help_text="安装后续任务日志")
+
+    class Meta:
+        """元数据"""
+        db_table = "omp_post_install_history"
+        verbose_name = verbose_name_plural = "后置安装记录"
 
 
 class DetailInstallHistory(TimeStampMixin):
