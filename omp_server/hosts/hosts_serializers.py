@@ -16,7 +16,8 @@ from db_models.models import (
     Host, Env, HostOperateLog, Service
 )
 from hosts.tasks import (
-    deploy_agent, host_agent_restart
+    host_agent_restart, init_host,
+    insert_host_celery_task
 )
 
 from utils.plugin.ssh import SSH
@@ -99,6 +100,11 @@ class HostSerializer(ModelSerializer):
         required=False,
         queryset=Env.objects.all(),
         error_messages={"does_not_exist": "未找到对应环境"})
+    init_host = serializers.BooleanField(
+        help_text="是否初始化",
+        required=False, default=False, write_only=True,
+        error_messages={"required": "必须包含[init_host]字段"}
+    )
 
     class Meta:
         """ 元数据 """
@@ -108,6 +114,7 @@ class HostSerializer(ModelSerializer):
             "service_num", "alert_num", "host_name", "operate_system",
             "memory", "cpu", "disk", "is_maintenance", "host_agent",
             "monitor_agent", "host_agent_error", "monitor_agent_error",
+            "init_status"
         )
 
     def validate_instance_name(self, instance_name):
@@ -150,7 +157,8 @@ class HostSerializer(ModelSerializer):
         port = attrs.get("port")
         username = attrs.get("username")
         password = attrs.get("password")
-        data_folder = attrs.get('data_folder')
+        data_folder = attrs.get("data_folder")
+        init_host = attrs.get("init_host", False)
 
         # 校验主机 SSH 连通性
         ssh = SSH(ip, port, username, password)
@@ -159,13 +167,16 @@ class HostSerializer(ModelSerializer):
             logger.info(f"host ssh connection failed: ip-{ip},port-{port},"
                         f"username-{username},password-{password}")
             raise ValidationError({"ip": "SSH登录失败"})
-        # 校验用户是否具有 sudo 权限
-        is_sudo, _ = ssh.is_sudo()
-        if not is_sudo:
-            logger.info(f"host ssh username permission failed: ip-{ip},port-{port},"
-                        f"username-{username},password-{password}")
-            raise ValidationError({
-                "username": "用户权限错误，请使用root或具备sudo免密用户"})
+
+        # 当需要执行主机初始化时
+        if init_host:
+            # 校验用户是否具有 sudo 权限
+            is_sudo, _ = ssh.is_sudo()
+            if not is_sudo:
+                logger.info(f"host ssh username permission failed: ip-{ip},port-{port},"
+                            f"username-{username},password-{password}")
+                raise ValidationError({
+                    "username": "用户权限错误，请使用root或具备sudo免密用户"})
 
         # 如果数据分区不存在，则创建数据分区
         success, _ = ssh.cmd(
@@ -186,9 +197,10 @@ class HostSerializer(ModelSerializer):
 
     def create(self, validated_data):
         """ 创建主机 """
-        ip = validated_data.get('ip')
+        ip = validated_data.get("ip")
+        init_flag = validated_data.pop("init_host", False)
         # 指定 Agent 安装目录为 data_folder
-        validated_data['agent_dir'] = validated_data.get("data_folder")
+        validated_data["agent_dir"] = validated_data.get("data_folder")
         instance = super(HostSerializer, self).create(validated_data)
         logger.info(f"host[{ip}] - create success")
         # 写入操作记录
@@ -196,13 +208,16 @@ class HostSerializer(ModelSerializer):
             username=self.context["request"].user.username,
             description="创建主机",
             host=instance)
-        # 异步下发 Agent
-        logger.info(f"host[{ip}] - celery deploy agent")
-        deploy_agent.delay(instance.id)
+        # 下发异步任务: 初始化主机、安装 Agent
+        logger.info(f"host[{ip}] - ADD celery task")
+        insert_host_celery_task.delay(
+            instance.id, init=init_flag)
+        # deploy_agent.delay(instance.id)
         return instance
 
     def update(self, instance, validated_data):
         """ 更新主机 """
+        validated_data.pop("init_host", False)
         log_ls = []
         username = self.context["request"].user.username
 
@@ -451,3 +466,18 @@ class HostBatchImportSerializer(Serializer):
         required=True, allow_empty=False,
         error_messages={"required": "必须包含[host_list]字段"}
     )
+
+
+class HostInitSerializer(HostIdsSerializer):
+    """ 主机初始化序列化类 """
+
+    def create(self, validated_data):
+        """ 主机初始化 """
+        host_ids = validated_data.get("host_ids", [])
+        for host_id in host_ids:
+            init_host.deply(host_id)
+        # 下发任务后批量更新主机初始化状态
+        Host.objects.filter(
+            id__in=host_ids
+        ).update(init_status=Host.INIT_EXECUTING)
+        return validated_data

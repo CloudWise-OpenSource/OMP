@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import os
 import sys
 import logging
@@ -445,8 +448,10 @@ def main():
         elif sys.argv[1] == 'init_valid':
             init = InitHost()
             init.run()
+            logger.info("init success")
             check = ValidInit()
             check.run()
+            logger.info("valid success")
         else:
             usage()
 

@@ -87,12 +87,14 @@ class Host(TimeStampMixin, DeleteMixin):
         (AGENT_DEPLOY_ERROR, "部署失败")
     )
 
-    INIT_NOT_EXECUTED = 0
-    INIT_SUCCESS = 1
-    INIT_FAILED = 2
+    INIT_SUCCESS = 0
+    INIT_NOT_EXECUTED = 1
+    INIT_EXECUTING = 2
+    INIT_FAILED = 3
     INIT_STATUS_CHOICES = (
-        (INIT_NOT_EXECUTED, "未执行"),
         (INIT_SUCCESS, "成功"),
+        (INIT_NOT_EXECUTED, "未执行"),
+        (INIT_EXECUTING, "执行中"),
         (INIT_FAILED, "失败")
     )
 

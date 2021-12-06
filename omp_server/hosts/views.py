@@ -21,13 +21,14 @@ from django_filters.rest_framework.backends import DjangoFilterBackend
 from db_models.models import (Env, Host, HostOperateLog)
 from utils.plugin.crypto import AESCryptor
 from utils.common.paginations import PageNumberPager
-from hosts.tasks import deploy_agent
+from hosts.tasks import insert_host_celery_task
 from hosts.hosts_filters import (HostFilter, HostOperateFilter)
 from hosts.hosts_serializers import (
     HostSerializer, HostMaintenanceSerializer,
     HostFieldCheckSerializer, HostAgentRestartSerializer,
     HostOperateLogSerializer, HostBatchValidateSerializer,
-    HostBatchImportSerializer, HostDetailSerializer
+    HostBatchImportSerializer, HostDetailSerializer,
+    HostInitSerializer
 )
 from promemonitor.prometheus import Prometheus
 from promemonitor.grafana_url import explain_url
@@ -274,6 +275,17 @@ class HostBatchImportView(GenericViewSet, CreateModelMixin):
                     host=instance,
                 ))
                 # 异步下发 agent 任务
-                deploy_agent.delay(instance.id)
+                insert_host_celery_task.delay(instance.id, init=False)
             HostOperateLog.objects.bulk_create(operate_log_objs)
         return Response("添加成功")
+
+
+class HostInitView(GenericViewSet, CreateModelMixin):
+    """
+        create:
+        主机初始化
+    """
+    queryset = Host.objects.filter(is_deleted=False)
+    serializer_class = HostInitSerializer
+    # 操作信息描述
+    post_description = "主机初始化"
