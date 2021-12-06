@@ -323,15 +323,29 @@ const MachineManagement = () => {
   // 初始化主机
   const fetchInitHostAgent = () => {
     setLoading(true);
+    let hostIdArr = [];
+    hostIdArr = Object.keys(checkedList)
+      .map((k) => checkedList[k])
+      .flat(1)
+      .filter((item) => {
+        return item.init_status === 1 || item.init_status === 3;
+      })
+      .map((item) => item.id);
+    if (hostIdArr.length === 0) {
+      setLoading(false);
+      setIninHostModal(false);
+      setCheckedList({});
+      fetchData(
+        { current: pagination.current, pageSize: pagination.pageSize },
+        { ip: selectValue },
+        pagination.ordering
+      );
+      message.success("所选主机已经初始化完成");
+      return
+    }
     fetchPost(apiRequest.machineManagement.hostInit, {
       body: {
-        host_ids: Object.keys(checkedList)
-          .map((k) => checkedList[k])
-          .flat(1)
-          .filter((item) => {
-            return item.init_status === 1 || item.init_status === 3;
-          })
-          .map((item) => item.id),
+        host_ids: hostIdArr,
       },
     })
       .then((res) => {
