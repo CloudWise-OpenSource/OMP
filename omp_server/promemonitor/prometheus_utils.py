@@ -189,7 +189,7 @@ class PrometheusUtils(object):
         des = "主机 {{ $labels.instance }} 数据分区使用率为 " \
               "{{ $value | humanize }}%, 大于阈值 "
         return {
-            "alert": "host disk_data_used alert",
+            "alert": "主机数据分区磁盘使用率过高",
             "annotations": {
                 "disk_data_path": f"{data_path}",
                 "consignee": f"{self.email_address}",
