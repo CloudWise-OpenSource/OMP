@@ -62,6 +62,9 @@ OMP 安装包内部包含了其使用的绝大部分组件，但是缺少 `MySQL
 - step0：下载/解压安装包
 
 ```shell
+# 安装包下载地址
+# server端：curl -O http://omp.cloudwise.com/download-inspection/omp_open-0.1.tar.gz .
+# Agent端：curl -O http://omp.cloudwise.com/download-inspection/omp_monitor_agent-0.1.tar.gz .
 # omp_open-0.1.tar.gz  omp_monitor_agent-0.1.tar.gz
 $ tar -xf omp_open-0.1.tar.gz -C /data && mv omp_monitor_agent-0.1.tar.gz /data/omp/package_hub/
 ```
