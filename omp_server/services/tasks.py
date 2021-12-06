@@ -66,6 +66,8 @@ def exec_action(action, instance, operation_user):
         logger.error("action动作不合法")
         raise ValueError("action动作不合法")
     if action[0] == 'delete':
+        service_obj.service_status = Service.SERVICE_STATUS_DELETING
+        service_obj.save()
         service_port = None
         is_success = False
         if service_obj.service_port is not None:
@@ -93,9 +95,9 @@ def exec_action(action, instance, operation_user):
         exe_action = service_controllers.get("stop")
         # 存在stop脚本先执行stop脚本后执行删除
         if exe_action:
-            for count in range(10):
+            for count in range(2):
                 is_success, info = salt_obj.cmd(ip, exe_action, 600)
-                time.sleep(count + 1)
+                time.sleep(count + 5)
                 if is_success == "success":
                     break
             logger.info(f"执行 [{action[0]}] 操作 {is_success}，原因: {info}")

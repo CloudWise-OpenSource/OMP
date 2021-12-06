@@ -13,6 +13,7 @@ import {
   Modal,
   Steps,
   Upload,
+  Switch,
 } from "antd";
 import {
   PlusSquareOutlined,
@@ -81,6 +82,7 @@ export const AddMachineModal = ({
         port: 22,
         operate_system: "CentOS",
         username: "root",
+        init_host: false,
       }}
     >
       <MessageTip
@@ -356,11 +358,11 @@ export const AddMachineModal = ({
           ]}
         >
           <Input
-            suffix={
-              <Tooltip title="请使用root或具有sudo免密码权限的用户">
-                <InfoCircleOutlined style={{ color: "rgba(0,0,0,.45)" }} />
-              </Tooltip>
-            }
+            // suffix={
+            //   <Tooltip title="请使用root或具有sudo免密码权限的用户">
+            //     <InfoCircleOutlined style={{ color: "rgba(0,0,0,.45)" }} />
+            //   </Tooltip>
+            // }
             maxLength={16}
             placeholder={"请输入用户名"}
           />
@@ -402,6 +404,31 @@ export const AddMachineModal = ({
           ]}
         >
           <Input.Password maxLength={16} placeholder={"请输入密码"} />
+        </Form.Item>
+
+        <Form.Item label="初始化主机">
+          <Input.Group compact>
+            <Form.Item name="init_host" noStyle valuePropName="checked">
+              <Switch style={{ borderRadius: "10px" }} />
+            </Form.Item>
+            <Form.Item name="icon" noStyle>
+              <Tooltip
+                placement="top"
+                title="开启后，主机将进行初始化操作，请使用root用户或具有sudo免密码权限的用户"
+              >
+                <InfoCircleOutlined
+                  name="icon"
+                  style={{
+                    color: "rgba(0,0,0,.45)",
+                    position: "relative",
+                    top: 3,
+                    left: 15,
+                    fontSize: 15,
+                  }}
+                />
+              </Tooltip>
+            </Form.Item>
+          </Input.Group>
         </Form.Item>
       </div>
     </OmpModal>
@@ -449,7 +476,7 @@ export const UpDateMachineModal = ({
         operate_system: row.operate_system,
         username: row.username,
         ip: row.ip,
-        password:row.password && window.atob(row.password),
+        password: row.password && window.atob(row.password),
       }}
     >
       <MessageTip
@@ -794,8 +821,8 @@ class UploadExcelComponent extends React.Component {
       accept: ".xlsx",
       maxCount: 1,
       onRemove() {
-        _this.props.onRemove()
-        return true
+        _this.props.onRemove();
+        return true;
       },
       onChange(info) {
         const { status } = info.file;
@@ -896,7 +923,11 @@ class UploadExcelComponent extends React.Component {
 }
 
 /* 批量导入主机 */
-export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshData }) => {
+export const BatchImportMachineModal = ({
+  batchImport,
+  setBatchImport,
+  refreshData,
+}) => {
   const [dataSource, setDataSource] = useState([]);
   const [columns, setColumns] = useState([]);
 
@@ -1124,9 +1155,11 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
 
   // 校验数据接口
   const fetchBatchValidate = () => {
-    if(dataSource.length == 0){
-      message.warning("解析结果中无有效数据，请确保文件内容格式符合规范后重新上传")
-      return
+    if (dataSource.length == 0) {
+      message.warning(
+        "解析结果中无有效数据，请确保文件内容格式符合规范后重新上传"
+      );
+      return;
     }
     setLoading(true);
     setTableCorrectData([]);
@@ -1162,7 +1195,7 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
       }
       return {
         ...result,
-        row:item.key
+        row: item.key,
       };
     });
     // console.log(queryBody)
@@ -1175,7 +1208,7 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
       .then((res) => {
         handleResponse(res, (res) => {
           if (res.code == 0) {
-            if (res.data && (res.data.error?.length)>0) {
+            if (res.data && res.data.error?.length > 0) {
               setTableErrorData(
                 res.data.error?.map((item, idx) => {
                   return {
@@ -1206,14 +1239,14 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
       });
   };
 
-   // 主机创建操作
-   const fetchBatchImport = () => {
-     let queryBody = tableCorrectData.map(item=>{
-       delete item.key
-       return {
-        ...item
-       }
-     })
+  // 主机创建操作
+  const fetchBatchImport = () => {
+    let queryBody = tableCorrectData.map((item) => {
+      delete item.key;
+      return {
+        ...item,
+      };
+    });
     setLoading(true);
     fetchPost(apiRequest.machineManagement.batchImport, {
       body: {
@@ -1265,7 +1298,7 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
         setTableColumns([]);
         setStepNum(0);
         setColumns([]);
-        refreshData()
+        refreshData();
       }}
       destroyOnClose
     >
@@ -1306,7 +1339,7 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
             <div style={{ flex: 10, paddingLeft: 20 }}>
               {batchImport && (
                 <UploadExcelComponent
-                  onRemove={()=>{
+                  onRemove={() => {
                     setDataSource([]);
                     setColumns([]);
                     setTableCorrectData([]);
@@ -1381,7 +1414,7 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
                     display: "flex",
                     alignItems: "center",
                     fontSize: 20,
-                    color: "#f73136"
+                    color: "#f73136",
                   }}
                 >
                   <CloseCircleFilled
@@ -1419,7 +1452,9 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
               bordered
               scroll={{ x: 700 }}
               columns={tableColumns}
-              dataSource={tableErrorData.length > 0 ? tableErrorData : tableCorrectData}
+              dataSource={
+                tableErrorData.length > 0 ? tableErrorData : tableCorrectData
+              }
               pagination={{
                 pageSize: 5,
               }}
@@ -1445,7 +1480,7 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
                 type="primary"
                 htmlType="submit"
                 onClick={() => {
-                  fetchBatchImport()
+                  fetchBatchImport();
                 }}
                 disabled={tableErrorData.length > 0}
               >
@@ -1474,7 +1509,9 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
                 主机创建完成 !
               </p>
             </div>
-            <p style={{ textAlign: "center" }}>本次共创建 {tableCorrectData.length} 台主机</p>
+            <p style={{ textAlign: "center" }}>
+              本次共创建 {tableCorrectData.length} 台主机
+            </p>
             <div
               style={{
                 display: "inline-block",

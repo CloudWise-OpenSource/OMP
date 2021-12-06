@@ -19,7 +19,7 @@ from rest_framework.mixins import (
 from db_models.models import (
     ApplicationHub, ProductHub, Product, Service,
     MainInstallHistory, DetailInstallHistory, Host,
-    PreInstallHistory
+    PreInstallHistory, PostInstallHistory
 )
 from utils.common.exceptions import ValidationError
 from utils.common.paginations import PageNumberPager
@@ -238,7 +238,9 @@ class ListServiceByIpView(GenericViewSet, ListModelMixin):
         :return:
         """
         # ip = request.query_params.get("ip")
-        _data = Service.objects.filter().values(
+        _data = Service.objects.filter().exclude(
+            service__is_base_env=True
+        ).values(
             "ip", "service__app_name", "service_instance_name"
         )
         data = dict()
@@ -299,6 +301,20 @@ class ShowInstallProcessView(GenericViewSet, ListModelMixin):
                     DetailInstallHistory.INSTALL_STATUS_SUCCESS:
                 install_success_num += 1
             total_num += 1
+        post_queryset = PostInstallHistory.objects.filter(
+            main_install_history=main_obj
+        ).values("ip", "install_flag", "install_log", "name")
+        for item in post_queryset:
+            app_name = item.get("name")
+            if app_name not in detail_dic:
+                detail_dic[app_name] = list()
+            detail_dic[app_name].append({
+                "ip": item["ip"],
+                "status": item["install_flag"]
+            })
+            if item["install_flag"] == 2:
+                install_success_num += 1
+            total_num += 1
         if total_num != 0:
             percentage = int((install_success_num / total_num) * 100)
             if main_status != MainInstallHistory.INSTALL_STATUS_SUCCESS and \
@@ -330,6 +346,17 @@ class ShowSingleServiceInstallLogView(GenericViewSet, ListModelMixin):
             main_install_history=main_obj, ip=ip).last()
         return _pre_obj.install_log
 
+    def get_post_install_log(self, main_obj, ip):
+        """
+        获取日志
+        :param main_obj:
+        :param ip:
+        :return:
+        """
+        _post_obj = PostInstallHistory.objects.filter(
+            main_install_history=main_obj, ip=ip).last()
+        return _post_obj.install_log
+
     def list(self, request, *args, **kwargs):
         """
         查找某服务的安装日志
@@ -348,8 +375,11 @@ class ShowSingleServiceInstallLogView(GenericViewSet, ListModelMixin):
         main_obj = MainInstallHistory.objects.filter(
             operation_uuid=unique_key
         ).last()
-        if app_name == "preInstall":
+        if app_name == "初始化安装流程":
             log = self.get_pre_install_log(main_obj=main_obj, ip=ip)
+            return Response(data={"log": log})
+        if app_name == "安装后续任务":
+            log = self.get_post_install_log(main_obj=main_obj, ip=ip)
             return Response(data={"log": log})
         detail = DetailInstallHistory.objects.filter(
             main_install_history=main_obj,

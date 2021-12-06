@@ -34,6 +34,7 @@ class HostsResourceMixin:
         aes_crypto = AESCryptor()
         host_ls = []
         agent_status_ls = list(map(lambda x: x[0], Host.AGENT_STATUS_CHOICES))
+        init_status_ls = list(map(lambda x: x[0], Host.INIT_STATUS_CHOICES))
         for index in range(number):
             index += 1
             host_ls.append(Host(
@@ -49,6 +50,7 @@ class HostsResourceMixin:
                 alert_num=random.randint(0, 100),
                 host_agent=random.choice(agent_status_ls),
                 monitor_agent=random.choice(agent_status_ls),
+                init_status=random.choice(init_status_ls),
             ))
         Host.objects.bulk_create(host_ls)
         return Host.objects.filter(

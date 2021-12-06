@@ -14,6 +14,7 @@ import os
 import logging
 import traceback
 
+from django.conf import settings
 from celery import shared_task
 from celery.utils.log import get_task_logger
 
@@ -173,3 +174,102 @@ def host_agent_restart(host_id):
         )
         Host.objects.filter(id=host_id).update(
             host_agent=2, host_agent_error=str(e))
+
+
+def real_init_host(host_obj):
+    """
+    初始化主机
+    :param host_obj: 主机对象
+    :type host_obj Host
+    :return:
+    """
+    logger.info(f"init host Begin [{host_obj.id}]")
+    _ssh = SSH(
+        hostname=host_obj.ip,
+        port=host_obj.port,
+        username=host_obj.username,
+        password=AESCryptor().decode(host_obj.password),
+    )
+    # 验证用户权限
+    is_sudo, _ = _ssh.is_sudo()
+    if not is_sudo:
+        logger.error(f"init host [{host_obj.id}] failed: permission failed")
+        raise Exception("permission failed")
+
+    # 发送脚本
+    init_script_name = "init_host.py"
+    init_script_path = os.path.join(
+        settings.BASE_DIR.parent,
+        "package_hub", "_modules", init_script_name)
+    script_push_state, script_push_msg = _ssh.file_push(
+        file=init_script_path,
+        remote_path="/tmp",
+    )
+    if not script_push_state:
+        logger.error(f"init host [{host_obj.id}] failed: send script failed, "
+                     f"detail: {script_push_msg}")
+        raise Exception("send script failed")
+
+    # 执行初始化
+    is_success, script_msg = _ssh.cmd(
+        f"python /tmp/{init_script_name} init_valid")
+    if not (is_success and "init success" in script_msg and "valid success" in script_msg):
+        logger.error(f"init host [{host_obj.id}] failed: execute init failed, "
+                     f"detail: {script_push_msg}")
+        raise Exception("execute failed")
+
+    host_obj.init_status = Host.INIT_SUCCESS
+    host_obj.save()
+    logger.info("init host Success")
+
+
+@shared_task
+def init_host(host_id):
+    """ 初始化主机 """
+    try:
+        host_obj = Host.objects.get(id=host_id)
+        host_obj.init_status = Host.INIT_EXECUTING
+        host_obj.save()
+        real_init_host(host_obj=host_obj)
+    except Exception as e:
+        print(e)
+        logger.error(
+            f"Init Host For {host_id} Failed with error: {str(e)};\n"
+            f"detail: {traceback.format_exc()}"
+        )
+        Host.objects.filter(id=host_id).update(
+            init_status=Host.INIT_FAILED)
+
+
+@shared_task
+def insert_host_celery_task(host_id, init=False):
+    """ 添加主机 celery 任务 """
+    # 执行主机初始化
+    if init:
+        try:
+            host_obj = Host.objects.get(id=host_id)
+            host_obj.init_status = Host.INIT_EXECUTING
+            host_obj.save()
+            real_init_host(host_obj=host_obj)
+        except Exception as e:
+            print(e)
+            logger.error(
+                f"Init Host For {host_id} Failed with error: {str(e)};\n"
+                f"detail: {traceback.format_exc()}"
+            )
+            Host.objects.filter(id=host_id).update(
+                init_status=Host.INIT_FAILED)
+    # 部署 agent
+    try:
+        host_obj = Host.objects.get(id=host_id)
+        host_obj.host_agent = Host.AGENT_DEPLOY_ING
+        host_obj.save()
+        real_deploy_agent(host_obj=host_obj)
+    except Exception as e:
+        logger.error(
+            f"Deploy Host Agent For {host_id} Failed with error: {str(e)};\n"
+            f"detail: {traceback.format_exc()}"
+        )
+        Host.objects.filter(id=host_id).update(
+            host_agent=Host.AGENT_DEPLOY_ERROR,
+            host_agent_error=str(e))
