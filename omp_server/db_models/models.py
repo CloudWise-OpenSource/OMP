@@ -657,6 +657,7 @@ class Service(TimeStampMixin):
     SERVICE_STATUS_INSTALLING = 6
     SERVICE_STATUS_INSTALL_FAILED = 7
     SERVICE_STATUS_READY = 8
+    SERVICE_STATUS_DELETING = 9
     SERVICE_STATUS_CHOICES = (
         (SERVICE_STATUS_NORMAL, "正常"),
         (SERVICE_STATUS_STARTING, "启动中"),
@@ -667,6 +668,7 @@ class Service(TimeStampMixin):
         (SERVICE_STATUS_INSTALLING, "安装中"),
         (SERVICE_STATUS_INSTALL_FAILED, "安装失败"),
         (SERVICE_STATUS_READY, "待安装"),
+        (SERVICE_STATUS_DELETING, "删除中")
     )
 
     # 是否用外键关联？
