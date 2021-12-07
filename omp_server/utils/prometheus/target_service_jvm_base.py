@@ -49,12 +49,14 @@ class ServiceBase(Prometheus):
         minutes, seconds = divmod(_, 60)
         hours, minutes = divmod(minutes, 60)
         days, hours = divmod(hours, 24)
-        if int(0) > 0:
+        if int(days) > 0:
             self.ret['run_time'] = \
                 f"{int(days)}天{int(hours)}小时{int(minutes)}分钟{int(seconds)}秒"
-        else:
+        elif int(hours) > 0:
             self.ret['run_time'] = \
                 f"{int(hours)}小时{int(minutes)}分钟{int(seconds)}秒"
+        else:
+            self.ret['run_time'] = f"{int(minutes)}分钟{int(seconds)}秒"
 
     def cpu_usage(self):
         """cpu使用率"""
