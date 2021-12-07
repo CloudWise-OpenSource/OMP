@@ -147,6 +147,19 @@ class InspectionCrontabView(RetrieveModelMixin, ListModelMixin, GenericViewSet,
     post_description = "新建巡检任务配置列表"
     put_description = "更新巡检任务配置列表"
 
+    @staticmethod
+    def transfer_week(request):
+        """
+        因前端day_of_week参数传递 不符合规范，只能适配了呗
+        """
+        day_of_week = request.data.get('crontab_detail').get('day_of_week')
+        if day_of_week == '6':
+            day_of_week = '0'
+        else:
+            day_of_week = str(int(day_of_week) + 1)
+
+        return day_of_week
+
     def create(self, request, *args, **kwargs):
         # 判断是否需要下发任务到celery：0-开启，1-关闭
         is_success = True
@@ -164,8 +177,7 @@ class InspectionCrontabView(RetrieveModelMixin, ListModelMixin, GenericViewSet,
                 'day_of_month': request.data.get('crontab_detail').get('day'),
                 'month_of_year':
                     request.data.get('crontab_detail').get('month'),
-                'day_of_week':
-                    request.data.get('crontab_detail').get('day_of_week')
+                'day_of_week': self.transfer_week(request)
             }
             is_success, job_name = cron_obj.create_crontab_job(**cron_args)
         else:
@@ -195,8 +207,7 @@ class InspectionCrontabView(RetrieveModelMixin, ListModelMixin, GenericViewSet,
                 'day_of_month': request.data.get('crontab_detail').get('day'),
                 'month_of_year':
                     request.data.get('crontab_detail').get('month'),
-                'day_of_week':
-                    request.data.get('crontab_detail').get('day_of_week')
+                'day_of_week': self.transfer_week(request)
             }
             # 删除定时任务
             cron_obj.delete_job()

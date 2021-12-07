@@ -46,7 +46,13 @@ class ServiceRedisCrawl(Prometheus):
         _ = float(_) if _ else 0
         minutes, seconds = divmod(_, 60)
         hours, minutes = divmod(minutes, 60)
-        self.ret['run_time'] = f"{int(hours)}小时{int(minutes)}分钟{int(seconds)}秒"
+        days, hours = divmod(hours, 24)
+        if int(0) > 0:
+            self.ret['run_time'] = \
+                f"{int(days)}天{int(hours)}小时{int(minutes)}分钟{int(seconds)}秒"
+        else:
+            self.ret['run_time'] = \
+                f"{int(hours)}小时{int(minutes)}分钟{int(seconds)}秒"
 
     def cpu_usage(self):
         """REDIS cpu使用率"""
@@ -54,7 +60,7 @@ class ServiceRedisCrawl(Prometheus):
                f"groupname=~'redis', instance=~'{self.instance}'," \
                f"mode='system'}}[5m]) * 100"
         val = self.unified_job(*self.query(expr))
-        val = round(float(val), 4) if val else 0
+        val = round(float(val), 4) if val else '0.00'
         self.ret['cpu_usage'] = f"{val}%"
 
     def mem_usage(self):
@@ -64,7 +70,7 @@ class ServiceRedisCrawl(Prometheus):
                f"redis_memory_max_bytes{{env=~'{self.env}'," \
                f"instance=~'{self.instance}'}})"
         val = self.unified_job(*self.query(expr))
-        val = round(float(val), 4) if val else 0
+        val = round(float(val), 4) if val else '0.00'
         self.ret['mem_usage'] = f"{val}%"
 
     def conn_num(self):
@@ -95,9 +101,11 @@ class ServiceRedisCrawl(Prometheus):
         """最大内存"""
         expr = f"redis_memory_max_bytes{{env=~'{self.env}'," \
                f"instance=~'{self.instance}'}})"
+        val = self.unified_job(*self.query(expr))
+        val = round(int(val) / 1048576, 2) if val else '-'
         self.basic.append({
             "name": "max_memory", "name_cn": "最大内存",
-            "value": self.unified_job(*self.query(expr))}
+            "value": f"{val}m"}
         )
 
     def network_io(self):

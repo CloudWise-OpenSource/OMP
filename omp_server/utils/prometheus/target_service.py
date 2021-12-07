@@ -33,7 +33,7 @@ def get_port_and_status(i):
     # 组装服务状态
     serv_status = {0: "正常", 1: "启动中", 2: "停止中", 3: "重启中", 4: "停止"}
     service_status = serv_status.get(i.get('service_status'))
-    return [service_port, service_ports, service_status]
+    return [service_port, list(set(service_ports)), service_status]
 
 
 def _joint(i, ret, basics, service_port, service_ports, service_status):

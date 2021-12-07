@@ -178,7 +178,8 @@ def inspection_crontab(**kwargs):
             if job_type in [0, 2]:
                 # 2、查询环境下组件信息
                 _ = Service.objects.filter(
-                    service__app_type=ApplicationHub.APP_TYPE_COMPONENT,
+                    # 只查询组件
+                    # service__app_type=ApplicationHub.APP_TYPE_COMPONENT,
                     service__is_base_env=False
                 ).exclude(service_status__in=[5, 6, 7])
                 services = list(_.values_list('id', flat=True))
