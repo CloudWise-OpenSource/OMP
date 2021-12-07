@@ -196,6 +196,7 @@ class GetInstallArgsByIpView(GenericViewSet, ListModelMixin):
                     "name": "实例名称",
                     "default":
                         item.app_name + "-" + "-".join(ip.split(".")[-2:]),
+                    "editable": True
                 }
             )
             _app = {
