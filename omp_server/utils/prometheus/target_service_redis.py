@@ -47,12 +47,14 @@ class ServiceRedisCrawl(Prometheus):
         minutes, seconds = divmod(_, 60)
         hours, minutes = divmod(minutes, 60)
         days, hours = divmod(hours, 24)
-        if int(0) > 0:
+        if int(days) > 0:
             self.ret['run_time'] = \
                 f"{int(days)}天{int(hours)}小时{int(minutes)}分钟{int(seconds)}秒"
-        else:
+        elif int(hours) > 0:
             self.ret['run_time'] = \
                 f"{int(hours)}小时{int(minutes)}分钟{int(seconds)}秒"
+        else:
+            self.ret['run_time'] = f"{int(minutes)}分钟{int(seconds)}秒"
 
     def cpu_usage(self):
         """REDIS cpu使用率"""
@@ -70,7 +72,7 @@ class ServiceRedisCrawl(Prometheus):
                f"redis_memory_max_bytes{{env=~'{self.env}'," \
                f"instance=~'{self.instance}'}})"
         val = self.unified_job(*self.query(expr))
-        val = round(float(val), 4) if val else '0.00'
+        val = round(float(val), 4) if val and val != '+Inf' else '-'
         self.ret['mem_usage'] = f"{val}%"
 
     def conn_num(self):
