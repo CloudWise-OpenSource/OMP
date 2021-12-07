@@ -48,7 +48,13 @@ class ServiceBase(Prometheus):
         _ = float(_) if _ else 0
         minutes, seconds = divmod(_, 60)
         hours, minutes = divmod(minutes, 60)
-        self.ret['run_time'] = f"{int(hours)}小时{int(minutes)}分钟{int(seconds)}秒"
+        days, hours = divmod(hours, 24)
+        if int(0) > 0:
+            self.ret['run_time'] = \
+                f"{int(days)}天{int(hours)}小时{int(minutes)}分钟{int(seconds)}秒"
+        else:
+            self.ret['run_time'] = \
+                f"{int(hours)}小时{int(minutes)}分钟{int(seconds)}秒"
 
     def cpu_usage(self):
         """cpu使用率"""
@@ -56,7 +62,7 @@ class ServiceBase(Prometheus):
                f"instance=~'{self.instance}', " \
                f"job='{self.job}'}} * 100"
         val = self.unified_job(*self.query(expr))
-        val = round(float(val), 2) if val else 0
+        val = round(float(val), 2) if val else '0.00'
         self.ret['cpu_usage'] = f"{val}%"
 
     def mem_usage(self):
@@ -68,7 +74,7 @@ class ServiceBase(Prometheus):
                f"instance=~'{self.instance}'," \
                f"job='{self.job}'}}) * 100"
         val = self.unified_job(*self.query(expr))
-        val = round(float(val), 2) if val else 0
+        val = round(float(val), 2) if val else '0.00'
         self.ret['mem_usage'] = f"{val}%"
 
     def thread_num(self):

@@ -112,8 +112,13 @@ class HostCrawl(Prometheus):
         _ = float(_) if _ else 0
         minutes, seconds = divmod(_, 60)
         hours, minutes = divmod(minutes, 60)
-        self.ret['run_time'] = \
-            f"{int(hours)}小时{int(minutes)}分钟{int(seconds)}秒"
+        days, hours = divmod(hours, 24)
+        if int(0) > 0:
+            self.ret['run_time'] = \
+                f"{int(days)}天{int(hours)}小时{int(minutes)}分钟{int(seconds)}秒"
+        else:
+            self.ret['run_time'] = \
+                f"{int(hours)}小时{int(minutes)}分钟{int(seconds)}秒"
 
     def cpu_usage(self):
         """总cpu使用率"""

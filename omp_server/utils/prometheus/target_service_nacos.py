@@ -47,7 +47,7 @@ class ServiceNacosCrawl(Prometheus):
         expr = f"system_cpu_usage{{env=~'{self.env}'," \
                f"instance=~'{self.instance}', job='nacosExporter'}} * 100"
         val = self.unified_job(*self.query(expr))
-        val = round(float(val), 2) if val else 0
+        val = round(float(val), 2) if val else '0.00'
         self.ret['cpu_usage'] = f"{val}%"
 
     def mem_usage(self):
@@ -57,7 +57,7 @@ class ServiceNacosCrawl(Prometheus):
                f"sum(jvm_memory_max_bytes{{area='heap', env=~'{self.env}'," \
                f"instance=~'{self.instance}'}}) * 100"
         val = self.unified_job(*self.query(expr))
-        val = round(float(val), 2) if val else 0
+        val = round(float(val), 2) if val else '0.00'
         self.ret['mem_usage'] = f"{val}%"
 
     def thread_num(self):
@@ -73,9 +73,11 @@ class ServiceNacosCrawl(Prometheus):
         """最大内存"""
         expr = f"sum(jvm_memory_max_bytes{{area='heap', " \
                f"env=~'{self.env}',instance=~'{self.instance}'}})"
+        val = self.unified_job(*self.query(expr))
+        val = round(int(val) / 1048576, 2) if val else '-'
         self.basic.append({
             "name": "max_memory", "name_cn": "最大内存",
-            "value": self.unified_job(*self.query(expr))}
+            "value": f"{val}m"}
         )
 
     def run(self):
