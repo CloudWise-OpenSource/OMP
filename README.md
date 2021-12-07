@@ -59,13 +59,30 @@ OMP（Operation Management Platform）是云智慧公司自主设计、研发，
 
 OMP 安装包内部包含了其使用的绝大部分组件，但是缺少 `MySQL` 和 `Redis`，当前版本需要用户自行配置使用，建议将 OMP 部署在 `/data/` 下，当前版本部署流程如下：
 
+- 安装操作
+
+```shell
+# 为方便大家能够快速搭建OMP环境，特将最新的安装包链接放置如下，最新安装包内已内置了MySQL、redis及相关管理脚本，用户无需手动部署
+
+# 下载方式一：
+# server端：curl -O http://omp.cloudwise.com/download-inspection/omp_open-0.1.tar.gz .
+# Agent端：curl -O http://omp.cloudwise.com/download-inspection/omp_monitor_agent-0.1.tar.gz .
+
+# 下载方式二：
+# server端：https://cloud.189.cn/web/share?code=ZN3eIraARzaa（访问码：g2av）
+# Agent端：https://cloud.189.cn/web/share?code=2UBj6nAJBvue（访问码：e47h）
+
+# 快速搭建方式如下：
+$ tar -xf omp_open-0.1.tar.gz -C /data && cd /data/omp && bash scripts/install.sh local_ip
+# 如有grafana报错，可使用 ./component/env/bin/python3 ./scripts/source/update_grafana.py local_ip 进行更新操作
+# 如上操作后可通过 http://local_ip:19001 访问OMP页面
+# 默认用户名：admin 
+# 默认密码：Common@123
+
+```
 - step0：下载/解压安装包
 
 ```shell
-# 安装包下载地址
-# 注意：使用此安装包进行部署时可不再参考mysql+redis配置，安装包中已包含了相关程序及管理脚本
-# server端：curl -O http://omp.cloudwise.com/download-inspection/omp_open-0.1.tar.gz .
-# Agent端：curl -O http://omp.cloudwise.com/download-inspection/omp_monitor_agent-0.1.tar.gz .
 # omp_open-0.1.tar.gz  omp_monitor_agent-0.1.tar.gz
 $ tar -xf omp_open-0.1.tar.gz -C /data && mv omp_monitor_agent-0.1.tar.gz /data/omp/package_hub/
 ```
