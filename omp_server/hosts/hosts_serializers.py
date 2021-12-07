@@ -400,7 +400,6 @@ class HostBatchValidateSerializer(Serializer):
         """ 单个主机信息验证 """
         host_serializer = HostSerializer(data=host_data)
         if host_serializer.is_valid():
-            print(host_data)
             return "correct", host_data
         err_ls = []
         for k, v in host_serializer.errors.items():
