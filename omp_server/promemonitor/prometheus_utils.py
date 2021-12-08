@@ -224,7 +224,7 @@ class PrometheusUtils(object):
             node_data_rule_dic = {
                 "groups": [
                     {
-                        "name": "node data disk alert",
+                        "name": "主机数据分区磁盘使用率过高",
                         "rules": [
                             _critical, _warning
                         ]
