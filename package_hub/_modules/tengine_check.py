@@ -7,7 +7,7 @@ import os
 import os.path as up
 import psutil
 
-from package_hub._modules.inspection_common import GetLocal_Ip, GetProcess_Survive, GetProcess_Port, GetProcess_Runtime, \
+from inspection_common import GetLocal_Ip, GetProcess_Survive, GetProcess_Port, GetProcess_Runtime, \
     GetProcess_Mem, GetProcessCPU_Pre, GetCluster_IP
 
 
