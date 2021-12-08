@@ -213,11 +213,6 @@ const OmpLayout = (props) => {
         collapsed={collapsed}
         onCollapse={toggle}
         collapsedWidth={50}
-        style={{
-          // height:"100%",
-          // position:"fixed",
-          // zIndex:1000,
-        }}
       >
         <div
           style={{
@@ -297,17 +292,18 @@ const OmpLayout = (props) => {
           })}
         </Menu>
       </Sider>
-      <Layout className="site-layout" style={{width:"100%"}}>
+      <Layout className="site-layout" style={{ width: "100%" }}>
         <Header
           className="site-layout-background"
           style={{
             padding: 0,
             display: "flex",
             justifyContent: "space-between",
-            position:"fixed",
-            zIndex:1000,
-            width:"calc(100% - 200px)",
-            marginLeft:200
+            position: "fixed",
+            zIndex: 1000,
+            transition: collapsed ?"all 0.1s ease-out" : "all 0.4s ease-out",
+            width: collapsed ? "calc(100% - 50px)" : "calc(100% - 200px)",
+            marginLeft: collapsed ? 50 : 200,
           }}
         >
           <div style={{ display: "flex" }}>
@@ -384,12 +380,13 @@ const OmpLayout = (props) => {
             </Dropdown>
           </div>
         </Header>
-        <CustomBreadcrumb />
+        <CustomBreadcrumb collapsed={collapsed} />
         <Content style={{ margin: "0 16px", color: "rgba(0,0,0,0.65)" }}>
           <div
             style={{
-              marginTop:120,
-              marginLeft:200,
+              transition: "all 0.2s ease-in-out",
+              marginTop: 120,
+              marginLeft: collapsed ? 50 : 200,
               padding: 0,
               paddingBottom: 30,
               height: "calc(100% - 130px)",
