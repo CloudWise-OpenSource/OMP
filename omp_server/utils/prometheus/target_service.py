@@ -6,6 +6,7 @@
 import json
 import random
 from db_models.models import Service
+from utils.prometheus.target_service_tengine import ServiceTengineCrawl
 from utils.prometheus.thread import MyThread
 from utils.prometheus.target_service_func import salt_json
 from utils.prometheus.target_service_jvm_base import ServiceBase
@@ -106,6 +107,11 @@ def target_service_thread(env, i):
     elif i.get('service__app_name').lower() == 'rocketmq':
         tag_total_num = 8  # 总指标数累加
         _ = ServiceRocketmqCrawl(env=env.name, instance=i.get('ip'))
+        _.run()
+        tmp = _joint(i, _.ret, _.basic, *_port_status)
+    elif i.get('service__app_name').lower() == 'tengine':
+        tag_total_num = 5  # 总指标数累加
+        _ = ServiceTengineCrawl(env=env.name, instance=i.get('ip'))
         _.run()
         tmp = _joint(i, _.ret, _.basic, *_port_status)
     elif i.get('service__app_name').lower() == 'gatewayserver':
