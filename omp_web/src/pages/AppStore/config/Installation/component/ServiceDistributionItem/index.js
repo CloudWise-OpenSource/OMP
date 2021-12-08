@@ -727,7 +727,7 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
                       style={{
                         color: "rgba(0, 0, 0, 0.85)",
                         padding: 5,
-                        height: 240,
+                        height: 330,
                       }}
                     >
                       <div
@@ -742,7 +742,7 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
                       <div
                         style={{
                           overflowY: "auto",
-                          height: 240,
+                          height: 300,
                         }}
                       >
                         {value.map((item) => {
