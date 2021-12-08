@@ -605,12 +605,15 @@ const ServiceManagement = () => {
         }
         loading={loading}
         onFinish={() => {
-          operateService(
-            checkedList.filter((e) => {
+          let data = null;
+          if (operateAciton === 4) {
+            data = checkedList;
+          } else {
+            data = checkedList.filter((e) => {
               return e.operable;
-            }),
-            operateAciton
-          );
+            });
+          }
+          operateService(data, operateAciton);
           fetchMaintainChange(false, [row]);
         }}
       >

@@ -11,6 +11,7 @@
 """
 
 import os
+import time
 import logging
 import traceback
 
@@ -247,7 +248,14 @@ def insert_host_celery_task(host_id, init=False):
     # 执行主机初始化
     if init:
         try:
-            host_obj = Host.objects.get(id=host_id)
+            num = 0
+            host_obj = Host.objects.filter(id=host_id).first()
+            while host_obj is None and num < 10:
+                host_obj = Host.objects.filter(id=host_id).first()
+                time.sleep(2)
+                num += 1
+            if host_obj is None:
+                raise Exception("Host Object not found")
             host_obj.init_status = Host.INIT_EXECUTING
             host_obj.save()
             real_init_host(host_obj=host_obj)
@@ -261,7 +269,14 @@ def insert_host_celery_task(host_id, init=False):
                 init_status=Host.INIT_FAILED)
     # 部署 agent
     try:
-        host_obj = Host.objects.get(id=host_id)
+        num = 0
+        host_obj = Host.objects.filter(id=host_id).first()
+        while host_obj is None and num < 10:
+            host_obj = Host.objects.filter(id=host_id).first()
+            time.sleep(2)
+            num += 1
+        if host_obj is None:
+            raise Exception("Host Object not found")
         host_obj.host_agent = Host.AGENT_DEPLOY_ING
         host_obj.save()
         real_deploy_agent(host_obj=host_obj)
