@@ -277,6 +277,13 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
             return public_action.update_package_status(
                 1,
                 f"安装包{package_name}依赖的产品包不存在")
+        app_obj = ApplicationHub.objects.filter(product=product_obj)
+        for obj in app_obj:
+            if obj.app_name == explain_yml[1]['name'] and \
+                    obj.app_version == explain_yml[1]['version']:
+                return public_action.update_package_status(
+                    1,
+                    f"安装包{package_name}依赖的产品包存在同服务同版本的服务包")
         upload_obj.package_status = 0
         tmp_dir = [file_name]
     else:
