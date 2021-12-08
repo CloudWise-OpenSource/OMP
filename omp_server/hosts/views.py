@@ -249,11 +249,14 @@ class HostBatchImportView(GenericViewSet, CreateModelMixin):
         # 主机、操作记录数据入库
         default_env = Env.objects.filter(id=1).first()
         with transaction.atomic():
+            # 主机初始化信息，批量创建过程中无 id，故以 ip 作为键
+            host_init_info = {}
             host_objs = []
             for host in serializer.data.get("host_list"):
                 # 若存在行号 row 则删除
                 if "row" in host:
                     host.pop("row")
+                host_init_info[host.get("ip")] = host.pop("init_host", False)
                 password = host.pop("password")
                 host_objs.append(Host(
                     password=AESCryptor().encode(password),
@@ -274,8 +277,9 @@ class HostBatchImportView(GenericViewSet, CreateModelMixin):
                     description="创建主机",
                     host=instance,
                 ))
-                # 异步下发 agent 任务
-                insert_host_celery_task.delay(instance.id, init=False)
+                # 下发异步 celery 任务
+                insert_host_celery_task.delay(
+                    instance.id, init=host_init_info.get(instance.ip))
             HostOperateLog.objects.bulk_create(operate_log_objs)
         return Response("添加成功")
 

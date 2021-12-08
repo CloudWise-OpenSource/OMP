@@ -38,7 +38,7 @@ class InstrumentPanelTest(AutoLoginTest):
                     "alerts": [
                         {
                             "labels": {
-                                "alertname": "instance down",
+                                "alertname": "实例宕机",
                                 "instance": "10.0.3.71",
                                 "service_type": "host",
                                 "service_name": "node",
@@ -49,7 +49,7 @@ class InstrumentPanelTest(AutoLoginTest):
                             "annotations": {
                                 "consignee": "987654321@qq.com",
                                 "description": "实例 10.0.3.71 已宕机超过1分钟",
-                                "summary": "instance down alert(10.0.3.71)"
+                                "summary": "实例宕机(10.0.3.71)"
                             },
                             "state": "firing",
                             "activeAt": "2021-10-16T08:16:24.495164774Z",
@@ -68,7 +68,7 @@ class InstrumentPanelTest(AutoLoginTest):
                             "annotations": {
                                 "consignee": "987654321@qq.com",
                                 "description": "实例 10.0.3.72 已宕机超过1分钟",
-                                "summary": "instance down alert(10.0.3.72)"
+                                "summary": "实例宕机(10.0.3.72)"
                             },
                             "state": "firing",
                             "activeAt": "2021-10-16T08:16:05.68330499Z",
@@ -87,7 +87,7 @@ class InstrumentPanelTest(AutoLoginTest):
                             "annotations": {
                                 "consignee": "987654321@qq.com",
                                 "description": "实例 10.0.3.72 已宕机超过1分钟",
-                                "summary": "instance down alert(10.0.3.72)"
+                                "summary": "实例宕机(10.0.3.72)"
                             },
                             "state": "firing",
                             "activeAt": "2021-10-16T08:16:05.68330499Z",
@@ -106,7 +106,7 @@ class InstrumentPanelTest(AutoLoginTest):
                             "annotations": {
                                 "consignee": "987654321@qq.com",
                                 "description": "实例 10.0.3.72 已宕机超过1分钟",
-                                "summary": "instance down alert(10.0.3.72)"
+                                "summary": "实例宕机(10.0.3.72)"
                             },
                             "state": "firing",
                             "activeAt": "2021-10-16T08:16:05.68330499Z",
@@ -125,7 +125,7 @@ class InstrumentPanelTest(AutoLoginTest):
                             "annotations": {
                                 "consignee": "987654321@qq.com",
                                 "description": "实例 10.0.3.72 已宕机超过1分钟",
-                                "summary": "instance down alert(10.0.3.72)"
+                                "summary": "实例宕机(10.0.3.72)"
                             },
                             "state": "firing",
                             "activeAt": "2021-10-16T08:16:05.68330499Z",

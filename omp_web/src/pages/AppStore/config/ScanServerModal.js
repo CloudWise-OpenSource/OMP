@@ -114,7 +114,7 @@ const ScanServerModal = ({
 
   return (
     <Modal
-      zIndex={1}
+      zIndex={1000}
       title={
         <span>
           <span style={{ position: "relative", left: "-10px" }}>

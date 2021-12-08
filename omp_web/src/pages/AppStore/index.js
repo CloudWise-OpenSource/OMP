@@ -122,7 +122,9 @@ const AppStore = () => {
         handleResponse(res, (res) => {
           if (res.data && res.data.data) {
             console.log(res.data.data);
-            setBIserviceList(res.data.data);
+            setBIserviceList(
+              res.data.data.map((item) => ({ ...item, id: item.name }))
+            );
             dispatch(getUniqueKeyChangeAction(res.data.unique_key));
           }
         });

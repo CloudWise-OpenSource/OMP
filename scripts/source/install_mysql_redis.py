@@ -148,7 +148,7 @@ def install_redis():
         "CW_REDIS_LOG_DIR": os.path.join(PROJECT_LOG_PATH, "redis"),
         "CW_REDIS_DATA_DIR": os.path.join(PROJECT_DATA_PATH, "redis"),
         "CW_LOCAL_IP": get_config_dic().get("local_ip"),
-        "CW_REDIS_RUN_USER": get_run_user()
+        "CW_REDIS_RUN_USER": get_config_dic().get("global_user")
     }
     cmd(f"mkdir -p {_dic['CW_REDIS_LOG_DIR']}")
     cmd(f"mkdir -p {_dic['CW_REDIS_DATA_DIR']}")

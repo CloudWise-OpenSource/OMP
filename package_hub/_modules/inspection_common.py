@@ -52,10 +52,13 @@ def GetProcess_Runtime(pid):
         try:
             cmd = 'ps -eo pid,etime|grep ' + str(pid)
             etime = os.popen(cmd).read().strip('\n').split()
-            if '-' in etime[1]:
-                runtime = etime[1].replace('-', ' day ')
-            else:
-                runtime = etime[1]
+            # if '-' in etime[1]:
+            #     runtime = etime[1].replace('-', ' day ')
+            # else:
+            #     runtime = etime[1]
+
+            runtime = etime[1].replace(
+                '-', '天').replace(':', '小时', 1).replace(':', '分钟', 1) + '秒'
         except:
             runtime = None
     else:

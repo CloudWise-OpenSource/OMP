@@ -1136,6 +1136,19 @@ export const BatchImportMachineModal = ({
       ellipsis: true,
     },
     {
+      title: "是否执行初始化",
+      key: "init_host",
+      dataIndex: "init_host",
+      align: "center",
+      width: 120,
+      render: (text) => {
+        return (
+          <span>{text === false ? "否" : text === true ? "是" : "-"}</span>
+        );
+      },
+      ellipsis: true,
+    },
+    {
       title: "系统",
       key: "operate_system",
       dataIndex: "operate_system",
@@ -1188,6 +1201,13 @@ export const BatchImportMachineModal = ({
             break;
           case "端口[必填]":
             result.port = item[key];
+            break;
+          case "是否执行初始化":
+            if (item[key] === "是") {
+              result.init_host = true;
+            } else {
+              result.init_host = false;
+            }
             break;
           default:
             break;

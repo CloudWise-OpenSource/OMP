@@ -9,7 +9,6 @@ import json
 import redis
 import logging
 
-from django.db.models import F
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from utils.plugin import public_utils
@@ -19,7 +18,7 @@ from utils.parse_config import (
 
 from db_models.models import (
     UploadPackageHistory, ApplicationHub, ProductHub,
-    MainInstallHistory, DetailInstallHistory, Host
+    MainInstallHistory, DetailInstallHistory
 )
 from app_store.upload_task import CreateDatabase
 from app_store.install_exec import InstallServiceExecutor
@@ -765,7 +764,7 @@ def check_monitor_data(detail_obj):
         return None
 
     _ret_dic = {
-        "listen_port": None,
+        "listen_port": get_port("service_port"),
         "metric_port": None,
         "only_process": False,
         "process_key_word": None,
@@ -867,19 +866,6 @@ def install_service(main_history_id, username="admin"):
     :return:
     """
     try:
-        # 更新主机上的服务数量
-        _ser_ip_lst = DetailInstallHistory.objects.filter(
-            main_install_history_id=main_history_id,
-            service__service__is_base_env=False
-        ).values("service__ip")
-        _tmp_dic = dict()
-        for item in _ser_ip_lst:
-            if item["service__ip"] not in _tmp_dic:
-                _tmp_dic[item["service__ip"]] = 0
-            _tmp_dic[item["service__ip"]] += 1
-        for key, value in _tmp_dic.items():
-            Host.objects.filter(ip=key).update(
-                service_num=F("service_num") + value)
         executor = InstallServiceExecutor(main_history_id, username)
         executor.main()
         logger.error(f"Install Service Task Success [{main_history_id}]")

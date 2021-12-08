@@ -49,7 +49,15 @@ class ServiceMysqlCrawl(Prometheus):
         _ = float(_) if _ else 0
         minutes, seconds = divmod(_, 60)
         hours, minutes = divmod(minutes, 60)
-        self.ret['run_time'] = f"{int(hours)}小时{int(minutes)}分钟{int(seconds)}秒"
+        days, hours = divmod(hours, 24)
+        if int(days) > 0:
+            self.ret['run_time'] = \
+                f"{int(days)}天{int(hours)}小时{int(minutes)}分钟{int(seconds)}秒"
+        elif int(hours) > 0:
+            self.ret['run_time'] = \
+                f"{int(hours)}小时{int(minutes)}分钟{int(seconds)}秒"
+        else:
+            self.ret['run_time'] = f"{int(minutes)}分钟{int(seconds)}秒"
 
     def slow_query(self):
         """慢查询"""
@@ -78,8 +86,9 @@ class ServiceMysqlCrawl(Prometheus):
     def qps(self):
         """qps"""
         expr = f"rate(mysql_global_status_questions[5m])"
-        self.basic.append({"name": "qps", "name_cn": "qps",
-                           "value": self.unified_job(*self.query(expr))})
+        _ = self.unified_job(*self.query(expr))
+        _ = round(float(_), 2) if _ else 0
+        self.basic.append({"name": "qps", "name_cn": "qps", "value": _})
 
     def backup_status(self):
         """备份状态"""

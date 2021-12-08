@@ -16,13 +16,14 @@ from concurrent.futures import (
 from db_models.models import (
     Host, Service, HostOperateLog, ServiceHistory,
     MainInstallHistory, DetailInstallHistory, ApplicationHub,
-    PreInstallHistory
+    PreInstallHistory, PostInstallHistory
 )
 from utils.plugin.salt_client import SaltClient
 from utils.parse_config import BASIC_ORDER
 from utils.parse_config import THREAD_POOL_MAX_WORKERS
 from utils.common.exceptions import GeneralError
 from omp_server.settings import PROJECT_DIR
+from app_store.post_install_utils import POST_INSTALL_SERVICE
 
 UNZIP_CONCURRENT_ONE_HOST = 3
 logger = logging.getLogger("server")
@@ -203,21 +204,21 @@ class InstallServiceExecutor:
             target_host = Host.objects.filter(ip=target_ip).first()
             assert target_host is not None
 
-            # 获取 json 文件路径
-            json_source_path = os.path.join(
-                "data_files",
-                f"{detail_obj.main_install_history.operation_uuid}.json")
-            json_target_path = os.path.join(
-                target_host.data_folder, "omp_packages",
-                f"{detail_obj.main_install_history.operation_uuid}.json")
-
-            # 发送 json 文件
-            is_success, message = salt_client.cp_file(
-                target=target_ip,
-                source_path=json_source_path,
-                target_path=json_target_path)
-            if not is_success:
-                raise GeneralError(f"发送 json 文件失败: {message}")
+            # 获取 json 文件路径 已将json发送前置  jon.liu
+            # json_source_path = os.path.join(
+            #     "data_files",
+            #     f"{detail_obj.main_install_history.operation_uuid}.json")
+            # json_target_path = os.path.join(
+            #     target_host.data_folder, "omp_packages",
+            #     f"{detail_obj.main_install_history.operation_uuid}.json")
+            #
+            # # 发送 json 文件
+            # is_success, message = salt_client.cp_file(
+            #     target=target_ip,
+            #     source_path=json_source_path,
+            #     target_path=json_target_path)
+            # if not is_success:
+            #     raise GeneralError(f"发送 json 文件失败: {message}")
 
             # 获取服务包路径
             source_path = os.path.join(
@@ -574,12 +575,13 @@ class InstallServiceExecutor:
         detail_obj.service.save()
         return True, "Start Success"
 
-    def execute_post_action(self, queryset):    # NOQA
+    def execute_post_action(self, queryset, post_obj):    # NOQA
         """
         执行安装后的操作，所有服务安装完成后，针对不同服务的个性化配置执行
         目前仅支持shell脚本方式
         :param queryset: 包含部署详情表的列表
         :type queryset: [DetailInstallHistory]
+        :param post_obj:
         :return:
         """
         try:
@@ -588,23 +590,35 @@ class InstallServiceExecutor:
                 target_ip = detail_obj.service.ip
                 _script = detail_obj.service.service_controllers.get(
                     "post_action")
+                command = f"chmod +x {_script.split()[0]} && {_script}"
+                post_obj.install_log += \
+                    f"{self.now_time()} 在{target_ip}节点执行 {command}\n"
+                post_obj.save()
                 flag, msg = salt_client.cmd(
                     target=target_ip,
-                    command=f"chmod +x {_script.split()[0]} && {_script}",
+                    command=command,
                     timeout=60
                 )
+                post_obj.install_log += \
+                    f"{self.now_time()} " \
+                    f"在{target_ip}节点执行 {command} 标志为: {flag}; 结果为: {msg}\n"
+                post_obj.save()
                 logger.info(f"Execute {_script}, flag: {flag}; msg: {msg}")
                 detail_obj.post_action_msg += str(msg)
                 if not flag:
                     self.is_error = True
                     detail_obj.post_action_flag = 3
                     detail_obj.save()
+                    post_obj.install_flag = 3
+                    post_obj.save()
                     break
                 detail_obj.post_action_flag = 2
                 detail_obj.save()
         except Exception as e:
             logger.error(f"Error while execute post_action: {str(e)}")
             self.is_error = True
+            post_obj.install_flag = 3
+            post_obj.save()
 
     def single_service_executor(self, detail_obj):
         """
@@ -707,6 +721,58 @@ class InstallServiceExecutor:
             return False
         return True
 
+    def execute_post_install(self, main_obj):
+        """
+        执行安装后的操作，主要是针对nacos、tengine进行配置更新
+        :param main_obj:
+        :return:
+        """
+        post_obj = PostInstallHistory.objects.filter(
+            main_install_history=main_obj
+        ).last()
+        if not post_obj:
+            logger.info("No need execute post action!")
+            return True, "success"
+        post_obj.install_flag = 1
+        post_obj.save()
+        # 确定重新加载的服务 tengine & nacos & aopsUtils
+        if DetailInstallHistory.objects.filter(
+            service__service__app_name__in=["tengine", "nacos", "aopsUtils"]
+        ).exclude(main_install_history=main_obj).exists():
+            for key, value in POST_INSTALL_SERVICE.items():
+                post_obj.install_log += \
+                    f"{self.now_time()} 开始执行 {key} 安装后续任务\n"
+                post_obj.save()
+                _flag, _msg = value(main_obj=main_obj).run()
+                post_obj.install_log += \
+                    f"{self.now_time()} " \
+                    f"{key} 安装后续任务执行标志: {_flag}; 执行结果为: {_msg}\n"
+                post_obj.save()
+                if not _flag:
+                    post_obj.install_flag = 3
+                    post_obj.save()
+                    return False, "execute post install action failed"
+        # 安装后执行动作范围过滤，排除无需执行操作以及排除已经执行成功的服务对象
+        # 判断整体执行安装完成后才执行
+        if not DetailInstallHistory.objects.filter(
+                install_step_status=DetailInstallHistory.INSTALL_STATUS_FAILED,
+                main_install_history_id=self.main_id
+        ).exists() and not self.is_error:
+            post_action_queryset = DetailInstallHistory.objects.select_related(
+                "service", "service__service",
+                "service__service__app_package"
+            ).filter(main_install_history_id=self.main_id).exclude(
+                post_action_flag__in=[2, 4]
+            )
+            main_obj.install_status = \
+                MainInstallHistory.INSTALL_STATUS_REGISTER
+            main_obj.save()
+            self.execute_post_action(post_action_queryset, post_obj)
+        if not self.is_error:
+            post_obj.install_flag = 2
+            post_obj.save()
+        return True, "success"
+
     def main(self):
         """ 主函数 """
         logger.info(f"Main Install Begin, id[{self.main_id}]")
@@ -760,21 +826,13 @@ class InstallServiceExecutor:
             if self.is_error:
                 break
 
-        # 安装后执行动作范围过滤，排除无需执行操作以及排除已经执行成功的服务对象
-        # 判断整体执行安装完成后才执行
-        if not DetailInstallHistory.objects.filter(
-                install_step_status=DetailInstallHistory.INSTALL_STATUS_FAILED,
-                main_install_history_id=self.main_id
-        ).exists():
-            post_action_queryset = DetailInstallHistory.objects.select_related(
-                "service", "service__service", "service__service__app_package"
-            ).filter(main_install_history_id=self.main_id).exclude(
-                post_action_flag__in=[2, 4]
+        if not self.is_error:
+            # 执行安装后的操作
+            _post_install_flag, _post_install_msg = self.execute_post_install(
+                main_obj=main_obj
             )
-            main_obj.install_status = \
-                MainInstallHistory.INSTALL_STATUS_REGISTER
-            main_obj.save()
-            self.execute_post_action(post_action_queryset)
+            if not _post_install_flag:
+                self.is_error = True
 
         if self.is_error:
             # 步骤失败，主流程失败

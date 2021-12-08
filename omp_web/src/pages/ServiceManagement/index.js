@@ -31,7 +31,7 @@ const ServiceManagement = () => {
   const [searchLoading, setSearchLoading] = useState(false);
 
   //选中的数据
-  const [checkedList, setCheckedList] = useState({});
+  const [checkedList, setCheckedList] = useState([]);
 
   //table表格数据
   const [dataSource, setDataSource] = useState([]);
@@ -199,7 +199,7 @@ const ServiceManagement = () => {
         setServiceAcitonModal(false);
         setCurrentSerAcitonModal(false);
         // setRestartHostAgentModal(false);
-        setCheckedList({});
+        setCheckedList([]);
         setRow({});
         setLoading(true);
         t.current = setTimeout(() => {
@@ -254,7 +254,7 @@ const ServiceManagement = () => {
         data: data.map((i) => ({
           id: i.id,
           action: "4",
-          operation_user:localStorage.getItem("username")
+          operation_user: localStorage.getItem("username"),
         })),
       },
     })
@@ -307,24 +307,14 @@ const ServiceManagement = () => {
                   setOperateAciton(1);
                   setServiceAcitonModal(true);
                 }}
-                disabled={
-                  Object.keys(checkedList)
-                    .map((k) => checkedList[k])
-                    .flat(1)
-                    .map((item) => item.id).length == 0
-                }
+                disabled={checkedList.length == 0}
               >
                 启动
               </Menu.Item>
               <Menu.Item
                 key="closeMaintain"
                 style={{ textAlign: "center" }}
-                disabled={
-                  Object.keys(checkedList)
-                    .map((k) => checkedList[k])
-                    .flat(1)
-                    .map((item) => item.id).length == 0
-                }
+                disabled={checkedList.length == 0}
                 onClick={() => {
                   setOperateAciton(2);
                   setServiceAcitonModal(true);
@@ -335,12 +325,7 @@ const ServiceManagement = () => {
               <Menu.Item
                 key="reStartHost"
                 style={{ textAlign: "center" }}
-                disabled={
-                  Object.keys(checkedList)
-                    .map((k) => checkedList[k])
-                    .flat(1)
-                    .map((item) => item.id).length == 0
-                }
+                disabled={checkedList.length == 0}
                 onClick={() => {
                   setOperateAciton(3);
                   setServiceAcitonModal(true);
@@ -351,18 +336,9 @@ const ServiceManagement = () => {
               <Menu.Item
                 key="reStartMonitor"
                 style={{ textAlign: "center" }}
-                disabled={
-                  Object.keys(checkedList)
-                    .map((k) => checkedList[k])
-                    .flat(1)
-                    .map((item) => item.id).length == 0
-                }
+                disabled={checkedList.length == 0}
                 onClick={() => {
-                  queryDeleteMsg(
-                    Object.keys(checkedList)
-                      .map((k) => checkedList[k])
-                      .flat(1)
-                  );
+                  queryDeleteMsg(checkedList);
                   setOperateAciton(4);
                   setServiceAcitonModal(true);
                 }}
@@ -485,7 +461,7 @@ const ServiceManagement = () => {
             onClick={() => {
               //location.state = {}
               dispatch(refreshTime());
-              setCheckedList({});
+              setCheckedList([]);
               fetchData(
                 { current: pagination.current, pageSize: pagination.pageSize },
                 {
@@ -556,15 +532,7 @@ const ServiceManagement = () => {
                   lineHeight: 2.8,
                 }}
               >
-                <p>
-                  已选中{" "}
-                  {
-                    Object.keys(checkedList)
-                      .map((k) => checkedList[k])
-                      .flat(1).length
-                  }{" "}
-                  条
-                </p>
+                <p>已选中 {checkedList.length} 条</p>
                 <p style={{ color: "rgb(152, 157, 171)" }}>
                   共计{" "}
                   <span style={{ color: "rgb(63, 64, 70)" }}>
@@ -609,26 +577,14 @@ const ServiceManagement = () => {
         }
         loading={loading}
         onFinish={() => {
-          operateService(
-            Object.keys(checkedList)
-              .map((k) => checkedList[k])
-              .flat(1),
-            operateAciton
-          );
+          operateService(checkedList, operateAciton);
           //fetchMaintainChange(false, [row]);
         }}
       >
         <div style={{ padding: "20px", paddingBottom: "10px" }}>
           确定要对{" "}
-          <span style={{ fontWeight: 500 }}>
-            {" "}
-            {
-              Object.keys(checkedList)
-                .map((k) => checkedList[k])
-                .flat(1).length
-            }
-          </span>{" "}
-          个 服务下发{" "}
+          <span style={{ fontWeight: 500 }}> {checkedList.length}</span> 个
+          服务下发{" "}
           <span style={{ fontWeight: 500 }}>{operateObj[operateAciton]}</span>{" "}
           操作？
           {deleteMsg && <div style={{ paddingTop: 10 }}>{deleteMsg}</div>}

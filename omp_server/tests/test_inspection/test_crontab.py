@@ -24,7 +24,7 @@ class TestInspectionCrontabList(AutoLoginTest, InspectionHistoryMixin):
 
     def test_crontab_create(self):
         _ = {'crontab_detail': {'hour': "09", 'minute': "41", 'month': "*",
-                                'day_of_week': "*", 'day': "*"},
+                                'day_of_week': "1", 'day': "*"},
              'env': self.env,
              'is_start_crontab': 0,
              'job_name': "深度分析",
@@ -37,7 +37,7 @@ class TestInspectionCrontabList(AutoLoginTest, InspectionHistoryMixin):
         _ = {'env': self.env, 'is_start_crontab': 0, 'job_name': "深度分析",
              'job_type': 0,
              'crontab_detail': {'hour': "09", 'minute': "41", 'month': "*",
-                                'day_of_week': "*", 'day': "*"}
+                                'day_of_week': "1", 'day': "*"}
              }
         resp_add = self.post(reverse("crontab-list"), data=_).json()
         self.assertEqual(resp_add.get("code"), 0)
@@ -45,7 +45,7 @@ class TestInspectionCrontabList(AutoLoginTest, InspectionHistoryMixin):
         self.assertTrue(resp_add.get("data") is not None)
 
         _ = {'crontab_detail': {'hour': "10", 'minute': "41", 'month': "*",
-                                'day_of_week': "*", 'day': "*"},
+                                'day_of_week': "1", 'day': "*"},
              'env': 1,
              'is_start_crontab': 0,
              'job_name': "深度分析2",

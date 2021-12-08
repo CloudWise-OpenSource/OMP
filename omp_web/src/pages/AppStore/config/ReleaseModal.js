@@ -173,7 +173,7 @@ const ReleaseModal = ({
   return (
     <>
       <Modal
-        zIndex={1}
+        zIndex={1000}
         title={
           <span>
             <span style={{ position: "relative", left: "-10px" }}>
@@ -653,7 +653,7 @@ const ReleaseModal = ({
         )}
       </Modal>
       <OmpMessageModal
-        zIndex={2}
+        zIndex={1100}
         style={{ top: 160 }}
         visibleHandle={[deleteModal, setDeleteModal]}
         title={

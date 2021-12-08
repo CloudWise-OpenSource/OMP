@@ -143,7 +143,10 @@ def explain_url(explain_info, is_service=None):
                             app_name=service_name
                     ).first().app_monitor.get("type") == "JavaSpringBoot":
                         instance_info['monitor_url'] = grafana_url + url_dict.get(
-                            'javaspringboot', 'nojavaspringboot') + f"?var-ip={service_ip}&var-app={service_name}"
+                            'javaspringboot',
+                            'nojavaspringboot') + \
+                            f"?var-env=default&var-ip={service_ip}" \
+                            f"&var-app={service_name}&var-job={service_name}Exporter"
                     else:
                         instance_info['monitor_url'] = grafana_url + url_dict.get(
                             'service', 'noservice') + f"?var-ip={service_ip}&var-app={service_name}"

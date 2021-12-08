@@ -94,7 +94,7 @@ class ServiceZookeeperCrawl(Prometheus):
         expr = f"zk_znode_count{{env='{self.env}', " \
                f"instance=~'{self.instance}', job='zookeeperExporter'}}"
         self.basic.append({
-            "name": "znode_count", "name_cn": "znode数",
+            "name": "znode_count", "name_cn": "节点数",
             "value": self.unified_job(*self.query(expr))}
         )
 
@@ -103,7 +103,7 @@ class ServiceZookeeperCrawl(Prometheus):
         expr = f"zk_watch_count{{env='{self.env}', " \
                f"instance=~'{self.instance}', job='zookeeperExporter'}}"
         self.basic.append({
-            "name": "watch_count", "name_cn": "watch数",
+            "name": "watch_count", "name_cn": "监测点数",
             "value": self.unified_job(*self.query(expr))}
         )
 
@@ -122,7 +122,7 @@ class ServiceZookeeperCrawl(Prometheus):
         self.ret['mem_usage'] = ret.get('mem_usage', '-')
         self.ret['run_time'] = ret.get('run_time', '-')
         self.ret['log_level'] = ret.get('log_level', '-')
-        self.basic.append({"name": "node_status", "name_cn": "node状态",
+        self.basic.append({"name": "node_status", "name_cn": "节点状态",
                            "value": ret.get('node_status', '-')})
         self.basic.append({"name": "max_memory", "name_cn": "最大内存",
                            "value": ret.get('max_memory', '-')})

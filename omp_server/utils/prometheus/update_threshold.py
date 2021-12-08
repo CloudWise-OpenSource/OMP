@@ -72,11 +72,11 @@ def update_node_rule_yaml(quotes_info):
                                       'prometheus/conf/rules',
                                       '{}_node_rule.yml'.format(env_name))
     instance_alert = {
-        "alert": "instance down",
+        "alert": "实例宕机",
         "annotations": {
             "consignee": "{}".format(""),  # TODO
             "description": "实例 {{ $labels.instance }} monitor_agent进程丢失或主机发生宕机已超过1分钟",
-            "summary": "instance down alert({{ $labels.instance }})"
+            "summary": "实例宕机({{ $labels.instance }})"
         },
         "expr": "sum(up{job=\"nodeExporter\", env=\'%s\'}) by (instance) < 1" % env_name,
         "for": "1m",
