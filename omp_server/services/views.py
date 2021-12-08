@@ -50,11 +50,6 @@ class ServiceListView(GenericViewSet, ListModelMixin):
             self.paginate_queryset(queryset), many=True)
         serializer_data = serializer.data
 
-        # 如果服务为 base_env 服务，则修改状态为 '-'
-        for service_obj in serializer_data:
-            if service_obj.get("is_base_env"):
-                service_obj["service_status"] = "-"
-
         # 实时获取服务动态git
         prometheus_obj = Prometheus()
         is_success, prometheus_dict = prometheus_obj.get_all_service_status()
@@ -68,6 +63,10 @@ class ServiceListView(GenericViewSet, ListModelMixin):
             for service_obj in serializer_data:
                 # 如果服务状态为 '正常' 和 '停止' 的服务，通过 Prometheus 动态更新
                 if service_obj.get("service_status") in ("正常", "停止"):
+                    # 如果是 web 服务，则状态直接置为正常
+                    if service_obj.get("is_web"):
+                        service_obj["service_status"] = "正常"
+                        continue
                     key_name = f"{service_obj.get('ip')}_{service_obj.get('service_instance_name')}"
                     status = prometheus_dict.get(key_name, None)
                     service_obj["service_status"] = status_dict.get(status)
@@ -75,7 +74,21 @@ class ServiceListView(GenericViewSet, ListModelMixin):
         # 获取监控及日志的url
         serializer_data = explain_url(
             serializer_data, is_service=True)
-        return self.get_paginated_response(serializer_data)
+
+        # 停止状态服务置于列表前方，未监控状态服务置于列表后方
+        stop_ls = []
+        natural_ls = []
+        no_monitor_ls = []
+        for service in serializer_data:
+            if service.get("service_status") == "停止":
+                stop_ls.append(service)
+            elif service.get("service_status") == "未监控":
+                no_monitor_ls.append(service)
+            else:
+                natural_ls.append(service)
+
+        return self.get_paginated_response(
+            stop_ls + natural_ls + no_monitor_ls)
 
 
 class ServiceDetailView(GenericViewSet, RetrieveModelMixin):
