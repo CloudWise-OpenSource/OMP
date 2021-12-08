@@ -67,6 +67,12 @@ def update_node_rule_yaml(quotes_info):
     """
     更新主机指标文件
     """
+    metric_en_cn_dict = {
+        "cpu_used": "CPU",
+        "memory_used": "内存",
+        "disk_root_used": "根分区磁盘",
+        "disk_data_used": "数据分区磁盘"
+    }
     env_name = quotes_info.get("env_name")
     node_rule_yml_path = os.path.join(PROJECT_DIR, 'component',
                                       'prometheus/conf/rules',
@@ -100,7 +106,7 @@ def update_node_rule_yaml(quotes_info):
             condition_value = host_quote_info.get("condition_value")
             condition = host_quote_info.get("condition")
             quote_info = {
-                "alert": "host {} alert".format(index_type),
+                "alert": "主机 {} 使用率过高".format(metric_en_cn_dict.get(index_type)),
                 "annotations": {
                     "consignee": "{}".format(""),  # TODO
                     "description": replace_value(description.get(index_type), condition_value=condition_value),
