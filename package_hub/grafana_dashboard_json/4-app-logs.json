@@ -65,7 +65,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(count_over_time({job=\"$app\",filename=\"$filename\",env=\"$env\"}[$__interval]))",
+          "expr": "sum(count_over_time({job=\"$app\",filename=\"$filename\",env=\"$env\",instance=\"$instance\"}[$__interval]))",
           "legendFormat": "{{ log }}",
           "refId": "A"
         }
@@ -140,7 +140,7 @@
       "pluginVersion": "7.2.2",
       "targets": [
         {
-          "expr": "{job=\"$app\",filename=\"$filename\",env=\"$env\"} |= \"$search\"",
+          "expr": "{job=\"$app\",filename=\"$filename\",env=\"$env\",instance=\"$instance\"} |= \"$search\"",
           "hide": false,
           "legendFormat": "",
           "refId": "A"
@@ -207,7 +207,7 @@
         "allValue": null,
         "current": {},
         "datasource": "Loki",
-        "definition": "label_values({job=\"$app\",env=\"$env\"},filename)",
+        "definition": "label_values({job=\"$app\",env=\"$env\"},instance)",
         "description": null,
         "error": null,
         "hide": 0,
@@ -216,7 +216,7 @@
         "multi": false,
         "name": "filename",
         "options": [],
-        "query": "label_values({job=\"$app\",env=\"$env\"},filename)",
+        "query": "label_values({job=\"$app\",env=\"$env\"},instance)",
         "refresh": 2,
         "regex": "/.*$app.*/",
         "skipUrlSync": false,
@@ -224,6 +224,27 @@
         "tagValuesQuery": "jkb",
         "tags": [],
         "tagsQuery": "jkb",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allValue": null,
+        "current": {},
+        "datasource": "Loki",
+        "definition": "label_values({job=\"$app\",env=\"$env\",instance=\"$instance\"},filename)",
+        "description": null,
+        "error": null,
+        "hide": 0,
+        "includeAll": false,
+        "label": "filename",
+        "multi": false,
+        "name": "filename",
+        "options": [],
+        "query": "label_values({job=\"$app\",env=\"$env\",instance=\"$instance\"},filename)",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
         "type": "query",
         "useTags": false
       },
