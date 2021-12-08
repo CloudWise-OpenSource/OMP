@@ -84,9 +84,9 @@ class CreateDatabase(object):
         self.create_pro_app_lab(app_obj)
         service = self.json_data.pop('product_service')
         # 创建服务表
-        self._create_service(service, app_obj)
+        self.create_service(service, app_obj)
 
-    def _create_service(self, service, app_obj):
+    def create_service(self, service, app_obj):
         """
         创建服务表
         params service service的json字段，格式同json_data一致

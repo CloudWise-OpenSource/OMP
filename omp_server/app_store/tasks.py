@@ -263,6 +263,23 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
         explain_yml[1]['product_service'] = explain_service_list
         explain_yml[1]['service'] = name_version
         tmp_dir = [tmp_dir, versions]
+    elif kind == 'service':
+        dependence_product = explain_yml[1].get(
+            "extend_fields", {}).get("product")
+        if not dependence_product:
+            return public_action.update_package_status(
+                1,
+                f"安装包{package_name}不能无依赖产品上传")
+        product_obj = ProductHub.objects.filter(pro_name=dependence_product.get("name"),
+                                                pro_version=dependence_product.get(
+                                                    "version")
+                                                ).last()
+        if not product_obj:
+            return public_action.update_package_status(
+                1,
+                f"安装包{package_name}依赖的产品包不存在")
+        upload_obj.package_status = 0
+        tmp_dir = [file_name]
     else:
         count = ApplicationHub.objects.filter(app_version=versions,
                                               app_name=name).count()
@@ -656,16 +673,34 @@ def publish_entry(uuid):
     for line in lines:
         json_line = json.loads(line)
         valid_obj = valid_packages.get(json_line.get('package_name'))
-
-        if valid_obj:
+        if json_line.get("extend_fields").get("product"):
+            valid_info.append(json_line)
+        # 升级包单独逻辑
+        elif valid_obj:
             json_line['package_name'] = valid_obj
             valid_info.append(json_line)
     valid_packages_obj = []
     valid_dir = None
     # 中间结果转入创表函数
+    product_obj = None
     for line in valid_info:
         if line.get('kind') == 'product':
             CreateDatabase(line).create_product()
+        elif line.get('kind') == 'service':
+            product = line.get("extend_fields").get("product")
+            product_obj = ProductHub.objects.filter(pro_name=product.get("name"),
+                                                    pro_version=product.get(
+                                                        "version")
+                                                    ).last()
+            upload_history_obj = None
+            for j in valid_uuids:
+                if j.package_name == line.get('package_name'):
+                    upload_history_obj = j
+            # 更新服务的upload历史状态和已有服务关联
+            upload_history_obj.package_parent = product_obj.pro_package
+            upload_history_obj.save()
+            CreateDatabase(line).create_service([line], product_obj)
+            line['package_name'] = upload_history_obj
         else:
             CreateDatabase(line).create_component()
         tmp_dir = line.get('tmp_dir')
@@ -679,9 +714,13 @@ def publish_entry(uuid):
         # 组件路径   package_hub/xxx/app.tar.gz
         # 产品目标路径   verified/product_name-version/xxx
         # 组件目标路径   verified/app.tar.gz
+
         valid_name = tmp_dir[0].rsplit('/', 1)
         valid_pk = f"{valid_name[1]}-{tmp_dir[1]}" if len(
             tmp_dir) == 2 else valid_name[1]
+        if product_obj:
+            valid_pk = f"{product_obj.pro_name}-{product_obj.pro_version}/{valid_name[1]}"
+
         valid_dir = os.path.join(project_dir, 'package_hub',
                                  'verified', valid_pk)
         move_tmp = "/".join(valid_name)
@@ -712,6 +751,7 @@ def check_monitor_data(detail_obj):
     :type detail_obj: DetailInstallHistory
     :return: (bool, _ret_dic)
     """
+
     def get_port(keyword):
         """
         根据关键字获取端口值
@@ -723,6 +763,7 @@ def check_monitor_data(detail_obj):
             if item.get("key") == keyword:
                 return item.get("default")
         return None
+
     _ret_dic = {
         "listen_port": None,
         "metric_port": None,
