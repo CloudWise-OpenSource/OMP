@@ -57,8 +57,20 @@ def GetProcess_Runtime(pid):
             # else:
             #     runtime = etime[1]
 
-            runtime = etime[1].replace(
-                '-', '天').replace(':', '小时', 1).replace(':', '分钟', 1) + '秒'
+            run_time = etime[1].split(':')
+            if len(run_time) == 1:
+                runtime = f"{run_time[0]}秒"
+            elif len(run_time) == 2:
+                runtime = f"{run_time[0]}分钟{run_time[1]}秒"
+            elif len(run_time) == 3:
+                runtime = f"{run_time[0]}小时{run_time[1]}分钟{run_time[2]}秒"
+            elif len(run_time) == 4:
+                runtime = \
+                    f"{run_time[0]}天{run_time[1]}小时{run_time[2]}分钟{run_time[3]}秒"
+            elif len(run_time) == 5:
+                runtime = \
+                    f"{run_time[0]}年{run_time[1]}天{run_time[2]}小时" \
+                    f"{run_time[3]}分钟{run_time[4]}秒"
         except:
             runtime = None
     else:
