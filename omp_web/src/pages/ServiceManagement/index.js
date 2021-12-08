@@ -295,6 +295,18 @@ const ServiceManagement = () => {
         >
           安装
         </Button>
+        <Button
+          type="primary"
+          style={{ marginLeft: 10 }}
+          disabled={checkedList.length == 0}
+          onClick={() => {
+            queryDeleteMsg(checkedList);
+            setOperateAciton(4);
+            setServiceAcitonModal(true);
+          }}
+        >
+          卸载
+        </Button>
 
         <Dropdown
           //placement="bottomLeft"
@@ -307,14 +319,22 @@ const ServiceManagement = () => {
                   setOperateAciton(1);
                   setServiceAcitonModal(true);
                 }}
-                disabled={checkedList.length == 0}
+                disabled={
+                  checkedList.filter((e) => {
+                    return e.operable;
+                  }).length == 0
+                }
               >
                 启动
               </Menu.Item>
               <Menu.Item
                 key="closeMaintain"
                 style={{ textAlign: "center" }}
-                disabled={checkedList.length == 0}
+                disabled={
+                  checkedList.filter((e) => {
+                    return e.operable;
+                  }).length == 0
+                }
                 onClick={() => {
                   setOperateAciton(2);
                   setServiceAcitonModal(true);
@@ -325,7 +345,11 @@ const ServiceManagement = () => {
               <Menu.Item
                 key="reStartHost"
                 style={{ textAlign: "center" }}
-                disabled={checkedList.length == 0}
+                disabled={
+                  checkedList.filter((e) => {
+                    return e.operable;
+                  }).length == 0
+                }
                 onClick={() => {
                   setOperateAciton(3);
                   setServiceAcitonModal(true);
@@ -333,7 +357,7 @@ const ServiceManagement = () => {
               >
                 重启
               </Menu.Item>
-              <Menu.Item
+              {/* <Menu.Item
                 key="reStartMonitor"
                 style={{ textAlign: "center" }}
                 disabled={checkedList.length == 0}
@@ -344,7 +368,7 @@ const ServiceManagement = () => {
                 }}
               >
                 删除
-              </Menu.Item>
+              </Menu.Item> */}
             </Menu>
           }
           placement="bottomCenter"
@@ -517,7 +541,11 @@ const ServiceManagement = () => {
           )}
           notSelectable={(record) => ({
             // 部署中的不能选中
-            disabled: !record?.operable,
+            disabled: !(
+              record.service_status === "正常" ||
+              record.service_status === "停止" ||
+              record.service_status === "未监控"
+            ),
           })}
           dataSource={dataSource}
           pagination={{
@@ -577,8 +605,13 @@ const ServiceManagement = () => {
         }
         loading={loading}
         onFinish={() => {
-          operateService(checkedList, operateAciton);
-          //fetchMaintainChange(false, [row]);
+          operateService(
+            checkedList.filter((e) => {
+              return e.operable;
+            }),
+            operateAciton
+          );
+          fetchMaintainChange(false, [row]);
         }}
       >
         <div style={{ padding: "20px", paddingBottom: "10px" }}>

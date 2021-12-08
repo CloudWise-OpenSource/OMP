@@ -391,7 +391,7 @@ const renderMenu = (
         }}
       >
         <span style={{ fontSize: 12, paddingLeft: 5, paddingRight: 5 }}>
-          删除
+          卸载
         </span>
       </Menu.Item>
     </Menu>

@@ -225,6 +225,19 @@ export const DetailHost = ({
               {isShowDrawer.record.is_maintenance ? "是" : "否"}
             </div>
           </div>
+          <div
+            style={{
+              display: "flex",
+              paddingTop: 15,
+              paddingBottom: 5,
+              borderBottom: "solid 1px rgb(220,220,220)",
+            }}
+          >
+            <div style={{ flex: 1 }}>主机初始化</div>
+            <div style={{ flex: 1 }}>
+              {renderInitStatue(isShowDrawer.record.init_status)}
+            </div>
+          </div>
         </div>
         <div
           style={{
@@ -434,7 +447,7 @@ const renderInitStatue = (text) => {
     case 3:
       return <span>{renderDisc("critical", 7, -1)}失败</span>;
   }
-}
+};
 
 const getColumnsConfig = (
   setIsShowDrawer,
