@@ -80,6 +80,7 @@ def GetProcess_Runtime(pid_list):
         #     runtime = etime[1]
 
         run_time = etime[1].split(':')
+        run_time = [int(i) for i in run_time]
         if len(run_time) == 1:
             runtime = f"{run_time[0]}秒"
         elif len(run_time) == 2:
