@@ -75,20 +75,23 @@ class ServiceListView(GenericViewSet, ListModelMixin):
         serializer_data = explain_url(
             serializer_data, is_service=True)
 
-        # 停止状态服务置于列表前方，未监控状态服务置于列表后方
-        stop_ls = []
-        natural_ls = []
-        no_monitor_ls = []
-        for service in serializer_data:
-            if service.get("service_status") == "停止":
-                stop_ls.append(service)
-            elif service.get("service_status") == "未监控":
-                no_monitor_ls.append(service)
-            else:
-                natural_ls.append(service)
+        result_ls = serializer_data
+        # 如果没有排序字段，则停止状态服务置于列表前方，未监控状态服务置于列表后方
+        query_field = request.query_params.get("ordering", "")
+        if query_field == "":
+            stop_ls = []
+            natural_ls = []
+            no_monitor_ls = []
+            for service in serializer_data:
+                if service.get("service_status") == "停止":
+                    stop_ls.append(service)
+                elif service.get("service_status") == "未监控":
+                    no_monitor_ls.append(service)
+                else:
+                    natural_ls.append(service)
+            result_ls = stop_ls + natural_ls + no_monitor_ls
 
-        return self.get_paginated_response(
-            stop_ls + natural_ls + no_monitor_ls)
+        return self.get_paginated_response(result_ls)
 
 
 class ServiceDetailView(GenericViewSet, RetrieveModelMixin):
