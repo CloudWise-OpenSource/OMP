@@ -155,6 +155,8 @@ class InspectionCrontabView(RetrieveModelMixin, ListModelMixin, GenericViewSet,
         day_of_week = request.data.get('crontab_detail').get('day_of_week')
         if day_of_week == '6':
             day_of_week = '0'
+        elif day_of_week == '*':
+            pass
         else:
             day_of_week = str(int(day_of_week) + 1)
 
