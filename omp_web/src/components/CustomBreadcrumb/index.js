@@ -46,7 +46,7 @@ const breadcrumbNameMap = {
 };
 
 // 基于面包屑组件的一层封装，用于匹配当前路由地址，动态展示页面路径
-const CustomBreadcrumb = withRouter(({ location }) => {
+const CustomBreadcrumb = withRouter(({ location, collapsed }) => {
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   //是否展示维护模式提示词
@@ -176,7 +176,7 @@ const CustomBreadcrumb = withRouter(({ location }) => {
   };
 
   return (
-    <div className={styles.customNav}>
+    <div className={styles.customNav} style={{marginLeft:collapsed ? 50 : 200}}>
       {/* <div> */}
       <Breadcrumb>{extraBreadcrumbItems()}</Breadcrumb>
       {/* </div> */}
