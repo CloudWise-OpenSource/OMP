@@ -76,6 +76,7 @@ OMP 安装包内部包含了其使用的绝大部分组件，但是缺少 `MySQL
 $ tar -xf omp_open-0.1.tar.gz -C /data && cd /data/omp && bash scripts/install.sh local_ip
 # 如有grafana报错，可使用 ./component/env/bin/python3 ./scripts/source/update_grafana.py local_ip 进行更新操作
 # 如上操作后可通过 http://local_ip:19001 访问OMP页面
+# 《重点提示》: 将 omp_monitor_agent-0.1.tar.gz 移动到 /data/omp/package_hub 下后再进行主机纳管操作
 # 默认用户名：admin 
 # 默认密码：Common@123
 
