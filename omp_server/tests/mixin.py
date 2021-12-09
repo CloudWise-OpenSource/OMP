@@ -230,7 +230,8 @@ class ApplicationResourceMixin(LabelsResourceMixin, UploadPackageHistoryMixin):
             app_install_args=self._mock_install_info(index),
             extend_fields=extend_fields,
             app_package=app_package,
-            is_base_env=random.choice((True, False)),
+            # is_base_env=random.choice((True, False)),
+            is_base_env=False,
         )
         app_obj.save()
         # 随机模拟属于多种标签情况

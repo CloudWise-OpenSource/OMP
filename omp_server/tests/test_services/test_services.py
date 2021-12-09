@@ -97,13 +97,13 @@ class ListServiceTest(AutoLoginTest, ServicesResourceMixin):
     def test_services_list_order(self):
         """ 测试服务列表排序 """
 
-        # 不传递排序字段 -> 默认按照创建时间倒序
+        # 不传递排序字段
         resp = self.get(self.list_service_url).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
         self.assertIsNotNone(resp.get("data"))
 
-        # # 传递排序字段，按照指定字段排序
+        # 传递排序字段，按照指定字段排序
         reverse_flag = random.choice(("", "-"))
         order_field = "service_instance_name"
         ordering = f"{reverse_flag}{order_field}"

@@ -1219,3 +1219,21 @@ class ServiceCustomThreshold(models.Model):
     class Meta:
         db_table = 'omp_service_custom_threshold'
         verbose_name = verbose_name_plural = '服务定制指标阈值设置'
+
+
+# class DeploymentPlan(models.Model):
+#     """ 部署计划 """
+#     plan_name = models.CharField(
+#         "部署计划名称", max_length=32,
+#         null=False, blank=False, help_text="部署计划名称")
+#     host_num = models.IntegerField(
+#         "主机数量", default=0, help_text="主机数量")
+#     product_num = models.IntegerField(
+#         "产品数量", default=0, help_text="产品数量")
+#     service_num = models.IntegerField(
+#         "服务数量", default=0, help_text="服务数量")
+#     create_user = models.CharField(
+#         "创建用户", max_length=16,
+#         null=False, blank=False, help_text="创建用户")
+#     created = models.DateTimeField(
+#         "创建时间", null=True, auto_now_add=True, help_text="创建时间")
