@@ -8,6 +8,7 @@ import os
 import time
 import queue
 import logging
+import re
 from concurrent.futures import (
     ThreadPoolExecutor, as_completed
 )
@@ -26,6 +27,7 @@ from omp_server.settings import PROJECT_DIR
 from app_store.post_install_utils import POST_INSTALL_SERVICE
 
 UNZIP_CONCURRENT_ONE_HOST = 3
+OPENSSL_VERSION_LEVEL = 102
 logger = logging.getLogger("server")
 
 
@@ -118,6 +120,35 @@ class InstallServiceExecutor:
                 pre_install_obj.install_flag = 3
                 pre_install_obj.save()
                 raise GeneralError(f"为主机 [{key}] 创建用户 [{el}] 失败!")
+        # 适配doim
+        doim_queryset = DetailInstallHistory.objects.select_related(
+            "service"
+        ).filter(main_install_history_id=self.main_id, service__service_instance_name__iexact="doim").exclude(
+            install_step_status=DetailInstallHistory.INSTALL_STATUS_SUCCESS)
+        doim_ips = set([item.service.ip for item in doim_queryset])
+        if doim_queryset and key in doim_ips:
+            # 1.run_user 必须为root
+            if "root" not in value:
+                pre_install_obj.install_log += \
+                    f"{self.now_time()} 安装doim执行失败，用户[{value}]为非root\n"
+                pre_install_obj.install_flag = 3
+                pre_install_obj.save()
+                raise GeneralError(f"主机 [{key}] 的run_user[{value}]为非root，不支持doim安装")
+            # 2.获取openssl版本号
+            openssl_version_cmd = "openssl version"
+            ssl_version = self.get_openssl_version_from_cmd(ip=key, salt_client=salt_client,
+                                                            cmd_str=openssl_version_cmd)
+            if ssl_version < OPENSSL_VERSION_LEVEL:
+                pre_install_obj.install_log += f"{self.now_time()} 开始升级openssl version\n"
+                pre_install_obj.save()
+                upgrade_flag, upgrade_msg = self.upgrade_openssl(ip=key, salt_client=salt_client)
+                if not upgrade_flag:
+                    pre_install_obj.install_log += \
+                        f"{self.now_time()} 升级openssl version执行失败: {upgrade_msg}\n"
+                    pre_install_obj.install_flag = 3
+                    pre_install_obj.save()
+                    raise GeneralError(f"为主机 [{key}] 升级openssl version执行失败!")
+
         pre_install_obj.install_log += \
             f"{self.now_time()} 前置安装操作完成\n"
         pre_install_obj.install_flag = 2
@@ -575,7 +606,7 @@ class InstallServiceExecutor:
         detail_obj.service.save()
         return True, "Start Success"
 
-    def execute_post_action(self, queryset, post_obj):    # NOQA
+    def execute_post_action(self, queryset, post_obj):  # NOQA
         """
         执行安装后的操作，所有服务安装完成后，针对不同服务的个性化配置执行
         目前仅支持shell脚本方式
@@ -737,7 +768,7 @@ class InstallServiceExecutor:
         post_obj.save()
         # 确定重新加载的服务 tengine & nacos & aopsUtils
         if DetailInstallHistory.objects.filter(
-            service__service__app_name__in=["tengine", "nacos", "aopsUtils"]
+                service__service__app_name__in=["tengine", "nacos", "aopsUtils"]
         ).exclude(main_install_history=main_obj).exists():
             for key, value in POST_INSTALL_SERVICE.items():
                 post_obj.install_log += \
@@ -772,6 +803,55 @@ class InstallServiceExecutor:
             post_obj.install_flag = 2
             post_obj.save()
         return True, "success"
+
+    @staticmethod
+    def get_openssl_version_from_cmd(ip, salt_client, cmd_str):
+        """获取openssl版本号"""
+        ssl_flag, ssl_msg = salt_client.cmdcmd(
+            target=ip,
+            command=cmd_str,
+            timeout=60
+        )
+        str_os_version = ssl_msg[0].strip()
+        res = re.findall('(.*?) ([0-9]+)\.([0-9]+)\.([0-9]+).*', str_os_version)
+        str_version = "".join(res[0][1:]) if res else ""
+        if not ssl_flag:
+            return 0
+        try:
+            ssl_version = int(str_version)
+        except ValueError:
+            ssl_version = 0
+        return ssl_version
+
+    @staticmethod
+    def upgrade_openssl(ip, salt_client):
+        # 1.发送openssl升级包
+        source_package_path = os.path.join(PROJECT_DIR, "package_hub", "openssl-1.0.2k.tar.gz")
+        dst_path = "/tmp/upgrade_openssl"
+        package_flag, package_msg = salt_client.cp_file(
+            target=ip,
+            source_path=source_package_path,
+            target_path=dst_path)
+        if not package_flag:
+            return False, package_msg
+        # 2.发送openssl升级脚本
+        source_script_path = os.path.join(PROJECT_DIR, "scripts/source", "upgrade_ssl.sh")
+        script_flag, script_msg = salt_client.cp_file(
+            target=ip,
+            source_path=source_script_path,
+            target_path=dst_path)
+        if not script_flag:
+            return False, script_msg
+        # 3.执行openssl升级脚本
+        cmd_str = "cd /tmp/upgrade_openssl && chmod +x upgrade_ssl.sh && bash upgrade_ssl.sh"
+        cmd_flag, cmd_msg = salt_client.cmd(
+            target=ip,
+            command=cmd_str,
+            timeout=60
+        )
+        if not cmd_flag:
+            return False, cmd_msg
+        return True, "upgrade openssl success"
 
     def main(self):
         """ 主函数 """
