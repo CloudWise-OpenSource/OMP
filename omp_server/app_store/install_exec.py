@@ -41,6 +41,7 @@ class InstallServiceExecutor:
         self.is_error = False
         # 控制安装过程中单主机上的安装包解压并发数 TODO 暂时使用阻塞等待方式进行处理！！
         self.unzip_concurrent_controller = dict()
+        self.start_service_flag = False
 
     def parse_origin_data(self, json_source_path):
         """
@@ -494,6 +495,11 @@ class InstallServiceExecutor:
 
     def start(self, detail_obj):
         """ 启动服务 """
+        # 如果服务是自研的，那么需要在刷新nacos和tengine后再启动服务
+        if detail_obj.service.service.app_type == \
+                ApplicationHub.APP_TYPE_SERVICE and \
+                self.start_service_flag is False:
+            return True, "start later"
         # 获取启动使用参数
         salt_client = SaltClient()
         target_ip = detail_obj.service.ip
@@ -721,6 +727,20 @@ class InstallServiceExecutor:
             return False
         return True
 
+    def start_services(self, main_obj):
+        """
+        启动自研服务使用
+        :return:
+        """
+        logger.info("Execute start_services for Services")
+        self.start_service_flag = True
+        target_lst = list(DetailInstallHistory.objects.filter(
+            main_install_history=main_obj,
+            service__service__app_type=ApplicationHub.APP_TYPE_SERVICE
+        ))
+        self.thread_poll_executor(detail_obj_lst=target_lst)
+        return True, "success"
+
     def execute_post_install(self, main_obj):
         """
         执行安装后的操作，主要是针对nacos、tengine进行配置更新
@@ -752,6 +772,13 @@ class InstallServiceExecutor:
                     post_obj.install_flag = 3
                     post_obj.save()
                     return False, "execute post install action failed"
+
+        # TODO 在增量安装的前提下，需要在加载nacos和tengine完成后，再启动其他自研服务
+        self.start_services(main_obj=main_obj)
+        if self.is_error:
+            post_obj.install_flag = 3
+            post_obj.save()
+            return False, "service start failed"
         # 安装后执行动作范围过滤，排除无需执行操作以及排除已经执行成功的服务对象
         # 判断整体执行安装完成后才执行
         if not DetailInstallHistory.objects.filter(

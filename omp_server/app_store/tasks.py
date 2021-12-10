@@ -873,6 +873,15 @@ def install_service(main_history_id, username="admin"):
     :return:
     """
     try:
+        # 为防止批量安装时数据库写入数据过多，这里采用循环的方式判断main_history_id
+        try_times = 0
+        while try_times < 3:
+            if MainInstallHistory.objects.filter(id=main_history_id).exists():
+                break
+            time.sleep(5)
+        else:
+            logger.error(
+                "Install Service Task Failed: can not find {main_history_id}")
         executor = InstallServiceExecutor(main_history_id, username)
         executor.main()
         logger.error(f"Install Service Task Success [{main_history_id}]")
