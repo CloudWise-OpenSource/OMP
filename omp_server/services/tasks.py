@@ -14,7 +14,7 @@ import time
 import json
 from promemonitor.prometheus_utils import PrometheusUtils
 from db_models.models import (
-    Host, HostOperateLog, ClusterInfo
+    Host, HostOperateLog, ClusterInfo, Product
 )
 from django.db.models import F
 from django.db import transaction
@@ -117,11 +117,19 @@ def exec_action(action, instance, operation_user):
             with transaction.atomic():
                 Host.objects.filter(ip=service_obj.ip).update(
                     service_num=F("service_num") - 1)
+                # 当服务被删除时，应该将其所在的集群都连带删除
                 if Service.objects.filter(
                         cluster=service_obj.cluster
                 ).count() == 0:
                     ClusterInfo.objects.filter(
                         id=service_obj.cluster.id
+                    ).delete()
+                # 当服务被删除时，如果他所属的产品下已没有其他服务，那么应该删除产品实例
+                if Service.objects.filter(
+                        service__product=service_obj.service.product
+                ).count() == 0:
+                    Product.objects.filter(
+                        product=service_obj.service.product
                     ).delete()
         return None
 

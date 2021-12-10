@@ -179,13 +179,13 @@ class HostSerializer(ModelSerializer):
                     "username": "用户权限错误，请使用root或具备sudo免密用户"})
 
         # 如果数据分区不存在，则创建数据分区
-        success, _ = ssh.cmd(
+        success, msg = ssh.cmd(
             f"test -d {data_folder} || mkdir -p {data_folder}")
-        if not success:
+        if not success or msg.strip():
             logger.info(f"host create data folder failed: ip-{ip},port-{port},"
                         f"username-{username},password-{password},"
                         f"data_folder-{data_folder}")
-            ValidationError({"data_folder": "创建数据分区操作失败"})
+            raise ValidationError({"data_folder": "创建数据分区操作失败"})
 
         # 如果未传递 env，则指定默认环境
         if not attrs.get("env") and not self.instance:
