@@ -41,7 +41,6 @@ class InstallServiceExecutor:
         self.is_error = False
         # 控制安装过程中单主机上的安装包解压并发数 TODO 暂时使用阻塞等待方式进行处理！！
         self.unzip_concurrent_controller = dict()
-        self.start_service_flag = False
 
     def parse_origin_data(self, json_source_path):
         """
@@ -495,11 +494,6 @@ class InstallServiceExecutor:
 
     def start(self, detail_obj):
         """ 启动服务 """
-        # 如果服务是自研的，那么需要在刷新nacos和tengine后再启动服务
-        if detail_obj.service.service.app_type == \
-                ApplicationHub.APP_TYPE_SERVICE and \
-                self.start_service_flag is False:
-            return True, "start later"
         # 获取启动使用参数
         salt_client = SaltClient()
         target_ip = detail_obj.service.ip
@@ -710,6 +704,42 @@ class InstallServiceExecutor:
         )
         return execute_lst
 
+    def execute_post_action_main(self, main_obj):
+        """
+        执行注册操作 post_action
+        :param main_obj:
+        :return:
+        """
+        post_obj = PostInstallHistory.objects.filter(
+            main_install_history=main_obj
+        ).last()
+        if not post_obj:
+            logger.info("No need execute post action!")
+            return True, "success"
+        # 安装后执行动作范围过滤，排除无需执行操作以及排除已经执行成功的服务对象
+        # 判断整体执行安装完成后才执行
+        if not DetailInstallHistory.objects.filter(
+                install_step_status=DetailInstallHistory.INSTALL_STATUS_FAILED,
+                main_install_history_id=self.main_id
+        ).exists() and not self.is_error:
+            post_action_queryset = DetailInstallHistory.objects.select_related(
+                "service", "service__service",
+                "service__service__app_package"
+            ).filter(main_install_history_id=self.main_id).exclude(
+                post_action_flag__in=[2, 4]
+            )
+            main_obj.install_status = \
+                MainInstallHistory.INSTALL_STATUS_REGISTER
+            main_obj.save()
+            self.execute_post_action(post_action_queryset, post_obj)
+        if not self.is_error:
+            post_obj.install_flag = 2
+            post_obj.save()
+            return True, "success"
+        post_obj.install_flag = 3
+        post_obj.save()
+        return False, "failed"
+
     def execute_pre_install(self, main_obj):
         """
         执行前置安装入口
@@ -726,20 +756,6 @@ class InstallServiceExecutor:
         ).exists():
             return False
         return True
-
-    def start_services(self, main_obj):
-        """
-        启动自研服务使用
-        :return:
-        """
-        logger.info("Execute start_services for Services")
-        self.start_service_flag = True
-        target_lst = list(DetailInstallHistory.objects.filter(
-            main_install_history=main_obj,
-            service__service__app_type=ApplicationHub.APP_TYPE_SERVICE
-        ))
-        self.thread_poll_executor(detail_obj_lst=target_lst)
-        return True, "success"
 
     def execute_post_install(self, main_obj):
         """
@@ -774,30 +790,10 @@ class InstallServiceExecutor:
                     return False, "execute post install action failed"
 
         # TODO 在增量安装的前提下，需要在加载nacos和tengine完成后，再启动其他自研服务
-        self.start_services(main_obj=main_obj)
         if self.is_error:
             post_obj.install_flag = 3
             post_obj.save()
             return False, "service start failed"
-        # 安装后执行动作范围过滤，排除无需执行操作以及排除已经执行成功的服务对象
-        # 判断整体执行安装完成后才执行
-        if not DetailInstallHistory.objects.filter(
-                install_step_status=DetailInstallHistory.INSTALL_STATUS_FAILED,
-                main_install_history_id=self.main_id
-        ).exists() and not self.is_error:
-            post_action_queryset = DetailInstallHistory.objects.select_related(
-                "service", "service__service",
-                "service__service__app_package"
-            ).filter(main_install_history_id=self.main_id).exclude(
-                post_action_flag__in=[2, 4]
-            )
-            main_obj.install_status = \
-                MainInstallHistory.INSTALL_STATUS_REGISTER
-            main_obj.save()
-            self.execute_post_action(post_action_queryset, post_obj)
-        if not self.is_error:
-            post_obj.install_flag = 2
-            post_obj.save()
         return True, "success"
 
     def main(self):
@@ -814,6 +810,16 @@ class InstallServiceExecutor:
         # 执行安装前的操作
         pre_install_flag = self.execute_pre_install(main_obj=main_obj)
         if not pre_install_flag:
+            main_obj.install_status = MainInstallHistory.INSTALL_STATUS_FAILED
+            main_obj.save()
+            return
+
+        # 执行安装后的操作
+        _post_install_flag, _post_install_msg = self.execute_post_install(
+            main_obj=main_obj
+        )
+        if not _post_install_flag:
+            self.is_error = True
             main_obj.install_status = MainInstallHistory.INSTALL_STATUS_FAILED
             main_obj.save()
             return
@@ -853,14 +859,6 @@ class InstallServiceExecutor:
             if self.is_error:
                 break
 
-        if not self.is_error:
-            # 执行安装后的操作
-            _post_install_flag, _post_install_msg = self.execute_post_install(
-                main_obj=main_obj
-            )
-            if not _post_install_flag:
-                self.is_error = True
-
         if self.is_error:
             # 步骤失败，主流程失败
             main_obj.install_status = \
@@ -875,6 +873,14 @@ class InstallServiceExecutor:
             #     install_step_status=DetailInstallHistory.INSTALL_STATUS_FAILED
             # )
             logger.info(f"Main Install Failed, id[{self.main_id}]")
+            return self.is_error
+
+        post_flag, post_msg = self.execute_post_action_main(main_obj=main_obj)
+        if not post_flag:
+            main_obj.install_status = \
+                MainInstallHistory.INSTALL_STATUS_FAILED
+            main_obj.save()
+            logger.error(f"Main Install Failed, id[{self.main_id}]")
             return self.is_error
 
         # 流程执行完整，主流程成功
