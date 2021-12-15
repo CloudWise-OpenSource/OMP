@@ -42,7 +42,8 @@ const breadcrumbNameMap = {
   "email-settings": "邮件管理",
   "rule-center": "指标中心",
   "default-rule": "默认指标",
-  "install-record": "安装记录",
+  "install-record": "操作记录",
+  "service_upgrade": "服务升级"
 };
 
 // 基于面包屑组件的一层封装，用于匹配当前路由地址，动态展示页面路径

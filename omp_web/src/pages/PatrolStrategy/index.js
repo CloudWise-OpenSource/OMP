@@ -327,7 +327,18 @@ const PatrolStrategy = () => {
               <Form.Item
                 name={["name", "value"]}
                 noStyle
-                rules={[{ required: true, message: "请输入巡检任务名称" }]}
+                rules={[{ required: true, message: "请输入巡检任务名称" },  {
+                  validator: (rule, value, callback ) => {
+                    if (value) {
+                      if(value.match(/^[ ]*$/)){
+                        return Promise.reject("请输入巡检任务名称");
+                      }
+                      return Promise.resolve("success");
+                    } else {
+                      return Promise.resolve("success");
+                    }
+                  },
+                },]}
               >
                 <Input
                   placeholder="例如：深度分析"

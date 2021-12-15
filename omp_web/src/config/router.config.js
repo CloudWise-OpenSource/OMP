@@ -16,7 +16,8 @@ import ApplicationInstallation from "@/pages/AppStore/config/ApplicationInstalla
 import Installation from "@/pages/AppStore/config/Installation";
 import EmailSettings from "src/pages/EmailSettings";
 import RuleCenter from "src/pages/RuleCenter";
-import InstallationRecord from "@/pages/InstallationRecord"
+import InstallationRecord from "@/pages/InstallationRecord";
+import Upgrade from "@/pages/AppStore/config/Upgrade"
 import {
   DesktopOutlined,
   ClusterOutlined,
@@ -93,10 +94,16 @@ export default [
       //   component: Installation,
       // },
       {
-        title: "安装记录",
+        title: "操作记录",
         path: "/application_management/install-record",
         component: InstallationRecord,
       },
+      {
+        title: "服务升级",
+        path: "/application_management/service_upgrade",
+        notInMenu: true,
+        component: Upgrade,
+      }
     ],
   },
   {
