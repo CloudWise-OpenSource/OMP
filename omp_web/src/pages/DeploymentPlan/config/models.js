@@ -821,7 +821,7 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
         handleResponse(res, (res) => {
           if (res.code === 0) {
             setNumInfo(res.data);
-            // setStepNum(3);
+            setStepNum(3);
             // 开始安装
             startInstall(res.data.operation_uuid);
           }
@@ -899,11 +899,9 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
     })
       .then((res) => {
         handleResponse(res, (res) => {
-          console.log(1111111)
           if (res.code === 0 && res.data) {
             // 调用安装
-            console.log(`id is ${operation_uuid}`);
-            // retryInstall(operation_uuid);
+            retryInstall(operation_uuid);
             // 清除定时器
             clearInterval(hostAgentTimer.current);
           }
