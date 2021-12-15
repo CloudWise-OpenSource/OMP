@@ -336,7 +336,7 @@ const AppStore = () => {
                 </Menu>
               }
             >
-              发布操作
+              发布服务
             </Dropdown.Button>
           </div>
         </div>
