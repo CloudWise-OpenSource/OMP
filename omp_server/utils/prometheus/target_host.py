@@ -78,8 +78,8 @@ class HostCrawl(Prometheus):
 
     def __init__(self, env, instance):
         self.ret = {}
-        self.env = env              # 环境
-        self.instance = instance    # 主机ip
+        self.env = env  # 环境
+        self.instance = instance  # 主机ip
         self._obj = SaltClient()
         Prometheus.__init__(self)
 

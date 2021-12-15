@@ -10,12 +10,14 @@ class ServiceBase(Prometheus):
     """
     查询 prometheus java 指标,基类
     """
+
     def __init__(self, env, instance, job):
         self.ret = {}
         self.basic = []
-        self.job = job              # Exporter类型
-        self.env = env              # 环境
-        self.instance = instance    # 主机ip
+        self.job = job  # Exporter类型
+        self.env = env  # 环境
+        self.instance = instance  # 主机ip
+        self.metric_num = 10
         Prometheus.__init__(self)
 
     @staticmethod

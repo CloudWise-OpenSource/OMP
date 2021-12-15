@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # encoding: utf-8
-# Auther: Darren Liu
+# Author: Darren Liu
 # Description: get rocketmq  Inspection data
 
 import os
@@ -24,17 +24,17 @@ def GetProcess_Pid():
                             pid_list.append(pnum)
                         if "rocketmq.namesrv" in cmd_str:
                             pid_list.append(pnum)
-            except:
+            except Exception:
                 pass
         return pid_list
-    except:
+    except Exception:
         return []
 
 
 def GetLocal_Ip():
-    try :
+    try:
         csock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        csock.connect(( '8.8.8.8' , 80 ))
+        csock.connect(('8.8.8.8', 80))
         (addr, port) = csock.getsockname()
         csock.close()
         return addr
@@ -55,7 +55,7 @@ def GetProcess_Port(pid_list):
     port = []
     for pid in pid_list:
         try:
-            cmd =  'ss -tnlp | grep '+str(pid)
+            cmd = 'ss -tnlp | grep ' + str(pid)
             port_list = os.popen(cmd).read().strip('\n').split('\n')
             for line_list in port_list:
                 if not line_list:
@@ -63,22 +63,25 @@ def GetProcess_Port(pid_list):
                 line = line_list.split()
                 port_aa = line[3].split(':')
                 port.append(port_aa[-1])
-        except:
+        except Exception:
             return port
     return list(set(port))
 
 
 def GetProcess_Runtime(pid_list):
+    runtime = None
     if not pid_list or not isinstance(pid_list, list):
-        return None
+        return runtime
     try:
-        cmd = 'ps -eo pid,etime|grep '+str(pid_list[0])
+        cmd = 'ps -eo pid,etime|grep ' + str(pid_list[0])
         etime = os.popen(cmd).read().strip('\n').split()
         # if '-' in etime[1]:
         #     runtime = etime[1].replace('-', ' day ')
         # else:
         #     runtime = etime[1]
 
+        runtime = etime[1].replace(
+            '-', '天').replace(':', '小时', 1).replace(':', '分钟', 1) + '秒'
         run_time = etime[1].split(':')
         run_time = [int(i) for i in run_time]
         if len(run_time) == 1:
@@ -94,9 +97,10 @@ def GetProcess_Runtime(pid_list):
             runtime = \
                 f"{run_time[0]}年{run_time[1]}天{run_time[2]}小时" \
                 f"{run_time[3]}分钟{run_time[4]}秒"
-    except:
-        runtime = None
+    except Exception:
+        pass
     return runtime
+
 
 _timer = getattr(time, 'monotonic', time.time)
 num_cpus = psutil.cpu_count() or 1
@@ -115,14 +119,14 @@ def GetProcessCPU_Pre(pid_list):
         try:
             p = psutil.Process(pid)
             pt = p.cpu_times()
-            st1,pt1_0,pt1_1 = timer(),pt.user,pt.system   # new
-            st0,pt0_0,pt0_1 = pid_cpuinfo.get(pid,(0,0,0)) # old
+            st1, pt1_0, pt1_1 = timer(), pt.user, pt.system   # new
+            st0, pt0_0, pt0_1 = pid_cpuinfo.get(pid, (0, 0, 0))  # old
             delta_proc = (pt1_0 - pt0_0) + (pt1_1 - pt0_1)
             delta_time = st1 - st0
             cpus_percent = ((delta_proc / delta_time) * 100)
             cpus_sum += cpus_percent
             pid_cpuinfo[pid] = [st1, pt1_0, pt1_1]
-        except:
+        except Exception:
             pass
     cpu_usage = "{:.2f}".format(cpus_sum) + "%"
     return cpu_usage
@@ -137,7 +141,7 @@ def GetProcess_Mem(pid_list):
             p = psutil.Process(pid)
             process_mem = p.memory_percent()
             process_mem_sum += process_mem
-        except:
+        except Exception:
             pass
     mem_usage = "{:.2f}".format(process_mem_sum) + "%"
     return mem_usage
@@ -154,7 +158,7 @@ def GetProcess_ServiceMem(pid_list):
             process_mem = process_list[-1].split()
             service_mem = process_mem[0]
             service_mem_sum += service_mem
-        except:
+        except Exception:
             pass
     return service_mem_sum if service_mem_sum else None
 
@@ -181,13 +185,13 @@ def GetProcess_LogLevel(pid_list):
                     log_level_set.add(log_level)
                     break
             f.close()
-    except:
+    except Exception:
         pass
     return ",".join(log_level_set)
 
 
 def main(pid_list=GetProcess_Pid(), **kwargs):
-    process_message = {}
+    process_message = dict()
     process_message["IP"] = GetLocal_Ip()
     process_message["service_status"] = GetProcess_Survive(pid_list)
     process_message["port_status"] = GetProcess_Port(pid_list)

@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 # encoding: utf-8
-# Auther: Darren Liu
+# Author: Darren Liu
 # Description: get zookeeper Inspection data
+import json
+import os
 
-from inspection_common import *
+import psutil
+
+from inspection_common import GetProcess_Runtime, GetLocal_Ip, GetProcess_Survive, GetProcess_Port, GetProcess_Mem, \
+    GetProcessCPU_Pre, GetProcess_ServiceMem
 
 
 def GetProcess_Pid():
@@ -14,9 +19,9 @@ def GetProcess_Pid():
                 if p.name() == 'java' and 'zookeeper' in p.cwd():
                     pid = pnum
                     return pid
-            except:
+            except Exception:
                 pass
-    except:
+    except Exception:
         return None
 
 
@@ -28,7 +33,7 @@ def GetNode_Status(pid):
             node_status = os.popen(cmd).read().strip('\n').split(':')
             status = node_status[-1].strip()
             return status
-        except:
+        except Exception:
             return None
 
 
@@ -44,14 +49,14 @@ def GetCluster_IP(pid):
                     zk_cluster_ip = zk_cluster_list[-1].split(':')
                     zk_cluster.append(zk_cluster_ip[0])
             return zk_cluster
-        except:
+        except Exception:
             return None
     else:
         return None
 
 
 def GetProcess_LogLevel(pid):
-    zk_cluster = []
+    # zk_cluster = []
     log_level = None
     if pid and type(pid).__name__ == 'int':
         try:
@@ -62,14 +67,14 @@ def GetProcess_LogLevel(pid):
                     zk_log_level = lines_list.strip('\n').split('=')
                     log_level = zk_log_level[-1]
             return log_level
-        except:
+        except Exception:
             return None
     else:
         return None
 
 
 def main(pid=GetProcess_Pid(), json_path="/data/app/data.json", **kwargs):
-    process_message = {}
+    process_message = dict()
     process_message["IP"] = GetLocal_Ip()
     process_message["service_status"] = GetProcess_Survive(pid)
     process_message["port_status"] = GetProcess_Port(pid)

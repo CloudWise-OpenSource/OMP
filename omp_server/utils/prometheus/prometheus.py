@@ -18,6 +18,7 @@ class Prometheus(object):
     prometheus
     执行prosql查询数据、查询alerts
     """
+
     def __init__(self):
         # prometheus 的 ip:port
         self.address = MonitorUrl.objects.get(name='prometheus').monitor_url
