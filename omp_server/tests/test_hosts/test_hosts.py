@@ -663,7 +663,6 @@ class UpdateHostTest(AutoLoginTest, HostsResourceMixin):
             "username": "new_username",
             "password": "new_password",
         }).json()
-        print(resp)
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
         new_host_obj = resp.get("data")
