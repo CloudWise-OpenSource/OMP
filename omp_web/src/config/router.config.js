@@ -18,6 +18,8 @@ import EmailSettings from "src/pages/EmailSettings";
 import RuleCenter from "src/pages/RuleCenter";
 import InstallationRecord from "@/pages/InstallationRecord";
 import Upgrade from "@/pages/AppStore/config/Upgrade"
+import DeploymentPlan from "src/pages/DeploymentPlan";
+
 import {
   DesktopOutlined,
   ClusterOutlined,
@@ -103,7 +105,12 @@ export default [
         path: "/application_management/service_upgrade",
         notInMenu: true,
         component: Upgrade,
-      }
+      },
+      {
+        title: "部署模板",
+        path: "/application_management/deployment-plan",
+        component: DeploymentPlan,
+      },
     ],
   },
   {

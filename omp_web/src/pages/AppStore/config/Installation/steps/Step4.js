@@ -8,6 +8,7 @@ import { fetchGet } from "@/utils/request";
 import { handleResponse } from "@/utils/utils";
 import { useHistory, useLocation } from "react-router-dom";
 import { fetchPost } from "src/utils/request";
+import { use } from "echarts";
 
 const { Link } = Anchor;
 // 状态渲染规则
@@ -16,7 +17,7 @@ const renderStatus = {
   1: "正在安装",
   2: "安装成功",
   3: "安装失败",
-  4: "正在注册"
+  4: "正在注册",
 };
 
 const Step4 = () => {
@@ -32,6 +33,13 @@ const Step4 = () => {
   const [loading, setLoading] = useState(true);
 
   const [retryLoading, setRetryLoading] = useState(false);
+
+  // 主机 agent 状态标识
+  const [hostAgentFlag, setHostAgentFlag] = useState(false);
+  // 轮训控制器
+  const hostAgentTimer = useRef(null);
+  // start 按钮加载
+  const [startLoading, setStartLoading] = useState(false);
 
   const [data, setData] = useState({
     detail: {},
@@ -53,7 +61,11 @@ const Step4 = () => {
       .then((res) => {
         handleResponse(res, (res) => {
           setData(res.data);
-          if (res.data.status == 0 || res.data.status == 1 || res.data.status == 4 ) {
+          if (
+            res.data.status == 0 ||
+            res.data.status == 1 ||
+            res.data.status == 4
+          ) {
             // 状态为未安装或者安装中
             if (openNameRef.current) {
               let arr = openNameRef.current.split("=");
@@ -119,11 +131,51 @@ const Step4 = () => {
       });
   };
 
+  // 查询主机 agent 状态
+  const queryHostAgent = () => {
+    // 构造 ip 集合
+    let ipSet = new Set();
+    Object.keys(data.detail).map((key, idx) => {
+      data.detail[key].forEach((e) => {
+        if (e.ip !== "postAction") {
+          ipSet.add(e.ip);
+        }
+      });
+    });
+    fetchPost(apiRequest.machineManagement.hostsAgentStatus, {
+      body: {
+        ip_list: Array.from(ipSet),
+      },
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          if (res.code === 0 && res.data) {
+            // 调用安装
+            retryInstall();
+            // 清除定时器
+            clearInterval(hostAgentTimer.current);
+            setStartLoading(false);
+          }
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {});
+  };
+
+  // 开始安装
+  const startInstall = () => {
+    setStartLoading(true);
+    hostAgentTimer.current = setInterval(() => {
+      queryHostAgent();
+    }, 1000);
+  };
+
   useEffect(() => {
     queryInstallProcess();
     return () => {
       // 页面销毁时清除延时器
       clearTimeout(timer.current);
+      clearInterval(hostAgentTimer.current);
     };
   }, []);
 
@@ -202,7 +254,7 @@ const Step4 = () => {
               }}
             >
               {Object.keys(data.detail).map((key) => {
-                console.log(data.detail[key]);
+                // console.log(data.detail[key]);
                 let hasError =
                   data.detail[key].filter((a) => a.status == 3).length !== 0;
                 return (
@@ -210,7 +262,9 @@ const Step4 = () => {
                     <Link
                       href={`#a${key}`}
                       title={
-                        <span style={{ color: hasError && "rgb(218, 78, 72)" }}>{key}</span>
+                        <span style={{ color: hasError && "rgb(218, 78, 72)" }}>
+                          {key}
+                        </span>
                       }
                     />
                   </div>
@@ -250,6 +304,19 @@ const Step4 = () => {
           />
         </div>
         <div style={{ paddingLeft: 60 }}>
+          {data.status == 0 && (
+            <Button
+              loading={startLoading}
+              style={{ marginLeft: 10 }}
+              type="primary"
+              //disabled={unassignedServices !== 0}
+              onClick={() => {
+                startInstall();
+              }}
+            >
+              开始
+            </Button>
+          )}
           {data.status == 3 && (
             <Button
               loading={retryLoading}

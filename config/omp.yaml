@@ -117,3 +117,9 @@ basic_order:
   - clickhouse
   - hadoop
   - flink
+
+
+# 亲和力服务名称
+# app_name 和冗余字段中 affinity 的值，二者需保持一致
+affinity:
+  tengine: tengine

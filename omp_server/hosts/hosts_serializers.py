@@ -103,8 +103,16 @@ class HostSerializer(ModelSerializer):
     init_host = serializers.BooleanField(
         help_text="是否初始化",
         required=False, default=False, write_only=True,
-        error_messages={"required": "必须包含[init_host]字段"}
     )
+    run_user = serializers.CharField(
+        help_text="运行用户",
+        required=False, default="",
+        max_length=16, write_only=True,
+        error_messages={
+            "max_length": "运行用户长度需小于{max_length}"},
+        validators=[
+            ReValidator(regex=r"^[_a-zA-Z0-9][-_a-zA-Z0-9]+$"),
+        ])
 
     class Meta:
         """ 元数据 """
@@ -159,6 +167,11 @@ class HostSerializer(ModelSerializer):
         password = attrs.get("password")
         data_folder = attrs.get("data_folder")
         init_flag = attrs.get("init_host", False)
+        run_user = attrs.get("run_user")
+
+        # 如果提供 run_user，需确保用户为 root
+        if run_user and username != "root":
+            raise ValidationError({"username": "运行用户仅在用户名为root时可用"})
 
         # 校验主机 SSH 连通性
         ssh = SSH(ip, port, username, password)
@@ -453,6 +466,8 @@ class HostBatchValidateSerializer(Serializer):
             if len(v) > 0:
                 v.sort(key=lambda x: x.get("row", 999))
         attrs["result_dict"] = result_dict
+        # print(result_dict["correct"])
+        # print(result_dict["error"])
         logger.info("host batch validate end")
         return attrs
 
@@ -481,3 +496,14 @@ class HostInitSerializer(HostIdsSerializer):
             id__in=host_ids
         ).update(init_status=Host.INIT_EXECUTING)
         return validated_data
+
+
+class HostsAgentStatusSerializer(Serializer):
+    """ 主机 agent 状态序列化类 """
+
+    ip_list = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="主机ip列表",
+        required=True, allow_empty=False,
+        error_messages={"required": "必须包含[ip_list]字段"}
+    )
