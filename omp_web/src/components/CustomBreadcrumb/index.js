@@ -43,7 +43,8 @@ const breadcrumbNameMap = {
   "rule-center": "指标中心",
   "default-rule": "默认指标",
   "install-record": "操作记录",
-  "service_upgrade": "服务升级"
+  service_upgrade: "服务升级",
+  "deployment-plan": "部署模板",
 };
 
 // 基于面包屑组件的一层封装，用于匹配当前路由地址，动态展示页面路径
@@ -177,7 +178,10 @@ const CustomBreadcrumb = withRouter(({ location, collapsed }) => {
   };
 
   return (
-    <div className={styles.customNav} style={{marginLeft:collapsed ? 50 : 200}}>
+    <div
+      className={styles.customNav}
+      style={{ marginLeft: collapsed ? 50 : 200 }}
+    >
       {/* <div> */}
       <Breadcrumb>{extraBreadcrumbItems()}</Breadcrumb>
       {/* </div> */}

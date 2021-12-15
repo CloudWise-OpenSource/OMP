@@ -617,7 +617,8 @@ class UpdateHostTest(AutoLoginTest, HostsResourceMixin):
 
     @mock.patch.object(SSH, "check", return_value=(True, ""))
     @mock.patch.object(SSH, "is_sudo", return_value=(True, "is sudo"))
-    def test_partial_update_host(self, is_sudo, ssh_mock):
+    @mock.patch.object(SSH, "cmd", return_value=(True, ""))
+    def test_partial_update_host(self, cmd, is_sudo, ssh_mock):
         """ 更新一个现有主机的一个或多个字段 """
 
         # 更新不存在主机 -> 更新失败
