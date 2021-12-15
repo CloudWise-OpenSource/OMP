@@ -52,11 +52,11 @@ class Nacos(BasePostInstallUtils):
         if not init_flag:
             return False, f"execute init failed: {init_msg}"
         # 执行 restart
-        restart_flag, restart_msg = self.execute_restart(
-            detail_obj=detail_obj
-        )
-        logger.info(f"execute nacos install: {restart_flag};{restart_msg}")
-        if not restart_flag:
-            return False, f"restart nacos failed: {restart_msg}"
+        # restart_flag, restart_msg = self.execute_restart(
+        #     detail_obj=detail_obj
+        # )
+        # logger.info(f"execute nacos install: {restart_flag};{restart_msg}")
+        # if not restart_flag:
+        #     return False, f"restart nacos failed: {restart_msg}"
         logger.info("Execute post install action for nacos success!")
         return True, "success"
