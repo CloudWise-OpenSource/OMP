@@ -2,6 +2,9 @@
 应用商店相关视图
 """
 import os
+import uuid
+import json
+import time
 import logging
 
 from rest_framework.viewsets import GenericViewSet
@@ -12,10 +15,13 @@ from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from django.http import FileResponse
 from django.conf import settings
+from django.db import transaction
 from django_filters.rest_framework.backends import DjangoFilterBackend
 
 from db_models.models import (
-    Labels, ApplicationHub, ProductHub, UploadPackageHistory
+    Labels, ApplicationHub, ProductHub, UploadPackageHistory,
+    Env, Host, Service, MainInstallHistory, DetailInstallHistory,
+    PreInstallHistory, PostInstallHistory, DeploymentPlan
 )
 from utils.common.paginations import PageNumberPager
 from app_store.app_store_filters import (
@@ -26,7 +32,8 @@ from app_store.app_store_serializers import (
     ComponentListSerializer, ServiceListSerializer,
     UploadPackageSerializer, RemovePackageSerializer,
     UploadPackageHistorySerializer, ExecuteLocalPackageScanSerializer,
-    PublishPackageHistorySerializer
+    PublishPackageHistorySerializer, DeploymentPlanValidateSerializer,
+    DeploymentImportSerializer, DeploymentPlanListSerializer
 )
 from app_store.app_store_serializers import (
     ProductDetailSerializer, ApplicationDetailSerializer
@@ -36,6 +43,8 @@ from app_store import tmp_exec_back_task
 from utils.common.exceptions import OperateError
 from app_store.tasks import publish_entry
 from rest_framework.filters import OrderingFilter
+from utils.parse_config import AFFINITY_FIELD
+from app_store.new_install_utils import DataJson
 
 logger = logging.getLogger("server")
 
@@ -65,9 +74,7 @@ class LabelListView(GenericViewSet, ListModelMixin):
         list:
         查询所有标签列表
     """
-    queryset = Labels.objects.filter(
-        applicationhub__app_type=ApplicationHub.APP_TYPE_COMPONENT
-    ).order_by("id").values_list("label_name", flat=True).distinct()
+    queryset = Labels.objects.all()
     # 过滤，排序字段
     filter_backends = (DjangoFilterBackend,)
     filter_class = LabelFilter
@@ -75,7 +82,18 @@ class LabelListView(GenericViewSet, ListModelMixin):
     get_description = "查询所有标签列表"
 
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
+        query_set = self.get_queryset()
+        # 过滤掉子项为 null 的 label
+        label_type = request.query_params.get("label_type", -1)
+        if int(label_type) == Labels.LABEL_TYPE_COMPONENT:
+            query_set = Labels.objects.filter(
+                applicationhub__app_type=ApplicationHub.APP_TYPE_COMPONENT)
+        if int(label_type) == Labels.LABEL_TYPE_APPLICATION:
+            query_set = Labels.objects.exclude(
+                producthub__isnull=True)
+        query_set = query_set.order_by(
+            "id").values_list("label_name", flat=True).distinct()
+        queryset = self.filter_queryset(query_set)
         return Response(list(queryset))
 
 
@@ -384,3 +402,371 @@ class ApplicationTemplateView(GenericViewSet, ListModelMixin):
             logger.error("template.md file not found")
             raise OperateError("组件模板文件缺失")
         return response
+
+
+class DeploymentOperableView(GenericViewSet, ListModelMixin):
+    """
+        list:
+        部署计划是否可操作
+    """
+    queryset = Service.objects.filter(
+        service__is_base_env=False)
+    # 操作描述信息
+    get_description = "查看部署计划"
+
+    def list(self, request, *args, **kwargs):
+        return Response(not self.get_queryset().exists())
+
+
+class DeploymentTemplateView(GenericViewSet, ListModelMixin):
+    """
+          list:
+          获取部署计划模板
+      """
+    # 操作描述信息
+    get_description = "获取部署计划模板"
+
+    def list(self, request, *args, **kwargs):
+        template_file_name = "deployment.xlsx"
+        template_path = os.path.join(
+            settings.BASE_DIR.parent,
+            "package_hub", "template", template_file_name)
+        try:
+            file = open(template_path, 'rb')
+            response = FileResponse(file)
+            response["Content-Type"] = "application/octet-stream"
+            response["Content-Disposition"] = \
+                f"attachment;filename={template_file_name}"
+        except FileNotFoundError:
+            logger.error("template.md file not found")
+            raise OperateError("组件模板文件缺失")
+        return response
+
+
+class DeploymentPlanListView(GenericViewSet, ListModelMixin):
+    """
+        list:
+        查看部署计划
+    """
+    queryset = DeploymentPlan.objects.all().order_by("-created")
+    serializer_class = DeploymentPlanListSerializer
+    pagination_class = PageNumberPager
+    # 操作描述信息
+    get_description = "查看部署计划"
+
+
+class DeploymentPlanValidateView(GenericViewSet, CreateModelMixin):
+    """
+        create:
+        校验部署计划服务数据
+    """
+    serializer_class = DeploymentPlanValidateSerializer
+    # 操作描述信息
+    post_description = "校验部署计划服务数据"
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            logger.error(f"deployment plan validate failed:{request.data}")
+            raise ValidationError("数据格式错误")
+        return Response(serializer.validated_data.get("result_dict"))
+
+
+class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
+    """
+        create:
+        部署计划导入，服务数据入库
+    """
+    serializer_class = DeploymentImportSerializer
+    # 操作描述信息
+    post_description = "部署计划导入，服务数据入库"
+
+    @staticmethod
+    def _get_app_pro_queryset(service_name_ls):
+        """ 获取 app、pro 最新 queryset """
+        # 查询所有 application 信息
+        _queryset = ApplicationHub.objects.filter(
+            app_name__in=service_name_ls, is_release=True)
+        # 所有 application 默认取最新
+        new_app_id_list = []
+        for app in _queryset:
+            new_version = _queryset.filter(
+                app_name=app.app_name
+            ).order_by("-created").first().app_version
+            if new_version == app.app_version:
+                new_app_id_list.append(app.id)
+        app_queryset = _queryset.filter(
+            id__in=new_app_id_list, is_release=True
+        ).select_related("product")
+
+        # 获取 application 对应的 product 信息
+        app_now = app_queryset.exclude(product__isnull=True)
+        pro_id_list = app_now.values_list("product_id", flat=True).distinct()
+        # 验证 product 的依赖项均已包含
+        pro_queryset = ProductHub.objects.filter(id__in=pro_id_list)
+        return app_queryset, pro_queryset
+
+    @staticmethod
+    def _add_service(service_obj_ls, host_obj, app_obj, env_obj):
+        """ 添加服务 """
+        # 获取服务的基础目录和控制脚本
+        base_dir = ""
+        service_controllers = {}
+        app_install_args = json.loads(app_obj.app_install_args)
+        for item in app_install_args:
+            if item.get("key") == "base_dir":
+                base_dir = item.get("default").format(
+                    data_path=host_obj.data_folder)
+                break
+        app_controllers = json.loads(app_obj.app_controllers)
+        for k, v in app_controllers.items():
+            if v != "":
+                service_controllers[k] = f"{base_dir}/{v}"
+        # 切分 ip 字段，构建服务名
+        ip_split_ls = host_obj.ip.split(".")
+        service_instance_name = f"{app_obj.app_name}-{ip_split_ls[-2]}-{ip_split_ls[-1]}"
+        # 服务端口
+        service_port = app_obj.app_port
+        if not service_port:
+            service_port = json.dumps([])
+
+        # 添加服务到列表中
+        service_obj_ls.append(Service(
+            ip=host_obj.ip,
+            service_instance_name=service_instance_name,
+            service=app_obj,
+            service_port=service_port,
+            service_controllers=service_controllers,
+            service_status=Service.SERVICE_STATUS_READY,
+            env=env_obj
+            # TODO 集群相关信息
+        ))
+
+    def create(self, request, *args, **kwargs):
+        # 信任数据，只进行格式校验
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            logger.error(f"host batch import failed:{request.data}")
+            raise ValidationError("数据格式错误")
+
+        # env 环境对象
+        default_env = Env.objects.filter(id=1).first()
+
+        # 实例名称、服务数据、服务名称列表
+        instance_info_ls = serializer.data.get("instance_info_ls")
+        instance_name_ls = list(
+            map(lambda x: x.get("instance_name"), instance_info_ls))
+        service_data_ls = serializer.data.get("service_data_ls")
+        service_name_ls = list(
+            map(lambda x: x.get("service_name"), service_data_ls))
+
+        # 亲和力 tengine 字段
+        tengine_name = AFFINITY_FIELD.get("tengine", "tengine")
+
+        # 主机、基础环境 queryset
+        host_queryset = Host.objects.filter(instance_name__in=instance_name_ls)
+        base_env_queryset = ApplicationHub.objects.filter(is_base_env=True)
+        # 应用、产品 queryset
+        app_queryset, pro_queryset = self._get_app_pro_queryset(
+            service_name_ls)
+        # 如果主机不存在
+        if not host_queryset.exists():
+            raise OperateError("导入失败，主机未纳管")
+        # 构建 uuid
+        operation_uuid = uuid.uuid4()
+
+        try:
+            # 服务对象列表、基础环境字典
+            service_obj_ls = []
+            base_env_dict = {}
+            # tengine 所在主机对象字典
+            tengine_host_obj_dict = {}
+            # 遍历获取所有需要安装的服务
+            for service_data in service_data_ls:
+                instance_name = service_data.get("instance_name")
+                service_name = service_data.get("service_name")
+                # 主机、应用对象
+                host_obj = host_queryset.filter(
+                    instance_name=instance_name).first()
+                app_obj = app_queryset.filter(app_name=service_name).first()
+
+                # 亲和力为 tengine 字段 (Web 服务) 跳过，后续按照 product 维度补充
+                if app_obj.extend_fields.get("affinity") == tengine_name:
+                    continue
+                # 如果服务为 tengine 时，记录其所在节点
+                if app_obj.app_name == tengine_name:
+                    tengine_host_obj_dict[host_obj.ip] = host_obj
+
+                # 检查服务依赖
+                if app_obj.app_dependence:
+                    dependence_list = json.loads(app_obj.app_dependence)
+                    for dependence in dependence_list:
+                        app_name = dependence.get("name")
+                        version = dependence.get("version")
+                        base_env_obj = base_env_queryset.filter(
+                            app_name=app_name, app_version=version
+                        ).order_by("-created").first()
+                        # 如果服务的依赖中有 base_env，并且对应 ip 上不存在则写入
+                        if base_env_obj and \
+                                app_name not in base_env_dict.get(host_obj.ip, []):
+                            self._add_service(
+                                service_obj_ls, host_obj, base_env_obj, default_env)
+                            # 以 ip 为维度记录，避免重复
+                            if host_obj.ip not in base_env_dict:
+                                base_env_dict[host_obj.ip] = []
+                            base_env_dict[host_obj.ip].append(app_name)
+
+                # 添加服务
+                self._add_service(service_obj_ls, host_obj,
+                                  app_obj, default_env)
+
+            # 亲和力为 tengine 字段 (Web 服务) 列表
+            app_target = ApplicationHub.objects.filter(
+                product__in=pro_queryset)
+            tengine_app_list = list(filter(
+                lambda x: x.extend_fields.get("affinity") == tengine_name, app_target))
+
+            # 为所有 tengine 节点添加亲和力服务
+            for tengine_ip, host_obj in tengine_host_obj_dict.items():
+                for app_obj in tengine_app_list:
+                    self._add_service(service_obj_ls, host_obj,
+                                      app_obj, default_env)
+
+            service_instance_name_ls = list(map(
+                lambda x: x.service_instance_name, service_obj_ls))
+            # run_user 字典
+            run_user_dict = {}
+            for instance_info in instance_info_ls:
+                if instance_info.get("run_user", "") != "":
+                    run_user_dict[
+                        instance_info.get("instance_name")
+                    ] = instance_info.get("run_user")
+
+            # 服务 memory 字典
+            service_memory_dict = {}
+            for service_data in service_data_ls:
+                if service_data.get("memory", "") != "":
+                    service_memory_dict[
+                        service_data.get("service_name")
+                    ] = service_data.get("memory")
+
+            # 数据库入库
+            with transaction.atomic():
+                # 批量创建 service，return 无 id，需重查获取
+                Service.objects.bulk_create(service_obj_ls)
+                service_queryset = Service.objects.filter(
+                    service_instance_name__in=service_instance_name_ls
+                ).select_related("service")
+
+                # 主安装记录表、后续任务记录表
+                main_history_obj = MainInstallHistory.objects.create(
+                    operator=request.user.username,
+                    operation_uuid=operation_uuid,
+                )
+                PostInstallHistory.objects.create(
+                    main_install_history=main_history_obj,
+                )
+
+                # 主机层安装记录表
+                pre_install_obj_ls = []
+                for host_obj in host_queryset:
+                    pre_install_obj_ls.append(PreInstallHistory(
+                        main_install_history=main_history_obj,
+                        ip=host_obj.ip,
+                    ))
+                PreInstallHistory.objects.bulk_create(pre_install_obj_ls)
+
+                # 安装详情表
+                detail_history_obj_ls = []
+                for service_obj in service_queryset:
+                    # 获取主机对象
+                    host_obj = host_queryset.filter(ip=service_obj.ip).first()
+
+                    app_args = json.loads(service_obj.service.app_install_args)
+                    # 获取服务对应的 run_user 和 memory
+                    run_user = run_user_dict.get(host_obj.instance_name, None)
+                    memory = service_memory_dict.get(
+                        service_obj.service.app_name, None)
+                    # 如果用户自定义 run_user、memory 需覆盖写入 install_args
+                    if run_user:
+                        for i in app_args:
+                            if i.get("key") == "run_user":
+                                i["default"] = run_user
+                                break
+                        else:
+                            app_args.append({
+                                "name": "安装用户",
+                                "key": "run_user",
+                                "default": run_user,
+                            })
+                    if memory:
+                        for i in app_args:
+                            if i.get("key") == "memory":
+                                i["default"] = memory
+                                break
+                        else:
+                            app_args.append({
+                                "name": "运行内存",
+                                "key": "memory",
+                                "default": memory,
+                            })
+
+                    # 标记服务是否需要 post
+                    post_action_flag = 4
+                    if service_obj.service.extend_fields.get(
+                            "post_action", "") != "":
+                        post_action_flag = 0
+
+                    # 服务端口
+                    service_port = service_obj.service.app_port
+                    if not service_port:
+                        service_port = []
+                    else:
+                        service_port = json.loads(service_port)
+                    # 构建 detail_install_args
+                    detail_install_args = {
+                        "ip": service_obj.ip,
+                        "name": service_obj.service.app_name,
+                        "ports": service_port,
+                        "version": service_obj.service.app_version,
+                        "run_user": "",
+                        "data_folder": host_obj.data_folder,
+                        "cluster_name": None,
+                        "install_args": app_args,
+                        "instance_name": service_obj.service_instance_name
+                    }
+
+                    detail_history_obj_ls.append(DetailInstallHistory(
+                        service=service_obj,
+                        main_install_history=main_history_obj,
+                        install_detail_args=detail_install_args,
+                        post_action_flag=post_action_flag,
+                    ))
+                DetailInstallHistory.objects.bulk_create(detail_history_obj_ls)
+
+                # 部署计划表
+                DeploymentPlan.objects.create(
+                    plan_name=f"快速部署-{str(int(round(time.time() * 1000)))}",
+                    host_num=host_queryset.count(),
+                    product_num=pro_queryset.count(),
+                    service_num=len(service_data_ls),
+                    create_user=request.user.username,
+                    operation_uuid=operation_uuid,
+                )
+
+                # 生成 data.json
+                data_json = DataJson(operation_uuid=str(operation_uuid))
+                data_json.run()
+
+        except Exception as err:
+            logger.error(f"import deployment plan err: {err}")
+            import traceback
+            logger.error(traceback.print_exc())
+            raise OperateError("导入执行计划失败")
+
+        return Response({
+            "operation_uuid": operation_uuid,
+            "host_num": host_queryset.count(),
+            "product_num": pro_queryset.count(),
+            "service_num": len(service_data_ls),
+        })

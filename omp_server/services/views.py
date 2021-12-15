@@ -46,13 +46,38 @@ class ServiceListView(GenericViewSet, ListModelMixin):
     def list(self, request, *args, **kwargs):
         # 获取序列化数据列表
         queryset = self.filter_queryset(self.get_queryset())
-        serializer = self.get_serializer(
-            self.paginate_queryset(queryset), many=True)
-        serializer_data = serializer.data
+        real_query = queryset
 
         # 实时获取服务动态git
         prometheus_obj = Prometheus()
         is_success, prometheus_dict = prometheus_obj.get_all_service_status()
+
+        # 当未指定排序字段且查询成功时
+        query_field = request.query_params.get("ordering", "")
+        if is_success and query_field == "":
+            stop_ls = []
+            natural_ls = []
+            no_monitor_ls = []
+            ing_ls = []
+            for service in queryset:
+                # 当服务状态为 '正常' 和 '异常' 时
+                if service.service_status in (Service.SERVICE_STATUS_NORMAL, Service.SERVICE_STATUS_STOP):
+                    key_name = f"{service.ip}_{service.service_instance_name}"
+                    status = prometheus_dict.get(key_name, None)
+                    if status is None:
+                        no_monitor_ls.append(service)
+                    elif not status:
+                        stop_ls.append(service)
+                    else:
+                        natural_ls.append(service)
+                else:
+                    ing_ls.append(service)
+            real_query = stop_ls + ing_ls + natural_ls + no_monitor_ls
+
+        serializer = self.get_serializer(
+            self.paginate_queryset(real_query), many=True)
+        serializer_data = serializer.data
+
         # 若获取成功，则动态覆盖服务状态
         if is_success:
             status_dict = {
@@ -75,23 +100,7 @@ class ServiceListView(GenericViewSet, ListModelMixin):
         serializer_data = explain_url(
             serializer_data, is_service=True)
 
-        result_ls = serializer_data
-        # 如果没有排序字段，则停止状态服务置于列表前方，未监控状态服务置于列表后方
-        query_field = request.query_params.get("ordering", "")
-        if query_field == "":
-            stop_ls = []
-            natural_ls = []
-            no_monitor_ls = []
-            for service in serializer_data:
-                if service.get("service_status") == "停止":
-                    stop_ls.append(service)
-                elif service.get("service_status") == "未监控":
-                    no_monitor_ls.append(service)
-                else:
-                    natural_ls.append(service)
-            result_ls = stop_ls + natural_ls + no_monitor_ls
-
-        return self.get_paginated_response(result_ls)
+        return self.get_paginated_response(serializer_data)
 
 
 class ServiceDetailView(GenericViewSet, RetrieveModelMixin):

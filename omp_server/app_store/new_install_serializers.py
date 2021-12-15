@@ -713,7 +713,7 @@ class CreateInstallPlanSerializer(BaseInstallSerializer):
 
     def make_final_install_data(  # NOQA
             self, install_data, valid_data,
-            run_user, host_ser_map, cluster_name_map
+            run_user, host_ser_map, cluster_name_map, host_user_map
     ):
         """
         构建最终的安装数据
@@ -722,6 +722,7 @@ class CreateInstallPlanSerializer(BaseInstallSerializer):
         :param run_user:
         :param host_ser_map:
         :param cluster_name_map:
+        :param host_user_map:
         :return:
         """
         all_install_service_lst = list()
@@ -736,7 +737,8 @@ class CreateInstallPlanSerializer(BaseInstallSerializer):
                     item["ip"] = ip
                     item["version"] = valid_data[item["name"]]["version"]
                     item["install_args"] = ServiceArgsPortUtils(
-                        ip=ip, data_folder=data_folder, run_user=run_user
+                        ip=ip, data_folder=data_folder, run_user=run_user,
+                        host_user_map=host_user_map
                     ).reformat_install_args(item["install_args"])
                     item["data_folder"] = data_folder
                     item["run_user"] = run_user
@@ -758,11 +760,13 @@ class CreateInstallPlanSerializer(BaseInstallSerializer):
                     _dic["run_user"] = run_user
                     _dic["install_args"] = \
                         ServiceArgsPortUtils(
-                            ip=ip, data_folder=data_folder, run_user=run_user
+                            ip=ip, data_folder=data_folder, run_user=run_user,
+                            host_user_map=host_user_map
                     ).remake_install_args(obj=_app)
                     _dic["ports"] = \
                         ServiceArgsPortUtils(
-                            ip=ip, data_folder=data_folder, run_user=run_user
+                            ip=ip, data_folder=data_folder, run_user=run_user,
+                            host_user_map=host_user_map
                     ).get_app_port(obj=_app)
                     _dic["instance_name"] = \
                         item + "-" + "-".join(ip.split(".")[-2:])
@@ -795,6 +799,8 @@ class CreateInstallPlanSerializer(BaseInstallSerializer):
             f"validated_data: {validated_data}")
         run_user = validated_data["run_user"]
         unique_key = validated_data["unique_key"]
+        # 添加主机与ssh连接用户的映射关系
+        BaseRedisData(unique_key).set_host_user_map()
         # 获取存储在redis中的服务与主机的映射关系
         _host_ser_map = BaseRedisData(
             unique_key).get_step_5_host_service_map()
@@ -821,25 +827,30 @@ class CreateInstallPlanSerializer(BaseInstallSerializer):
         _valid_data = BaseRedisData(
             unique_key).get_step_2_origin_data()
         _install_data = _valid_data["install"]
+        # 获取主机与用户映射关系
+        host_user_map = BaseRedisData(unique_key).get_host_user_map()
         # _use_exist_data = _valid_data["use_exist"]
         all_install_service_lst = self.make_final_install_data(
             install_data=install_data,
             valid_data=_install_data,
             run_user=run_user,
             host_ser_map=_host_ser_map,
-            cluster_name_map=cluster_name_map
+            cluster_name_map=cluster_name_map,
+            host_user_map=host_user_map
         )
 
         # 解决base_env服务的安装
         base_env_ser_lst = BaseEnvServiceUtils(
-            all_install_service_lst=all_install_service_lst
+            all_install_service_lst=all_install_service_lst,
+            host_user_map=host_user_map
         ).run()
         all_install_service_lst.extend(base_env_ser_lst)
         # 解决带有with标识服务的解析方法
         with_ser_lst = WithServiceUtils(
             all_install_service_lst=all_install_service_lst,
             unique_key=unique_key,
-            run_user=run_user
+            run_user=run_user,
+            host_user_map=host_user_map
         ).run()
         all_install_service_lst.extend(with_ser_lst)
 

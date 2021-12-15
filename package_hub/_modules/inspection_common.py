@@ -48,6 +48,7 @@ def GetProcess_Port(pid):
 
 
 def GetProcess_Runtime(pid):
+    runtime = None
     if pid and isinstance(pid, int):
         try:
             cmd = 'ps -eo pid,etime|grep ' + str(pid)
@@ -59,10 +60,24 @@ def GetProcess_Runtime(pid):
 
             runtime = etime[1].replace(
                 '-', '天').replace(':', '小时', 1).replace(':', '分钟', 1) + '秒'
+
+            run_time = etime[1].split(':')
+            run_time = [int(i) for i in run_time]
+            if len(run_time) == 1:
+                runtime = f"{run_time[0]}秒"
+            elif len(run_time) == 2:
+                runtime = f"{run_time[0]}分钟{run_time[1]}秒"
+            elif len(run_time) == 3:
+                runtime = f"{run_time[0]}小时{run_time[1]}分钟{run_time[2]}秒"
+            elif len(run_time) == 4:
+                runtime = \
+                    f"{run_time[0]}天{run_time[1]}小时{run_time[2]}分钟{run_time[3]}秒"
+            elif len(run_time) == 5:
+                runtime = \
+                    f"{run_time[0]}年{run_time[1]}天{run_time[2]}小时" \
+                    f"{run_time[3]}分钟{run_time[4]}秒"
         except Exception:
-            runtime = None
-    else:
-        runtime = None
+            pass
     return runtime
 
 

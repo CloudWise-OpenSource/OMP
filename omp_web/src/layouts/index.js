@@ -42,7 +42,8 @@ const OmpLayout = (props) => {
 
   const headerLink = [
     // { title: "仪表盘", path: "/homepage" },
-    { title: "应用商店", path: "/application_management/app_store" },
+    // { title: "应用商店", path: "/application_management/app_store" },
+    { title: "快速部署", path: "/application_management/deployment-plan" },
     // { title: "数据上传", path: "/products-management/version/upload" },
     // { title: "深度分析", path: "/operation-management/report" },
     {
@@ -393,7 +394,7 @@ const OmpLayout = (props) => {
               // 应用商店content大背景不是白色，特殊处理
               backgroundColor:
                 location.pathname == "/application_management/app_store" ||
-                location.pathname.includes("installation") ||
+                location.pathname.includes("installation") || location.pathname.includes("service_upgrade") ||
                 location.pathname.includes("/homepage")
                   ? undefined
                   : "#fff",

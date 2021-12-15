@@ -7,6 +7,8 @@ import {
   Modal,
   Upload,
   message,
+  Dropdown,
+  Menu,
 } from "antd";
 import { useEffect, useRef, useState } from "react";
 import styles from "./index.module.less";
@@ -21,6 +23,7 @@ import ReleaseModal from "./config/ReleaseModal.js";
 import ScanServerModal from "./config/ScanServerModal";
 // 批量安装弹框组件
 import BatchInstallationModal from "./config/BatchInstallationModal";
+import ServiceUpgradeModal from "./config/ServiceUpgradeModal";
 import {
   getTabKeyChangeAction,
   getUniqueKeyChangeAction,
@@ -59,6 +62,9 @@ const AppStore = () => {
   // 扫描服务端
   const [scanServerModalVisibility, setScanServerModalVisibility] =
     useState(false);
+
+  // 服务升级操作弹框
+  const [sUModalVisibility, setSUModalVisibility] = useState(false);
 
   // 批量安装弹框
   const [bIModalVisibility, setBIModalVisibility] = useState(false);
@@ -303,25 +309,35 @@ const AppStore = () => {
             >
               批量安装
             </Button>
-            <Button
+            {/* <Button
               style={{ marginRight: 10 }}
-              type="primary"
+              onClick={() => {
+                queryBatchInstallationServiceList();
+                setSUModalVisibility(true);
+              }}
+            >
+              服务升级
+            </Button> */}
+            <Dropdown.Button
+              style={{ marginRight: 10 }}
               onClick={() => {
                 setTimeUnix(new Date().getTime());
                 setReleaseModalVisibility(true);
               }}
+              overlay={
+                <Menu
+                  onClick={(e) => {
+                    if (e.key === "1") {
+                      setScanServerModalVisibility(true);
+                    }
+                  }}
+                >
+                  <Menu.Item key="1">扫描服务端</Menu.Item>
+                </Menu>
+              }
             >
-              发布
-            </Button>
-            <Button
-              type="primary"
-              onClick={() => {
-                setScanServerModalVisibility(true);
-                //executeLocalPackageScan()
-              }}
-            >
-              扫描服务端
-            </Button>
+              发布服务
+            </Dropdown.Button>
           </div>
         </div>
 
@@ -457,6 +473,12 @@ const AppStore = () => {
         setBIModalVisibility={setBIModalVisibility}
         dataSource={bIserviceList}
         installTitle={installTitle.current}
+        initLoading={loading}
+      />
+      <ServiceUpgradeModal
+        sUModalVisibility={sUModalVisibility}
+        setSUModalVisibility={setSUModalVisibility}
+        dataSource={bIserviceList}
         initLoading={loading}
       />
     </div>

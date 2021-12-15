@@ -482,6 +482,24 @@ class BaseRedisData(object):
         key = self.unique_key + "_step_6_set_final_data"
         return self._get(key=key)
 
+    def set_host_user_map(self):
+        """
+        设置主机与用户之间的关系
+        :return:
+        """
+        host_user_lst = Host.objects.all().values("ip", "username")
+        host_user_dic = dict()
+        for item in host_user_lst:
+            host_user_dic[item["ip"]] = item["username"]
+        self.redis.set(self.unique_key + "_host_user_map", data=host_user_dic)
+
+    def get_host_user_map(self):
+        """
+        获取主机与用户映射关系
+        :return:
+        """
+        return self._get(self.unique_key + "_host_user_map")
+
 
 def check_package_exists(app_obj):
     """
@@ -959,10 +977,12 @@ class SerWithUtils(object):
 class ServiceArgsPortUtils(object):
     """ 服务安装过程中参数解析类 """
 
-    def __init__(self, ip=None, data_folder=None, run_user=None):
+    def __init__(self, ip=None, data_folder=None,
+                 run_user=None, host_user_map=None):
         self.ip = ip
         self.data_folder = data_folder
         self.run_user = run_user
+        self.host_user_map = host_user_map
 
     def get_app_dependence(self, obj):  # NOQA
         """
@@ -1048,8 +1068,12 @@ class ServiceArgsPortUtils(object):
                     el["default"].replace(DIR_KEY, "").lstrip("/")
                 )
                 el["dir_key"] = DIR_KEY
-            if el.get("key") == "run_user" and self.run_user:
-                el["default"] = self.run_user
+            if el.get("key") == "run_user":
+                if self.host_user_map[self.ip] != "root":
+                    el["default"] = self.host_user_map[self.ip]
+                    continue
+                if self.run_user:
+                    el["default"] = self.run_user
         return app_install_args
 
 
@@ -1183,13 +1207,14 @@ class ValidateInstallService(object):
 class BaseEnvServiceUtils(object):
     """ 解决base_env服务的安装事宜 """
 
-    def __init__(self, all_install_service_lst):
+    def __init__(self, all_install_service_lst, host_user_map):
         """
         解决依赖于base_env服务的安装操作
         :param all_install_service_lst: 所有需要安装的服务
         :type all_install_service_lst: list
         """
         self.all = all_install_service_lst
+        self.host_user_map = host_user_map
 
     def _dep_parse(self, dep_lst, base_env_dic, base_env_ser_lst, item):  # NOQA
         """
@@ -1226,12 +1251,14 @@ class BaseEnvServiceUtils(object):
                 "install_args": ServiceArgsPortUtils(
                     ip=item["ip"],
                     data_folder=item["data_folder"],
-                    run_user=item["run_user"]
+                    run_user=item["run_user"],
+                    host_user_map=self.host_user_map
                 ).remake_install_args(obj=_dep_obj),
                 "ports": ServiceArgsPortUtils(
                     ip=item["ip"],
                     data_folder=item["data_folder"],
-                    run_user=item["run_user"]
+                    run_user=item["run_user"],
+                    host_user_map=self.host_user_map
                 ).get_app_port(obj=_dep_obj),
                 "instance_name": _ins_name
             })
@@ -1268,7 +1295,8 @@ class BaseEnvServiceUtils(object):
 class WithServiceUtils(object):
     """ 解决带有with的服务场景 """
 
-    def __init__(self, all_install_service_lst, unique_key=None, run_user=None):
+    def __init__(self, all_install_service_lst,
+                 unique_key=None, run_user=None, host_user_map=None):
         """
         解决依赖于base_env服务的安装操作
         :param all_install_service_lst: 所有需要安装的服务
@@ -1277,10 +1305,13 @@ class WithServiceUtils(object):
         :type unique_key: str
         :param run_user: 运行用户
         :type run_user: str
+        :param host_user_map: 主机与运行用户关系
+        :type host_user_map: str
         """
         self.all = all_install_service_lst
         self.unique_key = unique_key
         self.run_user = run_user
+        self.host_user_map = host_user_map
 
     def parse_single_service(self, ser_dic):
         """
@@ -1310,12 +1341,14 @@ class WithServiceUtils(object):
                 install_args = ServiceArgsPortUtils(
                     ip=ip,
                     data_folder=data_folder,
-                    run_user=run_user
+                    run_user=run_user,
+                    host_user_map=self.host_user_map
                 ).remake_install_args(obj=_app)
                 ports = ServiceArgsPortUtils(
                     ip=ip,
                     data_folder=data_folder,
-                    run_user=run_user
+                    run_user=run_user,
+                    host_user_map=self.host_user_map
                 ).get_app_port(obj=_app)
                 instance_name = \
                     _tmp_ser["name"] + "-" + "-".join(ip.split(".")[-2:])
@@ -1344,12 +1377,14 @@ class WithServiceUtils(object):
                 install_args = ServiceArgsPortUtils(
                     ip=_ip,
                     data_folder=data_folder,
-                    run_user=run_user
+                    run_user=run_user,
+                    host_user_map=self.host_user_map
                 ).remake_install_args(obj=_app)
                 ports = ServiceArgsPortUtils(
                     ip=_ip,
                     data_folder=data_folder,
-                    run_user=run_user
+                    run_user=run_user,
+                    host_user_map=self.host_user_map
                 ).get_app_port(obj=_app)
                 instance_name = \
                     _tmp_ser["name"] + "-" + "-".join(_ip.split(".")[-2:])
@@ -1742,20 +1777,24 @@ class CreateInstallPlan(object):
         :param main_obj:
         :return:
         """
-        post_action_queryset = DetailInstallHistory.objects.select_related(
-            "service", "service__service", "service__service__app_package"
-        ).filter(main_install_history=main_obj).exclude(
-            post_action_flag__in=[2, 4]
-        )
-        if post_action_queryset.exists():
-            PostInstallHistory(main_install_history=main_obj).save()
-            return
-        logger.info(f"Do execute_post_install for {main_obj.operation_uuid}")
-        if DetailInstallHistory.objects.filter(
-                main_install_history=main_obj,
-                service__service__app_type=ApplicationHub.APP_TYPE_SERVICE
-        ).exists():
-            PostInstallHistory(main_install_history=main_obj).save()
+        # 在安装完成后，需要执行一些操作
+        # 在这里进行定制化处理，所有的安装操作都需要执行下重新加载nacos和tengine的配置
+        # 此处专为 云智慧 进行定制
+        PostInstallHistory(main_install_history=main_obj).save()
+        # post_action_queryset = DetailInstallHistory.objects.select_related(
+        #     "service", "service__service", "service__service__app_package"
+        # ).filter(main_install_history=main_obj).exclude(
+        #     post_action_flag__in=[2, 4]
+        # )
+        # if post_action_queryset.exists():
+        #     PostInstallHistory(main_install_history=main_obj).save()
+        #     return
+        # logger.info(f"Do execute_post_install for {main_obj.operation_uuid}")
+        # if DetailInstallHistory.objects.filter(
+        #         main_install_history=main_obj,
+        #         service__service__app_type=ApplicationHub.APP_TYPE_SERVICE
+        # ).exists():
+        #     PostInstallHistory(main_install_history=main_obj).save()
 
     def run(self):
         """

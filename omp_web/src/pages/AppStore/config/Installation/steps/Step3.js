@@ -276,7 +276,7 @@ const Step3 = ({ setStepNum }) => {
 
         <Input
           disabled={!checked}
-          placeholder="请输入本次安装服务运行用户"
+          placeholder="请输入本次安装服务运行的非root用户"
           style={{ width: 300 }}
           value={runUser}
           onChange={(e) => {
