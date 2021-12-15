@@ -250,27 +250,27 @@ class SshUtilTest(BaseTest):
         """
         self.assertEqual(self.ssh.file_push(__file__, "/tmp")[0], False)
 
-    @mock.patch.object(SSH, "cmd", return_value=None)
-    @mock.patch.object(SSHClient, "set_missing_host_key_policy", return_value=None)
-    @mock.patch.object(SSHClient, "connect", return_value=None)
-    @mock.patch.object(SSHClient, "get_transport", return_value=None)
-    @mock.patch.object(SCPClient, "__init__", return_value=None)
-    def test_make_remote_path_exist_root(self, *args, **kwargs):
-        """
-        测试root用户情况下的远程目录存在
-        :return:
-        """
-        self.assertEqual(self.ssh.make_remote_path_exist("/tmp"), None)
-
-    @mock.patch.object(SSH, "cmd", return_value=None)
-    @mock.patch.object(SSHClient, "set_missing_host_key_policy", return_value=None)
-    @mock.patch.object(SSHClient, "connect", return_value=None)
-    @mock.patch.object(SSHClient, "get_transport", return_value=None)
-    @mock.patch.object(SCPClient, "__init__", return_value=None)
-    def test_make_remote_path_exist_not_root(self, *args, **kwargs):
-        """
-        测试root用户情况下的远程目录存在
-        :return:
-        """
-        ssh_obj = get_ssh_obj("aaa")
-        self.assertEqual(ssh_obj.make_remote_path_exist("/tmp"), None)
+    # @mock.patch.object(SSH, "cmd", return_value=None)
+    # @mock.patch.object(SSHClient, "set_missing_host_key_policy", return_value=None)
+    # @mock.patch.object(SSHClient, "connect", return_value=None)
+    # @mock.patch.object(SSHClient, "get_transport", return_value=None)
+    # @mock.patch.object(SCPClient, "__init__", return_value=None)
+    # def test_make_remote_path_exist_root(self, *args, **kwargs):
+    #     """
+    #     测试root用户情况下的远程目录存在
+    #     :return:
+    #     """
+    #     self.assertEqual(self.ssh.make_remote_path_exist("/tmp"), None)
+    #
+    # @mock.patch.object(SSH, "cmd", return_value=None)
+    # @mock.patch.object(SSHClient, "set_missing_host_key_policy", return_value=None)
+    # @mock.patch.object(SSHClient, "connect", return_value=None)
+    # @mock.patch.object(SSHClient, "get_transport", return_value=None)
+    # @mock.patch.object(SCPClient, "__init__", return_value=None)
+    # def test_make_remote_path_exist_not_root(self, *args, **kwargs):
+    #     """
+    #     测试root用户情况下的远程目录存在
+    #     :return:
+    #     """
+    #     ssh_obj = get_ssh_obj("aaa")
+    #     self.assertEqual(ssh_obj.make_remote_path_exist("/tmp"), None)
