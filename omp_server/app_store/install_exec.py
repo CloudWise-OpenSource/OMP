@@ -769,6 +769,8 @@ class InstallServiceExecutor:
         if not post_obj:
             logger.info("No need execute post action!")
             return True, "success"
+        if post_obj.install_flag == 2:
+            return True, "success"
         post_obj.install_flag = 1
         post_obj.save()
         # 确定重新加载的服务 tengine & nacos & aopsUtils
@@ -794,6 +796,8 @@ class InstallServiceExecutor:
             post_obj.install_flag = 3
             post_obj.save()
             return False, "service start failed"
+        post_obj.install_flag = 2
+        post_obj.save()
         return True, "success"
 
     def main(self):
