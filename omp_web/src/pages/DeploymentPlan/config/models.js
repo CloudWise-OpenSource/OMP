@@ -823,7 +823,7 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
             setNumInfo(res.data);
             setStepNum(3);
             // 开始安装
-            startInstall();
+            startInstall(res.data.operation_uuid);
           }
         });
       })
@@ -863,10 +863,10 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
   };
 
   // 执行安装任务
-  const retryInstall = () => {
+  const retryInstall = (operation_uuid) => {
     fetchPost(apiRequest.appStore.retryInstall, {
       body: {
-        unique_key: numInfo.operation_uuid,
+        unique_key: operation_uuid,
       },
     })
       .then((res) => {
@@ -888,7 +888,7 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
   };
 
   // 查询主机 agent 状态
-  const queryHostAgent = () => {
+  const queryHostAgent = (operation_uuid) => {
     let ipArr = tableCorrectData.map((item) => {
       return item.ip;
     });
@@ -898,11 +898,10 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
       },
     })
       .then((res) => {
-        console.log(res);
         handleResponse(res, (res) => {
           if (res.code === 0 && res.data) {
             // 调用安装
-            retryInstall();
+            retryInstall(operation_uuid);
             // 清除定时器
             clearInterval(hostAgentTimer.current);
           }
@@ -913,9 +912,9 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
   };
 
   // 开始安装
-  const startInstall = () => {
+  const startInstall = (operation_uuid) => {
     hostAgentTimer.current = setInterval(() => {
-      queryHostAgent();
+      queryHostAgent(operation_uuid);
     }, 1000);
   };
 
