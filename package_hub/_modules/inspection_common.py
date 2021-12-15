@@ -41,7 +41,7 @@ def GetProcess_Port(pid):
                 port.append(port_aa[-1])
             port = list(set(port))
             return port
-        except:
+        except Exception:
             return None
     else:
         return None
@@ -59,7 +59,7 @@ def GetProcess_Runtime(pid):
 
             runtime = etime[1].replace(
                 '-', '天').replace(':', '小时', 1).replace(':', '分钟', 1) + '秒'
-        except:
+        except Exception:
             runtime = None
     else:
         runtime = None
@@ -87,7 +87,7 @@ def GetProcessCPU_Pre(pid):
             cpus_percent = ((delta_proc / delta_time) * 100)
             pid_cpuinfo[pid] = [st1, pt1_0, pt1_1]
             cpu_usage = "{:.2f}".format(cpus_percent) + "%"
-        except:
+        except Exception:
             cpu_usage = None
     else:
         cpu_usage = None
@@ -100,7 +100,7 @@ def GetProcess_Mem(pid):
             p = psutil.Process(pid)
             process_mem = p.memory_percent()
             mem_usage = "{:.2f}".format(process_mem) + "%"
-        except:
+        except Exception:
             return None
     else:
         mem_usage = None
@@ -116,7 +116,7 @@ def GetProcess_ServiceMem(pid, is_java=False):
                 process_mem = process_list[-1].split()
                 service_mem = process_mem[0]
                 return service_mem
-            except:
+            except Exception:
                 return None
         else:
             return None
@@ -148,7 +148,7 @@ def GetCluster_IP(json_path="/data/app/data.json", service_name=""):
             for cluster_line in cluster_list:
                 cluster = cluster_line.split()
                 cluster_ip.append(cluster[0])
-        except:
+        except Exception:
             return cluster_ip
     else:
         return cluster_ip

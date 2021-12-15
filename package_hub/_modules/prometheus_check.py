@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 # encoding: utf-8
 # Author: Darren Liu
-# Description: get tengine Inspection data
+# Description: get prometheus Inspection data
+
 import json
-import os
-import os.path as up
 import psutil
 
 from inspection_common import GetLocal_Ip, GetProcess_Survive, GetProcess_Port, GetProcess_Runtime, \
@@ -16,7 +15,7 @@ def GetProcess_Pid():
         for pnum in psutil.pids():
             try:
                 p = psutil.Process(pnum)
-                if p.name() == 'nginx' and 'master' in p.cmdline():
+                if p.name() == 'prometheus':
                     pid = pnum
                     return pid
             except Exception:
@@ -29,13 +28,14 @@ def GetProcess_LogLevel(pid):
     if pid and type(pid).__name__ == 'int':
         try:
             p = psutil.Process(pid)
-            nginx_path = up.abspath(up.join(p.exe(), "../.."))
-            cmd = 'grep access_log  %s/conf/vhost/*.conf |wc -l' % (nginx_path)
-            log_list = os.popen(cmd).read().strip('\n')
-            if int(log_list) == 0:
+            if 'log.level=info' in p.cmdline():
+                log_level = 'info'
+            elif 'log.level=debug' in p.cmdline():
+                log_level = 'debug'
+            elif 'log.level=warn' in p.cmdline() or 'log.level=error' in p.cmdline():
                 log_level = 'error'
             else:
-                log_level = 'access'
+                log_level = 'info'
             return log_level
         except Exception:
             return None
@@ -54,7 +54,7 @@ def main(pid=GetProcess_Pid(), json_path="/data/app/data.json", **kwargs):
     process_message["cpu_usage"] = GetProcessCPU_Pre(pid)
     process_message["log_level"] = GetProcess_LogLevel(pid)
     process_message["cluster_ip"] = GetCluster_IP(
-        json_path=json_path, service_name="tengine")
+        json_path=json_path, service_name="prometheus")
     return json.dumps(process_message)
 
 

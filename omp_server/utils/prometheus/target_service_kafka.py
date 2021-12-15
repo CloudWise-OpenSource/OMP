@@ -12,12 +12,14 @@ class ServiceKafkaCrawl(Prometheus):
     """
     查询 prometheus kafka 指标
     """
+
     def __init__(self, env, instance):
         self.ret = {}
         self.basic = []
-        self.env = env              # 环境
-        self.instance = instance    # 主机ip
+        self.env = env  # 环境
+        self.instance = instance  # 主机ip
         self._obj = SaltClient()
+        self.metric_num = 6
         Prometheus.__init__(self)
 
     @staticmethod
@@ -106,7 +108,7 @@ class ServiceKafkaCrawl(Prometheus):
                 ret = json.loads(ret[1])
             else:
                 ret = {}
-        except:
+        except Exception:
             ret = {}
 
         self.ret['cpu_usage'] = ret.get('cpu_usage', '-')
