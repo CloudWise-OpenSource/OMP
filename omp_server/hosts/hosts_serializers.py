@@ -212,6 +212,9 @@ class HostSerializer(ModelSerializer):
         """ 创建主机 """
         ip = validated_data.get("ip")
         init_flag = validated_data.pop("init_host", False)
+        # 如果 run_user 存在，则删除
+        if "run_user" in validated_data:
+            validated_data.pop("run_user")
         # 指定 Agent 安装目录为 data_folder
         validated_data["agent_dir"] = validated_data.get("data_folder")
         instance = super(HostSerializer, self).create(validated_data)
@@ -231,6 +234,9 @@ class HostSerializer(ModelSerializer):
     def update(self, instance, validated_data):
         """ 更新主机 """
         validated_data.pop("init_host", False)
+        # 如果 run_user 存在，则删除
+        if "run_user" in validated_data:
+            validated_data.pop("run_user")
         log_ls = []
         username = self.context["request"].user.username
 
