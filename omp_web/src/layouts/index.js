@@ -42,7 +42,8 @@ const OmpLayout = (props) => {
 
   const headerLink = [
     // { title: "仪表盘", path: "/homepage" },
-    { title: "应用商店", path: "/application_management/app_store" },
+    // { title: "应用商店", path: "/application_management/app_store" },
+    { title: "快速部署", path: "/application_management/deployment-plan" },
     // { title: "数据上传", path: "/products-management/version/upload" },
     // { title: "深度分析", path: "/operation-management/report" },
     {

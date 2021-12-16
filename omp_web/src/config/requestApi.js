@@ -33,6 +33,8 @@ export const apiRequest = {
     hostsMaintain: "/api/hosts/maintain/",
     // 主机初始化
     hostInit: "/api/hosts/hostInit/",
+    // 主机agent状态查询
+    hostsAgentStatus: "/api/hosts/hostsAgentStatus/",
 
     // 主机批量导入模版下载地址
     downTemplate: "/api/hosts/batchValidate/",
@@ -174,5 +176,12 @@ export const apiRequest = {
     hostThreshold: "/api/promemonitor/hostThreshold/",
     serviceThreshold: "/api/promemonitor/serviceThreshold/",
     queryCustomThreshold: "/api/promemonitor/customThreshold/",
+  },
+  deloymentPlan: {
+    serviceValidate: "/api/appStore/deploymentPlanValidate/",
+    serviceImport: "/api/appStore/deploymentPlanImport/",
+    deploymentList: "/api/appStore/deploymentPlanList/",
+    deploymentOperable: "/api/appStore/deploymentOperable",
+    deploymentTemplate: "/api/appStore/deploymentTemplate/",
   },
 };

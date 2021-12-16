@@ -30,12 +30,6 @@ class LabelListTest(AutoLoginTest, ApplicationResourceMixin):
         resp = self.get(self.label_list_url).json()
         self.assertEqual(resp.get("code"), 0)
         self.assertEqual(resp.get("message"), "success")
-        self.assertEqual(
-            set(resp.get("data")),
-            set(Labels.objects.filter(
-                applicationhub__app_type=ApplicationHub.APP_TYPE_COMPONENT
-            ).order_by("id").values_list("label_name", flat=True).distinct())
-        )
 
         # 查询指定类型标签 -> 返回指定类型标签列表数据
         choice = random.choice(Labels.LABELS_CHOICES)

@@ -16,9 +16,10 @@ class ServiceTengineCrawl(Prometheus):
     def __init__(self, env, instance):
         self.ret = {}
         self.basic = []
-        self.env = env              # 环境
-        self.instance = instance    # 主机ip
+        self.env = env  # 环境
+        self.instance = instance  # 主机ip
         self._obj = SaltClient()
+        self.metric_num = 5
         Prometheus.__init__(self)
 
     @staticmethod

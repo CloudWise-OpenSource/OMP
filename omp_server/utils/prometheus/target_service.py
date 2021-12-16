@@ -5,17 +5,60 @@
 # Description:
 import json
 import random
+import sys
+import logging
+import traceback
+
 from db_models.models import Service
-from utils.prometheus.target_service_tengine import ServiceTengineCrawl
 from utils.prometheus.thread import MyThread
-from utils.prometheus.target_service_func import salt_json
 from utils.prometheus.target_service_jvm_base import ServiceBase
+# from utils.prometheus.target_service_func import salt_json
+from utils.prometheus.target_service_arangodb import ServiceArangodbCrawl
+from utils.prometheus.target_service_beanstalkd import ServiceBeanstalkdCrawl
+from utils.prometheus.target_service_clickhouse import ServiceClickhouseCrawl
+from utils.prometheus.target_service_elasticsearch import ServiceElasticsearchCrawl
+from utils.prometheus.target_service_flink import ServiceFlinkCrawl
+from utils.prometheus.target_service_gotty import ServiceGottyCrawl
+from utils.prometheus.target_service_grafana import ServiceGrafanaCrawl
+from utils.prometheus.target_service_hadoop import ServiceHadoopCrawl
+from utils.prometheus.target_service_httpd import ServiceHttpdCrawl
+from utils.prometheus.target_service_ignite import ServiceIgniteCrawl
+from utils.prometheus.target_service_ntpd import ServiceNtpdCrawl
+from utils.prometheus.target_service_postgresql import ServicePostgresqlCrawl
+from utils.prometheus.target_service_prometheus import ServicePrometheusCrawl
+from utils.prometheus.target_service_tengine import ServiceTengineCrawl
 from utils.prometheus.target_service_mysql import ServiceMysqlCrawl
 from utils.prometheus.target_service_redis import ServiceRedisCrawl
 from utils.prometheus.target_service_kafka import ServiceKafkaCrawl
 from utils.prometheus.target_service_nacos import ServiceNacosCrawl
 from utils.prometheus.target_service_rocketmq import ServiceRocketmqCrawl
 from utils.prometheus.target_service_zookeeper import ServiceZookeeperCrawl
+
+logger = logging.getLogger("server")
+
+
+open_source_class_dict = {
+    "arangodb": ServiceArangodbCrawl,
+    "beanstalkd": ServiceBeanstalkdCrawl,
+    "clickhouse": ServiceClickhouseCrawl,
+    "elasticsearch": ServiceElasticsearchCrawl,
+    "flink": ServiceFlinkCrawl,
+    "gotty": ServiceGottyCrawl,
+    "grafana": ServiceGrafanaCrawl,
+    "hadoop": ServiceHadoopCrawl,
+    "httpd": ServiceHttpdCrawl,
+    "ignite": ServiceIgniteCrawl,
+    "kafka": ServiceKafkaCrawl,
+    "mysql": ServiceMysqlCrawl,
+    "nacos": ServiceNacosCrawl,
+    "ntpd": ServiceNtpdCrawl,
+    "postgresql": ServicePostgresqlCrawl,
+    "prometheus": ServicePrometheusCrawl,
+    "redis": ServiceRedisCrawl,
+    "rocketmq": ServiceRocketmqCrawl,
+    "tengine": ServiceTengineCrawl,
+    "zookeeper": ServiceZookeeperCrawl
+}
 
 
 def get_port_and_status(i):
@@ -75,89 +118,31 @@ def target_service_thread(env, i):
     """
     # 获取每个服务的端口信息及服务状态
     _port_status = get_port_and_status(i)
-    if i.get('service__app_name').lower() == 'mysql':
-        tag_total_num = 11  # 总指标数累加
-        _ = ServiceMysqlCrawl(env=env.name, instance=i.get('ip'))
+    if i.get('service__app_monitor', {}).get('type') == 'JavaSpringBoot':
+        _ = ServiceBase(env.name, i.get('ip'),
+                        f'{i.get("service__app_name")}Exporter')
         _.run()
+        tag_total_num = _.metric_num  # 总指标数累加
         tmp = _joint(i, _.ret, _.basic, *_port_status)
-    elif i.get('service__app_name').lower() == 'tomcat':
-        tag_total_num = 11  # 总指标数累加
-        ret = salt_json(instance=i.get('ip'), func="tomcat_check.main")
-        tmp = _joint(i, ret, [], *_port_status)
-    elif i.get('service__app_name').lower() == 'redis':
-        tag_total_num = 8  # 总指标数累加
-        _ = ServiceRedisCrawl(env=env.name, instance=i.get('ip'))
-        _.run()
-        tmp = _joint(i, _.ret, _.basic, *_port_status)
-    elif i.get('service__app_name').lower() == 'kafka':
-        tag_total_num = 6  # 总指标数累加
-        _ = ServiceKafkaCrawl(env=env.name, instance=i.get('ip'))
-        _.run()
-        tmp = _joint(i, _.ret, _.basic, *_port_status)
-    elif i.get('service__app_name').lower() == 'nacos':
-        tag_total_num = 6  # 总指标数累加
-        _ = ServiceNacosCrawl(env=env.name, instance=i.get('ip'))
-        _.run()
-        tmp = _joint(i, _.ret, _.basic, *_port_status)
-    elif i.get('service__app_name').lower() == 'zookeeper':
-        tag_total_num = 13  # 总指标数累加
-        _ = ServiceZookeeperCrawl(env=env.name, instance=i.get('ip'))
-        _.run()
-        tmp = _joint(i, _.ret, _.basic, *_port_status)
-    elif i.get('service__app_name').lower() == 'rocketmq':
-        tag_total_num = 8  # 总指标数累加
-        _ = ServiceRocketmqCrawl(env=env.name, instance=i.get('ip'))
-        _.run()
-        tmp = _joint(i, _.ret, _.basic, *_port_status)
-    elif i.get('service__app_name').lower() == 'tengine':
-        tag_total_num = 5  # 总指标数累加
-        _ = ServiceTengineCrawl(env=env.name, instance=i.get('ip'))
-        _.run()
-        tmp = _joint(i, _.ret, _.basic, *_port_status)
-    elif i.get('service__app_name').lower() == 'gatewayserver':
-        tag_total_num = 10  # 总指标数累加
-        _ = ServiceBase(env.name, i.get('ip'), 'gatewayServerExporter')
-        _.run()
-        tmp = _joint(i, _.ret, _.basic, *_port_status)
-    elif i.get('service__app_name').lower() == 'gatewayserverapi':
-        tag_total_num = 10  # 总指标数累加
-        _ = ServiceBase(env.name, i.get('ip'), 'gatewayServerApiExporter')
-        _.run()
-        tmp = _joint(i, _.ret, _.basic, *_port_status)
-    elif i.get('service__app_name').lower() == 'portalserver':
-        tag_total_num = 10  # 总指标数累加
-        _ = ServiceBase(env.name, i.get('ip'), 'portalServerExporter')
-        _.run()
-        tmp = _joint(i, _.ret, _.basic, *_port_status)
-    elif i.get('service__app_name').lower() == 'doucapi':
-        tag_total_num = 10  # 总指标数累加
-        _ = ServiceBase(env.name, i.get('ip'), 'doucApiExporter')
-        _.run()
-        tmp = _joint(i, _.ret, _.basic, *_port_status)
-    elif i.get('service__app_name').lower() == 'doucsso':
-        tag_total_num = 10  # 总指标数累加
-        _ = ServiceBase(env.name, i.get('ip'), 'doucSsoExporter')
-        _.run()
-        tmp = _joint(i, _.ret, _.basic, *_port_status)
-    elif i.get('service__app_name').lower() == 'doucdubborpc':
-        tag_total_num = 10  # 总指标数累加
-        _ = ServiceBase(env.name, i.get('ip'), 'doucDubboRpcExporter')
-        _.run()
-        tmp = _joint(i, _.ret, _.basic, *_port_status)
-    elif i.get('service__app_name').lower() == 'doucadmin':
-        tag_total_num = 10  # 总指标数累加
-        _ = ServiceBase(env.name, i.get('ip'), 'doucAdminExporter')
-        _.run()
-        tmp = _joint(i, _.ret, _.basic, *_port_status)
-    elif i.get('service__app_name').lower() == 'douczabbixapi':
-        tag_total_num = 10  # 总指标数累加
-        _ = ServiceBase(env.name, i.get('ip'), 'doucZabbixApiExporter')
-        _.run()
-        tmp = _joint(i, _.ret, _.basic, *_port_status)
+    # elif i.get('service__app_monitor', {}).get('type') == 'open_source':  # TODO
     else:
-        tag_total_num = 0   # 总指标数 计算
-        ret, basics = {}, []
-        tmp = _joint(i, ret, basics, *_port_status)
+        try:
+            local_module = sys.modules[__name__]
+            crawl_class = getattr(
+                local_module, f'Service{i.get("service__app_name").capitalize()}Crawl')
+            _ = crawl_class(env=env.name, instance=i.get('ip'))
+            _.run()
+            tag_total_num = _.metric_num  # 总指标数累加
+            tmp = _joint(i, _.ret, _.basic, *_port_status)
+        except Exception as e:
+            logger.error(f'服务巡检失败，详情为{traceback.format_exc(e)}')
+            tag_total_num = 0  # 总指标数 计算
+            ret, basics = {}, []
+            tmp = _joint(i, ret, basics, *_port_status)
+    # else:
+    #     tag_total_num = 0   # 总指标数 计算
+    #     ret, basics = {}, []
+    #     tmp = _joint(i, ret, basics, *_port_status)
 
     return [tag_total_num, tmp]
 
@@ -183,9 +168,9 @@ def target_service_run(env, services):
         t.start()
 
     for t in threads:
-        t.join()                        # 用join等待线程执行结束
+        t.join()  # 用join等待线程执行结束
         total_no += t.res[0]
-        tmp_list.append(t.res[1])       # 等线程结束，回收返回值
+        tmp_list.append(t.res[1])  # 等线程结束，回收返回值
 
     # 扫描统计
     scan_info = {"host": 0, "service": len(services), "component": 0}

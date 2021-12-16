@@ -8,7 +8,6 @@ import logging
 
 from omp_server.settings import PROJECT_DIR
 
-
 logger = logging.getLogger("server")
 
 description = {

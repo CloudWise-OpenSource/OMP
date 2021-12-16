@@ -12,12 +12,14 @@ class ServiceMysqlCrawl(Prometheus):
     """
     查询 prometheus mysql 指标
     """
+
     def __init__(self, env, instance):
         self.ret = {}
         self.basic = []
-        self.env = env              # 环境
-        self.instance = instance    # 主机ip
+        self.env = env  # 环境
+        self.instance = instance  # 主机ip
         self._obj = SaltClient()
+        self.metric_num = 11
         Prometheus.__init__(self)
 
     @staticmethod
@@ -61,38 +63,38 @@ class ServiceMysqlCrawl(Prometheus):
 
     def slow_query(self):
         """慢查询"""
-        expr = f"rate(mysql_global_status_slow_queries[5m])"
+        expr = "rate(mysql_global_status_slow_queries[5m])"
         self.basic.append({"name": "slow_query", "name_cn": "慢查询",
-                          "value": self.unified_job(*self.query(expr))})
+                           "value": self.unified_job(*self.query(expr))})
 
     def conn_num(self):
         """当前连接数量"""
-        expr = f"rate(mysql_global_status_threads_connected[5m])"
+        expr = "rate(mysql_global_status_threads_connected[5m])"
         self.basic.append({"name": "conn_num", "name_cn": "连接数量",
                            "value": self.unified_job(*self.query(expr))})
 
     def max_connections(self):
         """最大连接数"""
-        expr = f"mysql_global_variables_max_connections"
+        expr = "mysql_global_variables_max_connections"
         self.basic.append({"name": "max_connections", "name_cn": "最大连接数",
                            "value": self.unified_job(*self.query(expr))})
 
     def threads_running(self):
         """活跃连接数量"""
-        expr = f"mysql_global_status_threads_running"
+        expr = "mysql_global_status_threads_running"
         self.basic.append({"name": "threads_running", "name_cn": "活跃连接数",
                            "value": self.unified_job(*self.query(expr))})
 
     def qps(self):
         """qps"""
-        expr = f"rate(mysql_global_status_questions[5m])"
+        expr = "rate(mysql_global_status_questions[5m])"
         _ = self.unified_job(*self.query(expr))
         _ = round(float(_), 2) if _ else 0
         self.basic.append({"name": "qps", "name_cn": "qps", "value": _})
 
     def backup_status(self):
         """备份状态"""
-        expr = f"mysql_global_status_slave_open_temp_tables"
+        expr = "mysql_global_status_slave_open_temp_tables"
         self.basic.append({"name": "backup_status", "name_cn": "数据同步状态",
                            "value": self.unified_job(*self.query(expr))})
 
@@ -104,7 +106,7 @@ class ServiceMysqlCrawl(Prometheus):
                 ret = json.loads(ret[1])
             else:
                 ret = {}
-        except:
+        except Exception:
             ret = {}
 
         self.ret['cpu_usage'] = ret.get('cpu_usage', '-')

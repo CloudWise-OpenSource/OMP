@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 # encoding: utf-8
-# Auther: Darren Liu
+# Author: Darren Liu
 # Description: get mysql Inspection data
+import json
+import os
 
-from inspection_common import *
+import psutil
+
+from inspection_common import GetProcess_Runtime, GetLocal_Ip, GetProcess_Survive, GetProcess_Port, GetProcess_Mem, \
+    GetProcessCPU_Pre
 
 
 def GetProcess_Pid(process_name='tomcat'):
@@ -11,7 +16,7 @@ def GetProcess_Pid(process_name='tomcat'):
     try:
         process_info = os.popen(cmd).read().split()
         return int(process_info[1])
-    except:
+    except Exception:
         return None
 
 
@@ -21,7 +26,7 @@ def GetProcess_Threads(pid):
             p = psutil.Process(pid)
             process_threads = p.num_threads()
             return process_threads
-        except:
+        except Exception:
             return None
     else:
         return None
@@ -31,7 +36,7 @@ def main():
     pid = GetProcess_Pid()
     if pid is None:
         return json.dumps({})
-    process_message = {}
+    process_message = dict()
     process_message["IP"] = GetLocal_Ip()
     process_message["service_status"] = GetProcess_Survive(pid)
     process_message["port_status"] = GetProcess_Port(pid)
