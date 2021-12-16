@@ -35,6 +35,7 @@ from utils.parse_config import (
     OMP_REDIS_PORT,
     OMP_REDIS_PASSWORD
 )
+from app_store.deploy_role_utils import DEPLOY_ROLE_UTILS
 
 logger = logging.getLogger("server")
 
@@ -943,6 +944,25 @@ class SerDeployModeUtils(object):
             "default": 1,
             "step": 1
         }
+
+
+class SerRoleUtils(object):
+    """ 针对开源组件角色分配类 """
+
+    @staticmethod
+    def get(install_services):
+        """
+        获取服务的部署模式
+        :return:
+        """
+        for item in install_services:
+            if item['name'] in DEPLOY_ROLE_UTILS.keys():
+                DEPLOY_ROLE_UTILS[item['name']].append(item)
+                install_services.remove(item)
+        for name, obj in DEPLOY_ROLE_UTILS.items():
+            # 发现有需要分role的实例
+            if len(obj) > 1:
+                install_services.append(obj[0]().update_service(obj[1:]))
 
 
 class SerWithUtils(object):

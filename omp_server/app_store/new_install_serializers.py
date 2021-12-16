@@ -41,7 +41,8 @@ from app_store.new_install_utils import (
     MakeServiceOrder,
     ValidateInstallServicePortArgs,
     WithServiceUtils,
-    ComponentServiceParse
+    ComponentServiceParse,
+    SerRoleUtils
 )
 from app_store.tasks import install_service as install_service_task
 from utils.plugin.salt_client import SaltClient
@@ -871,6 +872,8 @@ class CreateInstallPlanSerializer(BaseInstallSerializer):
             validated_data["data"] = _re_data
             validated_data["is_continue"] = is_continue
             return validated_data
+        # 分配role
+        all_install_service_lst = SerRoleUtils.get(all_install_service_lst)
         # 服务排序处理
         all_install_service_lst = MakeServiceOrder(
             all_service=all_install_service_lst
@@ -1027,7 +1030,7 @@ class RetryInstallSerializer(Serializer):
         error_messages={"required": "必须包含[unique_key]字段"}
     )
 
-    def validate_unique_key(self, unique_key):      # NOQA
+    def validate_unique_key(self, unique_key):  # NOQA
         """
         校验unique_key
         :param unique_key:

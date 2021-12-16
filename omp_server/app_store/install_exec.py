@@ -12,7 +12,7 @@ from concurrent.futures import (
     ThreadPoolExecutor, as_completed
 )
 # from django.db.models import F
-
+from app_store.high_availability_utils import HIGH_AVAILABILITY_UTILS
 from db_models.models import (
     Host, Service, HostOperateLog, ServiceHistory,
     MainInstallHistory, DetailInstallHistory, ApplicationHub,
@@ -640,6 +640,21 @@ class InstallServiceExecutor:
                 return _flag, _msg
         return True, "success"
 
+    def high_availability_executor(self, detail_obj_lst):
+        """
+        过滤专属高可用阻塞部署
+        :param detail_obj_lst: [detail_obj, detail_obj]
+        :return:
+        """
+        for detail_obj in detail_obj_lst:
+            app_name = detail_obj.service.service.app_name
+            if app_name in HIGH_AVAILABILITY_UTILS.keys():
+                HIGH_AVAILABILITY_UTILS[app_name].append(detail_obj)
+        for name, obj in HIGH_AVAILABILITY_UTILS.items():
+            # TODO 这个需要多线程处理
+            if len(obj) > 1:
+                obj[0](self, obj[1:]).thread_poll_executor()
+
     def thread_poll_executor(self, detail_obj_lst):
         """
         多线程执行器
@@ -647,6 +662,8 @@ class InstallServiceExecutor:
         :return:
         """
         logger.info(f"Start thread poll executor for {detail_obj_lst}")
+        # 阻塞部署hadoop等
+        self.high_availability_executor(detail_obj_lst)
         with ThreadPoolExecutor(THREAD_POOL_MAX_WORKERS) as executor:
             _future_list = []
             for detail_obj in detail_obj_lst:
