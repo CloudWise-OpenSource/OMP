@@ -25,7 +25,7 @@ class ServicePostgresqlCrawl(Prometheus):
     def salt_json(self):
         try:
             self._obj.salt_module_update()
-            ret = self._obj.fun(self.instance, "kafka_check.main")
+            ret = self._obj.fun(self.instance, "postgresql_check.main")
             if ret and ret[0]:
                 ret = json.loads(ret[1])
             else:
@@ -43,8 +43,9 @@ class ServicePostgresqlCrawl(Prometheus):
 
     def run(self):
         """统一执行实例方法"""
-        target = ['service_status', 'run_time', 'cpu_usage', 'mem_usage',
-                  'conn_num', 'max_memory', 'salt_json']
+        # target = ['service_status', 'run_time', 'cpu_usage', 'mem_usage',
+        #           'conn_num', 'max_memory', 'salt_json']
+        target = ['salt_json']
         for t in target:
             if getattr(self, t):
                 getattr(self, t)()
