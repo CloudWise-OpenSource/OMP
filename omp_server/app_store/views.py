@@ -47,7 +47,9 @@ from app_store import tmp_exec_back_task
 from utils.common.exceptions import OperateError
 from app_store.tasks import publish_entry
 from rest_framework.filters import OrderingFilter
-from utils.parse_config import AFFINITY_FIELD
+from utils.parse_config import (
+    BASIC_ORDER, AFFINITY_FIELD
+)
 from app_store.new_install_utils import DataJson
 
 logger = logging.getLogger("server")
@@ -725,7 +727,6 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                             service_obj.service.app_dependence)
                         for dependence in dependence_list:
                             app_name = dependence.get("name")
-                            version = dependence.get("version")
                             item = {
                                 "name": app_name,
                                 "cluster_name": None,
@@ -735,8 +736,8 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                             if app_name in only_dict:
                                 item["instance_name"] = only_dict.get(app_name)
                             elif app_name in cluster_dict:
-                                item["cluster_name"] = cluster_dict.get(app_name)[
-                                    1]
+                                item["cluster_name"] = cluster_dict.get(
+                                    app_name)[1]
                             else:
                                 # base_env 不在单实例和集群列表中
                                 ip_split_ls = service_obj.ip.split(".")
@@ -765,8 +766,12 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                     ))
                 PreInstallHistory.objects.bulk_create(pre_install_obj_ls)
 
+                # 用于详情表排序的列表
+                component_order_ls = []
+                component_last_ls = []
+                service_order_ls = []
+                service_last_ls = []
                 # 安装详情表
-                detail_history_obj_ls = []
                 for service_obj in service_queryset:
                     # 获取主机对象
                     host_obj = host_queryset.filter(ip=service_obj.ip).first()
@@ -831,12 +836,52 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                         "instance_name": service_obj.service_instance_name
                     }
 
-                    detail_history_obj_ls.append(DetailInstallHistory(
+                    detail_obj = DetailInstallHistory(
                         service=service_obj,
                         main_install_history=main_history_obj,
                         install_detail_args=detail_install_args,
                         post_action_flag=post_action_flag,
-                    ))
+                    )
+
+                    # 安装详情表按顺序录入
+                    app_type = service_obj.service.app_type
+                    # 公共组件
+                    if app_type == ApplicationHub.APP_TYPE_COMPONENT:
+                        for k, v in BASIC_ORDER.items():
+                            if service_obj.service.app_name in v:
+                                # 动态根据层级索引创建空列表
+                                if len(component_order_ls) <= k:
+                                    for i in range(len(component_order_ls), k + 1):
+                                        component_order_ls.append([])
+                                component_order_ls[k].append(detail_obj)
+                                break
+                        else:
+                            component_last_ls.append(detail_obj)
+
+                    elif app_type == ApplicationHub.APP_TYPE_SERVICE:
+                        app_level_str = service_obj.service.extend_fields.get(
+                            "level", "")
+                        if app_level_str == "":
+                            service_last_ls.append(detail_obj)
+                        else:
+                            k = int(app_level_str)
+                            # 动态根据层级索引创建空列表
+                            if len(service_order_ls) <= k:
+                                for i in range(len(service_order_ls), k + 1):
+                                    service_order_ls.append([])
+                            service_order_ls[k].append(detail_obj)
+                    else:
+                        pass
+
+                # 合并多维列表和后置列表
+                detail_history_obj_ls = []
+                for i in component_order_ls:
+                    detail_history_obj_ls += i
+                detail_history_obj_ls += component_last_ls
+                for i in service_order_ls:
+                    detail_history_obj_ls += i
+                detail_history_obj_ls += service_last_ls
+
                 DetailInstallHistory.objects.bulk_create(detail_history_obj_ls)
 
                 # 部署计划表
