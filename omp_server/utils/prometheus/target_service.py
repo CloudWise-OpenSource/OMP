@@ -160,7 +160,7 @@ def target_service_run(env, services):
     services = Service.objects.filter(env=env, id__in=services)
     services = services.values(
         'service_instance_name', 'ip', 'service_port', 'service__app_name',
-        'service__app_install_args', 'service_status')
+        'service__app_install_args', 'service_status', 'service__app_monitor')
     for i in services:
         threads.append(MyThread(func=target_service_thread, args=(env, i)))
 

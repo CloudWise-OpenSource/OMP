@@ -41,9 +41,8 @@ class InspectionServiceView(ListModelMixin, GenericViewSet):
     def list(self, request, *args, **kwargs):
         # 只能是安装成功的组件
         rets = list()
-        _ = Service.objects.filter(
-            service__app_type=0, service__is_base_env=False
-        ).exclude(service_status__in=[5, 6, 7])
+        _ = Service.objects.filter(service__is_base_env=False).exclude(
+            service_status__in=[5, 6, 7])
         for i in _:
             rets.append({'service__id': i.id,
                          'service__app_name': i.service_instance_name})
