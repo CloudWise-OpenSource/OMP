@@ -955,14 +955,16 @@ class SerRoleUtils(object):
         获取服务的部署模式
         :return:
         """
-        for item in install_services:
+        cp_service = deepcopy(install_services)
+        for item in cp_service:
             if item['name'] in DEPLOY_ROLE_UTILS.keys():
                 DEPLOY_ROLE_UTILS[item['name']].append(item)
                 install_services.remove(item)
         for name, obj in DEPLOY_ROLE_UTILS.items():
             # 发现有需要分role的实例
             if len(obj) > 1:
-                install_services.append(obj[0]().update_service(obj[1:]))
+                install_services.extend(obj[0]().update_service(obj[1:]))
+        return install_services
 
 
 class SerWithUtils(object):
@@ -1732,6 +1734,7 @@ class CreateInstallPlan(object):
             service_instance_name=dic["instance_name"],
             service=self.get_app_obj_for_service(dic),
             service_port=json.dumps(dic.get("ports")),
+            service_role=dic.get("roles", ""),
             service_controllers=self.get_controllers_for_service(dic),
             cluster=self.create_cluster(dic),
             env=self.get_env_for_service(),

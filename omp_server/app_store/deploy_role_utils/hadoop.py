@@ -19,7 +19,7 @@ class Hadoop(object):
         :param service_list: 服务数据列表
         :return:
         """
-        need_distribution = ["namenode", "namenode", "resourcemanager"]
+        need_distribution = ["namenode", "resourcemanager", "namenode"]
         base_role = "datanode,nodemanager,journalnode"
         if len(service_list) == 1:
             service_list[0]['roles'] = "journalnode,namenode,DFSZKFailoverController," \

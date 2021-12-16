@@ -6,7 +6,7 @@
 # Version: 1.0
 # Introduction:
 
-from app_store.high_availability_utils.hadoop import Hadoop
+from app_store.deploy_role_utils.hadoop import Hadoop
 
 DEPLOY_ROLE_UTILS = {
     "hadoop": [Hadoop]
