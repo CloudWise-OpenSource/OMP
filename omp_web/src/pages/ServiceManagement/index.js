@@ -261,7 +261,23 @@ const ServiceManagement = () => {
       .then((res) => {
         //console.log(operateObj[operateAciton])
         handleResponse(res, (res) => {
-          setDeleteMsg(res.data);
+          if (res && res.data) {
+            let key = res.data?.split(":")[0];
+            let values = res.data?.split(":")[1];
+            let arr = values?.split(",");
+            let dom = (
+              <div>
+                <div>{key}</div>
+                <div style={{
+                  overflow: "auto",
+                  maxHeight:"240px"
+                }}>
+                  <ExpandCollapseMsg length={6} all={arr} />
+                </div>
+              </div>
+            );
+            setDeleteMsg(dom);
+          }
         });
       })
       .catch((e) => console.log(e))
@@ -651,6 +667,9 @@ const ServiceManagement = () => {
           确定要对 <span style={{ fontWeight: 500 }}>当前</span> 服务下发{" "}
           <span style={{ fontWeight: 500 }}>{operateObj[operateAciton]}</span>{" "}
           操作？
+          {operateAciton == 4 && deleteMsg && (
+            <div style={{ paddingTop: 10 }}>{deleteMsg}</div>
+          )}
         </div>
       </OmpMessageModal>
       <OmpMessageModal
@@ -695,6 +714,32 @@ const ServiceManagement = () => {
       </OmpMessageModal>
     </OmpContentWrapper>
   );
+};
+
+const ExpandCollapseMsg = ({length, all}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  if(!all){
+    return <></>
+  }
+  if (isOpen) {
+    return (
+      <>
+        {all.map((item) => {
+          return <div key={item}>{item}</div>;
+        })}
+        <a onClick={()=>setIsOpen(false)}>收起</a>
+      </>
+    );
+  } else {
+    return (
+      <>
+        {all?.slice(0, length).map((item) => {
+          return <div key={item}>{item}</div>;
+        })}
+        {all.length > length &&  <a onClick={()=>setIsOpen(true)}>...展开</a>}
+      </>
+    );
+  }
 };
 
 export default ServiceManagement;
