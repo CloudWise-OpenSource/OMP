@@ -876,7 +876,7 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
             history.push({
               pathname: "/application_management/app_store/installation",
               state: {
-                uniqueKey: numInfo.operation_uuid,
+                uniqueKey: operation_uuid,
                 step: 3,
               },
             });
