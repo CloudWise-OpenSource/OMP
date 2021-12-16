@@ -711,6 +711,12 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                                 "default": memory,
                             })
 
+                    # {data_path} 占位符替换
+                    for i in app_args:
+                        if "{data_path}" in i.get("default", ""):
+                            i["default"] = i.get("default").format(
+                                data_path=host_obj.data_folder)
+
                     # 标记服务是否需要 post
                     post_action_flag = 4
                     if service_obj.service.extend_fields.get(
