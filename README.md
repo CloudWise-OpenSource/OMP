@@ -1,5 +1,5 @@
 <div align="center">
-  <a href="https://github.com/CloudWise-OpenSource/OMP"><img src="https://gitee.com/CloudWise/OMP/raw/dev/doc/OMP-logo.png" alt="omp" width="200px"/></a>
+  <a href="https://github.com/CloudWise-OpenSource/OMP"><img src="./doc/OMP-logo.png" alt="omp" width="200px"/></a>
 </div>
 
 # OMP 运维管理平台
