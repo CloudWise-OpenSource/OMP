@@ -385,7 +385,7 @@ export const AddMachineModal = ({
                       return Promise.reject("密码不支持中文");
                     } else {
                       if (value.length < 8) {
-                        return Promise.reject("密码长度为8到16位");
+                        return Promise.reject("密码长度为8到64位");
                       } else {
                         if (isSpace(value)) {
                           return Promise.reject("密码不支持空格");
@@ -403,7 +403,7 @@ export const AddMachineModal = ({
             },
           ]}
         >
-          <Input.Password maxLength={16} placeholder={"请输入密码"} />
+          <Input.Password maxLength={64} placeholder={"请输入密码"} />
         </Form.Item>
 
         <Form.Item label="初始化主机">
@@ -766,7 +766,7 @@ export const UpDateMachineModal = ({
                       return Promise.reject("密码不支持中文");
                     } else {
                       if (value.length < 8) {
-                        return Promise.reject("密码长度为8到16位");
+                        return Promise.reject("密码长度为8到64位");
                       } else {
                         if (isSpace(value)) {
                           return Promise.reject("密码不支持空格");
@@ -784,7 +784,7 @@ export const UpDateMachineModal = ({
             },
           ]}
         >
-          <Input.Password maxLength={16} placeholder={"请输入密码"} />
+          <Input.Password maxLength={64} placeholder={"请输入密码"} />
         </Form.Item>
       </div>
     </OmpModal>
