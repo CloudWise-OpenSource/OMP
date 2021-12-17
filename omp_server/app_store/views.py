@@ -5,6 +5,8 @@ import os
 import uuid
 import json
 import time
+import string
+import random
 import logging
 
 from rest_framework.viewsets import GenericViewSet
@@ -20,8 +22,10 @@ from django_filters.rest_framework.backends import DjangoFilterBackend
 
 from db_models.models import (
     Labels, ApplicationHub, ProductHub, UploadPackageHistory,
-    Env, Host, Service, MainInstallHistory, DetailInstallHistory,
-    PreInstallHistory, PostInstallHistory, DeploymentPlan
+    Env, Host, Service, ServiceConnectInfo,
+    DeploymentPlan, ClusterInfo,
+    MainInstallHistory, DetailInstallHistory,
+    PreInstallHistory, PostInstallHistory,
 )
 from utils.common.paginations import PageNumberPager
 from app_store.app_store_filters import (
@@ -43,7 +47,9 @@ from app_store import tmp_exec_back_task
 from utils.common.exceptions import OperateError
 from app_store.tasks import publish_entry
 from rest_framework.filters import OrderingFilter
-from utils.parse_config import AFFINITY_FIELD
+from utils.parse_config import (
+    BASIC_ORDER, AFFINITY_FIELD
+)
 from app_store.new_install_utils import DataJson
 
 logger = logging.getLogger("server")
@@ -507,28 +513,76 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
         return app_queryset, pro_queryset
 
     @staticmethod
-    def _add_service(service_obj_ls, host_obj, app_obj, env_obj):
+    def _add_service(service_obj_ls, host_obj, app_obj, env_obj, only_dict,
+                     cluster_dict, is_base_env=False):
         """ 添加服务 """
-        # 获取服务的基础目录和控制脚本
-        base_dir = ""
-        service_controllers = {}
+        # 服务端口
+        service_port = app_obj.app_port
+        if not service_port:
+            service_port = json.dumps([])
+
+        # 获取服务的基础目录、用户名、密码、密文
+        base_dir = "/data"
+        username, password, password_enc = "", "", ""
         app_install_args = json.loads(app_obj.app_install_args)
         for item in app_install_args:
             if item.get("key") == "base_dir":
                 base_dir = item.get("default").format(
                     data_path=host_obj.data_folder)
-                break
+            elif item.get("key") == "username":
+                username = item.get("default")
+            elif item.get("key") == "password":
+                password = item.get("default")
+            elif item.get("key") == "password_enc":
+                password_enc = item.get("default")
+            else:
+                pass
+
+        # 拼接服务的控制脚本
+        service_controllers = {}
         app_controllers = json.loads(app_obj.app_controllers)
         for k, v in app_controllers.items():
             if v != "":
                 service_controllers[k] = f"{base_dir}/{v}"
-        # 切分 ip 字段，构建服务名
+        # 切分 ip 字段，构建服务实例名
         ip_split_ls = host_obj.ip.split(".")
-        service_instance_name = f"{app_obj.app_name}-{ip_split_ls[-2]}-{ip_split_ls[-1]}"
-        # 服务端口
-        service_port = app_obj.app_port
-        if not service_port:
-            service_port = json.dumps([])
+        service_name = app_obj.app_name
+        service_instance_name = f"{service_name}-{ip_split_ls[-2]}-{ip_split_ls[-1]}"
+
+        # 创建服务连接信息表
+        connection_obj = None
+        if any([username, password, password_enc]):
+            connection_obj, _ = ServiceConnectInfo.objects.get_or_create(
+                service_name=service_name,
+                service_username=username,
+                service_password=password,
+                service_password_enc=password_enc,
+                service_username_enc="",
+            )
+
+        # 集群信息
+        cluster_id = None
+        if not is_base_env:
+            if service_name in only_dict:
+                # 存在于单实例字典中，删除单实例字典中数据，创建集群
+                only_dict.pop(service_name)
+                upper_key = ''.join(random.choice(
+                    string.ascii_uppercase) for _ in range(7))
+                cluster_obj = ClusterInfo.objects.create(
+                    cluster_service_name=service_name,
+                    cluster_name=f"{service_name}-cluster-{upper_key}",
+                    service_connect_info=connection_obj,
+                )
+                # 写入集群字典，记录 id
+                cluster_dict[service_name] = (
+                    cluster_obj.id, cluster_obj.cluster_name)
+                cluster_id = cluster_obj.id
+            elif service_name in cluster_dict:
+                # 存在于集群字典中，记录 id
+                cluster_id = cluster_dict.get(service_name)[0]
+            else:
+                # 尚未记录，加入单实例字典
+                only_dict[service_name] = service_instance_name
 
         # 添加服务到列表中
         service_obj_ls.append(Service(
@@ -538,8 +592,9 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
             service_port=service_port,
             service_controllers=service_controllers,
             service_status=Service.SERVICE_STATUS_READY,
-            env=env_obj
-            # TODO 集群相关信息
+            env=env_obj,
+            service_connect_info=connection_obj,
+            cluster_id=cluster_id,
         ))
 
     def create(self, request, *args, **kwargs):
@@ -579,6 +634,8 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
             # 服务对象列表、基础环境字典
             service_obj_ls = []
             base_env_dict = {}
+            # 单实例、集群服务字典
+            only_dict, cluster_dict = {}, {}
             # tengine 所在主机对象字典
             tengine_host_obj_dict = {}
             # 遍历获取所有需要安装的服务
@@ -609,16 +666,19 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                         # 如果服务的依赖中有 base_env，并且对应 ip 上不存在则写入
                         if base_env_obj and \
                                 app_name not in base_env_dict.get(host_obj.ip, []):
+                            # base_env 一定为单实例
                             self._add_service(
-                                service_obj_ls, host_obj, base_env_obj, default_env)
+                                service_obj_ls, host_obj, base_env_obj, default_env,
+                                only_dict, cluster_dict, is_base_env=True)
                             # 以 ip 为维度记录，避免重复
                             if host_obj.ip not in base_env_dict:
                                 base_env_dict[host_obj.ip] = []
                             base_env_dict[host_obj.ip].append(app_name)
 
                 # 添加服务
-                self._add_service(service_obj_ls, host_obj,
-                                  app_obj, default_env)
+                self._add_service(
+                    service_obj_ls, host_obj, app_obj, default_env,
+                    only_dict, cluster_dict)
 
             # 亲和力为 tengine 字段 (Web 服务) 列表
             app_target = ApplicationHub.objects.filter(
@@ -629,8 +689,9 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
             # 为所有 tengine 节点添加亲和力服务
             for tengine_ip, host_obj in tengine_host_obj_dict.items():
                 for app_obj in tengine_app_list:
-                    self._add_service(service_obj_ls, host_obj,
-                                      app_obj, default_env)
+                    self._add_service(
+                        service_obj_ls, host_obj, app_obj, default_env,
+                        only_dict, cluster_dict)
 
             service_instance_name_ls = list(map(
                 lambda x: x.service_instance_name, service_obj_ls))
@@ -658,6 +719,35 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                     service_instance_name__in=service_instance_name_ls
                 ).select_related("service")
 
+                # 遍历服务，如果存在依赖信息则补充
+                for service_obj in service_queryset:
+                    service_dependence_list = []
+                    if service_obj.service.app_dependence:
+                        dependence_list = json.loads(
+                            service_obj.service.app_dependence)
+                        for dependence in dependence_list:
+                            app_name = dependence.get("name")
+                            item = {
+                                "name": app_name,
+                                "cluster_name": None,
+                                "instance_name": None,
+                            }
+
+                            if app_name in only_dict:
+                                item["instance_name"] = only_dict.get(app_name)
+                            elif app_name in cluster_dict:
+                                item["cluster_name"] = cluster_dict.get(
+                                    app_name)[1]
+                            else:
+                                # base_env 不在单实例和集群列表中
+                                ip_split_ls = service_obj.ip.split(".")
+                                service_instance_name = f"{app_name}-{ip_split_ls[-2]}-{ip_split_ls[-1]}"
+                                item["instance_name"] = service_instance_name
+                            service_dependence_list.append(item)
+                    service_obj.service_dependence = json.dumps(
+                        service_dependence_list)
+                    service_obj.save()
+
                 # 主安装记录表、后续任务记录表
                 main_history_obj = MainInstallHistory.objects.create(
                     operator=request.user.username,
@@ -676,8 +766,12 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                     ))
                 PreInstallHistory.objects.bulk_create(pre_install_obj_ls)
 
+                # 用于详情表排序的列表
+                component_order_ls = []
+                component_last_ls = []
+                service_order_ls = []
+                service_last_ls = []
                 # 安装详情表
-                detail_history_obj_ls = []
                 for service_obj in service_queryset:
                     # 获取主机对象
                     host_obj = host_queryset.filter(ip=service_obj.ip).first()
@@ -742,12 +836,52 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                         "instance_name": service_obj.service_instance_name
                     }
 
-                    detail_history_obj_ls.append(DetailInstallHistory(
+                    detail_obj = DetailInstallHistory(
                         service=service_obj,
                         main_install_history=main_history_obj,
                         install_detail_args=detail_install_args,
                         post_action_flag=post_action_flag,
-                    ))
+                    )
+
+                    # 安装详情表按顺序录入
+                    app_type = service_obj.service.app_type
+                    # 公共组件
+                    if app_type == ApplicationHub.APP_TYPE_COMPONENT:
+                        for k, v in BASIC_ORDER.items():
+                            if service_obj.service.app_name in v:
+                                # 动态根据层级索引创建空列表
+                                if len(component_order_ls) <= k:
+                                    for i in range(len(component_order_ls), k + 1):
+                                        component_order_ls.append([])
+                                component_order_ls[k].append(detail_obj)
+                                break
+                        else:
+                            component_last_ls.append(detail_obj)
+
+                    elif app_type == ApplicationHub.APP_TYPE_SERVICE:
+                        app_level_str = service_obj.service.extend_fields.get(
+                            "level", "")
+                        if app_level_str == "":
+                            service_last_ls.append(detail_obj)
+                        else:
+                            k = int(app_level_str)
+                            # 动态根据层级索引创建空列表
+                            if len(service_order_ls) <= k:
+                                for i in range(len(service_order_ls), k + 1):
+                                    service_order_ls.append([])
+                            service_order_ls[k].append(detail_obj)
+                    else:
+                        pass
+
+                # 合并多维列表和后置列表
+                detail_history_obj_ls = []
+                for i in component_order_ls:
+                    detail_history_obj_ls += i
+                detail_history_obj_ls += component_last_ls
+                for i in service_order_ls:
+                    detail_history_obj_ls += i
+                detail_history_obj_ls += service_last_ls
+
                 DetailInstallHistory.objects.bulk_create(detail_history_obj_ls)
 
                 # 部署计划表

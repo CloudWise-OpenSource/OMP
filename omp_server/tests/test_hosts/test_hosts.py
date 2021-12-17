@@ -1,4 +1,5 @@
 import random
+import string
 from datetime import datetime
 from unittest import mock
 
@@ -223,11 +224,13 @@ class CreateHostTest(AutoLoginTest, HostsResourceMixin):
 
         # password 超过指定长度 -> 创建失败
         data = self.correct_host_data.copy()
-        data.update({"password": "this_is_a_too_lang_password"})
+        to_long_password = ''.join(random.choice(
+            string.ascii_letters) for _ in range(70))
+        data.update({"password": to_long_password})
         resp = self.post(self.create_host_url, data).json()
         self.assertDictEqual(resp, {
             "code": 1,
-            "message": "密码长度需小于16",
+            "message": "密码长度需小于64",
             "data": None
         })
 

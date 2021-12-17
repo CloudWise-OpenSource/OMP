@@ -25,9 +25,11 @@ from utils.parse_config import THREAD_POOL_MAX_WORKERS
 from utils.common.exceptions import GeneralError
 from omp_server.settings import PROJECT_DIR
 from app_store.post_install_utils import POST_INSTALL_SERVICE
+from app_store.service_splitting import service_splitting
 
 UNZIP_CONCURRENT_ONE_HOST = 3
 OPENSSL_VERSION_LEVEL = 102
+DOIM_APP_NAME = 'doim'
 logger = logging.getLogger("server")
 
 
@@ -123,7 +125,7 @@ class InstallServiceExecutor:
         # 适配doim
         doim_queryset = DetailInstallHistory.objects.select_related(
             "service", "service__service"
-        ).filter(main_install_history_id=self.main_id, service__service__app_name__iexact="doimserver").exclude(
+        ).filter(main_install_history_id=self.main_id, service__service__app_name__iexact=DOIM_APP_NAME).exclude(
             install_step_status=DetailInstallHistory.INSTALL_STATUS_SUCCESS)
         doim_ips = set([item.service.ip for item in doim_queryset])
         pre_install_obj.install_log += \
@@ -412,7 +414,7 @@ class InstallServiceExecutor:
             cmd_str = f"python {install_script_path} --local_ip {target_ip} " \
                       f"--data_json {json_path}"
             # doim定制化安装
-            if app_name.lower() == "doimserver":
+            if app_name.lower() == DOIM_APP_NAME:
                 install_script_path = os.path.realpath(install_script_path)
                 app_dir, script_name = os.path.split(install_script_path)
                 doim_install_script_path = os.path.join(app_dir, 'install.sh')
@@ -448,8 +450,8 @@ class InstallServiceExecutor:
             self.create_history(detail_obj, is_success=False)
             return False, err
         # doim安装成功后，相关操作
-        if app_name.lower() == "doimserver":
-            pass
+        if app_name.lower() == DOIM_APP_NAME:
+            service_splitting()
 
         # 安装成功
         logger.info(f"Install Success -> [{service_name}]")
