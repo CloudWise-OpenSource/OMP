@@ -38,8 +38,7 @@ class Hadoop(object):
         """
         self.install_obj = install_exec_obj
         self.detail_list = detail_list_obj
-        self.timeout = 100
-        self.salt_client = SaltClient()
+        self.timeout = 300
         self.error = False
         self.target_set = set()
         self.count = 0
@@ -57,6 +56,7 @@ class Hadoop(object):
     def init_hadoop(self, detail_obj, target_ip, service_controllers_dict, action):
         try:
             # 获取服务初始化脚本绝对路径
+            salt_client = SaltClient()
             init_script_path = service_controllers_dict.get("init", "")
             # 获取 json 文件路径
             target_host = Host.objects.filter(ip=target_ip).first()
@@ -68,18 +68,18 @@ class Hadoop(object):
             cmd_str = f"python {init_script_path} --local_ip {target_ip} " \
                       f"--data_json {json_path} --action_type {action[0]} --action_object {action[1]}"
             # 执行初始化
-            is_success, message = self.salt_client.cmd(
+            is_success, message = salt_client.cmd(
                 target=target_ip,
                 command=cmd_str,
                 timeout=self.timeout)
             if not is_success:
                 raise GeneralError(message)
             # 执行成功且 message 有值，则补充至服务日志中
-            if is_success and bool(message):
-                detail_obj.install_msg += \
-                    f"{self.install_obj.now_time()} 初始化脚本执行成功，脚本输出如下:\n" \
-                    f"{message}\n"
-                detail_obj.save()
+            detail_obj.install_msg += \
+                f"{self.install_obj.now_time()} 初始化脚本执行成功，脚本输出如下:\n" \
+                f"{message}\n"
+            detail_obj.save()
+            return True, "success"
         except Exception as err:
             for obj, name in self.detail_dict.items():
                 logger.error(f"Init Failed -> [{name}]: {err}")
@@ -153,7 +153,7 @@ class Hadoop(object):
                 return _flag, _msg
         return True, "success"
 
-    def thread_poll_executor(self):
+    def high_thread_executor(self):
         """
         多线程执行器
         """

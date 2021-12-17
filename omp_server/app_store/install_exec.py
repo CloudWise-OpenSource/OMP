@@ -3,6 +3,7 @@
 前提：所有的公共组件都由OMP进行安装处理
 目标：根据数据库中给出的安装记录进行服务安装
 """
+import copy
 import json
 import os
 import time
@@ -575,7 +576,7 @@ class InstallServiceExecutor:
         detail_obj.service.save()
         return True, "Start Success"
 
-    def execute_post_action(self, queryset, post_obj):    # NOQA
+    def execute_post_action(self, queryset, post_obj):  # NOQA
         """
         执行安装后的操作，所有服务安装完成后，针对不同服务的个性化配置执行
         目前仅支持shell脚本方式
@@ -646,14 +647,17 @@ class InstallServiceExecutor:
         :param detail_obj_lst: [detail_obj, detail_obj]
         :return:
         """
-        for detail_obj in detail_obj_lst:
+        deep_detail_obj_lst = copy.deepcopy(detail_obj_lst)
+        for detail_obj in deep_detail_obj_lst:
             app_name = detail_obj.service.service.app_name
             if app_name in HIGH_AVAILABILITY_UTILS.keys():
                 HIGH_AVAILABILITY_UTILS[app_name].append(detail_obj)
+                detail_obj_lst.remove(detail_obj)
         for name, obj in HIGH_AVAILABILITY_UTILS.items():
             # TODO 这个需要多线程处理
             if len(obj) > 1:
-                obj[0](self, obj[1:]).thread_poll_executor()
+                obj[0](self, obj[1:]).high_thread_executor()
+        return deep_detail_obj_lst
 
     def thread_poll_executor(self, detail_obj_lst):
         """
@@ -663,7 +667,7 @@ class InstallServiceExecutor:
         """
         logger.info(f"Start thread poll executor for {detail_obj_lst}")
         # 阻塞部署hadoop等
-        self.high_availability_executor(detail_obj_lst)
+        detail_obj_lst = self.high_availability_executor(detail_obj_lst)
         with ThreadPoolExecutor(THREAD_POOL_MAX_WORKERS) as executor:
             _future_list = []
             for detail_obj in detail_obj_lst:
@@ -790,7 +794,8 @@ class InstallServiceExecutor:
         post_obj.save()
         # 确定重新加载的服务 tengine & nacos & aopsUtils
         if DetailInstallHistory.objects.filter(
-            service__service__app_name__in=["tengine", "nacos", "aopsUtils"]
+                service__service__app_name__in=[
+                    "tengine", "nacos", "aopsUtils"]
         ).exclude(main_install_history=main_obj).exists():
             for key, value in POST_INSTALL_SERVICE.items():
                 post_obj.install_log += \
