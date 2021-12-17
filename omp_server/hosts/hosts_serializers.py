@@ -75,7 +75,8 @@ class HostSerializer(ModelSerializer):
         ])
     password = serializers.CharField(
         help_text="密码",
-        required=True, min_length=8, max_length=16,
+        required=True,
+        min_length=8, max_length=64,
         error_messages={
             "required": "必须包含[password]字段",
             "min_length": "密码长度需大于{min_length}",
