@@ -9,5 +9,5 @@
 from app_store.deploy_role_utils.hadoop import Hadoop
 
 DEPLOY_ROLE_UTILS = {
-    "hadoop": [Hadoop]
+    "hadoop": Hadoop
 }

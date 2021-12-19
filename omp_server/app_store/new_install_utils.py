@@ -955,15 +955,17 @@ class SerRoleUtils(object):
         获取服务的部署模式
         :return:
         """
+        tmp_dict = {}
         cp_service = deepcopy(install_services)
         for item in cp_service:
             if item['name'] in DEPLOY_ROLE_UTILS.keys():
-                DEPLOY_ROLE_UTILS[item['name']].append(item)
+                tmp_dict[item['name']] = tmp_dict.get(
+                    item['name'], []) + [item]
                 install_services.remove(item)
-        for name, obj in DEPLOY_ROLE_UTILS.items():
+        for name, obj in tmp_dict.items():
             # 发现有需要分role的实例
-            if len(obj) > 1:
-                install_services.extend(obj[0]().update_service(obj[1:]))
+            install_services.extend(
+                DEPLOY_ROLE_UTILS[name]().update_service(obj))
         return install_services
 
 
