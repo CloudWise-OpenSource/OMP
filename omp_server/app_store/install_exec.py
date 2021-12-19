@@ -648,15 +648,15 @@ class InstallServiceExecutor:
         :return:
         """
         deep_detail_obj_lst = copy.deepcopy(detail_obj_lst)
+        tmp_dict = {}
         for detail_obj in deep_detail_obj_lst:
             app_name = detail_obj.service.service.app_name
             if app_name in HIGH_AVAILABILITY_UTILS.keys():
-                HIGH_AVAILABILITY_UTILS[app_name].append(detail_obj)
+                tmp_dict[app_name] = tmp_dict.get(app_name, []) + [detail_obj]
                 detail_obj_lst.remove(detail_obj)
-        for name, obj in HIGH_AVAILABILITY_UTILS.items():
+        for name, obj in tmp_dict.items():
             # TODO 这个需要多线程处理
-            if len(obj) > 1:
-                obj[0](self, obj[1:]).high_thread_executor()
+            HIGH_AVAILABILITY_UTILS[name](self, obj).high_thread_executor()
         return deep_detail_obj_lst
 
     def thread_poll_executor(self, detail_obj_lst):

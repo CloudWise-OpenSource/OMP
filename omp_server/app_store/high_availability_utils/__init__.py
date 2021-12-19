@@ -9,5 +9,5 @@
 from app_store.high_availability_utils.hadoop import Hadoop
 
 HIGH_AVAILABILITY_UTILS = {
-    "hadoop": [Hadoop]
+    "hadoop": Hadoop
 }
