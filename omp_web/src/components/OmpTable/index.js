@@ -147,7 +147,7 @@ const OmpTable = ({
     <Table
       showSorterTooltip={false}
       //scroll={(viewWidth - 300) > maxWidth ? null : { x: (maxWidth + 30) }}
-      scroll={viewWidth > 1900 ? null : { x: noScroll ? null : 1400 }}
+      scroll={viewWidth > 1900 ? null : { x: noScroll ? null : 1500 }}
       {...residualParam}
       columns={extensionsColumns.filter((i) => {
         return selectKeys.includes(i.dataIndex);

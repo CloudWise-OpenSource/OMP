@@ -41,13 +41,14 @@ def GetProcess_Port(pid):
                 port.append(port_aa[-1])
             port = list(set(port))
             return port
-        except:
+        except Exception:
             return None
     else:
         return None
 
 
 def GetProcess_Runtime(pid):
+    runtime = None
     if pid and isinstance(pid, int):
         try:
             cmd = 'ps -eo pid,etime|grep ' + str(pid)
@@ -56,6 +57,9 @@ def GetProcess_Runtime(pid):
             #     runtime = etime[1].replace('-', ' day ')
             # else:
             #     runtime = etime[1]
+
+            runtime = etime[1].replace(
+                '-', '天').replace(':', '小时', 1).replace(':', '分钟', 1) + '秒'
 
             run_time = etime[1].split(':')
             run_time = [int(i) for i in run_time]
@@ -72,10 +76,8 @@ def GetProcess_Runtime(pid):
                 runtime = \
                     f"{run_time[0]}年{run_time[1]}天{run_time[2]}小时" \
                     f"{run_time[3]}分钟{run_time[4]}秒"
-        except:
-            runtime = None
-    else:
-        runtime = None
+        except Exception:
+            pass
     return runtime
 
 
@@ -100,7 +102,7 @@ def GetProcessCPU_Pre(pid):
             cpus_percent = ((delta_proc / delta_time) * 100)
             pid_cpuinfo[pid] = [st1, pt1_0, pt1_1]
             cpu_usage = "{:.2f}".format(cpus_percent) + "%"
-        except:
+        except Exception:
             cpu_usage = None
     else:
         cpu_usage = None
@@ -113,7 +115,7 @@ def GetProcess_Mem(pid):
             p = psutil.Process(pid)
             process_mem = p.memory_percent()
             mem_usage = "{:.2f}".format(process_mem) + "%"
-        except:
+        except Exception:
             return None
     else:
         mem_usage = None
@@ -129,7 +131,7 @@ def GetProcess_ServiceMem(pid, is_java=False):
                 process_mem = process_list[-1].split()
                 service_mem = process_mem[0]
                 return service_mem
-            except:
+            except Exception:
                 return None
         else:
             return None
@@ -161,7 +163,7 @@ def GetCluster_IP(json_path="/data/app/data.json", service_name=""):
             for cluster_line in cluster_list:
                 cluster = cluster_line.split()
                 cluster_ip.append(cluster[0])
-        except:
+        except Exception:
             return cluster_ip
     else:
         return cluster_ip

@@ -44,7 +44,7 @@ def GetProcess_LogLevel(pid):
 
 
 def main(pid=GetProcess_Pid(), json_path="/data/app/data.json", **kwargs):
-    process_message = {}
+    process_message = dict()
     process_message["IP"] = GetLocal_Ip()
     process_message["service_status"] = GetProcess_Survive(pid)
     process_message["port_status"] = GetProcess_Port(pid)

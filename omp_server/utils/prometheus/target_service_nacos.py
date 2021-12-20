@@ -10,11 +10,13 @@ class ServiceNacosCrawl(Prometheus):
     """
     查询 prometheus Nacos 指标
     """
+
     def __init__(self, env, instance):
         self.ret = {}
         self.basic = []
-        self.env = env              # 环境
-        self.instance = instance    # 主机ip
+        self.env = env  # 环境
+        self.instance = instance  # 主机ip
+        self.metric_num = 6
         Prometheus.__init__(self)
 
     @staticmethod

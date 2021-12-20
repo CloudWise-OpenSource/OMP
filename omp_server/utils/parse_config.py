@@ -20,7 +20,6 @@ config_file_path = os.path.join(
     ), "config/omp.yaml"
 )
 
-
 with open(config_file_path, "r") as fp:
     CONFIG_DIC = yaml.load(fp, Loader=yaml.SafeLoader)
 
@@ -62,3 +61,4 @@ OMP_MYSQL_PASSWORD = os.getenv(
     CONFIG_DIC.get("mysql", {}).get("password")
 )
 BASIC_ORDER = CONFIG_DIC.get("basic_order", {})
+AFFINITY_FIELD = CONFIG_DIC.get("affinity", {})

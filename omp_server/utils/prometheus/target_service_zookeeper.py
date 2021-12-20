@@ -12,12 +12,14 @@ class ServiceZookeeperCrawl(Prometheus):
     """
     查询 prometheus zookeeper 指标
     """
+
     def __init__(self, env, instance):
         self.ret = {}
         self.basic = []
-        self.env = env              # 环境
-        self.instance = instance    # 主机ip
+        self.env = env  # 环境
+        self.instance = instance  # 主机ip
         self._obj = SaltClient()
+        self.metric_num = 13
         Prometheus.__init__(self)
 
     @staticmethod
@@ -47,11 +49,11 @@ class ServiceZookeeperCrawl(Prometheus):
 
     def cpu_usage(self):
         """cpu使用率"""
-        self.ret['cpu_usage'] = f"-"
+        self.ret['cpu_usage'] = "-"
 
     def mem_usage(self):
         """内存使用率"""
-        self.ret['mem_usage'] = f"-"
+        self.ret['mem_usage'] = "-"
 
     def packets_received(self):
         """收包数"""
@@ -115,7 +117,7 @@ class ServiceZookeeperCrawl(Prometheus):
                 ret = json.loads(ret[1])
             else:
                 ret = {}
-        except:
+        except Exception:
             ret = {}
 
         self.ret['cpu_usage'] = ret.get('cpu_usage', '-')

@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 # encoding: utf-8
-# Auther: Darren Liu
+# Author: Darren Liu
 # Description: get kafka Inspection data
-
+import json
 import os.path as up
+import os
 
-from inspection_common import *
+import psutil
+from inspection_common import GetLocal_Ip, GetProcess_Survive, GetProcess_Port, GetProcess_Runtime, \
+    GetProcess_ServiceMem, GetProcess_Mem, GetProcessCPU_Pre, GetCluster_IP
 
 
 def GetProcess_Pid():
@@ -14,7 +17,7 @@ def GetProcess_Pid():
         cmd_list = os.popen(cmd).read().strip('\n').split()
         pid = int(cmd_list[0])
         return pid
-    except:
+    except Exception:
         return None
 
 
@@ -30,7 +33,7 @@ def GetProcess_LogLevel(pid):
                     kafka_log_level = lines_list.strip('\n').split('=')
                     log_level = kafka_log_level[-1]
             return log_level
-        except:
+        except Exception:
             return None
     else:
         return None
@@ -42,7 +45,8 @@ def GetKafka_PartitionSize(pid, port):
             topic_size_json = {}
             p = psutil.Process(pid)
             kafka_path = up.abspath(up.join(p.exe(), "../../.."))
-            cmd = '%s/kafka/bin/kafka-topics.sh  --list --bootstrap-server %s:%s' % (kafka_path, GetLocal_Ip(), port)
+            cmd = '%s/kafka/bin/kafka-topics.sh  --list --bootstrap-server %s:%s' % (
+                kafka_path, GetLocal_Ip(), port)
             topic_list = os.popen(cmd).read().strip('\n').split('\n')
             f = open('%s/kafka/config/server.properties' % (kafka_path), 'r')
             for lines_list in f:
@@ -51,10 +55,11 @@ def GetKafka_PartitionSize(pid, port):
                     data_path = kafka_data_path[-1]
             for topic in topic_list:
                 size_cmd = 'du -csh %s/%s' % (data_path, topic) + '-*'
-                topic_size_list = os.popen(size_cmd).read().strip('\n').split('\n')
+                topic_size_list = os.popen(
+                    size_cmd).read().strip('\n').split('\n')
                 topic_size = topic_size_list[-1].split()
                 topic_size_json[topic] = topic_size[0]
-        except:
+        except Exception:
             topic_size_json = None
         return topic_size_json
 
@@ -66,7 +71,7 @@ def GetKafka_PartitionCount(pid, port):
             p = psutil.Process(pid)
             kafka_path = up.abspath(up.join(p.exe(), "../../.."))
             cmd = '%s/kafka/bin/kafka-topics.sh  --describe --bootstrap-server %s:%s' % (
-            kafka_path, GetLocal_Ip(), port)
+                kafka_path, GetLocal_Ip(), port)
             topic_list = os.popen(cmd).read().strip('\n').split('\n')
             for topic_partition in topic_list:
                 if 'PartitionCount' in topic_partition:
@@ -77,8 +82,9 @@ def GetKafka_PartitionCount(pid, port):
                     topic = topic_line[-1]
                     replication = replication_line[-1]
                     partition = partition_line[-1]
-                    partition_size_json[topic] = {"partition": partition, "replication": replication}
-        except:
+                    partition_size_json[topic] = {
+                        "partition": partition, "replication": replication}
+        except Exception:
             partition_size_json = None
         return partition_size_json
 
@@ -89,15 +95,16 @@ def GetKafka_Offsets(pid, port):
             p = psutil.Process(pid)
             kafka_path = up.abspath(up.join(p.exe(), "../../.."))
             cmd = '%s/kafka/bin/kafka-consumer-groups.sh  --list --bootstrap-server %s:%s' % (
-            kafka_path, GetLocal_Ip(), port)
+                kafka_path, GetLocal_Ip(), port)
             group_list = os.popen(cmd).read().strip('\n').split('\n')
             offset_group_json = {}
             for group in group_list:
                 log_offset = 0
                 lag_offset = 0
                 offset_cmd = '%s/kafka/bin/kafka-consumer-groups.sh  --group %s --describe  --bootstrap-server %s:%s|sort 2>/dev/null' % (
-                kafka_path, group, GetLocal_Ip(), port)
-                offset_list = os.popen(offset_cmd).read().strip('\n').split('\n')
+                    kafka_path, group, GetLocal_Ip(), port)
+                offset_list = os.popen(
+                    offset_cmd).read().strip('\n').split('\n')
                 if "Error" in offset_list[0]:
                     continue
                 offset_json = {}
@@ -109,21 +116,23 @@ def GetKafka_Offsets(pid, port):
                                 log_offset = int(offset[3])
                             if offset[4] != '-':
                                 lag_offset = int(offset[4])
-                            offset_json[offset[0]] = {"log_offset": log_offset, "lag_offset": lag_offset}
+                            offset_json[offset[0]] = {
+                                "log_offset": log_offset, "lag_offset": lag_offset}
                         else:
                             if offset[3] != '-':
                                 log_offset += int(offset[3])
                             if offset[4] != '-':
                                 lag_offset += int(offset[4])
-                            offset_json[offset[0]] = {"log_offset": log_offset, "lag_offset": lag_offset}
+                            offset_json[offset[0]] = {
+                                "log_offset": log_offset, "lag_offset": lag_offset}
                 offset_group_json[group] = offset_json
             return offset_group_json
-        except:
+        except Exception:
             return None
 
 
-def main(pid=GetProcess_Pid(), port='18108', json_path="/data/app/data.json",**kwargs):
-    process_message = {}
+def main(pid=GetProcess_Pid(), port='18108', json_path="/data/app/data.json", **kwargs):
+    process_message = dict()
     process_message["IP"] = GetLocal_Ip()
     process_message["service_status"] = GetProcess_Survive(pid)
     process_message["port_status"] = GetProcess_Port(pid)
@@ -135,7 +144,8 @@ def main(pid=GetProcess_Pid(), port='18108', json_path="/data/app/data.json",**k
     process_message["topic_partition"] = GetKafka_PartitionCount(pid, port)
     process_message["kafka_offsets"] = GetKafka_Offsets(pid, port)
     process_message["topic_size"] = GetKafka_PartitionSize(pid, port)
-    process_message["cluster_ip"] = GetCluster_IP(json_path=json_path, service_name="kafka")
+    process_message["cluster_ip"] = GetCluster_IP(
+        json_path=json_path, service_name="kafka")
     return json.dumps(process_message)
 
 

@@ -75,7 +75,8 @@ class HostSerializer(ModelSerializer):
         ])
     password = serializers.CharField(
         help_text="密码",
-        required=True, min_length=8, max_length=16,
+        required=True,
+        min_length=8, max_length=64,
         error_messages={
             "required": "必须包含[password]字段",
             "min_length": "密码长度需大于{min_length}",
@@ -103,8 +104,16 @@ class HostSerializer(ModelSerializer):
     init_host = serializers.BooleanField(
         help_text="是否初始化",
         required=False, default=False, write_only=True,
-        error_messages={"required": "必须包含[init_host]字段"}
     )
+    run_user = serializers.CharField(
+        help_text="运行用户",
+        required=False, default="",
+        max_length=16, write_only=True,
+        error_messages={
+            "max_length": "运行用户长度需小于{max_length}"},
+        validators=[
+            ReValidator(regex=r"^[_a-zA-Z0-9][-_a-zA-Z0-9]+$"),
+        ])
 
     class Meta:
         """ 元数据 """
@@ -159,6 +168,11 @@ class HostSerializer(ModelSerializer):
         password = attrs.get("password")
         data_folder = attrs.get("data_folder")
         init_flag = attrs.get("init_host", False)
+        run_user = attrs.get("run_user")
+
+        # 如果提供 run_user，需确保用户为 root
+        if run_user and username != "root":
+            raise ValidationError({"username": "运行用户仅在用户名为root时可用"})
 
         # 校验主机 SSH 连通性
         ssh = SSH(ip, port, username, password)
@@ -199,6 +213,9 @@ class HostSerializer(ModelSerializer):
         """ 创建主机 """
         ip = validated_data.get("ip")
         init_flag = validated_data.pop("init_host", False)
+        # 如果 run_user 存在，则删除
+        if "run_user" in validated_data:
+            validated_data.pop("run_user")
         # 指定 Agent 安装目录为 data_folder
         validated_data["agent_dir"] = validated_data.get("data_folder")
         instance = super(HostSerializer, self).create(validated_data)
@@ -218,6 +235,9 @@ class HostSerializer(ModelSerializer):
     def update(self, instance, validated_data):
         """ 更新主机 """
         validated_data.pop("init_host", False)
+        # 如果 run_user 存在，则删除
+        if "run_user" in validated_data:
+            validated_data.pop("run_user")
         log_ls = []
         username = self.context["request"].user.username
 
@@ -453,6 +473,8 @@ class HostBatchValidateSerializer(Serializer):
             if len(v) > 0:
                 v.sort(key=lambda x: x.get("row", 999))
         attrs["result_dict"] = result_dict
+        # print(result_dict["correct"])
+        # print(result_dict["error"])
         logger.info("host batch validate end")
         return attrs
 
@@ -481,3 +503,14 @@ class HostInitSerializer(HostIdsSerializer):
             id__in=host_ids
         ).update(init_status=Host.INIT_EXECUTING)
         return validated_data
+
+
+class HostsAgentStatusSerializer(Serializer):
+    """ 主机 agent 状态序列化类 """
+
+    ip_list = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="主机ip列表",
+        required=True, allow_empty=False,
+        error_messages={"required": "必须包含[ip_list]字段"}
+    )
