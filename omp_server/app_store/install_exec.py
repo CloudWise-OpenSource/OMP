@@ -3,6 +3,7 @@
 前提：所有的公共组件都由OMP进行安装处理
 目标：根据数据库中给出的安装记录进行服务安装
 """
+import copy
 import json
 import os
 import time
@@ -13,7 +14,7 @@ from concurrent.futures import (
     ThreadPoolExecutor, as_completed
 )
 # from django.db.models import F
-
+from app_store.high_availability_utils import HIGH_AVAILABILITY_UTILS
 from db_models.models import (
     Host, Service, HostOperateLog, ServiceHistory,
     MainInstallHistory, DetailInstallHistory, ApplicationHub,
@@ -138,7 +139,8 @@ class InstallServiceExecutor:
                     f"{self.now_time()} 安装doim执行失败，用户[{value}]为非root\n"
                 pre_install_obj.install_flag = 3
                 pre_install_obj.save()
-                raise GeneralError(f"主机 [{key}] 的run_user[{value}]为非root，不支持doim安装")
+                raise GeneralError(
+                    f"主机 [{key}] 的run_user[{value}]为非root，不支持doim安装")
             # 2.获取openssl版本号
             openssl_version_cmd = "openssl version"
             ssl_version = self.get_openssl_version_from_cmd(ip=key, salt_client=salt_client,
@@ -146,7 +148,8 @@ class InstallServiceExecutor:
             if ssl_version < OPENSSL_VERSION_LEVEL:
                 pre_install_obj.install_log += f"{self.now_time()} 当前系统的openssl version 为{ssl_version}; 开始升级openssl version\n"
                 pre_install_obj.save()
-                upgrade_flag, upgrade_msg = self.upgrade_openssl(ip=key, salt_client=salt_client)
+                upgrade_flag, upgrade_msg = self.upgrade_openssl(
+                    ip=key, salt_client=salt_client)
                 if not upgrade_flag:
                     pre_install_obj.install_log += \
                         f"{self.now_time()} 升级openssl version执行失败: {upgrade_msg}\n"
@@ -691,6 +694,24 @@ class InstallServiceExecutor:
                 return _flag, _msg
         return True, "success"
 
+    def high_availability_executor(self, detail_obj_lst):
+        """
+        过滤专属高可用阻塞部署
+        :param detail_obj_lst: [detail_obj, detail_obj]
+        :return:
+        """
+        deep_detail_obj_lst = copy.deepcopy(detail_obj_lst)
+        tmp_dict = {}
+        for detail_obj in deep_detail_obj_lst:
+            app_name = detail_obj.service.service.app_name
+            if app_name in HIGH_AVAILABILITY_UTILS.keys():
+                tmp_dict[app_name] = tmp_dict.get(app_name, []) + [detail_obj]
+                detail_obj_lst.remove(detail_obj)
+        for name, obj in tmp_dict.items():
+            # TODO 这个需要多线程处理
+            HIGH_AVAILABILITY_UTILS[name](self, obj).high_thread_executor()
+        return deep_detail_obj_lst
+
     def thread_poll_executor(self, detail_obj_lst):
         """
         多线程执行器
@@ -698,6 +719,8 @@ class InstallServiceExecutor:
         :return:
         """
         logger.info(f"Start thread poll executor for {detail_obj_lst}")
+        # 阻塞部署hadoop等
+        detail_obj_lst = self.high_availability_executor(detail_obj_lst)
         with ThreadPoolExecutor(THREAD_POOL_MAX_WORKERS) as executor:
             _future_list = []
             for detail_obj in detail_obj_lst:
@@ -826,7 +849,8 @@ class InstallServiceExecutor:
         post_obj.save()
         # 确定重新加载的服务 tengine & nacos & aopsUtils
         if DetailInstallHistory.objects.filter(
-                service__service__app_name__in=["tengine", "nacos", "aopsUtils"]
+                service__service__app_name__in=[
+                    "tengine", "nacos", "aopsUtils"]
         ).exclude(main_install_history=main_obj).exists():
             for key, value in POST_INSTALL_SERVICE.items():
                 post_obj.install_log += \
@@ -860,7 +884,8 @@ class InstallServiceExecutor:
             timeout=60
         )
         str_os_version = ssl_msg.strip()
-        res = re.findall('(.*?) ([0-9]+)\.([0-9]+)\.([0-9]+).*', str_os_version)
+        res = re.findall(
+            r'(.*?) ([0-9]+)\.([0-9]+)\.([0-9]+).*', str_os_version)
         str_version = "".join(res[0][1:]) if res else ""
         if not ssl_flag:
             return 0

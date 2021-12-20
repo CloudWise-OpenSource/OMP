@@ -116,6 +116,7 @@ basic_order:
   - kafka
   - clickhouse
   - hadoop
+  3:
   - flink
 
 

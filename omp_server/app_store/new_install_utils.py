@@ -35,6 +35,7 @@ from utils.parse_config import (
     OMP_REDIS_PORT,
     OMP_REDIS_PASSWORD
 )
+from app_store.deploy_role_utils import DEPLOY_ROLE_UTILS
 
 logger = logging.getLogger("server")
 
@@ -945,6 +946,29 @@ class SerDeployModeUtils(object):
         }
 
 
+class SerRoleUtils(object):
+    """ 针对开源组件角色分配类 """
+
+    @staticmethod
+    def get(install_services):
+        """
+        获取服务的部署模式
+        :return:
+        """
+        tmp_dict = {}
+        cp_service = deepcopy(install_services)
+        for item in cp_service:
+            if item['name'] in DEPLOY_ROLE_UTILS.keys():
+                tmp_dict[item['name']] = tmp_dict.get(
+                    item['name'], []) + [item]
+                install_services.remove(item)
+        for name, obj in tmp_dict.items():
+            # 发现有需要分role的实例
+            install_services.extend(
+                DEPLOY_ROLE_UTILS[name]().update_service(obj))
+        return install_services
+
+
 class SerWithUtils(object):
     """ 服务强绑定关系解析类 """
 
@@ -1712,6 +1736,7 @@ class CreateInstallPlan(object):
             service_instance_name=dic["instance_name"],
             service=self.get_app_obj_for_service(dic),
             service_port=json.dumps(dic.get("ports")),
+            service_role=dic.get("roles", ""),
             service_controllers=self.get_controllers_for_service(dic),
             cluster=self.create_cluster(dic),
             env=self.get_env_for_service(),
