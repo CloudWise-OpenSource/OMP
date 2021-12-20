@@ -850,6 +850,11 @@ class InstallServiceExecutor:
                     "tengine", "nacos", "aopsUtils"]
         ).exclude(main_install_history=main_obj).exists():
             for key, value in POST_INSTALL_SERVICE.items():
+                if not DetailInstallHistory.objects.filter(
+                        service__service__app_name=key).exclude(
+                        main_install_history=main_obj
+                ).exists():
+                    continue
                 post_obj.install_log += \
                     f"{self.now_time()} 开始执行 {key} 安装后续任务\n"
                 post_obj.save()
