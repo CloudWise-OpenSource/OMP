@@ -841,9 +841,13 @@ def add_prometheus(main_history_id):
                 username = info.get("default", "")
             if info.get("key", "") == "password":
                 password = info.get("default", "")
+        # TODO 后期优化
+        ser_name = detail_obj.service.service.app_name
+        if ser_name == "hadoop":
+            ser_name = instance_name
         # 添加服务到 prometheus
         is_success, message = prometheus.add_service({
-            "service_name": detail_obj.service.service.app_name,
+            "service_name": ser_name,
             "instance_name": instance_name,
             "data_path": data_dir,
             "log_path": log_dir,

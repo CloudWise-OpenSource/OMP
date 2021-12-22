@@ -1,9 +1,10 @@
 import logging
 import os
+import json
 from utils.common.exceptions import GeneralError
 from db_models.models import (
     Service, DetailInstallHistory,
-    Host
+    Host, ServiceHistory
 )
 
 from concurrent.futures import (
@@ -43,6 +44,8 @@ class Hadoop(object):
         self.target_set = set()
         self.count = 0
         self.detail_dict = {}  # 中间结果，任意一个hadoop_init失败所有的detail对象全部失败
+        self.port = {}
+        self.base_dir = {}
 
     def check_result(self, future_list):
         for future in as_completed(future_list):
@@ -153,6 +156,92 @@ class Hadoop(object):
                 return _flag, _msg
         return True, "success"
 
+    def sync_port(self, service_obj):
+        """
+        同步要监控的port
+        """
+        ports = json.loads(service_obj.service_port)
+        role_key = {
+            "namenode_rpc_port": "namenode",
+            "journalnode_rpc_port": "journalnode",
+            "resourcemanager_webapp_port": "resourcemanager",
+            "nodemanager_port": "nodemanager",
+            "datanode_rpc_port": "datanode",
+            "zkfc_rpc_port": "zkfc"
+        }
+        for port in ports:
+            port_key = role_key.get(port.get("key", ""))
+            if port_key:
+                self.port[port_key] = port.get("default", "")
+
+    def sync_dir(self, obj_list):
+        for detail in obj_list:
+            install_file = detail.service.service_controllers.get(
+                "install", "")
+            if install_file:
+                install_file = install_file.replace("install.py", "hadoop")
+            self.base_dir[detail.service.ip] = install_file
+
+    def _get_service_port(self, role):
+        port = self.port.get(role, "")
+        port_json = [{
+            "name": role,
+            "protocol": "TCP",
+            "key": "service_port",
+            "default": port
+        }]
+        return json.dumps(port_json, ensure_ascii=False)
+
+    def _get_service_controllers(self, ip, role):
+        script_dir = self.base_dir.get(ip, "").split()[0]
+        controllers = {
+            "init": "",
+            "start": f"{script_dir} start {role}",
+            "stop": f"{script_dir} stop {role}",
+            "restart": f"{script_dir} restart {role}",
+            "install": ""
+        }
+        return controllers
+
+    def _create_service(self, role, detail_obj):
+        ip = detail_obj.service.ip
+        instance_name = role + "_" + "_".join(ip.split(".")[2:])
+        service_obj = Service.objects.create(
+            ip=ip,
+            service_instance_name=instance_name,
+            service_status=0,
+            service=detail_obj.service.service,
+            service_port=self._get_service_port(role),
+            service_controllers=self._get_service_controllers(ip, role),
+            cluster=detail_obj.service.cluster,
+            env=detail_obj.service.env
+        )
+        # TODO 操作用户
+        ServiceHistory.objects.create(
+            username="admin",
+            description="安装服务",
+            result="success",
+            service=service_obj)
+        return service_obj
+
+    def _create_detail(self, service_obj, detail_obj):
+        """
+        创建detail表
+        """
+        status = DetailInstallHistory.INSTALL_STATUS_SUCCESS
+        DetailInstallHistory.objects.create(
+            service=service_obj,
+            main_install_history=detail_obj.main_install_history,
+            install_step_status=status,
+            send_flag=status,
+            unzip_flag=status,
+            install_flag=status,
+            init_flag=status,
+            start_flag=status,
+            post_action_flag=status,
+            install_detail_args=detail_obj.install_detail_args
+        )
+
     def high_thread_executor(self):
         """
         多线程执行器
@@ -173,5 +262,16 @@ class Hadoop(object):
             for action in self.hadoop_init:
                 if not self.error:
                     self.init(action, self.detail_list)
+        if not self.error:
+            # 创建表数据
+            self.sync_port(self.detail_list[0].service)
+            self.sync_dir(self.detail_list)
+            for obj in self.detail_list:
+                roles_name = obj.service.service_role
+                for role in roles_name.split(","):
+                    ser_obj = self._create_service(role, obj)
+                    self._create_detail(ser_obj, obj)
+                obj.service.delete()
+                obj.delete()
 
-        logger.info("Finish thread poll executor!")
+            logger.info("Finish thread poll executor!")
