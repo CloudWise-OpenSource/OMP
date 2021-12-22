@@ -17,22 +17,8 @@ class ServiceNacosCrawl(Prometheus):
         self.env = env  # 环境
         self.instance = instance  # 主机ip
         self.metric_num = 6
+        self.service_name = "nacos"
         Prometheus.__init__(self)
-
-    @staticmethod
-    def unified_job(is_success, ret):
-        """
-        实例方法 返回值统一处理
-        :ret: 返回值
-        :is_success: 请求是否成功
-        """
-        if is_success:
-            if ret.get('result'):
-                return ret['result'][0].get('value')[1]
-            else:
-                return 0
-        else:
-            return 0
 
     def service_status(self):
         """运行状态"""
@@ -41,25 +27,34 @@ class ServiceNacosCrawl(Prometheus):
         self.ret['service_status'] = self.unified_job(*self.query(expr))
 
     def run_time(self):
-        """运行时间"""
-        self.ret['run_time'] = '-'
+        """nacos 运行时间"""
+        expr = f"process_uptime_seconds{{env='{self.env}', instance='{self.instance}', app='{self.service_name}'}}"
+        _ = self.unified_job(*self.query(expr))
+        _ = float(_) if _ else 0
+        minutes, seconds = divmod(_, 60)
+        hours, minutes = divmod(minutes, 60)
+        days, hours = divmod(hours, 24)
+        if int(days) > 0:
+            self.ret['run_time'] = \
+                f"{int(days)}天{int(hours)}小时{int(minutes)}分钟{int(seconds)}秒"
+        elif int(hours) > 0:
+            self.ret['run_time'] = \
+                f"{int(hours)}小时{int(minutes)}分钟{int(seconds)}秒"
+        else:
+            self.ret['run_time'] = f"{int(minutes)}分钟{int(seconds)}秒"
 
     def cpu_usage(self):
-        """cpu使用率"""
-        expr = f"system_cpu_usage{{env=~'{self.env}'," \
-               f"instance=~'{self.instance}', job='nacosExporter'}} * 100"
+        """nacos cpu使用率"""
+        expr = f"service_process_cpu_percent{{instance='{self.instance}',app='{self.service_name}'}}"
         val = self.unified_job(*self.query(expr))
-        val = round(float(val), 2) if val else '0.00'
+        val = round(float(val), 4) if val else '0.00'
         self.ret['cpu_usage'] = f"{val}%"
 
     def mem_usage(self):
-        """内存使用率"""
-        expr = f"sum(jvm_memory_used_bytes{{area='heap', env='{self.env}'," \
-               f"instance=~'{self.instance}'}}) / " \
-               f"sum(jvm_memory_max_bytes{{area='heap', env=~'{self.env}'," \
-               f"instance=~'{self.instance}'}}) * 100"
+        """nacos 内存使用率"""
+        expr = f"service_process_memory_percent{{instance='{self.instance}',app='{self.service_name}'}}"
         val = self.unified_job(*self.query(expr))
-        val = round(float(val), 2) if val else '0.00'
+        val = round(float(val), 4) if val else '0.00'
         self.ret['mem_usage'] = f"{val}%"
 
     def thread_num(self):
