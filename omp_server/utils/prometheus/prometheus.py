@@ -67,6 +67,21 @@ class Prometheus(object):
                 clean_alerts.append(value.get("warning"))
         return clean_alerts
 
+    @staticmethod
+    def unified_job(is_success, ret):
+        """
+        实例方法 返回值统一处理
+        :ret: 返回值
+        :is_success: 请求是否成功
+        """
+        if is_success:
+            if ret.get('result'):
+                return ret['result'][0].get('value')[1]
+            else:
+                return 0
+        else:
+            return 0
+
     def query_alerts(self):
         url = f'http://{self.address}/api/v1/alerts'
         try:

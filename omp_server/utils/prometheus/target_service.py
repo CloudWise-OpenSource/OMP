@@ -5,7 +5,6 @@
 # Description:
 import json
 import random
-import sys
 import logging
 import traceback
 
@@ -14,7 +13,7 @@ from utils.prometheus.thread import MyThread
 from utils.prometheus.target_service_jvm_base import ServiceBase
 # from utils.prometheus.target_service_func import salt_json
 from utils.prometheus.target_service_arangodb import ServiceArangodbCrawl
-from utils.prometheus.target_service_beanstalkd import ServiceBeanstalkdCrawl
+from utils.prometheus.target_service_beanstalk import ServiceBeanstalkCrawl
 from utils.prometheus.target_service_clickhouse import ServiceClickhouseCrawl
 from utils.prometheus.target_service_elasticsearch import ServiceElasticsearchCrawl
 from utils.prometheus.target_service_flink import ServiceFlinkCrawl
@@ -39,7 +38,7 @@ logger = logging.getLogger("server")
 
 open_source_class_dict = {
     "arangodb": ServiceArangodbCrawl,
-    "beanstalkd": ServiceBeanstalkdCrawl,
+    "beanstalk": ServiceBeanstalkCrawl,
     "clickhouse": ServiceClickhouseCrawl,
     "elasticsearch": ServiceElasticsearchCrawl,
     "flink": ServiceFlinkCrawl,
@@ -127,9 +126,8 @@ def target_service_thread(env, i):
     # elif i.get('service__app_monitor', {}).get('type') == 'open_source':  # TODO
     else:
         try:
-            local_module = sys.modules[__name__]
-            crawl_class = getattr(
-                local_module, f'Service{i.get("service__app_name").capitalize()}Crawl')
+            crawl_class = open_source_class_dict.get(
+                i.get("service__app_name"))
             _ = crawl_class(env=env.name, instance=i.get('ip'))
             _.run()
             tag_total_num = _.metric_num  # 总指标数累加

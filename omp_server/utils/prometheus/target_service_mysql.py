@@ -19,34 +19,19 @@ class ServiceMysqlCrawl(Prometheus):
         self.env = env  # 环境
         self.instance = instance  # 主机ip
         self._obj = SaltClient()
-        self.metric_num = 11
+        self.metric_num = 10
+        self.service_name = "mysql"
         Prometheus.__init__(self)
 
-    @staticmethod
-    def unified_job(is_success, ret):
-        """
-        实例方法 返回值统一处理
-        :ret: 返回值
-        :is_success: 请求是否成功
-        """
-        if is_success:
-            if ret.get('result'):
-                return ret['result'][0].get('value')[1]
-            else:
-                return 0
-        else:
-            return 0
-
-    def run_status(self):
+    def service_status(self):
         """运行状态"""
-        expr = f"up{{env='{self.env}', instance='{self.instance}', " \
-               f"job='mysqlExporter'}}"
-        self.ret['run_status'] = self.unified_job(*self.query(expr))
+        expr = f"probe_success{{env='{self.env}', instance='{self.instance}', " \
+               f"app='{self.service_name}'}}"
+        self.ret['service_status'] = self.unified_job(*self.query(expr))
 
     def run_time(self):
-        """运行时间"""
-        expr = f"mysql_global_status_uptime{{env='{self.env}'," \
-               f"instance='{self.instance}'}}"
+        """mysql 运行时间"""
+        expr = f"process_uptime_seconds{{env='{self.env}', instance='{self.instance}', app='{self.service_name}'}}"
         _ = self.unified_job(*self.query(expr))
         _ = float(_) if _ else 0
         minutes, seconds = divmod(_, 60)
@@ -60,6 +45,20 @@ class ServiceMysqlCrawl(Prometheus):
                 f"{int(hours)}小时{int(minutes)}分钟{int(seconds)}秒"
         else:
             self.ret['run_time'] = f"{int(minutes)}分钟{int(seconds)}秒"
+
+    def cpu_usage(self):
+        """mysql cpu使用率"""
+        expr = f"service_process_cpu_percent{{instance='{self.instance}',app='{self.service_name}'}}"
+        val = self.unified_job(*self.query(expr))
+        val = round(float(val), 4) if val else '0.00'
+        self.ret['cpu_usage'] = f"{val}%"
+
+    def mem_usage(self):
+        """mysql 内存使用率"""
+        expr = f"service_process_memory_percent{{instance='{self.instance}',app='{self.service_name}'}}"
+        val = self.unified_job(*self.query(expr))
+        val = round(float(val), 4) if val else '0.00'
+        self.ret['mem_usage'] = f"{val}%"
 
     def slow_query(self):
         """慢查询"""
@@ -115,9 +114,8 @@ class ServiceMysqlCrawl(Prometheus):
 
     def run(self):
         """统一执行实例方法"""
-        target = ['run_status', 'run_time', 'slow_query', 'conn_num',
-                  'max_connections', 'threads_running', 'qps', 'backup_status',
-                  'salt_json']
+        target = ['service_status', 'run_time', 'cpu_usage', 'mem_usage', 'slow_query', 'conn_num',
+                  'max_connections', 'threads_running', 'qps', 'backup_status']
         for t in target:
             if getattr(self, t):
                 getattr(self, t)()
