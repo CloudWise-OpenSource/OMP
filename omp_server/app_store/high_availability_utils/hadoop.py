@@ -6,7 +6,8 @@ from db_models.models import (
     Service, DetailInstallHistory,
     Host, ServiceHistory
 )
-
+from django.db.models import F
+from django.db import transaction
 from concurrent.futures import (
     ThreadPoolExecutor, as_completed
 )
@@ -14,11 +15,6 @@ from utils.plugin.salt_client import SaltClient
 
 THREAD_POOL_MAX_WORKERS = 20
 logger = logging.getLogger("server")
-
-
-# send unzip install3个节点并行顺序执行
-
-# 3个节点并行顺序执行 但每个动作必须有前一个动作为基础一个失败全体失败
 
 
 class Hadoop(object):
@@ -222,6 +218,8 @@ class Hadoop(object):
             description="安装服务",
             result="success",
             service=service_obj)
+        Host.objects.filter(ip=ip).update(
+            service_num=F("service_num") + 1)
         return service_obj
 
     def _create_detail(self, service_obj, detail_obj):
@@ -264,14 +262,17 @@ class Hadoop(object):
                     self.init(action, self.detail_list)
         if not self.error:
             # 创建表数据
-            self.sync_port(self.detail_list[0].service)
-            self.sync_dir(self.detail_list)
-            for obj in self.detail_list:
-                roles_name = obj.service.service_role
-                for role in roles_name.split(","):
-                    ser_obj = self._create_service(role, obj)
-                    self._create_detail(ser_obj, obj)
-                obj.service.delete()
-                obj.delete()
-
+            with transaction.atomic():
+                self.sync_port(self.detail_list[0].service)
+                self.sync_dir(self.detail_list)
+                for obj in self.detail_list:
+                    host_ip = obj.service.ip
+                    roles_name = obj.service.service_role
+                    for role in roles_name.split(","):
+                        ser_obj = self._create_service(role, obj)
+                        self._create_detail(ser_obj, obj)
+                    obj.service.delete()
+                    obj.delete()
+                    Host.objects.filter(ip=host_ip).update(
+                        service_num=F("service_num") - 1)
             logger.info("Finish thread poll executor!")
