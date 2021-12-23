@@ -42,7 +42,8 @@ from app_store.new_install_utils import (
     ValidateInstallServicePortArgs,
     WithServiceUtils,
     ComponentServiceParse,
-    SerRoleUtils
+    SerRoleUtils,
+    SerVipUtils
 )
 from app_store.tasks import install_service as install_service_task
 from utils.plugin.salt_client import SaltClient
@@ -854,7 +855,17 @@ class CreateInstallPlanSerializer(BaseInstallSerializer):
             host_user_map=host_user_map
         ).run()
         all_install_service_lst.extend(with_ser_lst)
-
+        # 划分vip处理
+        service_vip_map = BaseRedisData(
+            unique_key=unique_key).get_step3_service_vip_map()
+        if service_vip_map:
+            _keep_alive_lst = SerVipUtils(
+                install_services=all_install_service_lst,
+                service_vip_map=service_vip_map,
+                host_user_map=host_user_map,
+                run_user=run_user
+            ).run()
+            all_install_service_lst.extend(_keep_alive_lst)
         # TODO 依赖关系绑定
         all_install_service_lst = ValidateInstallServicePortArgs(
             data=all_install_service_lst
