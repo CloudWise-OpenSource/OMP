@@ -707,7 +707,7 @@ class InstallServiceExecutor:
         for name, obj in tmp_dict.items():
             # TODO 这个需要多线程处理
             HIGH_AVAILABILITY_UTILS[name](self, obj).high_thread_executor()
-        return deep_detail_obj_lst
+        return detail_obj_lst
 
     def thread_poll_executor(self, detail_obj_lst):
         """
