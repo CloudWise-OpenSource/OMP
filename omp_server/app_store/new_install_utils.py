@@ -341,6 +341,7 @@ class BaseRedisData(object):
             data=data
         )
         cluster_name_map = dict()
+        service_vip_map = dict()
         basic = data.get("data", {}).get("basic", [])
         for item in basic:
             cluster_name_map[item["name"]] = \
@@ -352,11 +353,17 @@ class BaseRedisData(object):
         for item in dependence:
             if item.get("is_use_exist"):
                 continue
+            if item.get("vip"):
+                service_vip_map[item.get("name")] = item.get("vip")
             cluster_name_map[item["name"]] = \
                 item.get("cluster_name")
         self.redis.set(
             name=self.unique_key + "_step_3_cluster_name_map",
             data=cluster_name_map
+        )
+        self.redis.set(
+            name=self.unique_key + "_step3_service_vip_map",
+            data=service_vip_map
         )
 
     def get_step_3_checked_data(self):
@@ -373,6 +380,14 @@ class BaseRedisData(object):
         :return:
         """
         key = self.unique_key + "_step_3_cluster_name_map"
+        return self._get(key=key)
+
+    def get_step3_service_vip_map(self):
+        """
+        获取要是用的 vip 名
+        :return:
+        """
+        key = self.unique_key + "_step3_service_vip_map"
         return self._get(key=key)
 
     def step_4_set_service_distribution(self, data):
@@ -961,12 +976,78 @@ class SerRoleUtils(object):
             if item['name'] in DEPLOY_ROLE_UTILS.keys():
                 tmp_dict[item['name']] = tmp_dict.get(
                     item['name'], []) + [item]
-                install_services.remove(item)
+                if item["name"] != "mysql":
+                    install_services.remove(item)
         for name, obj in tmp_dict.items():
             # 发现有需要分role的实例
-            install_services.extend(
-                DEPLOY_ROLE_UTILS[name]().update_service(obj))
+            if name == "mysql":
+                install_services = DEPLOY_ROLE_UTILS[name]().update_service(
+                    install_services
+                )
+            else:
+                install_services.extend(
+                    DEPLOY_ROLE_UTILS[name]().update_service(obj))
         return install_services
+
+
+class SerVipUtils(object):
+    """ 针对开源组件进行vip绑定处理 """
+
+    def __init__(
+            self,
+            install_services, service_vip_map, host_user_map, run_user):
+        self.install_services = install_services
+        self.service_vip_map = service_vip_map
+        self.host_user_map = host_user_map
+        self.run_user = run_user
+
+    def get_keep_alive(self, ip, data_folder, name):
+        _tmp_ser = dict()
+        _app = ApplicationHub.objects.filter(
+            app_name="keepalived",
+        ).last()
+        install_args = ServiceArgsPortUtils(
+            ip=ip,
+            data_folder=data_folder,
+            run_user=self.run_user,
+            host_user_map=self.host_user_map
+        ).remake_install_args(obj=_app)
+        ports = ServiceArgsPortUtils(
+            ip=ip,
+            data_folder=data_folder,
+            run_user=self.run_user,
+            host_user_map=self.host_user_map
+        ).get_app_port(obj=_app)
+        _tmp_ser["name"] = _app.app_name
+        _tmp_ser["version"] = _app.app_version
+        instance_name = \
+            "keepalived" + "-" + "-".join(ip.split(".")[-2:])
+        _tmp_ser["ip"] = ip
+        _tmp_ser["data_folder"] = data_folder
+        _tmp_ser["run_user"] = self.run_user
+        _tmp_ser["install_args"] = install_args
+        _tmp_ser["ports"] = ports
+        _tmp_ser["instance_name"] = instance_name
+        _tmp_ser["cluster_name"] = None
+        _tmp_ser["roles"] = name
+        return _tmp_ser
+
+    def run(self):
+        """
+        处理服务的 vip 模式
+        :return:
+        """
+        keep_alive_lst = list()
+        for item in self.install_services:
+            if item.get("name") in self.service_vip_map:
+                _ser = self.get_keep_alive(
+                    ip=item.get("ip"),
+                    data_folder=item.get("data_folder"),
+                    name=item.get("name")
+                )
+                _ser["vip"] = self.service_vip_map[item["name"]]
+                keep_alive_lst.append(_ser)
+        return keep_alive_lst
 
 
 class SerWithUtils(object):
@@ -1478,7 +1559,8 @@ class DataJson(object):
             "cluster_name": obj.cluster.cluster_name if obj.cluster else None,
             "ports": json.loads(obj.service_port) if obj.service_port else [],
             "dependence": json.loads(obj.service_dependence) if
-            obj.service_dependence else []
+            obj.service_dependence else [],
+            "vip": obj.vip
         }
         _others = self.get_ser_install_args(obj)
         _ser_dic.update(_others)
@@ -1742,7 +1824,8 @@ class CreateInstallPlan(object):
             env=self.get_env_for_service(),
             service_status=6,
             service_connect_info=self.create_connect_info(dic),
-            service_dependence=json.dumps(self.get_dependence(dic))
+            service_dependence=json.dumps(self.get_dependence(dic)),
+            vip=dic.get("vip")
         )
         _ser_obj.save()
         return _ser_obj

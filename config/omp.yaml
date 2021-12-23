@@ -95,6 +95,7 @@ basic_order:
   - jdk
   - safeRM
   1:
+  - keepalived
   - tengine
   - mysql
   - redis

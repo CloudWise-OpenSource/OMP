@@ -723,6 +723,9 @@ class Service(TimeStampMixin):
     service_dependence = models.TextField(
         "服务依赖关系", null=True, blank=True, help_text="服务依赖关系")
 
+    vip = models.GenericIPAddressField(
+        "vip地址", null=True, blank=True, default=None, help_text="vip地址")
+
     class Meta:
         """元数据"""
         db_table = 'omp_service'
