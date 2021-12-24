@@ -26,7 +26,7 @@ logger = get_task_logger("celery_log")
 
 def delete_action(service_obj):
     """
-    删除逻辑
+    查询删除目录
     """
     install_detail = service_obj.detailinstallhistory_set.first().install_detail_args
     dir_list = ["base_dir", "log_dir", "data_dir"]
@@ -40,8 +40,30 @@ def delete_action(service_obj):
     return result
 
 
+def delete_file(service_controllers, service_obj):
+    """
+    删除文件操作
+    """
+    salt_obj = SaltClient()
+    exe_action = service_controllers.get("stop")
+    # 存在stop脚本先执行stop脚本后执行删除
+    if exe_action:
+        for count in range(2):
+            is_success, info = salt_obj.cmd(service_obj.ip, exe_action, 600)
+            time.sleep(count + 1)
+            if is_success is True:
+                break
+            logger.info(f"执行 [delete] 操作 {is_success}，原因: {info}")
+    base_dir = delete_action(service_obj)
+    # 删除安装路径
+    if base_dir:
+        is_success, info = salt_obj.cmd(
+            service_obj.ip, f"rm -rf {base_dir}", 600)
+        logger.info(f"执行 [delete] 操作 {is_success}，原因: {info}")
+
+
 @shared_task
-def exec_action(action, instance, operation_user):
+def exec_action(action, instance, operation_user, del_file=False):
     # edit by vum: 增加服务的目标成功状态、失败状态
     action_json = {
         "1": ["start", 1, 0, 4],
@@ -91,21 +113,8 @@ def exec_action(action, instance, operation_user):
             service=service_obj)
         if len(service_history_obj) != 0:
             service_history_obj.delete()
-        salt_obj = SaltClient()
-        exe_action = service_controllers.get("stop")
-        # 存在stop脚本先执行stop脚本后执行删除
-        if exe_action:
-            for count in range(2):
-                is_success, info = salt_obj.cmd(ip, exe_action, 600)
-                time.sleep(count + 1)
-                if is_success is True:
-                    break
-            logger.info(f"执行 [{action[0]}] 操作 {is_success}，原因: {info}")
-        base_dir = delete_action(service_obj)
-        # 删除安装路径
-        if base_dir:
-            is_success, info = salt_obj.cmd(ip, f"rm -rf {base_dir}", 600)
-            logger.info(f"执行 [{action[0]}] 操作 {is_success}，原因: {info}")
+        if del_file:
+            delete_file(service_controllers, service_obj)
         service_obj.delete()
         host_instances = Host.objects.filter(ip=service_obj.ip)
         for instance in host_instances:
