@@ -7,7 +7,9 @@
 # Introduction:
 
 from app_store.deploy_role_utils.hadoop import Hadoop
+from app_store.deploy_role_utils.redis import Redis
 
 DEPLOY_ROLE_UTILS = {
-    "hadoop": Hadoop
+    "hadoop": Hadoop,
+    "redis": Redis
 }
