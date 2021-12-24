@@ -163,7 +163,8 @@ class Hadoop(object):
             "resourcemanager_webapp_port": "resourcemanager",
             "nodemanager_port": "nodemanager",
             "datanode_rpc_port": "datanode",
-            "zkfc_rpc_port": "zkfc"
+            "zkfc_rpc_port": "zkfc",
+            "secondarynamenode_rpc_port": "secondarynamenode"
         }
         for port in ports:
             port_key = role_key.get(port.get("key", ""))

@@ -24,7 +24,7 @@ class Hadoop(object):
         base_role = "datanode,nodemanager,journalnode"
         # worker_role = "datanode,nodemanager" 后期优化分配
         if len(service_list) == 1:
-            service_list[0]['roles'] = "journalnode,namenode,secondarynamenode," \
+            service_list[0]['roles'] = "namenode,secondarynamenode," \
                                        "datanode,resourcemanager,nodemanager"
             return service_list
         for index, i in enumerate(service_list):
