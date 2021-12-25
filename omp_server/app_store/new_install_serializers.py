@@ -187,6 +187,7 @@ class CreateInstallInfoSerializer(BaseInstallSerializer):
         for _pro in _basic:
             _re_services_list = list()
             for item in _pro.get("services_list"):
+                # 版本严格校验
                 _recheck_service.update({
                     item.get("name", "") + "-" + item.get("version", ""): True
                 })
@@ -212,6 +213,7 @@ class CreateInstallInfoSerializer(BaseInstallSerializer):
         # 自研服务与基础组件重复处理
         _recheck_dependence = list()
         for item in _dependence:
+            # 版本严格校验
             _key = item.get("name", "") + "-" + item.get("version", "")
             if _key in _recheck_service:
                 continue
@@ -454,8 +456,8 @@ class CreateServiceDistributionSerializer(BaseInstallSerializer):
                     ).run()
                 }
             else:
-                # TODO 目前仅支持mysql单节点
-                if item.get("name") == "mysql":
+                # TODO 提取支持 VIP 的服务
+                if item.get("name") in ("mysql", "tengine"):
                     deploy_num = \
                         1 if item.get("deploy_mode") == "single" else 2
                 else:

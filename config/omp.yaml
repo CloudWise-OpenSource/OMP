@@ -94,21 +94,21 @@ basic_order:
   0:
   - jdk
   - safeRM
-  1:
-  - keepalived
   - tengine
   - mysql
   - redis
   - arangodb
   - minio
+  - postgreSql
+  - prometheus
+  - pushgateway
+  1:
+  - keepalived
   - httpd
   - elasticsearch
   - ignite
   - zookeeper
   - rocketmq
-  - postgreSql
-  - prometheus
-  - pushgateway
   - wkhtmltox
   - tomcat
   2:

@@ -763,6 +763,16 @@ def make_lst_unique(lst, key_1, key_2):
         _unique = el.get(key_1, "") + "_" + el.get(key_2, "")
         if _unique in unique_dic:
             continue
+        # 服务版本模糊判断逻辑 jon.liu 20211225
+        _app = ApplicationHub.objects.filter(
+            app_name=el.get(key_1),
+            app_version__startswith=el.get(key_2)
+        ).last()
+        _unique = _app.app_name + "_" + _app.app_version
+        if _unique in unique_dic:
+            continue
+        # 更新弱校验的服务版本
+        el["version"] = _app.app_version
         ret_lst.append(el)
         unique_dic[_unique] = True
     return ret_lst
@@ -875,9 +885,10 @@ class SerDependenceParseUtils(object):
         unique_key_lst = list()
         for inner in dep:
             _name, _version = inner.get("name"), inner.get("version")
+            # 服务版本弱依赖逻辑 jon.liu 20211225
             _app = ApplicationHub.objects.filter(
                 app_name=_name,
-                app_version=_version,
+                app_version__startswith=_version,
                 is_release=True
             ).order_by("created").last()
             # 定义服务&版本唯一标准，防止递归错误
@@ -1331,17 +1342,19 @@ class BaseEnvServiceUtils(object):
         :return:
         """
         for el in dep_lst:
+            # 服务版本弱依赖逻辑 jon.liu 20211225
             _dep_obj = ApplicationHub.objects.filter(
                 app_name=el["name"],
-                app_version=el["version"]
+                app_version__startswith=el["version"]
             ).last()
             if not _dep_obj.is_base_env:
                 continue
             # 当被依赖的基础服务已经被安装时，使用如下方法进行过滤处理
+            # 服务版本弱依赖逻辑 jon.liu 20211225
             if Service.objects.filter(
                 ip=item["ip"],
                 service__app_name=el["name"],
-                service__app_version=el["version"]
+                service__app_version__startswith=el["version"]
             ).count() > 0:
                 continue
             if item["ip"] in base_env_dic and \
