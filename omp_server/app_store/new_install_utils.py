@@ -1764,7 +1764,7 @@ class CreateInstallPlan(object):
         _ser_version = inner["version"]
         for el in self.install_services:
             if el.get("name") == _ser_name and \
-                    el.get("version") == _ser_version:
+                    el.get("version").startswith(_ser_version):
                 cluster_name = el.get("cluster_name")
                 instance_name = el.get("instance_name")
                 if cluster_name:
@@ -1798,7 +1798,7 @@ class CreateInstallPlan(object):
             # 已存在的base_env服务依赖
             _dep_obj = ApplicationHub.objects.filter(
                 app_name=item.get("name"),
-                app_version=item.get("version")
+                app_version__startswith=item.get("version")
             ).last()
             if _dep_obj.is_base_env:
                 _ser_obj = Service.objects.filter(
