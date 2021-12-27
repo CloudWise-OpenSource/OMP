@@ -340,7 +340,8 @@ const renderMenu = (
   record,
   setOperateAciton,
   setServiceAcitonModal,
-  queryDeleteMsg
+  queryDeleteMsg,
+  deleteConditionReset
 ) => {
   return (
     <Menu>
@@ -388,6 +389,7 @@ const renderMenu = (
           queryDeleteMsg([record]);
           setOperateAciton(4);
           setServiceAcitonModal(true);
+          deleteConditionReset()
         }}
       >
         <span style={{ fontSize: 12, paddingLeft: 5, paddingRight: 5 }}>
@@ -489,7 +491,9 @@ const getColumnsConfig = (
   setShowIframe,
   setOperateAciton,
   setServiceAcitonModal,
-  queryDeleteMsg
+  queryDeleteMsg,
+  // 删除的前置条件重置
+  deleteConditionReset
 ) => {
   return [
     {
@@ -702,7 +706,8 @@ const getColumnsConfig = (
                 record,
                 setOperateAciton,
                 setServiceAcitonModal,
-                queryDeleteMsg
+                queryDeleteMsg,
+                deleteConditionReset
               )}
             >
               <a>
