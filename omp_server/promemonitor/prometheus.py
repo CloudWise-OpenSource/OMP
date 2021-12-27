@@ -5,7 +5,7 @@ import math
 import requests
 
 from db_models.models import MonitorUrl
-from utils.parse_config import MONITOR_PORT
+from utils.parse_config import MONITOR_PORT, PROMETHEUS_AUTH
 
 logger = logging.getLogger('server')
 
@@ -19,6 +19,9 @@ class Prometheus:
     def __init__(self):
         self.basic_url = self.get_prometheus_config()
         self.prometheus_api_query_url = f'http://{self.basic_url}/api/v1/query?query='  # NOQA
+        self.basic_auth = (PROMETHEUS_AUTH.get(
+            "username", "omp"), PROMETHEUS_AUTH.get("plaintext_password"), "")
+        self.headers = {'Content-Type': 'application/json'}
 
     @staticmethod
     def get_prometheus_config():
@@ -96,12 +99,12 @@ class Prometheus:
         """
         获取指定主机cpu使用率
         """
-        headers = {'Content-Type': 'application/json'}
         query_url = f'{self.prometheus_api_query_url}(1 - avg(rate(node_cpu_seconds_total' \
                     f'{{mode="idle"}}[2m])) by (instance))*100'
         # print(query_url)
         try:
-            get_cpu_response = requests.get(url=query_url, headers=headers)
+            get_cpu_response = requests.get(
+                url=query_url, headers=self.headers, auth=self.basic_auth)
             if get_cpu_response.status_code == 200:
                 cpu_usage_dict = get_cpu_response.json()
                 if cpu_usage_dict.get('status') != 'success':
@@ -137,13 +140,13 @@ class Prometheus:
         """
         获取指定主机内存使用率
         """
-        headers = {'Content-Type': 'application/json'}
         query_url = f'{self.prometheus_api_query_url}(1 - (node_memory_MemAvailable_bytes / ' \
                     f'(node_memory_MemTotal_bytes)))* 100'
         # print(query_url)
 
         try:
-            get_mem_response = requests.get(url=query_url, headers=headers)
+            get_mem_response = requests.get(
+                url=query_url, headers=self.headers, auth=self.basic_auth)
             if get_mem_response.status_code == 200:
                 mem_usage_dict = get_mem_response.json()
                 if mem_usage_dict.get('status') != 'success':
@@ -178,7 +181,6 @@ class Prometheus:
         """
         获取指定主机磁盘根分区使用率
         """
-        headers = {'Content-Type': 'application/json'}
         query_url = f'{self.prometheus_api_query_url}(node_filesystem_size_bytes{{mountpoint="/"}} - ' \
                     f'node_filesystem_free_bytes{{mountpoint="/",fstype!="rootfs"}}) / ' \
                     f'(node_filesystem_avail_bytes{{mountpoint="/"}}-node_filesystem_free_bytes{{mountpoint="/"}} - ' \
@@ -187,7 +189,7 @@ class Prometheus:
 
         try:
             get_root_disk_response = requests.get(
-                url=query_url, headers=headers)
+                url=query_url, headers=self.headers, auth=self.basic_auth)
             if get_root_disk_response.status_code == 200:
                 root_disk_usage_dict = get_root_disk_response.json()
                 if root_disk_usage_dict.get('status') != 'success':
@@ -222,8 +224,6 @@ class Prometheus:
         """
         获取指定主机磁盘数据分区使用率
         """
-        headers = {'Content-Type': 'application/json'}
-        # print(query_url)
         for index, host in enumerate(host_list.copy()):
             host_ip = host.get('ip')
             host_data_disk = host.get('data_folder')
@@ -235,7 +235,7 @@ class Prometheus:
                         f'(-node_filesystem_size_bytes{{mountpoint="{host_data_disk}",instance="{host_ip}"}}))*100'
             try:
                 get_data_disk_response = requests.get(
-                    url=query_url, headers=headers)
+                    url=query_url, headers=self.headers, auth=self.basic_auth)
                 if get_data_disk_response.status_code == 200:
                     data_disk_usage_dict = get_data_disk_response.json()
                     if data_disk_usage_dict.get('status') != 'success':
@@ -292,10 +292,10 @@ class Prometheus:
         获取服务状态  0-运行; 1-停止
         :return:
         """
-        headers = {'Content-Type': 'application/json'}
         query_url = f'{self.prometheus_api_query_url}probe_success'
         try:
-            res_body = requests.get(url=query_url, headers=headers)
+            res_body = requests.get(
+                url=query_url, headers=self.headers, auth=self.basic_auth)
             res_dic = json.loads(res_body.text)
             if res_dic.get("status") != "success":
                 return False, {}
@@ -316,11 +316,10 @@ class Prometheus:
             return False, {}
 
     def get_all_host_targets(self):
-        headers = {'Content-Type': 'application/json'}
         query_url = f'{self.basic_url}/api/v1/targets'
         host_targets = list()
         try:
-            res_body = requests.get(url=f"http://{query_url}", headers=headers)  # NOQA
+            res_body = requests.get(url=f"http://{query_url}", headers=self.headers, auth=self.basic_auth)  # NOQA
             res_dic = json.loads(res_body.text)
             if res_dic.get("status") != "success":
                 return False, {}
@@ -335,11 +334,10 @@ class Prometheus:
             return False, []
 
     def get_all_service_targets(self):
-        headers = {'Content-Type': 'application/json'}
         query_url = f'{self.basic_url}/api/v1/targets'
         service_targets = list()
         try:
-            res_body = requests.get(url=f"http://{query_url}", headers=headers)  # NOQA
+            res_body = requests.get(url=f"http://{query_url}", headers=self.headers, auth=self.basic_auth)  # NOQA
             res_dic = json.loads(res_body.text)
             if res_dic.get("status") != "success":
                 return False, {}

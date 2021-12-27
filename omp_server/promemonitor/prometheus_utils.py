@@ -22,7 +22,7 @@ from ruamel.yaml import YAML
 
 from db_models.models import HostThreshold, ServiceCustomThreshold
 from omp_server.settings import PROJECT_DIR
-from utils.parse_config import MONITOR_PORT
+from utils.parse_config import MONITOR_PORT, PROMETHEUS_AUTH
 
 # from utils.parse_config import MONITOR_PORT
 
@@ -83,6 +83,8 @@ class PrometheusUtils(object):
             "nodeExporter_all.json"
         )
         self.agent_request_header = {}
+        self.basic_auth = (PROMETHEUS_AUTH.get(
+            "username", "omp"), PROMETHEUS_AUTH.get("plaintext_password"), "")
 
     @staticmethod
     def replace_placeholder(path, placeholder_list):
@@ -574,7 +576,7 @@ class PrometheusUtils(object):
         reload_prometheus_url = 'http://localhost:19011/-/reload'
         # TODO 确认重载prometheus动作在哪执行
         try:
-            requests.post(reload_prometheus_url)
+            requests.post(reload_prometheus_url, auth=self.basic_auth)
         except Exception as e:
             logger.error(e)
             logger.error("重载prometheus配置失败！")
@@ -619,7 +621,7 @@ class PrometheusUtils(object):
         reload_prometheus_url = 'http://localhost:19011/-/reload'
         # TODO 确认重载prometheus动作在哪执行
         try:
-            requests.post(reload_prometheus_url)
+            requests.post(reload_prometheus_url, auth=self.basic_auth)
         except Exception as e:
             logger.error(e)
             logger.error("重载prometheus配置失败！")
