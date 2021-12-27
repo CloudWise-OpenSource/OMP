@@ -41,6 +41,7 @@ from promemonitor.promemonitor_serializers import (
 from utils.common.exceptions import OperateError
 from promemonitor.prometheus import Prometheus
 from omp_server.settings import CUSTOM_THRESHOLD_SERVICES
+from utils.parse_config import PROMETHEUS_AUTH
 
 logger = logging.getLogger('server')
 
@@ -195,9 +196,12 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
         """
         mu = MonitorUrl.objects.filter(name="prometheus").first()
         prometheus_url = mu.monitor_url if mu else "127.0.0.1:19011"
+        prometheus_auth = (PROMETHEUS_AUTH.get(
+            "username", "omp"), PROMETHEUS_AUTH.get("plaintext_password", ""))
         try:
             prometheus_alerts_url = f"http://{prometheus_url}/api/v1/alerts"  # NOQA
-            response = requests.get(prometheus_alerts_url, headers={}, data="")
+            response = requests.get(prometheus_alerts_url, headers={
+            }, data="", auth=prometheus_auth)
             return True, json.loads(response.text)
         except Exception as e:
             logger.error("prometheus请求alerts失败：" + str(e))
