@@ -12,11 +12,57 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PROJECT_FOLDER}/component/env/lib/
 PYTHON3="${PROJECT_FOLDER}/component/env/bin/python3"
 OMP_SCRIPT="${PROJECT_FOLDER}/scripts/omp"
 
+get_local_ip() {
+  ips=$(ip a | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v "127.0.0.1")
+  k=0
+  echo "通过命令获取本机ip如下："
+  for ip in $ips; do
+    ip_list[k]=$ip
+    echo "若选择ip: $ip 请输入id: $k"
+    (( k++ ))
+  done
+  echo ""
+  read -p "请选择本机ip对应的id，如果ip不在上述输出中请输入N > " index
+  if [[ $index == "N" ]] || [[ $index == "n" ]]; then
+    read -p "请输入本机ip:" local_ip
+    local_ip_grep=$(echo "$local_ip" | grep -oP "([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})")
+    if [ "$local_ip_grep" != "$local_ip" ]; then
+      echo "ip: $local_ip 格式不正确！"
+      exit 1
+    fi
+  elif [ -z "$(echo $index| sed -n "/^[0-9]\+$/p")" ];then
+    echo "输入的id: $index 非法,请重新执行命令选择！"
+    exit 1
+  else
+    local_ip=${ip_list[$index]}
+    if [ ! -n "$local_ip" ]; then
+      echo "选择的ip不存在!"
+      exit 1
+    fi
+  fi
+
+}
+
+function echo_omp_url() {
+    echo " "
+    echo "=========OMP平台访问信息================"
+    echo "平台访问地址：http://$local_ip:19001"
+    echo "平台默认用户：admin"
+    echo "平台默认密码：Common@123"
+    echo "======================================="
+    echo " "
+}
+
 # 平台端安装逻辑
 function install_omp() {
+  ack="N"
+  while [[ "$ack" == "N" ]] || [[ "$ack" == "n" ]]; do
+    get_local_ip
+    read -p "确认当前主机ip为【$local_ip】请输入 Y, 重新选择请输入N > " ack
+  done
   update_conf_path="${PROJECT_FOLDER}/scripts/source/update_conf.py"
   run_user=$(whoami)
-  $PYTHON3 $update_conf_path $1 $run_user
+  $PYTHON3 $update_conf_path $local_ip $run_user
   if [[ $? -ne 0 ]]; then
     echo "OMP配置更新失败"
     exit 1
@@ -63,17 +109,13 @@ function install_monitor_server() {
   # 确认grafana能够成功启动后，再更新grafana的数据
   check_grafana_up
   update_grafana_path="${PROJECT_FOLDER}/scripts/source/update_grafana.py"
-  $PYTHON3 $update_grafana_path $1
+  $PYTHON3 $update_grafana_path $local_ip
   if [[ $? -ne 0 ]]; then
     echo "Grafana配置更新失败"
     exit 1
   fi
 }
 
-if [[ $# -eq 0 ]]; then
-  echo "Please use: 'bash install.sh local_ip'"
-  exit 1
-else
-  install_omp "$@"
-  install_monitor_server "$@"
-fi
+install_omp "$@"
+install_monitor_server "$@"
+echo_omp_url
