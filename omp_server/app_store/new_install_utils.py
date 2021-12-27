@@ -35,6 +35,7 @@ from utils.parse_config import (
     OMP_REDIS_PORT,
     OMP_REDIS_PASSWORD
 )
+from app_store.deploy_role_utils import DEPLOY_ROLE_UTILS
 
 logger = logging.getLogger("server")
 
@@ -340,6 +341,7 @@ class BaseRedisData(object):
             data=data
         )
         cluster_name_map = dict()
+        service_vip_map = dict()
         basic = data.get("data", {}).get("basic", [])
         for item in basic:
             cluster_name_map[item["name"]] = \
@@ -351,11 +353,17 @@ class BaseRedisData(object):
         for item in dependence:
             if item.get("is_use_exist"):
                 continue
+            if item.get("vip"):
+                service_vip_map[item.get("name")] = item.get("vip")
             cluster_name_map[item["name"]] = \
                 item.get("cluster_name")
         self.redis.set(
             name=self.unique_key + "_step_3_cluster_name_map",
             data=cluster_name_map
+        )
+        self.redis.set(
+            name=self.unique_key + "_step3_service_vip_map",
+            data=service_vip_map
         )
 
     def get_step_3_checked_data(self):
@@ -372,6 +380,14 @@ class BaseRedisData(object):
         :return:
         """
         key = self.unique_key + "_step_3_cluster_name_map"
+        return self._get(key=key)
+
+    def get_step3_service_vip_map(self):
+        """
+        获取要是用的 vip 名
+        :return:
+        """
+        key = self.unique_key + "_step3_service_vip_map"
         return self._get(key=key)
 
     def step_4_set_service_distribution(self, data):
@@ -747,6 +763,16 @@ def make_lst_unique(lst, key_1, key_2):
         _unique = el.get(key_1, "") + "_" + el.get(key_2, "")
         if _unique in unique_dic:
             continue
+        # 服务版本模糊判断逻辑 jon.liu 20211225
+        _app = ApplicationHub.objects.filter(
+            app_name=el.get(key_1),
+            app_version__startswith=el.get(key_2)
+        ).last()
+        _unique = _app.app_name + "_" + _app.app_version
+        if _unique in unique_dic:
+            continue
+        # 更新弱校验的服务版本
+        el["version"] = _app.app_version
         ret_lst.append(el)
         unique_dic[_unique] = True
     return ret_lst
@@ -859,9 +885,10 @@ class SerDependenceParseUtils(object):
         unique_key_lst = list()
         for inner in dep:
             _name, _version = inner.get("name"), inner.get("version")
+            # 服务版本弱依赖逻辑 jon.liu 20211225
             _app = ApplicationHub.objects.filter(
                 app_name=_name,
-                app_version=_version,
+                app_version__startswith=_version,
                 is_release=True
             ).order_by("created").last()
             # 定义服务&版本唯一标准，防止递归错误
@@ -943,6 +970,95 @@ class SerDeployModeUtils(object):
             "default": 1,
             "step": 1
         }
+
+
+class SerRoleUtils(object):
+    """ 针对开源组件角色分配类 """
+
+    @staticmethod
+    def get(install_services):
+        """
+        获取服务的部署模式
+        :return:
+        """
+        tmp_dict = {}
+        cp_service = deepcopy(install_services)
+        for item in cp_service:
+            if item['name'] in DEPLOY_ROLE_UTILS.keys():
+                tmp_dict[item['name']] = tmp_dict.get(
+                    item['name'], []) + [item]
+                if item["name"] != "mysql":
+                    install_services.remove(item)
+        for name, obj in tmp_dict.items():
+            # 发现有需要分role的实例
+            if name == "mysql":
+                install_services = DEPLOY_ROLE_UTILS[name]().update_service(
+                    install_services
+                )
+            else:
+                install_services.extend(
+                    DEPLOY_ROLE_UTILS[name]().update_service(obj))
+        return install_services
+
+
+class SerVipUtils(object):
+    """ 针对开源组件进行vip绑定处理 """
+
+    def __init__(
+            self,
+            install_services, service_vip_map, host_user_map, run_user):
+        self.install_services = install_services
+        self.service_vip_map = service_vip_map
+        self.host_user_map = host_user_map
+        self.run_user = run_user
+
+    def get_keep_alive(self, ip, data_folder, name):
+        _tmp_ser = dict()
+        _app = ApplicationHub.objects.filter(
+            app_name="keepalived",
+        ).last()
+        install_args = ServiceArgsPortUtils(
+            ip=ip,
+            data_folder=data_folder,
+            run_user=self.run_user,
+            host_user_map=self.host_user_map
+        ).remake_install_args(obj=_app)
+        ports = ServiceArgsPortUtils(
+            ip=ip,
+            data_folder=data_folder,
+            run_user=self.run_user,
+            host_user_map=self.host_user_map
+        ).get_app_port(obj=_app)
+        _tmp_ser["name"] = _app.app_name
+        _tmp_ser["version"] = _app.app_version
+        instance_name = \
+            "keepalived" + "-" + "-".join(ip.split(".")[-2:])
+        _tmp_ser["ip"] = ip
+        _tmp_ser["data_folder"] = data_folder
+        _tmp_ser["run_user"] = self.run_user
+        _tmp_ser["install_args"] = install_args
+        _tmp_ser["ports"] = ports
+        _tmp_ser["instance_name"] = instance_name
+        _tmp_ser["cluster_name"] = None
+        _tmp_ser["roles"] = name
+        return _tmp_ser
+
+    def run(self):
+        """
+        处理服务的 vip 模式
+        :return:
+        """
+        keep_alive_lst = list()
+        for item in self.install_services:
+            if item.get("name") in self.service_vip_map:
+                _ser = self.get_keep_alive(
+                    ip=item.get("ip"),
+                    data_folder=item.get("data_folder"),
+                    name=item.get("name")
+                )
+                _ser["vip"] = self.service_vip_map[item["name"]]
+                keep_alive_lst.append(_ser)
+        return keep_alive_lst
 
 
 class SerWithUtils(object):
@@ -1226,17 +1342,19 @@ class BaseEnvServiceUtils(object):
         :return:
         """
         for el in dep_lst:
+            # 服务版本弱依赖逻辑 jon.liu 20211225
             _dep_obj = ApplicationHub.objects.filter(
                 app_name=el["name"],
-                app_version=el["version"]
+                app_version__startswith=el["version"]
             ).last()
             if not _dep_obj.is_base_env:
                 continue
             # 当被依赖的基础服务已经被安装时，使用如下方法进行过滤处理
+            # 服务版本弱依赖逻辑 jon.liu 20211225
             if Service.objects.filter(
                 ip=item["ip"],
                 service__app_name=el["name"],
-                service__app_version=el["version"]
+                service__app_version__startswith=el["version"]
             ).count() > 0:
                 continue
             if item["ip"] in base_env_dic and \
@@ -1454,7 +1572,8 @@ class DataJson(object):
             "cluster_name": obj.cluster.cluster_name if obj.cluster else None,
             "ports": json.loads(obj.service_port) if obj.service_port else [],
             "dependence": json.loads(obj.service_dependence) if
-            obj.service_dependence else []
+            obj.service_dependence else [],
+            "vip": obj.vip
         }
         _others = self.get_ser_install_args(obj)
         _ser_dic.update(_others)
@@ -1712,12 +1831,14 @@ class CreateInstallPlan(object):
             service_instance_name=dic["instance_name"],
             service=self.get_app_obj_for_service(dic),
             service_port=json.dumps(dic.get("ports")),
+            service_role=dic.get("roles", ""),
             service_controllers=self.get_controllers_for_service(dic),
             cluster=self.create_cluster(dic),
             env=self.get_env_for_service(),
             service_status=6,
             service_connect_info=self.create_connect_info(dic),
-            service_dependence=json.dumps(self.get_dependence(dic))
+            service_dependence=json.dumps(self.get_dependence(dic)),
+            vip=dic.get("vip")
         )
         _ser_obj.save()
         return _ser_obj

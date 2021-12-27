@@ -330,7 +330,14 @@ class LocalPackageScanResultView(GenericViewSet, ListModelMixin):
             package_info_dic[item.package_name]["status"] = item.package_status
             package_info_dic[item.package_name]["message"] = item.error_msg
         if stage_status == "checking":
-            message = f"共扫描到 {len(package_names_lst)} 个安装包，正在校验中..."
+            count = UploadPackageHistory.objects.filter(
+                operation_uuid=operation_uuid,
+                package_name__in=package_names_lst,
+                package_status=UploadPackageHistory.PACKAGE_STATUS_PARSING
+            ).count()
+            message = f"共扫描到 {len(package_names_lst)} 个安装包，" \
+                      f"正在校验中..." \
+                      f"({len(package_names_lst)-count}/{len(package_names_lst)})"
         elif stage_status == "check_all_failed":
             message = f"共计 {len(package_names_lst)} 个安装包校验失败!"
         elif stage_status == "publishing":

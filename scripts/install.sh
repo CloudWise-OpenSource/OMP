@@ -35,7 +35,6 @@ function install_omp() {
 }
 
 function check_grafana_up() {
-  cat config/omp.yaml |grep 'grafana: ' |grep -E '[0-9]'
   CONF_PATH="${PROJECT_FOLDER}/config/omp.yaml"
   port_flag=$(cat ${CONF_PATH} |grep 'grafana: ' | tr "grafana:" " ")
   port=${port_flag// /}

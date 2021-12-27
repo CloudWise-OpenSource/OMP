@@ -41,7 +41,9 @@ from app_store.new_install_utils import (
     MakeServiceOrder,
     ValidateInstallServicePortArgs,
     WithServiceUtils,
-    ComponentServiceParse
+    ComponentServiceParse,
+    SerRoleUtils,
+    SerVipUtils
 )
 from app_store.tasks import install_service as install_service_task
 from utils.plugin.salt_client import SaltClient
@@ -185,6 +187,7 @@ class CreateInstallInfoSerializer(BaseInstallSerializer):
         for _pro in _basic:
             _re_services_list = list()
             for item in _pro.get("services_list"):
+                # 版本严格校验
                 _recheck_service.update({
                     item.get("name", "") + "-" + item.get("version", ""): True
                 })
@@ -210,6 +213,7 @@ class CreateInstallInfoSerializer(BaseInstallSerializer):
         # 自研服务与基础组件重复处理
         _recheck_dependence = list()
         for item in _dependence:
+            # 版本严格校验
             _key = item.get("name", "") + "-" + item.get("version", "")
             if _key in _recheck_service:
                 continue
@@ -452,8 +456,8 @@ class CreateServiceDistributionSerializer(BaseInstallSerializer):
                     ).run()
                 }
             else:
-                # TODO 目前仅支持mysql单节点
-                if item.get("name") == "mysql":
+                # TODO 提取支持 VIP 的服务
+                if item.get("name") in ("mysql", "tengine"):
                     deploy_num = \
                         1 if item.get("deploy_mode") == "single" else 2
                 else:
@@ -853,7 +857,17 @@ class CreateInstallPlanSerializer(BaseInstallSerializer):
             host_user_map=host_user_map
         ).run()
         all_install_service_lst.extend(with_ser_lst)
-
+        # 划分vip处理
+        service_vip_map = BaseRedisData(
+            unique_key=unique_key).get_step3_service_vip_map()
+        if service_vip_map:
+            _keep_alive_lst = SerVipUtils(
+                install_services=all_install_service_lst,
+                service_vip_map=service_vip_map,
+                host_user_map=host_user_map,
+                run_user=run_user
+            ).run()
+            all_install_service_lst.extend(_keep_alive_lst)
         # TODO 依赖关系绑定
         all_install_service_lst = ValidateInstallServicePortArgs(
             data=all_install_service_lst
@@ -871,6 +885,8 @@ class CreateInstallPlanSerializer(BaseInstallSerializer):
             validated_data["data"] = _re_data
             validated_data["is_continue"] = is_continue
             return validated_data
+        # 分配role
+        all_install_service_lst = SerRoleUtils.get(all_install_service_lst)
         # 服务排序处理
         all_install_service_lst = MakeServiceOrder(
             all_service=all_install_service_lst
@@ -1027,7 +1043,7 @@ class RetryInstallSerializer(Serializer):
         error_messages={"required": "必须包含[unique_key]字段"}
     )
 
-    def validate_unique_key(self, unique_key):      # NOQA
+    def validate_unique_key(self, unique_key):  # NOQA
         """
         校验unique_key
         :param unique_key:
