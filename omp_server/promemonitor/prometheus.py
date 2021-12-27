@@ -20,7 +20,7 @@ class Prometheus:
         self.basic_url = self.get_prometheus_config()
         self.prometheus_api_query_url = f'http://{self.basic_url}/api/v1/query?query='  # NOQA
         self.basic_auth = (PROMETHEUS_AUTH.get(
-            "username", "omp"), PROMETHEUS_AUTH.get("plaintext_password"), "")
+            "username", "omp"), PROMETHEUS_AUTH.get("plaintext_password", ""))
         self.headers = {'Content-Type': 'application/json'}
 
     @staticmethod

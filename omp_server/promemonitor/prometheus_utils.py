@@ -84,7 +84,7 @@ class PrometheusUtils(object):
         )
         self.agent_request_header = {}
         self.basic_auth = (PROMETHEUS_AUTH.get(
-            "username", "omp"), PROMETHEUS_AUTH.get("plaintext_password"), "")
+            "username", "omp"), PROMETHEUS_AUTH.get("plaintext_password", ""))
 
     @staticmethod
     def replace_placeholder(path, placeholder_list):

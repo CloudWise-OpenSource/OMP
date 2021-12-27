@@ -25,7 +25,7 @@ class Prometheus(object):
         # prometheus 的 ip:port
         self.address = MonitorUrl.objects.get(name='prometheus').monitor_url
         self.basic_auth = (PROMETHEUS_AUTH.get(
-            "username", "omp"), PROMETHEUS_AUTH.get("plaintext_password"), "")
+            "username", "omp"), PROMETHEUS_AUTH.get("plaintext_password", ""))
 
     def query(self, expr):
         """
