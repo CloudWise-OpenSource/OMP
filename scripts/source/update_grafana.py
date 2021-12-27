@@ -19,6 +19,7 @@ import time
 import django
 import requests
 from ruamel import yaml
+from utils.parse_config import PROMETHEUS_AUTH
 
 # from ruamel.yaml import YAML
 
@@ -165,7 +166,7 @@ class Grafana(object):
             "basicAuth": True,
             "basicAuthUser": "omp",
             "secureJsonData": {
-                "basicAuthPassword": "Yunweiguanli@OMP_123"
+                "basicAuthPassword": PROMETHEUS_AUTH.get("plaintext_password")
             }
         }
         loki_content = {
