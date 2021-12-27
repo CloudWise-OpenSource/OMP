@@ -89,7 +89,7 @@ class Prometheus(object):
     def query_alerts(self):
         url = f'http://{self.address}/api/v1/alerts'
         try:
-            rsp = json.loads(requests.get(url=url, timeout=0.5
+            rsp = json.loads(requests.get(url=url, timeout=0.5, auth=self.basic_auth
                                           ).content.decode('utf8', 'ignore'))
             if rsp.get('status') == 'success':
                 # 处理重复级别告警问题 jon.liu
