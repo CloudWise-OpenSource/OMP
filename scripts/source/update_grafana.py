@@ -19,6 +19,7 @@ import time
 import django
 import requests
 from ruamel import yaml
+
 # from ruamel.yaml import YAML
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -161,7 +162,11 @@ class Grafana(object):
             "type": "prometheus",
             "url": f"{AGREE}://{self.prometheus_ip}:{self.prometheus_port}",
             "access": "proxy",
-            "basicAuth": False
+            "basicAuth": True,
+            "basicAuthUser": "omp",
+            "secureJsonData": {
+                "basicAuthPassword": "Yunweiguanli@OMP_123"
+            }
         }
         loki_content = {
             "name": "Loki",
