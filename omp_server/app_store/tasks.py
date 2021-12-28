@@ -844,7 +844,7 @@ def add_prometheus(main_history_id):
         # TODO 后期优化
         ser_name = detail_obj.service.service.app_name
         if ser_name == "hadoop":
-            ser_name = instance_name
+            ser_name = instance_name.split("_", 1)[0]
         # 添加服务到 prometheus
         is_success, message = prometheus.add_service({
             "service_name": ser_name,
