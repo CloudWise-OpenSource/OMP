@@ -9,6 +9,8 @@ import requests
 from datetime import datetime
 from db_models.models import MonitorUrl
 from db_models.models import InspectionHistory, InspectionReport
+from utils.parse_config import PROMETHEUS_AUTH
+
 
 logger = logging.getLogger("server")
 
@@ -22,6 +24,8 @@ class Prometheus(object):
     def __init__(self):
         # prometheus 的 ip:port
         self.address = MonitorUrl.objects.get(name='prometheus').monitor_url
+        self.basic_auth = (PROMETHEUS_AUTH.get(
+            "username", "omp"), PROMETHEUS_AUTH.get("plaintext_password", ""))
 
     def query(self, expr):
         """
@@ -31,7 +35,7 @@ class Prometheus(object):
         """
         url = f"http://{self.address}/api/v1/query?query={expr}"
         try:
-            rsp = json.loads(requests.get(url=url, timeout=0.5
+            rsp = json.loads(requests.get(url=url, timeout=0.5, auth=self.basic_auth
                                           ).content.decode('utf8', 'ignore'))
             if rsp.get('status') == 'success':
                 return True, rsp.get('data')
@@ -85,7 +89,7 @@ class Prometheus(object):
     def query_alerts(self):
         url = f'http://{self.address}/api/v1/alerts'
         try:
-            rsp = json.loads(requests.get(url=url, timeout=0.5
+            rsp = json.loads(requests.get(url=url, timeout=0.5, auth=self.basic_auth
                                           ).content.decode('utf8', 'ignore'))
             if rsp.get('status') == 'success':
                 # 处理重复级别告警问题 jon.liu

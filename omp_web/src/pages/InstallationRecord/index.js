@@ -19,23 +19,23 @@ const InstallationRecord = () => {
         }
       },
     },
-    {
-      name: "upgrade",
-      text: "升级记录",
-      handler: () => {
-        if (currentList !== "upgrade") {
-          setCurrentList("upgrade");
-        }
-      },
-    },
+    // {
+    //   name: "upgrade",
+    //   text: "升级记录",
+    //   handler: () => {
+    //     if (currentList !== "upgrade") {
+    //       setCurrentList("upgrade");
+    //     }
+    //   },
+    // },
   ];
 
   return (
     <OmpContentWrapper>
-      {/* <OmpContentNav data={contentNavData} currentFocus={currentList} />
+      <OmpContentNav data={contentNavData} currentFocus={currentList} />
       {currentList == "installation" && <Installation history={history} /> }
-      {currentList == "upgrade" && <Upgrade history={history} /> } */}
-      <Installation history={history} />
+      {/* {currentList == "upgrade" && <Upgrade history={history} /> } */}
+      {/* <Installation history={history} /> */}
     </OmpContentWrapper>
   );
 };

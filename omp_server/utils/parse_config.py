@@ -32,6 +32,7 @@ SALT_RET_PORT = CONFIG_DIC.get("salt_master", {}).get("ret_port", 19005)
 TOKEN_EXPIRATION = CONFIG_DIC.get("token_expiration", 1)
 MONITOR_PORT = CONFIG_DIC.get("monitor_port")
 GRAFANA_API_KEY = CONFIG_DIC.get("grafana_api_key")
+PROMETHEUS_AUTH = CONFIG_DIC.get("prometheus_auth", {})
 OMP_REDIS_HOST = os.getenv(
     "OMP_REDIS_HOST",
     CONFIG_DIC.get("redis", {}).get("host")

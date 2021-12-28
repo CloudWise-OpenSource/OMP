@@ -127,7 +127,7 @@ def exec_action(action, instance, operation_user, del_file=False):
                 Host.objects.filter(ip=service_obj.ip).update(
                     service_num=F("service_num") - 1)
                 # 当服务被删除时，应该将其所在的集群都连带删除
-                if Service.objects.filter(
+                if service_obj.cluster and Service.objects.filter(
                         cluster=service_obj.cluster
                 ).count() == 0:
                     ClusterInfo.objects.filter(

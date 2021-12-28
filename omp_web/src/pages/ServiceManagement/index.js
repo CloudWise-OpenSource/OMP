@@ -5,7 +5,7 @@ import {
   OmpSelect,
   OmpDrawer,
 } from "@/components";
-import { Button, message, Menu, Dropdown, Input, Select } from "antd";
+import { Button, message, Menu, Dropdown, Input, Select, Checkbox } from "antd";
 import { useState, useEffect, useRef } from "react";
 import { handleResponse, _idxInit, refreshTime } from "@/utils/utils";
 import { fetchGet, fetchPost, fetchPatch } from "@/utils/request";
@@ -87,6 +87,12 @@ const ServiceManagement = () => {
 
   // 删除操作的提示语
   const [deleteMsg, setDeleteMsg] = useState("");
+
+  // 删除操作的再次确认
+  const [confirmDeletion, setConfirmDeletion] = useState(false)
+
+  // 确认删除的维度
+  const [deleteDimension, setDeleteDimension] = useState(false)
 
   // 列表查询
   function fetchData(
@@ -176,13 +182,14 @@ const ServiceManagement = () => {
   const t = useRef(null);
 
   // 服务的启动｜停止｜重启
-  const operateService = (data, operate) => {
+  const operateService = (data, operate, del_file ) => {
     setLoading(true);
     fetchPost(apiRequest.appStore.servicesAction, {
       body: {
         data: data.map((i) => ({
           action: operate,
           id: i.id,
+          del_file:del_file || null,
           operation_user: localStorage.getItem("username"),
         })),
       },
@@ -318,6 +325,8 @@ const ServiceManagement = () => {
           onClick={() => {
             queryDeleteMsg(checkedList);
             setOperateAciton(4);
+            setConfirmDeletion(true)
+            setDeleteDimension(false)
             setServiceAcitonModal(true);
           }}
         >
@@ -553,7 +562,11 @@ const ServiceManagement = () => {
             setShowIframe,
             setOperateAciton,
             setCurrentSerAcitonModal,
-            queryDeleteMsg
+            queryDeleteMsg,
+            ()=>{
+              setConfirmDeletion(true)
+              setDeleteDimension(false)
+            }
           )}
           notSelectable={(record) => ({
             // 部署中的不能选中
@@ -605,6 +618,7 @@ const ServiceManagement = () => {
       />
       <OmpMessageModal
         visibleHandle={[serviceAcitonModal, setServiceAcitonModal]}
+        // disabled={operateAciton == 4 ? confirmDeletion:false}
         title={
           <span>
             <ExclamationCircleOutlined
@@ -629,8 +643,8 @@ const ServiceManagement = () => {
               return e.operable;
             });
           }
-          operateService(data, operateAciton);
-          fetchMaintainChange(false, [row]);
+          operateService(data, operateAciton, deleteDimension);
+          // fetchMaintainChange(false, [row]);
         }}
       >
         <div style={{ padding: "20px", paddingBottom: "10px" }}>
@@ -639,10 +653,29 @@ const ServiceManagement = () => {
           服务下发{" "}
           <span style={{ fontWeight: 500 }}>{operateObj[operateAciton]}</span>{" "}
           操作？
-          {deleteMsg && <div style={{ paddingTop: 10 }}>{deleteMsg}</div>}
+          { operateAciton == 4 && deleteMsg && (
+            <>
+             <div style={{ paddingTop: 10 }}>{deleteMsg}</div>
+             <div style={{ position:"relative", top:15 }}>
+                <Checkbox checked={deleteDimension}
+                  onChange={(e)=>{
+                    setDeleteDimension(e.target.checked)
+                  }}
+                ><span style={{fontSize:14}}>同时卸载服务</span></Checkbox>
+              </div>
+              {/* <div style={{ position:"relative", top:15, display:"flex", justifyContent:"center" }}>
+                <Checkbox checked={!confirmDeletion}
+                  onChange={(e)=>{
+                    setConfirmDeletion(!e.target.checked)
+                  }}
+                ><span style={{fontSize:14}}>确认删除</span></Checkbox>
+              </div> */}
+            </>
+          )}
         </div>
       </OmpMessageModal>
       <OmpMessageModal
+        // disabled={operateAciton == 4 ? confirmDeletion:false}
         visibleHandle={[currentSerAcitonModal, setCurrentSerAcitonModal]}
         title={
           <span>
@@ -660,7 +693,7 @@ const ServiceManagement = () => {
         }
         loading={loading}
         onFinish={() => {
-          operateService([row], operateAciton);
+          operateService([row], operateAciton, deleteDimension);
         }}
       >
         <div style={{ padding: "20px" }}>
@@ -668,7 +701,23 @@ const ServiceManagement = () => {
           <span style={{ fontWeight: 500 }}>{operateObj[operateAciton]}</span>{" "}
           操作？
           {operateAciton == 4 && deleteMsg && (
-            <div style={{ paddingTop: 10 }}>{deleteMsg}</div>
+           <>
+           <div style={{ paddingTop: 10 }}>{deleteMsg}</div>
+           <div style={{ position:"relative", top:15 }}>
+                <Checkbox checked={deleteDimension}
+                  onChange={(e)=>{
+                    setDeleteDimension(e.target.checked)
+                  }}
+                ><span style={{fontSize:14}}>同时卸载服务</span></Checkbox>
+              </div>
+            {/* <div style={{ position:"relative", top:15, display:"flex", justifyContent:"center" }}>
+              <Checkbox checked={!confirmDeletion}
+                onChange={(e)=>{
+                  setConfirmDeletion(!e.target.checked)
+                }}
+              ><span style={{fontSize:14}}>确认删除</span></Checkbox>
+            </div> */}
+          </>
           )}
         </div>
       </OmpMessageModal>

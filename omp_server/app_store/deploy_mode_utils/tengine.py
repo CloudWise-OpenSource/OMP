@@ -21,10 +21,20 @@ class TengineUtils(BaseUtils):
         获取tengine的部署模式
         :return:
         """
-        return {
-            "default": 1,
-            "step": 1
-        }
+        # return {
+        #     "default": 1,
+        #     "step": 1
+        # }
+        return [
+            {
+                "key": "single",
+                "name": "单实例"
+            },
+            {
+                "key": "master-master",
+                "name": "主主(vip)"
+            }
+        ]
 
     def check(self, mode):
         """
