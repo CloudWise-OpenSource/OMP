@@ -768,6 +768,10 @@ def make_lst_unique(lst, key_1, key_2):
             app_name=el.get(key_1),
             app_version__startswith=el.get(key_2)
         ).last()
+        if not _app or el.get(key_1) + "_" + el.get(key_2) not in unique_dic:
+            unique_dic[el.get(key_1) + "_" + el.get(key_2)] = True
+            ret_lst.append(el)
+            continue
         _unique = _app.app_name + "_" + _app.app_version
         if _unique in unique_dic:
             continue
