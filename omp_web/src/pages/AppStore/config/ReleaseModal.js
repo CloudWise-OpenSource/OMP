@@ -471,7 +471,8 @@ const ReleaseModal = ({
               <Button
                 type="primary"
                 disabled={
-                  dataSource.filter((i) => i.package_status == 0).length == 0
+                  (dataSource.filter((i) => i.package_status == 0).length == 0) ||
+                  (dataSource.filter((i) => i.package_status == 2).length !== 0)
                 }
                 loading={loading}
                 onClick={() => {
