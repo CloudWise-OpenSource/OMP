@@ -6,6 +6,7 @@ import pytz
 import datetime
 import traceback
 from omp_server.settings import TIME_ZONE
+from utils.parse_config import PROMETHEUS_AUTH
 
 logger = logging.getLogger('server')
 
@@ -16,12 +17,15 @@ class CurlPrometheus(object):
         """
           请求prometheus接口返回相应json
         """
+        prometheus_auth = (PROMETHEUS_AUTH.get("username"),
+                           PROMETHEUS_AUTH.get("plaintext_password"))
         monitor_ip = MonitorUrl.objects.filter(name="prometheus")
         monitor_url = monitor_ip[0].monitor_url if len(
             monitor_ip) else "127.0.0.1:19013"
         try:
             url = f"http://{monitor_url}/api/v1/alerts"
-            response = requests.request("GET", url, headers={}, data="")
+            response = requests.request(
+                "GET", url, headers={}, data="", auth=prometheus_auth)
             return json.loads(response.text)
         except Exception as e:
             logger.error("prometheus请求alerts失败：" + str(e))
@@ -140,6 +144,8 @@ def explain_url(explain_info, is_service=None):
             else:
                 try:
                     if service_name and ApplicationHub.objects.filter(
+                            app_name=service_name
+                    ).first() and ApplicationHub.objects.filter(
                             app_name=service_name
                     ).first().app_monitor.get("type") == "JavaSpringBoot":
                         instance_info['monitor_url'] = grafana_url + url_dict.get(

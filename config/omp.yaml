@@ -59,6 +59,11 @@ alert_manager:
   EMAIL_ADDRESS: 123@qq.com
   # webhook地址，仅在手动维护OMP各个组件时才可能用到，其他情况下不建议修改
   WEBHOOK_URL: http://127.0.0.1:19001/api/promemonitor/receiveAlert/
+# prometheus basic auth
+prometheus_auth:
+  username: omp
+  plaintext_password: Yunweiguanli@OMP_123
+  ciphertext_password: $2b$12$R8WlKOEV2M9iBjEhnWQORepigbQoD1D/rAyEXwIu/aS5t94deTVDu
 # 监控使用相关端口配置
 monitor_port:
   # server各个端口

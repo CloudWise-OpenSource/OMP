@@ -128,8 +128,9 @@ class ServiceActionView(GenericViewSet, CreateModelMixin):
             action = data.get("action")
             instance = data.get("id")
             operation_user = data.get("operation_user")
+            del_file = data.get("del_file", True)
             if action and instance and operation_user:
-                exec_action.delay(action, instance, operation_user)
+                exec_action.delay(action, instance, operation_user, del_file)
             else:
                 raise OperateError("请输入action或id")
         return Response("执行成功")

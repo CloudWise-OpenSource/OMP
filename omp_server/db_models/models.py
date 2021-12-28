@@ -100,9 +100,9 @@ class Host(TimeStampMixin, DeleteMixin):
 
     objects = None
     instance_name = models.CharField(
-        "实例名", max_length=64, help_text="实例名")
+        "实例名", max_length=64, help_text="实例名", unique=True)
     ip = models.GenericIPAddressField(
-        "IP地址", help_text="IP地址")
+        "IP地址", help_text="IP地址", unique=True)
     port = models.IntegerField(
         "SSH端口", default=22, help_text="SSH端口")
     username = models.CharField(

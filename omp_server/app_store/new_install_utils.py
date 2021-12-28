@@ -768,6 +768,10 @@ def make_lst_unique(lst, key_1, key_2):
             app_name=el.get(key_1),
             app_version__startswith=el.get(key_2)
         ).last()
+        if not _app or el.get(key_1) + "_" + el.get(key_2) not in unique_dic:
+            unique_dic[el.get(key_1) + "_" + el.get(key_2)] = True
+            ret_lst.append(el)
+            continue
         _unique = _app.app_name + "_" + _app.app_version
         if _unique in unique_dic:
             continue
@@ -1764,7 +1768,7 @@ class CreateInstallPlan(object):
         _ser_version = inner["version"]
         for el in self.install_services:
             if el.get("name") == _ser_name and \
-                    el.get("version") == _ser_version:
+                    el.get("version").startswith(_ser_version):
                 cluster_name = el.get("cluster_name")
                 instance_name = el.get("instance_name")
                 if cluster_name:
@@ -1798,7 +1802,7 @@ class CreateInstallPlan(object):
             # 已存在的base_env服务依赖
             _dep_obj = ApplicationHub.objects.filter(
                 app_name=item.get("name"),
-                app_version=item.get("version")
+                app_version__startswith=item.get("version")
             ).last()
             if _dep_obj.is_base_env:
                 _ser_obj = Service.objects.filter(

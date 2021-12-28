@@ -20,8 +20,6 @@ import django
 import requests
 from ruamel import yaml
 
-# from ruamel.yaml import YAML
-
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(os.path.dirname(CURRENT_DIR))
 GRAFANA_DASHBOARD_JSON = os.path.join(
@@ -32,6 +30,7 @@ sys.path.append(os.path.join(PROJECT_DIR, "omp_server"))
 # 加载Django环境
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "omp_server.settings")
 django.setup()
+from utils.parse_config import PROMETHEUS_AUTH
 from utils.plugin.synch_grafana import synch_grafana_info
 
 
@@ -165,7 +164,7 @@ class Grafana(object):
             "basicAuth": True,
             "basicAuthUser": "omp",
             "secureJsonData": {
-                "basicAuthPassword": "Yunweiguanli@OMP_123"
+                "basicAuthPassword": PROMETHEUS_AUTH.get("plaintext_password")
             }
         }
         loki_content = {
