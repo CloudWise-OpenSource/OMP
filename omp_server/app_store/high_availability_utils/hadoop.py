@@ -208,7 +208,7 @@ class Hadoop(object):
             cluster = ClusterInfo.objects.get_or_create(
                 cluster_service_name="hadoop",
                 cluster_name=detail_obj.service.service_instance_name,
-            )
+            )[0]
         else:
             cluster = detail_obj.service.cluster
         service_obj = Service.objects.create(
