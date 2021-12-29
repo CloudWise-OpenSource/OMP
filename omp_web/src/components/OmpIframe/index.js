@@ -18,8 +18,6 @@ const OmpIframe = ({ showIframe, setShowIframe, iframeSrc }) => {
           style={{
             width:`calc(100% + 70px)`,
             position: "absolute",
-            top: showIframe?.isLog?-55:-106,
-            left: -66,
           }}
           src={showIframe.src}
           width="100%"

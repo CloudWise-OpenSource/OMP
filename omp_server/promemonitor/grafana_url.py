@@ -157,4 +157,5 @@ def explain_url(explain_info, is_service=None):
             instance_info['monitor_url'] = grafana_url + \
                 url_dict.get('node', 'nohosts') + f"?var-node={service_ip}"
             instance_info['log_url'] = None
+        instance_info['monitor_url'] = instance_info['monitor_url'] + "&kiosk"
     return explain_info
