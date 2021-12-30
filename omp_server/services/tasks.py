@@ -96,7 +96,6 @@ def exec_action(action, instance, operation_user, del_file=False):
         service_obj.service_status = Service.SERVICE_STATUS_DELETING
         service_obj.save()
         service_port = None
-        is_success = False
         if service_obj.service_port is not None:
             service_port_ls = json.loads(service_obj.service_port)
             if len(service_port_ls) > 0:
@@ -129,7 +128,7 @@ def exec_action(action, instance, operation_user, del_file=False):
                                           description=f"卸载服务 [{service_obj.service.app_name}]",
                                           result="success" if is_success else "failed",
                                           host=instance)
-        if not service_obj.service.is_base_env and is_success:
+        if not service_obj.service.is_base_env:
             with transaction.atomic():
                 Host.objects.filter(ip=service_obj.ip).update(
                     service_num=F("service_num") - 1)
