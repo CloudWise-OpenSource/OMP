@@ -96,7 +96,7 @@ export default [
       //   component: Installation,
       // },
       {
-        title: "操作记录",
+        title: "执行记录",
         path: "/application_management/install-record",
         component: InstallationRecord,
       },

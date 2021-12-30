@@ -3,7 +3,6 @@
 # Author: lingyang guo
 # CreateDate: 2021/12/15 8:00 下午
 # Description:
-import json
 from utils.plugin.salt_client import SaltClient
 from utils.prometheus.prometheus import Prometheus
 
@@ -19,7 +18,7 @@ class ServiceIgniteCrawl(Prometheus):
         self.env = env  # 环境
         self.instance = instance  # 主机ip
         self._obj = SaltClient()
-        self.metric_num = 4
+        self.metric_num = 19
         self.service_name = "ignite"
         Prometheus.__init__(self)
 
@@ -60,28 +59,106 @@ class ServiceIgniteCrawl(Prometheus):
         val = round(float(val), 4) if val else '0.00'
         self.ret['mem_usage'] = f"{val}%"
 
-    def salt_json(self):
-        try:
-            self._obj.salt_module_update()
-            ret = self._obj.fun(self.instance, "ignite_check.main")
-            if ret and ret[0]:
-                ret = json.loads(ret[1])
-            else:
-                ret = {}
-        except Exception:
-            ret = {}
+    def ignite_started_thread_count(self):
+        expr = f"ignite_started_thread_count{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}"
+        val = self.unified_job(*self.query(expr))
+        val = val if val else 0
+        self.ret["ignite_started_thread_count"] = val
 
-        self.ret['cpu_usage'] = ret.get('cpu_usage', '-')
-        self.ret['mem_usage'] = ret.get('mem_usage', '-')
-        self.ret['run_time'] = ret.get('run_time', '-')
-        self.ret['log_level'] = ret.get('log_level', '-')
-        self.ret['service_status'] = ret.get('service_status', '-')
-        self.basic.append({"name": "max_memory", "name_cn": "最大内存",
-                           "value": ret.get('max_memory', '-')})
+    def sent_messages_count(self):
+        expr = f"sent_messages_count{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}"
+        val = self.unified_job(*self.query(expr))
+        val = val if val else 0
+        self.ret["sent_messages_count"] = val
+
+    def ignite_received_messages_count(self):
+        expr = f"ignite_received_messages_count{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}"
+        val = self.unified_job(*self.query(expr))
+        val = val if val else 0
+        self.ret["ignite_received_messages_count"] = val
+
+    def average_job_wait_time(self):
+        expr = f"average_job_wait_time{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}"
+        val = self.unified_job(*self.query(expr))
+        val = val if val else 0
+        self.ret["average_job_wait_time"] = val
+
+    def current_job_wait_time(self):
+        expr = f"current_job_wait_time{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}"
+        val = self.unified_job(*self.query(expr))
+        val = val if val else 0
+        self.ret["current_job_wait_time"] = val
+
+    def maximum_job_wait_time(self):
+        expr = f"maximum_job_wait_time{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}"
+        val = self.unified_job(*self.query(expr))
+        val = val if val else 0
+        self.ret["maximum_job_wait_time"] = val
+
+    def average_job_execute_time(self):
+        expr = f"average_job_execute_time{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}"
+        val = self.unified_job(*self.query(expr))
+        val = val if val else 0
+        self.ret["average_job_execute_time"] = val
+
+    def current_job_execute_time(self):
+        expr = f"current_job_execute_time{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}"
+        val = self.unified_job(*self.query(expr))
+        val = val if val else 0
+        self.ret["current_job_execute_time"] = val
+
+    def maximum_job_execute_time(self):
+        expr = f"maximum_job_execute_time{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}"
+        val = self.unified_job(*self.query(expr))
+        val = val if val else 0
+        self.ret["maximum_job_execute_time"] = val
+
+    def busy_time_percentage(self):
+        expr = f"busy_time_percentage{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}*100"
+        val = self.unified_job(*self.query(expr))
+        val = val if val else 0
+        self.ret["busy_time_percentage"] = val
+
+    def ignite_busy_time_total(self):
+        expr = f"rate(total_busy_time{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}[5m])"
+        val = self.unified_job(*self.query(expr))
+        val = val if val else 0
+        self.ret["ignite_busy_time_total"] = val
+
+    def ignite_idle_time_total(self):
+        expr = f"rate(ignite_idle_time_total{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}[5m])"
+        val = self.unified_job(*self.query(expr))
+        val = val if val else 0
+        self.ret["ignite_idle_time_total"] = val
+
+    def current_daemon_thread_count(self):
+        expr = f"current_daemon_thread_count{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}"
+        val = self.unified_job(*self.query(expr))
+        val = val if val else 0
+        self.ret["current_daemon_thread_count"] = val
+
+    def maximum_thread_count(self):
+        expr = f"maximum_thread_count{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}"
+        val = self.unified_job(*self.query(expr))
+        val = val if val else 0
+        self.ret["maximum_thread_count"] = val
+
+    def current_thread_count(self):
+        expr = f"current_thread_count{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}"
+        val = self.unified_job(*self.query(expr))
+        val = val if val else 0
+        self.ret["current_thread_count"] = val
 
     def run(self):
         """统一执行实例方法"""
-        target = ['service_status', 'run_time', 'cpu_usage', 'mem_usage']
+        target = ['service_status', 'run_time', 'cpu_usage', 'mem_usage', 'ignite_started_thread_count',
+                  'sent_messages_count', 'ignite_received_messages_count', 'average_job_wait_time',
+                  'current_job_wait_time',
+                  'maximum_job_wait_time', 'average_job_execute_time', 'current_job_execute_time',
+                  'maximum_job_execute_time',
+                  'busy_time_percentage', 'ignite_busy_time_total', 'ignite_idle_time_total',
+                  'current_daemon_thread_count',
+                  'maximum_thread_count', 'current_thread_count']
         for t in target:
             if getattr(self, t):
                 getattr(self, t)()

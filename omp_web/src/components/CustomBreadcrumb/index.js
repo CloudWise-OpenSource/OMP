@@ -42,7 +42,7 @@ const breadcrumbNameMap = {
   "email-settings": "邮件管理",
   "rule-center": "指标中心",
   "default-rule": "默认指标",
-  "install-record": "操作记录",
+  "install-record": "执行记录",
   service_upgrade: "服务升级",
   "deployment-plan": "部署模板",
 };
