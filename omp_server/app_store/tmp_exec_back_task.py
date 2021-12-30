@@ -81,6 +81,5 @@ def front_end_verified_init(uuid, operation_user, package_name, obj_id, md5=None
         ver_dir = package_dir.get("front_end_verified")
     else:
         ver_dir = package_dir.get("back_end_verified")
-        md5 = random_str
-    front_end_verified.delay(uuid, operation_user, package_name, md5,
+    front_end_verified.delay(uuid, operation_user, package_name,
                              random_str, ver_dir, obj_id)
