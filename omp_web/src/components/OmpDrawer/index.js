@@ -22,10 +22,10 @@ const OmpDrawer = ({ showIframe, setShowIframe }) => {
       }
       placement="right"
       closable={true}
-      width={`calc(100%)`}
+      width={`calc(100% - 200px)`}
       style={{
         height: "calc(100%)",
-        paddingTop: "60px",
+        // paddingTop: "60px",
       }}
       onClose={() => {
         setShowIframe({
