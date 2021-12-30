@@ -46,6 +46,10 @@ def delete_file(service_controllers, service_obj):
     """
     salt_obj = SaltClient()
     exe_action = service_controllers.get("stop")
+    if "hadoop" in exe_action:
+        scripts_param = exe_action.split()
+        scripts_param[2] = "all"
+        exe_action = " ".join(scripts_param)
     # 存在stop脚本先执行stop脚本后执行删除
     if exe_action:
         for count in range(2):
