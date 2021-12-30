@@ -207,7 +207,6 @@ class PackageUploadTest(AutoLoginTest):
         front_end_verified(upload_obj.operation_uuid,
                            upload_obj.operation_user,
                            upload_obj.package_name,
-                           upload_obj.package_md5,
                            "RandomStr",
                            "front_end_verified",
                            upload_obj.id)
@@ -227,7 +226,6 @@ class PackageUploadTest(AutoLoginTest):
         front_end_verified(upload_obj.operation_uuid,
                            upload_obj.operation_user,
                            upload_obj.package_name,
-                           upload_obj.package_md5,
                            "RandomStr",
                            "front_end_verified",
                            upload_obj.id)
@@ -251,7 +249,6 @@ class PackageUploadTest(AutoLoginTest):
         front_end_verified(upload_obj.operation_uuid,
                            upload_obj.operation_user,
                            upload_obj.package_name,
-                           upload_obj.package_md5,
                            "RandomStr",
                            "front_end_verified",
                            upload_obj.id)
@@ -281,7 +278,6 @@ class PackageUploadTest(AutoLoginTest):
         front_end_verified(upload_obj.operation_uuid,
                            upload_obj.operation_user,
                            upload_obj.package_name,
-                           upload_obj.package_md5,
                            "RandomStr",
                            "front_end_verified",
                            upload_obj.id)
@@ -332,7 +328,6 @@ class PackageUploadTest(AutoLoginTest):
         front_end_verified(upload_obj.operation_uuid,
                            upload_obj.operation_user,
                            upload_obj.package_name,
-                           upload_obj.package_md5,
                            "RandomStr",
                            "front_end_verified",
                            upload_obj.id)
@@ -386,7 +381,6 @@ class PackageUploadTest(AutoLoginTest):
         front_end_verified(upload_obj.operation_uuid,
                            upload_obj.operation_user,
                            upload_obj.package_name,
-                           upload_obj.package_md5,
                            "RandomStr",
                            "front_end_verified",
                            upload_obj.id)
