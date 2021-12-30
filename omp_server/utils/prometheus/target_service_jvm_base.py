@@ -47,7 +47,7 @@ class ServiceBase(Prometheus):
 
     def cpu_usage(self):
         """cpu使用率"""
-        expr = f"system_cpu_usage{{env=~'{self.env}'," \
+        expr = f"process_cpu_usage{{env=~'{self.env}'," \
                f"instance=~'{self.instance}', " \
                f"job='{self.job}'}} * 100"
         val = self.unified_job(*self.query(expr))

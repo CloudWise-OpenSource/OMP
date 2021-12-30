@@ -4,7 +4,8 @@ import json
 from utils.common.exceptions import GeneralError
 from db_models.models import (
     Service, DetailInstallHistory,
-    Host, ServiceHistory
+    Host, ServiceHistory,
+    ClusterInfo
 )
 from django.db.models import F
 from django.db import transaction
@@ -203,6 +204,13 @@ class Hadoop(object):
     def _create_service(self, role, detail_obj):
         ip = detail_obj.service.ip
         instance_name = role + "_" + "_".join(ip.split(".")[2:])
+        if "secondarynamenode" in detail_obj.service.service_role:
+            cluster = ClusterInfo.objects.get_or_create(
+                cluster_service_name="hadoop",
+                cluster_name=detail_obj.service.service_instance_name,
+            )[0]
+        else:
+            cluster = detail_obj.service.cluster
         service_obj = Service.objects.create(
             ip=ip,
             service_instance_name=instance_name,
@@ -210,7 +218,7 @@ class Hadoop(object):
             service=detail_obj.service.service,
             service_port=self._get_service_port(role),
             service_controllers=self._get_service_controllers(ip, role),
-            cluster=detail_obj.service.cluster,
+            cluster=cluster,
             env=detail_obj.service.env
         )
         # TODO 操作用户

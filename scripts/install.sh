@@ -89,7 +89,7 @@ function check_grafana_up() {
   i=0
   while [ $i -le 10 ]
   do
-    curl -H "Content-Type: application/json" -X POST -d '{"user": "admin", "password": "admin"}' "${grafana_url}" |grep 'Logged in'
+    curl -s -H "Content-Type: application/json" -X POST -d '{"user": "admin", "password": "admin"}' "${grafana_url}" |grep 'Logged in'
     if [[ $? -eq 0 ]]; then
       return 0
     fi
