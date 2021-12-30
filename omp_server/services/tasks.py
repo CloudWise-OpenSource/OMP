@@ -64,6 +64,7 @@ def delete_file(service_controllers, service_obj):
         is_success, info = salt_obj.cmd(
             service_obj.ip, f"rm -rf {base_dir}", 600)
         logger.info(f"执行 [delete] 操作 {is_success}，原因: {info}")
+        return is_success
 
 
 @shared_task
@@ -118,7 +119,9 @@ def exec_action(action, instance, operation_user, del_file=False):
         if len(service_history_obj) != 0:
             service_history_obj.delete()
         if del_file:
-            delete_file(service_controllers, service_obj)
+            is_success = delete_file(service_controllers, service_obj)
+        else:
+            is_success = True
         service_obj.delete()
         host_instances = Host.objects.filter(ip=service_obj.ip)
         for instance in host_instances:
