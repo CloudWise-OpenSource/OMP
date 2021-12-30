@@ -46,6 +46,10 @@ def delete_file(service_controllers, service_obj):
     """
     salt_obj = SaltClient()
     exe_action = service_controllers.get("stop")
+    if "hadoop" in exe_action:
+        scripts_param = exe_action.split()
+        scripts_param[2] = "all"
+        exe_action = " ".join(scripts_param)
     # 存在stop脚本先执行stop脚本后执行删除
     if exe_action:
         for count in range(2):
@@ -60,6 +64,7 @@ def delete_file(service_controllers, service_obj):
         is_success, info = salt_obj.cmd(
             service_obj.ip, f"rm -rf {base_dir}", 600)
         logger.info(f"执行 [delete] 操作 {is_success}，原因: {info}")
+        return is_success
 
 
 @shared_task
@@ -91,7 +96,6 @@ def exec_action(action, instance, operation_user, del_file=False):
         service_obj.service_status = Service.SERVICE_STATUS_DELETING
         service_obj.save()
         service_port = None
-        is_success = False
         if service_obj.service_port is not None:
             service_port_ls = json.loads(service_obj.service_port)
             if len(service_port_ls) > 0:
@@ -114,7 +118,9 @@ def exec_action(action, instance, operation_user, del_file=False):
         if len(service_history_obj) != 0:
             service_history_obj.delete()
         if del_file:
-            delete_file(service_controllers, service_obj)
+            is_success = delete_file(service_controllers, service_obj)
+        else:
+            is_success = True
         service_obj.delete()
         host_instances = Host.objects.filter(ip=service_obj.ip)
         for instance in host_instances:
@@ -122,7 +128,7 @@ def exec_action(action, instance, operation_user, del_file=False):
                                           description=f"卸载服务 [{service_obj.service.app_name}]",
                                           result="success" if is_success else "failed",
                                           host=instance)
-        if not service_obj.service.is_base_env and is_success:
+        if not service_obj.service.is_base_env:
             with transaction.atomic():
                 Host.objects.filter(ip=service_obj.ip).update(
                     service_num=F("service_num") - 1)
