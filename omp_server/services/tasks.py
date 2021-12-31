@@ -45,7 +45,7 @@ def delete_file(service_controllers, service_obj):
     删除文件操作
     """
     salt_obj = SaltClient()
-    exe_action = service_controllers.get("stop")
+    exe_action = service_controllers.get("stop", "")
     if "hadoop" in exe_action:
         scripts_param = exe_action.split()
         scripts_param[2] = "all"
