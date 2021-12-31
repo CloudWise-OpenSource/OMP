@@ -119,7 +119,7 @@ class FiledCheck(object):
 
 
 @shared_task
-def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_dir, upload_obj):
+def front_end_verified(uuid, operation_user, package_name, random_str, ver_dir, upload_obj):
     """
      前端发布界面校验逻辑及后端校验逻辑公共类
      params
@@ -176,7 +176,7 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
     pro_name = f"{name}-{versions}"
     # 校验图片
     image = None
-    if kind == 'product' or 'component':
+    if kind == 'product' or kind == 'component':
         try:
             image_dir = os.path.join(tmp_dir, f'{app_name}.svg')
             if os.path.exists(image_dir):
@@ -395,8 +395,7 @@ class ExplainYml:
         # 对剩余字段进行自定义校验
         yml = getattr(self, kind)(settings)
         if isinstance(yml, bool):
-            if not yml:
-                return False
+            return False
         db_filed = {
             "kind": kind,
             "name": name,
@@ -448,23 +447,16 @@ class ExplainYml:
         """校验kind为service"""
         # service骨架弱校验
         db_filed = {}
-        first_check = {"auto_launch", "monitor", "ports", "install",
-                       "control", "base_env", "affinity",
-                       "post_action"
-                       }
+        # post_action affinity base_env auto_launch不再校验
+        # level 默认0 monitor不做校验
+        first_check = {"ports", "install",
+                       "control"}
         if not self.check_obj.weak_check(settings, first_check):
             return False
-        # auto_launch 校验
-        first_strong_check = {"auto_launch"}
-        if not self.check_obj.strong_check(settings, first_strong_check) \
-                or self.check_book_tools("auto_launch", settings.get("auto_launch")):
-            return False
-        # base_env 校验
-        base_env_strong_check = {"base_env"}
-        if not self.check_obj.strong_check(settings, base_env_strong_check) \
-                or self.check_book_tools("base_env", settings.get("base_env")):
-            return False
-        db_filed['base_env'] = settings.pop('base_env')
+        # auto_launch 校验 不填写默认给true
+        settings["auto_launch"] = settings.get("auto_launch", "true")
+        # base_env 校验 不填写True true 全部按照false处理
+        db_filed['base_env'] = settings.pop('base_env', "")
         # ports 校验
         ports = settings.pop('ports')
         ports_strong_check = {"name", "protocol", "default", "key"}
@@ -477,7 +469,7 @@ class ExplainYml:
         db_filed['ports'] = ports
         #  control校验
         control = settings.pop('control')
-        control_weak_check = {"start", "stop", "restart", "reload", "install",
+        control_weak_check = {"start", "stop", "restart", "install",
                               "init"}
         control_check = self.check_obj.weak_check(
             control,
@@ -490,36 +482,6 @@ class ExplainYml:
         if not control_strong_check:
             return False
         db_filed['control'] = control
-        # deploy校验
-        deploy = settings.get('deploy')
-        deploy_weak_check = {"single", "complex"}
-        deploy_check = self.check_obj.weak_check(
-            deploy,
-            deploy_weak_check) if deploy else 1
-        if not deploy_check:
-            return False
-        if deploy_check != 1:
-            single = deploy.get('single')
-            single_strong_check = {"name", "key"}
-            single_check = self.check_obj.strong_check(
-                single,
-                single_strong_check,
-                is_weak=True)
-            if not single_check:
-                return False
-            complex_list = deploy.get('complex')
-            complex_strong_check = {'name', 'key', 'nodes'}
-            complex_check = self.check_obj.strong_check(
-                complex_list,
-                complex_strong_check,
-                is_weak=True)
-            if not complex_check:
-                return False
-        # resources 校验
-        # deploy = settings.get('resources')
-        # deploy_check = self.check_obj.strong_check(deploy) if deploy else 1
-        # if not deploy_check:
-        #    return False
         # install 校验
         install = settings.pop('install')
         single_strong_install = {"name", "key", "default"}
@@ -546,10 +508,7 @@ class ExplainYml:
         """
         level = settings.pop('level', -1)
         if level == -1:
-            self.db_obj.update_package_status(
-                1,
-                f"level，检查yml文件{self.yaml_dir}")
-            return False
+            level = 0
         result = self.service_component(settings)
         if isinstance(result, bool):
             return False
@@ -689,6 +648,7 @@ def publish_entry(uuid):
     valid_dir = None
     # 中间结果转入创表函数
     product_obj = None
+    tmp_dir = []
     for line in valid_info:
         if line.get('kind') == 'product':
             CreateDatabase(line).create_product()

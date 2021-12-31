@@ -392,7 +392,7 @@ const renderMenu = (
           queryDeleteMsg([record]);
           setOperateAciton(4);
           setServiceAcitonModal(true);
-          deleteConditionReset()
+          deleteConditionReset();
         }}
       >
         <span style={{ fontSize: 12, paddingLeft: 5, paddingRight: 5 }}>
@@ -604,6 +604,46 @@ const getColumnsConfig = (
       dataIndex: "app_version",
       align: "center",
       ellipsis: true,
+    },
+    {
+      title: "CPU使用率",
+      key: "cpu_usage",
+      dataIndex: "cpu_usage",
+      align: "center",
+      sorter: (a, b) => a.cpu_usage - b.cpu_usage,
+      sortDirections: ["descend", "ascend"],
+      render: (text, record) => {
+        let str = nonEmptyProcessing(text);
+        return str == "-" ? (
+          "-"
+        ) : (
+          <span
+            style={{ color: colorConfig[record.cpu_status], fontWeight: 500 }}
+          >
+            {str}%
+          </span>
+        );
+      },
+    },
+    {
+      title: "内存使用率",
+      key: "mem_usage",
+      dataIndex: "mem_usage",
+      sorter: (a, b) => a.mem_usage - b.mem_usage,
+      sortDirections: ["descend", "ascend"],
+      align: "center",
+      render: (text, record) => {
+        let str = nonEmptyProcessing(text);
+        return str == "-" ? (
+          "-"
+        ) : (
+          <span
+            style={{ color: colorConfig[record.mem_status], fontWeight: 500 }}
+          >
+            {str}%
+          </span>
+        );
+      },
     },
     {
       title: "状态",

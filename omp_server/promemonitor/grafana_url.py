@@ -140,7 +140,7 @@ def explain_url(explain_info, is_service=None):
             monitor_url = url_dict.get(service_name)
             if monitor_url:
                 instance_info['monitor_url'] = grafana_url + \
-                    monitor_url + f"?var-instance={service_ip}"
+                    monitor_url + f"?var-instance={service_ip}&kiosk=tv"
             else:
                 try:
                     if service_name and ApplicationHub.objects.filter(
@@ -152,18 +152,19 @@ def explain_url(explain_info, is_service=None):
                             'javaspringboot',
                             'nojavaspringboot') + \
                             f"?var-env=default&var-ip={service_ip}" \
-                            f"&var-app={service_name}&var-job={service_name}Exporter"
+                            f"&var-app={service_name}&var-job={service_name}Exporter&kiosk=tv"
                     else:
                         instance_info['monitor_url'] = grafana_url + url_dict.get(
-                            'service', 'noservice') + f"?var-ip={service_ip}&var-app={service_name}"
+                            'service', 'noservice') + f"?var-ip={service_ip}&var-app={service_name}&kiosk=tv"
                 except Exception as e:
                     logger.error(e)
                     instance_info['monitor_url'] = grafana_url + url_dict.get(
-                        'service', 'noservice') + f"?var-ip={service_ip}&var-app={service_name}"
+                        'service', 'noservice') + f"?var-ip={service_ip}&var-app={service_name}&kiosk=tv"
             instance_info['log_url'] = grafana_url + \
                 url_dict.get('log', 'nolog') + f"?var-app={service_name}"
         else:
             instance_info['monitor_url'] = grafana_url + \
-                url_dict.get('node', 'nohosts') + f"?var-node={service_ip}"
+                url_dict.get('node', 'nohosts') + \
+                f"?var-node={service_ip}&kiosk=tv"
             instance_info['log_url'] = None
     return explain_info

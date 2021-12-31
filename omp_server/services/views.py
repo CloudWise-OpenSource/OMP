@@ -40,6 +40,8 @@ class ServiceListView(GenericViewSet, ListModelMixin):
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     filter_class = ServiceFilter
     ordering_fields = ("ip", "service_instance_name")
+    # 动态排序字段
+    dynamic_fields = ("cpu_usage", "mem_usage")
     # 操作描述信息
     get_description = "查询服务列表"
 
@@ -100,6 +102,24 @@ class ServiceListView(GenericViewSet, ListModelMixin):
         serializer_data = explain_url(
             serializer_data, is_service=True)
 
+        serializer_data = prometheus_obj.get_service_info(serializer_data)
+        reverse_flag = False
+        if query_field.startswith("-"):
+            reverse_flag = True
+            query_field = query_field[1:]
+        # 若排序字段在类视图 dynamic_fields 中，则对根据动态数据进行排序
+        none_ls = list(filter(
+            lambda x: x.get(query_field) is None,
+            serializer_data))
+        exists_ls = list(filter(
+            lambda x: x.get(query_field) is not None,
+            serializer_data))
+        if query_field in self.dynamic_fields:
+            exists_ls = sorted(
+                exists_ls,
+                key=lambda x: x.get(query_field),
+                reverse=reverse_flag)
+        exists_ls.extend(none_ls)
         return self.get_paginated_response(serializer_data)
 
 
