@@ -21,6 +21,7 @@ class ServiceSerializer(serializers.ModelSerializer):
     app_type = serializers.IntegerField(source="service.app_type")
     app_name = serializers.CharField(source="service.app_name")
     app_version = serializers.CharField(source="service.app_version")
+    env = serializers.CharField(source="env.name")
 
     class Meta:
         """ 元数据 """
@@ -28,7 +29,7 @@ class ServiceSerializer(serializers.ModelSerializer):
         fields = (
             "id", "service_instance_name", "ip", "port", "label_name", "alert_count",
             "operable", "app_type", "app_name", "app_version", "cluster_type",
-            "service_status", "is_base_env", "is_web"
+            "service_status", "is_base_env", "is_web", "env"
         )
 
     def get_is_web(self, obj):
