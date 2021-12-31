@@ -20,6 +20,9 @@ const OmpDrawer = ({ showIframe, setShowIframe }) => {
           </span>
         </div>
       }
+      headerStyle={{
+        padding:"19px 24px"
+      }}
       placement="right"
       closable={true}
       width={`calc(100% - 200px)`}

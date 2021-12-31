@@ -36,12 +36,15 @@ export const DetailHost = ({
           </span>
         </div>
       }
+      headerStyle={{
+        padding:"19px 24px"
+      }}
       placement="right"
       closable={true}
       width={`calc(100% - 200px)`}
       style={{
         height: "calc(100%)",
-        paddingTop: "60px",
+        // paddingTop: "60px",
       }}
       onClose={() => {
         setIsShowDrawer({
@@ -59,7 +62,7 @@ export const DetailHost = ({
       destroyOnClose={true}
     >
       <div
-        style={{ height: "calc(100% - 65px)", width: "100%", display: "flex" }}
+        style={{ height: "calc(100% - 15px)", width: "100%", display: "flex" }}
       >
         <div
           style={{
