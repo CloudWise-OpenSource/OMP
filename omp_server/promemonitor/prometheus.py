@@ -80,7 +80,7 @@ class Prometheus:
                 )
             )
         except Exception as e:
-            logger.error(f"同步阈值至prometheus失败，详情为：{e}")
+            logger.error(f"获取主机阈值失败，详情为：{e}")
         return host_threshold
 
     def get_host_metric_status(self, metric, metric_value):
@@ -351,3 +351,162 @@ class Prometheus:
         except Exception as e:
             logger.error(f"从prometheus获取服务targets失败: {str(e)}")
             return False, []
+
+    @staticmethod
+    def get_service_threshold(env_id=1):
+        service_threshold = {
+            'cpu': (80, 90),
+            'mem': (80, 90)
+        }
+        try:
+            from db_models.models import ServiceThreshold
+            cpu_warning_st = ServiceThreshold.objects.filter(env_id=env_id, index_type="cpu_used",
+                                                             alert_level="warning").first()
+            cpu_critical_st = ServiceThreshold.objects.filter(env_id=env_id, index_type="cpu_used",
+                                                              alert_level="critical").first()
+            mem_warning_st = ServiceThreshold.objects.filter(env_id=env_id, index_type="memory_used",
+                                                             alert_level="warning").first()
+            mem_critical_st = ServiceThreshold.objects.filter(env_id=env_id, index_type="memory_used",
+                                                              alert_level="critical").first()
+            service_threshold.update(
+                cpu=(
+                    int(cpu_warning_st.condition_value) if cpu_warning_st else 0,
+                    int(cpu_critical_st.condition_value) if cpu_critical_st else 100,
+                ),
+                mem=(
+                    int(mem_warning_st.condition_value) if mem_warning_st else 0,
+                    int(mem_critical_st.condition_value) if mem_critical_st else 100,
+                )
+            )
+        except Exception as e:
+            logger.error(f"获取服务阈值失败，详情为：{e}")
+        return service_threshold
+
+    def get_service_metric_status(self, metric, metric_value):
+        if not metric_value:
+            return None
+        service_threshold = self.get_service_threshold()
+        if metric_value > max(service_threshold.get(metric)):
+            status = 'critical'
+        elif metric_value < min(service_threshold.get(metric)):
+            status = 'normal'
+        else:
+            status = 'warning'
+        return status
+
+    def get_service_cpu_usage(self, service_list):
+        """
+        获取服务cpu使用率
+        """
+        open_source_query_url = f'{self.prometheus_api_query_url}service_process_cpu_percent'
+        self_service_query_url = f'{self.prometheus_api_query_url}process_cpu_usage * 100'
+        try:
+            os_cpu_response = requests.get(
+                url=open_source_query_url, headers=self.headers, auth=self.basic_auth)
+            if os_cpu_response.status_code == 200:
+                os_cpu_usage_dict = os_cpu_response.json()
+                if os_cpu_usage_dict.get('status') != 'success':
+                    logger.error(os_cpu_response.text)
+                    logger.error('获取开源服务CPU使用率失败！')
+                    return service_list
+                for index, os_service in enumerate(service_list.copy()):
+                    for item in os_cpu_usage_dict.get('data').get('result'):
+                        if item.get('metric').get('instance') == os_service.get('ip') and True:
+                            service_list[index]['cpu_usage'] = math.ceil(
+                                float(item.get('value')[1]))
+                            service_list[index]['cpu_status'] = self.get_service_metric_status('cpu', math.ceil(
+                                float(item.get('value')[1])))
+                            break
+                        service_list[index]['cpu_usage'] = None
+                        service_list[index]['cpu_status'] = None  # TODO  待阈值判断
+
+            else:
+                logger.error(os_cpu_response.text)
+                logger.error('获取开源服务CPU使用率失败！')
+
+            ss_cpu_response = requests.get(
+                url=self_service_query_url, headers=self.headers, auth=self.basic_auth)
+            if ss_cpu_response.status_code == 200:
+                ss_cpu_usage_dict = ss_cpu_response.json()
+                if ss_cpu_usage_dict.get('status') != 'success':
+                    logger.error(ss_cpu_response.text)
+                    logger.error('获取自研服务CPU使用率失败！')
+                    return service_list
+                for index, os_service in enumerate(service_list.copy()):
+                    for item in ss_cpu_usage_dict.get('data').get('result'):
+                        if item.get('metric').get('instance') == os_service.get('ip') \
+                                and item.get('metric').get('service_name') == os_service.get('service_name'):
+                            service_list[index]['cpu_usage'] = math.ceil(
+                                float(item.get('value')[1]))
+                            service_list[index]['cpu_status'] = self.get_service_metric_status('cpu', math.ceil(
+                                float(item.get('value')[1])))
+                            break
+                        service_list[index]['cpu_usage'] = None
+                        service_list[index]['cpu_status'] = None  # TODO  待阈值判断
+
+            else:
+                logger.error(os_cpu_response.text)
+                logger.error('获取开源服务CPU使用率失败！')
+            return service_list
+        except Exception as e:
+            logger.error(f'获取服务cpu使用率失败，报错信息为：{e}')
+            return service_list
+
+    def get_service_mem_usage(self, service_list):
+        open_source_query_url = f'{self.prometheus_api_query_url}service_process_memory_percent'
+        self_service_query_url = f'{self.prometheus_api_query_url}sum(jvm_memory_used_bytes{{area="nonheap"}}) ' \
+                                 f'/ sum(jvm_memory_max_bytes{{area="nonheap"}}) * 100'
+        try:
+            os_mem_response = requests.get(
+                url=open_source_query_url, headers=self.headers, auth=self.basic_auth)
+            if os_mem_response.status_code == 200:
+                os_mem_usage_dict = os_mem_response.json()
+                if os_mem_usage_dict.get('status') != 'success':
+                    logger.error(os_mem_response.text)
+                    logger.error('获取开源服务内存使用率失败！')
+                    return service_list
+                for index, os_service in enumerate(service_list.copy()):
+                    for item in os_mem_usage_dict.get('data').get('result'):
+                        if item.get('metric').get('instance') == os_service.get('ip') \
+                                and item.get('metric').get('service_name') == os_service.get('app_name') \
+                                and item.get('env') == os_service.get('env'):
+                            service_list[index]['mem_usage'] = math.ceil(
+                                float(item.get('value')[1]))
+                            service_list[index]['mem_status'] = self.get_service_metric_status('mem', math.ceil(
+                                float(item.get('value')[1])))
+                            break
+                        service_list[index]['mem_usage'] = None
+                        service_list[index]['mem_status'] = None  # TODO  待阈值判断
+
+            else:
+                logger.error(os_mem_response.text)
+                logger.error('获取开源服务内存使用率失败！')
+
+            ss_mem_response = requests.get(
+                url=self_service_query_url, headers=self.headers, auth=self.basic_auth)
+            if ss_mem_response.status_code == 200:
+                ss_mem_usage_dict = ss_mem_response.json()
+                if ss_mem_usage_dict.get('status') != 'success':
+                    logger.error(ss_mem_response.text)
+                    logger.error('获取自研服务内存使用率失败！')
+                    return service_list
+                for index, os_service in enumerate(service_list.copy()):
+                    for item in ss_mem_usage_dict.get('data').get('result'):
+                        if item.get('metric').get('instance') == os_service.get('ip') \
+                                and item.get('metric').get('service_name') == os_service.get('app_name') \
+                                and item.get('env') == os_service.get('env'):
+                            service_list[index]['mem_usage'] = math.ceil(
+                                float(item.get('value')[1]))
+                            service_list[index]['mem_status'] = self.get_service_metric_status('mem', math.ceil(
+                                float(item.get('value')[1])))
+                            break
+                        service_list[index]['mem_usage'] = None
+                        service_list[index]['mem_status'] = None  # TODO  待阈值判断
+
+            else:
+                logger.error(os_mem_response.text)
+                logger.error('获取开源服务内存使用率失败！')
+            return service_list
+        except Exception as e:
+            logger.error(f'获取服务mem使用率失败，报错信息为：{e}')
+            return service_list
