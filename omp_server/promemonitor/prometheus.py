@@ -84,7 +84,7 @@ class Prometheus:
         return host_threshold
 
     def get_host_metric_status(self, metric, metric_value):
-        if not metric_value:
+        if metric_value is None:
             return None
         host_threshold = self.get_host_threshold()
         if metric_value > max(host_threshold.get(metric)):
@@ -360,13 +360,13 @@ class Prometheus:
         }
         try:
             from db_models.models import ServiceThreshold
-            cpu_warning_st = ServiceThreshold.objects.filter(env_id=env_id, index_type="cpu_used",
+            cpu_warning_st = ServiceThreshold.objects.filter(env_id=env_id, index_type="service_cpu_used",
                                                              alert_level="warning").first()
-            cpu_critical_st = ServiceThreshold.objects.filter(env_id=env_id, index_type="cpu_used",
+            cpu_critical_st = ServiceThreshold.objects.filter(env_id=env_id, index_type="service_cpu_used",
                                                               alert_level="critical").first()
-            mem_warning_st = ServiceThreshold.objects.filter(env_id=env_id, index_type="memory_used",
+            mem_warning_st = ServiceThreshold.objects.filter(env_id=env_id, index_type="service_memory_used",
                                                              alert_level="warning").first()
-            mem_critical_st = ServiceThreshold.objects.filter(env_id=env_id, index_type="memory_used",
+            mem_critical_st = ServiceThreshold.objects.filter(env_id=env_id, index_type="service_memory_used",
                                                               alert_level="critical").first()
             service_threshold.update(
                 cpu=(
@@ -383,7 +383,7 @@ class Prometheus:
         return service_threshold
 
     def get_service_metric_status(self, metric, metric_value):
-        if not metric_value:
+        if metric_value is None:
             return None
         service_threshold = self.get_service_threshold()
         if metric_value > max(service_threshold.get(metric)):
@@ -411,7 +411,9 @@ class Prometheus:
                     return service_list
                 for index, os_service in enumerate(service_list.copy()):
                     for item in os_cpu_usage_dict.get('data').get('result'):
-                        if item.get('metric').get('instance') == os_service.get('ip') and True:
+                        if item.get('metric').get('instance') == os_service.get('ip') \
+                                and item.get('metric').get('app') == os_service.get('app_name') \
+                                and item.get('metric').get('env') == os_service.get('env'):
                             service_list[index]['cpu_usage'] = math.ceil(
                                 float(item.get('value')[1]))
                             service_list[index]['cpu_status'] = self.get_service_metric_status('cpu', math.ceil(
@@ -432,10 +434,11 @@ class Prometheus:
                     logger.error(ss_cpu_response.text)
                     logger.error('获取自研服务CPU使用率失败！')
                     return service_list
-                for index, os_service in enumerate(service_list.copy()):
+                for index, ss_service in enumerate(service_list.copy()):
                     for item in ss_cpu_usage_dict.get('data').get('result'):
-                        if item.get('metric').get('instance') == os_service.get('ip') \
-                                and item.get('metric').get('service_name') == os_service.get('service_name'):
+                        if item.get('metric').get('instance') == ss_service.get('ip') \
+                                and item.get('metric').get('app') == ss_service.get('app_name') \
+                                and item.get('metric').get('env') == ss_service.get('env'):
                             service_list[index]['cpu_usage'] = math.ceil(
                                 float(item.get('value')[1]))
                             service_list[index]['cpu_status'] = self.get_service_metric_status('cpu', math.ceil(
@@ -468,8 +471,8 @@ class Prometheus:
                 for index, os_service in enumerate(service_list.copy()):
                     for item in os_mem_usage_dict.get('data').get('result'):
                         if item.get('metric').get('instance') == os_service.get('ip') \
-                                and item.get('metric').get('service_name') == os_service.get('app_name') \
-                                and item.get('env') == os_service.get('env'):
+                                and item.get('metric').get('metric').get('app') == os_service.get('app_name') \
+                                and item.get('metric').get('env') == os_service.get('env'):
                             service_list[index]['mem_usage'] = math.ceil(
                                 float(item.get('value')[1]))
                             service_list[index]['mem_status'] = self.get_service_metric_status('mem', math.ceil(
@@ -490,11 +493,11 @@ class Prometheus:
                     logger.error(ss_mem_response.text)
                     logger.error('获取自研服务内存使用率失败！')
                     return service_list
-                for index, os_service in enumerate(service_list.copy()):
+                for index, ss_service in enumerate(service_list.copy()):
                     for item in ss_mem_usage_dict.get('data').get('result'):
-                        if item.get('metric').get('instance') == os_service.get('ip') \
-                                and item.get('metric').get('service_name') == os_service.get('app_name') \
-                                and item.get('env') == os_service.get('env'):
+                        if item.get('metric').get('instance') == ss_service.get('ip') \
+                                and item.get('metric').get('app') == ss_service.get('app_name') \
+                                and item.get('env') == ss_service.get('env'):
                             service_list[index]['mem_usage'] = math.ceil(
                                 float(item.get('value')[1]))
                             service_list[index]['mem_status'] = self.get_service_metric_status('mem', math.ceil(
