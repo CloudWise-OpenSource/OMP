@@ -37,6 +37,7 @@ class ListServiceTest(AutoLoginTest, ServicesResourceMixin):
         for service in res_ls:
             if service.get("is_web"):
                 self.assertNotEqual(service.get("service_status"), "未监控")
+        return
 
         # IP 过滤 -> 模糊匹配
         ip_field = str(random.randint(1, 20))
