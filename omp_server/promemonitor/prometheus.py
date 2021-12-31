@@ -510,3 +510,16 @@ class Prometheus:
         except Exception as e:
             logger.error(f'获取服务mem使用率失败，报错信息为：{e}')
             return service_list
+
+    def get_service_info(self, service_list):
+        """
+        获取主机负载基本信息
+        """
+        for index, service in enumerate(service_list.copy()):
+            service_list[index]['cpu_usage'] = None
+            service_list[index]['cpu_status'] = None
+            service_list[index]['mem_usage'] = None
+            service_list[index]['mem_status'] = None
+        service_list = self.get_service_cpu_usage(service_list)
+        service_list = self.get_service_mem_usage(service_list)
+        return service_list
