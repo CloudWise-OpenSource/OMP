@@ -18,9 +18,13 @@ import HasInstallService from "./component/HasInstallService";
 // 当前组件触发value改变的情况有
 // 1. 点击展开栏的check或者item容器或者文字
 // 2. 点击展示框的tag
-
-// 未完成任务
 // 3. 展示框关于with的处理
+
+// update 2021.12.30
+// 为解决关于with项关联元素异常展示问题
+// 在onclick 事件中添加两个动作
+// 在执行onclick正常逻辑之前判断当前元素内是否全部子项都是不可选中状态，如果是直接return,不再执行正常逻辑（或者直接判断当前元素类名是否有disable相关）
+// 在执行onclick正常逻辑或者执行完关联with之后，查询其他元素内是否存在子元素全是不可选中状态的元素，将这种元素设置成不可选中状态
 
 const ServiceDistributionItem = ({ form, data, info, installService }) => {
   const [options, setOption] = useState([]);
@@ -55,7 +59,7 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
           result = result.concat([...checkedItem]);
           break;
         case 2:
-          console.log(item);
+          // console.log(item);
           result.push(item[1]);
           break;
         default:
@@ -114,24 +118,43 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
         });
         if (isCheck) {
           formData[info.ip].push([productItem[0].label, w]);
-          form.setFieldsValue({
-            [`${info.ip}`]: formData[info.ip],
+          // form.setFieldsValue({
+          //   [`${info.ip}`]: formData[info.ip],
+          // });
+
+          setValue((value) => {
+            let strArr = [
+              ...formData[info.ip],
+              ...value,
+              [productItem[0].label, w],
+            ].map((item) => JSON.stringify(item));
+            let delStrArr = Array.from(new Set([...strArr]));
+            return [...delStrArr.map((item) => JSON.parse(item))];
           });
-          setValue(formData[info.ip]);
           // 数据池子中数量变更
           let data = handleDataSourceData(w, -1);
           reduxDispatch(getDataSourceChangeAction(data));
         } else {
-          let withI = [productItem[0].label, w];
+          let withI = [productItem[0]?.label, w];
           let result = formData[info.ip].filter((item) => {
             return item[0] != withI[0] || item[1] != withI[1];
           });
-          form.setFieldsValue({
-            [`${info.ip}`]: result,
+
+          // form.setFieldsValue({
+          //   [`${info.ip}`]: result,
+          // });
+
+          let arr = [];
+          result.map((v) => {
+            Object.keys(allDataPool).map((i) => {
+              if (v[1] == allDataPool[i].with) {
+                arr.push([v[0], i]);
+              }
+            });
           });
-          setValue(result);
-          let data = handleDataSourceData(w, 1);
-          reduxDispatch(getDataSourceChangeAction(data));
+          setValue([...result, ...arr]);
+          let dataC = handleDataSourceData(w, 1);
+          reduxDispatch(getDataSourceChangeAction(dataC));
         }
       });
     } else {
@@ -140,9 +163,8 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
   };
 
   const handleValueAndForm = (label, isCheck) => {
-    console.log(options, label);
     // value的格式[[1,1],[1,2]]
-    // setValue()
+    // setVal1ue()
     // form的格式
     // 当前ip下和value一致
     // 判断一下当前label是一级还是二级
@@ -158,9 +180,9 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
           });
         });
         setValue(result);
-        form.setFieldsValue({
-          [`${info.ip}`]: result,
-        });
+        // form.setFieldsValue({
+        //   [`${info.ip}`]: result,
+        // });
       } else if (isCheck === false) {
         // 取消二级选中
         let result = [...value];
@@ -176,9 +198,9 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
           return item[0] != deleteItem[0] || item[1] != deleteItem[1];
         });
         setValue(result);
-        form.setFieldsValue({
-          [`${info.ip}`]: result,
-        });
+        // form.setFieldsValue({
+        //   [`${info.ip}`]: result,
+        // });
       }
     } else {
       // 一级
@@ -223,17 +245,22 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
         let data = handleDataSourceData(withArr, -1);
         reduxDispatch(getDataSourceChangeAction(data));
         // console.log(value, result, label)
-        let dealValue = value.filter(i=>{
-          if(i[0] !== label){
-            return true
+        let dealValue = value.filter((i) => {
+          if (i[0] !== label) {
+            return true;
           }
           //console.log(i)
-          return false
-        })
-        setValue(Array.from(new Set([...dealValue,...result])));
-        form.setFieldsValue({
-          [`${info.ip}`]: Array.from(new Set([...dealValue,...result])),
+          return false;
         });
+        
+        setValue((v)=>{
+          let arr =Array.from(new Set([...dealValue, ...result].map(i=>JSON.stringify(i))))
+          return arr.map(m=>JSON.parse(m))
+          // Array.from(new Set([...dealValue, ...result]))
+        });
+        // form.setFieldsValue({
+        //   [`${info.ip}`]: Array.from(new Set([...dealValue,...result])),
+        // });
       } else if (isCheck === false) {
         // console.log("点击到了一级的取消选中");
         let withArr = [];
@@ -241,7 +268,6 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
           // 当这项包含with直接留在这里不动，with项的改变在与被with项
           if (allDataPool[i[1]] && allDataPool[i[1]].with) {
             // 判断这项的with是否包涵在value
-            console.log(allDataPool[i[1]].with, value);
             let arr = value.filter((a) => {
               return a[1] == allDataPool[i[1]].with;
             });
@@ -253,33 +279,104 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
         let data = handleDataSourceData(withArr, 1);
         reduxDispatch(getDataSourceChangeAction(data));
         setValue(v);
-        form.setFieldsValue({
-          [`${info.ip}`]: v,
-        });
+        // form.setFieldsValue({
+        //   [`${info.ip}`]: v,
+        // });
       }
     }
   };
 
-  useEffect(() => {
-    let isDelete = Object.keys(allDataPool).filter((k) => {
-      // console.log(value);
-      // 当前组件实例已经选中了，那即使在数据池中该数据num已经为0,也不应影响组件对该数据的展示,在这里过滤掉
-      return allDataPool[k].num == 0 && !dealColumnsData(value).includes(k);
+  // 获得子项全部是disable的项的lable
+  // 并且当前已选中项中不存在
+  const getDisableItem = (options) => {
+    let disableItem = [];
+    options.forEach((i) => {
+      if (i.children.filter((a) => !a.disabled) == 0) {
+        disableItem.push(i.value);
+      }
     });
-    // console.log(isDelete, "isDelete");
+    console.log(disableItem, value, "要禁用的项")
+    return disableItem;
+  };
+
+  // 根据lable,将其dom设置为不可用状态
+  const setDisableItem = (disableItem) => {
+    if (disableItem.length > 0) {
+      let arr = [...document.getElementsByClassName("ant-cascader-menus")];
+      arr.forEach((a) => {
+        let dom = a?.childNodes;
+        if (dom && dom[0].childNodes) {
+          [...dom[0].childNodes].map((v) => {
+            if (v && v.childNodes[1]) {
+              if (disableItem.indexOf(v.childNodes[1].innerHTML) !== -1) {
+                // v.childNodes[0].removeEventListener("click")
+                // console.log(v.childNodes[0].getAttribute())
+                v.childNodes[0].onclick = (e)=>{
+                  e.stopPropagation();
+                }
+                v.childNodes[0].classList.add("ant-cascader-checkbox-disabled");
+                v.style.cssText =
+                  "color: rgba(0,0,0,0.25);font-weight:400 !important;cursor:not-allowed";
+              }
+            }
+          });
+        }
+      });
+    }
+  };
+
+  // remakeDom重置dom
+  const remakeDom = ()=>{
+    let arr = [...document.getElementsByClassName("ant-cascader-menus")];
+    arr.forEach((a) => {
+      let dom = a?.childNodes;
+      if (dom && dom[0].childNodes) {
+        [...dom[0].childNodes].map((v) => {
+          if (v && v.childNodes[1]) {
+              // v.childNodes[0].removeEventListener("click")
+              // console.log(v.childNodes[0].getAttribute())
+              v.childNodes[0].onclick = null
+              v.childNodes[0].classList.remove("ant-cascader-checkbox-disabled");
+              v.style.cssText =
+                "color: rgba(0, 0, 0, 0.65);font-weight:400;";
+            
+          }
+        });
+      }
+    });
+  }
+
+  useEffect(() => {
+    let disabledItem = getDisableItem(options);
+
+    let isDelete = Object.keys(allDataPool).filter((k) => {
+      // 当前组件实例已经选中了，那即使在数据池中该数据num已经为0,也不应影响组件对该数据的展示,在这里过滤掉
+      // 并且没有with项
+      return allDataPool[k].num == 0 && !dealColumnsData(value).includes(k) && !allDataPool[k].with;
+      // && disabledItem.indexOf(k) !== -1;
+    });
     let c = [...data];
     c = c.map((i) => {
       // 去除在child对应数据池num为0的项
-      let child = i.child.filter((e) => {
-        return isDelete.indexOf(e) == -1;
+      let child = [...i.child];
+      // if(disabledItem.indexOf(i.name) == -1) {
+      child = i.child.filter((e) => {
+        // let withI = data
+        //   .filter((f) => disabledItem.indexOf(f.name) !== -1)
+        //   .map((c) => {
+        //     console.log(c)
+        //     return c.child
+        //   })
+        //   .flat();
+        return isDelete.indexOf(e) == -1 
+        // || withI.indexOf(e) !== -1;
       });
-
+      // }
       return {
         ...i,
         child: child,
       };
     });
-
     setOption(() => {
       let result = [];
       c.map((item) => {
@@ -299,18 +396,25 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
             disabled: disabled,
           };
         });
-        //console.log("child", item.child, dealColumnsData(value));
-        if (item.child.length > 0 && dealColumnsData(value)) {
+
+        if (
+          (item.child.length > 0 && dealColumnsData(value))
+          // ||  disabledItem.indexOf(i.label) !== -1
+        ) {
+          // 当选中后，全部数据中有子项都是disable的
           result.push(i);
         }
       });
-      // console.log(result);
       return result;
     });
   }, [allDataPool]);
 
   // 当value值发生改变时触发事件，用来判断当前组件所对应主机是否已经选择服务
   useEffect(() => {
+    form.setFieldsValue({
+      [`${info.ip}`]: value,
+    });
+
     let idx = ipList.indexOf(info.ip);
 
     // console.log(ipList, value, idx);
@@ -332,13 +436,6 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
 
   return (
     <div style={{ marginBottom: 40, width: "45%" }}>
-      {/* <Button
-        onClick={() => {
-          console.log(value);
-        }}
-      >
-        点击
-      </Button> */}
       <Form form={form} name="service">
         <div style={{ display: "flex", justifyContent: "center" }}>
           <div
@@ -347,11 +444,11 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
               alignItems: "center",
               position: "relative",
             }}
-          > 
+          >
             <div
               style={{
                 position: "absolute",
-                top: errorMsg?40:25,
+                top: errorMsg ? 40 : 25,
                 color: "red",
                 height: errorMsg ? 20 : 0,
                 transition: "all .1s ease-in",
@@ -370,68 +467,12 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
                 options={options}
                 expandTrigger={"hover"}
                 value={value}
-                //value={[["基础组件", "nacos"]]}//['douc', 'doucSso']
-                // onChange={(e) => {
-                //   let result = [];
-                //   e.map((item) => {
-                //     if (item.length == 1) {
-                //       let key = item[0];
-                //       let arr = options
-                //         .filter((i) => {
-                //           return i.label == key;
-                //         })[0]
-                //         .children.map((i) => {
-                //           return [key, i.label];
-                //         });
-                //       arr = arr.filter((i) => {
-                //         // 过滤掉with项
-                //         if (allDataPool[i[1]] && allDataPool[i[1]].with) {
-                //           return false;
-                //         }
-                //         return true;
-                //       });
-                //       result = result.concat(arr);
-                //     } else {
-                //       result.push(item);
-                //     }
-                //   });
-                //   form.setFieldsValue({
-                //     [`${info.ip}`]: result,
-                //   });
-                //   console.log(result,"这个result正常吗")
-                //   setValue(result);
-                // }}
                 allowClear={false}
                 tagRender={(e) => {
                   const { value, onClose, label } = e;
-                  //console.log(value)
-                  // label 可能是一级或者二级
-                  // let checkedItem = options.filter((i) => {
-                  //   return i.label == label;
-                  // });
                   return (
                     <Tag
-                      //closable={allDataPool[label] && !allDataPool[label].with}
                       closable={false}
-                      // onClose={(event) => {
-                      //   // 判断点的是一级还是二级
-                      //   let checkedItem = options.filter((i) => {
-                      //     return i.label == label;
-                      //   });
-                      //   if (checkedItem.length == 1) {
-                      //     // 是第一级
-                      //     let arr = checkedItem[0].children.map(
-                      //       (item) => item.label
-                      //     );
-                      //     let data = handleDataSourceData(arr, 1);
-                      //     reduxDispatch(getDataSourceChangeAction(data));
-                      //   } else {
-                      //     // 是第二级
-                      //     let data = handleDataSourceData(label, 1);
-                      //     reduxDispatch(getDataSourceChangeAction(data));
-                      //   }
-                      //   onClose(event);
-                      // }}
                     >
                       {allDataPool[label] ? label : `${label}-集合`}
                     </Tag>
@@ -484,6 +525,13 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
                 //   }
                 // }}
                 onClick={(e) => {
+                  // 会出现options的子项已经为空，但是一级还在的情况，在这里过滤
+                  // setOption((op)=>{
+                  //   return op.filter(i=>{
+                  //     return i.children.length
+                  //   })
+                  // })
+
                   // 使用onclick的原因是因为onchange在每次点击后会触发两次，
                   // 每次onchange执行都是一次单独逻辑,不能在每次onchange时，故不能准确对应整个数据池的num增减情况
                   // 点击总共会出现三种情况
@@ -491,14 +539,18 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
                   // 2. 点击了背后的容器
                   // 3. 点击了文字
                   // console.log(e.target);
-
+                  // 因为antd是复用展开框，所以在设置禁用前先重制，然后再根据情况去确定是否设置禁用
+                  remakeDom()
+                  // 设置禁用项
+                  let disabledItem = getDisableItem(options);
+                  setDisableItem(disabledItem);
                   // 1. 点击了checkbox(这个比较特殊，也可能是点击了一级菜单触发)
                   if (e.target.className == "ant-cascader-checkbox-inner") {
+                    // return
                     // 选中（可能是一级也可能是二级,点击了checkbox）
                     // 判断是点击的一级还是二级
                     let label =
                       e.target.parentNode.parentNode.childNodes[1].innerHTML;
-
                     if (allDataPool[label]) {
                       // 点的是二级
                       if (allDataPool[label] && allDataPool[label].with) {
@@ -519,6 +571,11 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
                       // 点的是一级
                       // 在这个条件中还有一个情况是半选中状态
                       //console.log("点击一级");
+                      if(disabledItem.indexOf(label)!==-1){
+                        setDisableItem(disabledItem);
+                        return 
+                      }else{
+                      // 在点击前
                       let checkedArr = options
                         .filter((i) => {
                           return i.label == label;
@@ -548,7 +605,7 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
 
                       handleValueAndForm(label, true);
                       let data = handleDataSourceData(checkedArr, -1);
-                      reduxDispatch(getDataSourceChangeAction(data));
+                      reduxDispatch(getDataSourceChangeAction(data));}
                     }
                     // console.log(
                     //   "选中",
@@ -710,7 +767,14 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
             </Form.Item>
           </div>
           <div style={{ paddingLeft: 15 }}>
-            <div style={{ fontSize: 13 }}>
+            <div
+              style={{ fontSize: 13 }}
+              // onClick={() => {
+              //   form.setFieldsValue({
+              //     [`${info.ip}`]: value,
+              //   });
+              // }}
+            >
               选择服务数:{" "}
               {value.length == 0 ? (
                 <span>0个</span>
@@ -720,7 +784,7 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
                   placement="right"
                   color="#fff"
                   overlayStyle={{
-                    minWidth:300
+                    minWidth: 300,
                   }}
                   title={
                     <div
@@ -763,13 +827,7 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
                 </Tooltip>
               )}
             </div>
-            <div
-              style={{ fontSize: 12 }}
-              // onClick={() => {
-              //   // setOption([]);
-              //   console.log(form.getFieldsValue());
-              // }}
-            >
+            <div style={{ fontSize: 12 }}>
               已安装服务数:{" "}
               {info.num == 0 ? (
                 <span>0个</span>
