@@ -120,7 +120,7 @@ class ServiceListView(GenericViewSet, ListModelMixin):
                 key=lambda x: x.get(query_field),
                 reverse=reverse_flag)
         exists_ls.extend(none_ls)
-        return self.get_paginated_response(serializer_data)
+        return self.get_paginated_response(exists_ls)
 
 
 class ServiceDetailView(GenericViewSet, RetrieveModelMixin):
