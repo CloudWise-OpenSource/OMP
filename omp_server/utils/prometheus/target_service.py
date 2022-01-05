@@ -51,7 +51,7 @@ open_source_class_dict = {
     "mysql": ServiceMysqlCrawl,
     "nacos": ServiceNacosCrawl,
     "ntpd": ServiceNtpdCrawl,
-    "postgresql": ServicePostgresqlCrawl,
+    "postgreSql": ServicePostgresqlCrawl,
     "prometheus": ServicePrometheusCrawl,
     "redis": ServiceRedisCrawl,
     "rocketmq": ServiceRocketmqCrawl,
