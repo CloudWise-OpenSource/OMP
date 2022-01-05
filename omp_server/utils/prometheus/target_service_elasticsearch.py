@@ -181,7 +181,7 @@ class ServiceElasticsearchCrawl(Prometheus):
 
     def run(self):
         """统一执行实例方法"""
-        target = ['service_status', 'run_time', 'cpu_usage', 'mem_usage', 'cluster_status', 'running_nodes',
+        target = ['service_status', 'run_time', 'cpu_usage', 'mem_usage', 'running_nodes',
                   'active_data_nodes',
                   'pending_tasks', 'active_shards', 'active_primary_shards', 'initializing_shards', 'relocating_shards',
                   'unassigned_shards', 'delayed_unassigned_shards', 'documents_indexed', 'index_size',
