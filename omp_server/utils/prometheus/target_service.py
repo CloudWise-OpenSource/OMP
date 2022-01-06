@@ -11,7 +11,6 @@ import traceback
 from db_models.models import Service
 from utils.prometheus.thread import MyThread
 from utils.prometheus.target_service_jvm_base import ServiceBase
-# from utils.prometheus.target_service_func import salt_json
 from utils.prometheus.target_service_arangodb import ServiceArangodbCrawl
 from utils.prometheus.target_service_beanstalk import ServiceBeanstalkCrawl
 from utils.prometheus.target_service_clickhouse import ServiceClickhouseCrawl
@@ -128,6 +127,8 @@ def target_service_thread(env, i):
         try:
             crawl_class = open_source_class_dict.get(
                 i.get("service__app_name"))
+            if not crawl_class:
+                return [0, _joint(i, {}, [], *_port_status)]
             _ = crawl_class(env=env.name, instance=i.get('ip'))
             _.run()
             tag_total_num = _.metric_num  # 总指标数累加
@@ -167,6 +168,8 @@ def target_service_run(env, services):
 
     for t in threads:
         t.join()  # 用join等待线程执行结束
+        if not t.res:
+            continue
         total_no += t.res[0]
         tmp_list.append(t.res[1])  # 等线程结束，回收返回值
 
