@@ -8,7 +8,6 @@ import { fetchGet } from "@/utils/request";
 import { handleResponse } from "@/utils/utils";
 import { useHistory, useLocation } from "react-router-dom";
 import { fetchPost } from "src/utils/request";
-import { use } from "echarts";
 
 const { Link } = Anchor;
 // 状态渲染规则

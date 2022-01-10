@@ -610,16 +610,16 @@ const getColumnsConfig = (
         return text ? "是" : "否";
       },
     },
-    {
-      title: "主机初始化",
-      key: "init_status",
-      dataIndex: "init_status",
-      align: "center",
-      //ellipsis: true,
-      render: (text) => {
-        return renderInitStatue(text);
-      },
-    },
+    // {
+    //   title: "主机初始化",
+    //   key: "init_status",
+    //   dataIndex: "init_status",
+    //   align: "center",
+    //   //ellipsis: true,
+    //   render: (text) => {
+    //     return renderInitStatue(text);
+    //   },
+    // },
     {
       title: "主机Agent",
       key: "host_agent",
