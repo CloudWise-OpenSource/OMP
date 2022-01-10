@@ -3,7 +3,6 @@
 # Author: len chen
 # CreateDate: 2021/10/21 5:11 下午
 # Description:
-import json
 from utils.prometheus.prometheus import Prometheus
 from utils.plugin.salt_client import SaltClient
 
@@ -50,14 +49,14 @@ class ServiceMysqlCrawl(Prometheus):
         """mysql cpu使用率"""
         expr = f"service_process_cpu_percent{{instance='{self.instance}',app='{self.service_name}'}}"
         val = self.unified_job(*self.query(expr))
-        val = round(float(val), 4) if val else '0.00'
+        val = round(float(val), 4) if val else '-'
         self.ret['cpu_usage'] = f"{val}%"
 
     def mem_usage(self):
         """mysql 内存使用率"""
         expr = f"service_process_memory_percent{{instance='{self.instance}',app='{self.service_name}'}}"
         val = self.unified_job(*self.query(expr))
-        val = round(float(val), 4) if val else '0.00'
+        val = round(float(val), 4) if val else '-'
         self.ret['mem_usage'] = f"{val}%"
 
     def slow_query(self):
@@ -96,21 +95,6 @@ class ServiceMysqlCrawl(Prometheus):
         expr = "mysql_global_status_slave_open_temp_tables"
         self.basic.append({"name": "backup_status", "name_cn": "数据同步状态",
                            "value": self.unified_job(*self.query(expr))})
-
-    def salt_json(self):
-        try:
-            self._obj.salt_module_update()
-            ret = self._obj.fun(self.instance, "mysql_check.main")
-            if ret and ret[0]:
-                ret = json.loads(ret[1])
-            else:
-                ret = {}
-        except Exception:
-            ret = {}
-
-        self.ret['cpu_usage'] = ret.get('cpu_usage', '-')
-        self.ret['mem_usage'] = ret.get('mem_usage', '-')
-        self.ret['run_time'] = ret.get('run_time', '-')
 
     def run(self):
         """统一执行实例方法"""
