@@ -25,7 +25,8 @@ from hosts.hosts_serializers import (
     HostFieldCheckSerializer, HostAgentRestartSerializer,
     HostOperateLogSerializer, HostBatchValidateSerializer,
     HostBatchImportSerializer, HostDetailSerializer,
-    HostInitSerializer, HostsAgentStatusSerializer
+    HostInitSerializer, HostsAgentStatusSerializer,
+    HostReinstallSerializer, MonitorReinstallSerializer
 )
 from promemonitor.prometheus import Prometheus
 from promemonitor.grafana_url import explain_url
@@ -100,6 +101,28 @@ class HostListView(GenericViewSet, ListModelMixin, CreateModelMixin):
         exists_ls.extend(none_ls)
 
         return self.get_paginated_response(exists_ls)
+
+
+class HostReinstallView(GenericViewSet, CreateModelMixin):
+    """
+        create:
+        重启监控Agent接口
+    """
+    queryset = Host.objects.filter(is_deleted=False)
+    serializer_class = HostReinstallSerializer
+    # 操作信息描述
+    post_description = "重装主机Agent"
+
+
+class MonitorReinstallView(GenericViewSet, CreateModelMixin):
+    """
+        create:
+        重启监控Agent接口
+    """
+    queryset = Host.objects.filter(is_deleted=False)
+    serializer_class = MonitorReinstallSerializer
+    # 操作信息描述
+    post_description = "重装监控Agent"
 
 
 class HostDetailView(GenericViewSet, RetrieveModelMixin):
