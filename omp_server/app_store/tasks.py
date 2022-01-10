@@ -761,13 +761,14 @@ def check_monitor_data(detail_obj):
     return False, _ret_dic
 
 
-def add_prometheus(main_history_id):
+def add_prometheus(main_history_id, queryset=None):
     """ 添加服务到 Prometheus """
     logger.info("Add Prometheus Begin")
     prometheus = PrometheusUtils()
     # TODO 不同类型服务添加监控方式不同，后续版本优化
     # 仅更新已经安装完成的最新服务
-    queryset = DetailInstallHistory.objects.filter(
+    # 给monitor_agent刷新使用，提供detail_obj list。
+    queryset = queryset if queryset else DetailInstallHistory.objects.filter(
         main_install_history_id=main_history_id,
         install_step_status=DetailInstallHistory.INSTALL_STATUS_SUCCESS
     )

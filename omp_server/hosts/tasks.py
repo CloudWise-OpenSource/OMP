@@ -18,12 +18,17 @@ import traceback
 from django.conf import settings
 from celery import shared_task
 from celery.utils.log import get_task_logger
+from promemonitor.alertmanager import Alertmanager
 
-from db_models.models import Host
+from db_models.models import (
+    Host, Service,
+    HostOperateLog
+)
 from utils.plugin.ssh import SSH
 from utils.plugin.monitor_agent import MonitorAgentManager
 from utils.plugin.crypto import AESCryptor
 from utils.plugin.agent_util import Agent
+from app_store.tasks import add_prometheus
 
 # 屏蔽celery任务日志中的paramiko日志
 logging.getLogger("paramiko").setLevel(logging.WARNING)
@@ -61,11 +66,13 @@ def deploy_monitor_agent(host_obj, salt_flag=True):
         Host.objects.filter(ip=host_obj.ip).update(monitor_agent=0)
 
 
-def real_deploy_agent(host_obj):
+def real_deploy_agent(host_obj, need_monitor=True):
     """
     部署主机Agent
     :param host_obj: 主机对象
     :type host_obj Host
+    :param need_monitor: 是否部署monitor
+    :type need_monitor bool
     :return:
     """
     logger.info(
@@ -95,21 +102,24 @@ def real_deploy_agent(host_obj):
                 str(message)) > 200 else str(message)
         )
     # 部署监控agent
-    deploy_monitor_agent(host_obj=host_obj, salt_flag=flag)
+    if need_monitor:
+        deploy_monitor_agent(host_obj=host_obj, salt_flag=flag)
 
 
 @shared_task
-def deploy_agent(host_id):
+def deploy_agent(host_id, need_monitor=True):
     """
     部署主机Agent
     :param host_id:
+    :param need_monitor: 是否部署monitor
+    :type need_monitor bool
     :return:
     """
     try:
         host_obj = Host.objects.get(id=host_id)
         host_obj.host_agent = 3
         host_obj.save()
-        real_deploy_agent(host_obj=host_obj)
+        real_deploy_agent(host_obj=host_obj, need_monitor=need_monitor)
     except Exception as e:
         logger.error(
             f"Deploy Host Agent For {host_id} Failed with error: {str(e)};\n"
@@ -288,3 +298,84 @@ def insert_host_celery_task(host_id, init=False):
         Host.objects.filter(id=host_id).update(
             host_agent=Host.AGENT_DEPLOY_ERROR,
             host_agent_error=str(e))
+
+
+def write_host_log(host_queryset, status, result, username):
+    """ 写入主机日志 """
+    log_ls = []
+    for host in host_queryset:
+        log_ls.append(HostOperateLog(
+            username=username,
+            description=f"{status}[维护模式]",
+            result=result,
+            host=host))
+    HostOperateLog.objects.bulk_create(log_ls)
+
+
+def maintenance(host_obj, entry, username):
+    """ 进入 / 退出维护模式 """
+    # 根据 is_maintenance 判断主机进入 / 退出维护模式
+    status = "开启" if entry else "关闭"
+    en_status = "open" if entry else "close"
+    alert_manager = Alertmanager()
+    host_ls = [{"ip": host_obj.ip}]
+    if entry:
+        res_ls = alert_manager.set_maintain_by_host_list(host_ls)
+    else:
+        res_ls = alert_manager.revoke_maintain_by_host_list(host_ls)
+    # 操作失败
+    if not res_ls:
+        logger.error(f"host {en_status} maintain failed: {host_obj.ip}")
+        # 操作失败记录写入
+        write_host_log([host_obj], status, "failed", username)
+    # 操作成功
+    host_obj.is_maintenance = entry
+    host_obj.save()
+    logger.info(f"host {en_status} maintain success: {host_obj.ip}")
+    # 操作成功记录写入
+    write_host_log([host_obj], status, "success", username)
+
+
+@shared_task
+def reinstall_monitor_celery_task(host_id, username):
+    """ 重新安装主机监控 celery 任务 """
+    host_obj = Host.objects.filter(id=host_id).first()
+    maintenance(host_obj, True, username)
+    logger.info(
+        f"Restart Agent for {host_obj.ip}, Params: "
+        f"username: {host_obj.username}; "
+        f"port: {host_obj.port}; "
+        f"install_dir: {host_obj.agent_dir}!")
+    _obj = SSH(
+        hostname=host_obj.ip,
+        port=host_obj.port,
+        username=host_obj.username,
+        password=AESCryptor().decode(host_obj.password),
+    )
+    flag, message = _obj.cmd(
+        "ps -ef | grep omp_monitor_agent | grep -v grep | awk -F ' ' '{print $2}' | xargs kill -9")
+    logger.info(
+        f"Stop monitor agent for {host_obj.ip}: "
+        f"get flag: {flag}; get res: {message}")
+    # 删除目录，防止agent_dir异常保护系统
+    if host_obj.agent_dir:
+        monitor_dir = os.path.join(host_obj.agent_dir, "omp_monitor_agent")
+        flag, message = _obj.cmd(f"rm -rf {monitor_dir}")
+    logger.info(
+        f"Stop monitor agent for {host_obj.ip}: "
+        f"get flag: {flag}; get res: {message}")
+    deploy_monitor_agent(host_obj=host_obj, salt_flag=flag)
+    host_obj.refresh_from_db()
+    if host_obj.monitor_agent == 4:
+        maintenance(host_obj, False, username)
+        return
+    # 刷新prometheus服务列表监控配置,优化功能
+    service_obj_list = Service.objects.filter(ip=host_obj.ip)
+    detail_obj_list = []
+    for service_obj in service_obj_list:
+        detail_obj = service_obj.detailinstallhistory_set.first()
+        if detail_obj:
+            detail_obj_list.append(detail_obj)
+    if len(detail_obj_list) != 0:
+        add_prometheus(9999, detail_obj_list)
+    maintenance(host_obj, False, username)
