@@ -47,14 +47,14 @@ class ServiceRedisCrawl(Prometheus):
         """redis cpu使用率"""
         expr = f"service_process_cpu_percent{{instance='{self.instance}',app='{self.service_name}'}}"
         val = self.unified_job(*self.query(expr))
-        val = round(float(val), 4) if val else '0.00'
+        val = round(float(val), 4) if val else '-'
         self.ret['cpu_usage'] = f"{val}%"
 
     def mem_usage(self):
         """redis 内存使用率"""
         expr = f"service_process_memory_percent{{instance='{self.instance}',app='{self.service_name}'}}"
         val = self.unified_job(*self.query(expr))
-        val = round(float(val), 4) if val else '0.00'
+        val = round(float(val), 4) if val else '-'
         self.ret['mem_usage'] = f"{val}%"
 
     def conn_num(self):

@@ -47,14 +47,14 @@ class ServiceNacosCrawl(Prometheus):
         """nacos cpu使用率"""
         expr = f"service_process_cpu_percent{{instance='{self.instance}',app='{self.service_name}'}}"
         val = self.unified_job(*self.query(expr))
-        val = round(float(val), 4) if val else '0.00'
+        val = round(float(val), 4) if val else '-'
         self.ret['cpu_usage'] = f"{val}%"
 
     def mem_usage(self):
         """nacos 内存使用率"""
         expr = f"service_process_memory_percent{{instance='{self.instance}',app='{self.service_name}'}}"
         val = self.unified_job(*self.query(expr))
-        val = round(float(val), 4) if val else '0.00'
+        val = round(float(val), 4) if val else '-'
         self.ret['mem_usage'] = f"{val}%"
 
     def service_count(self):
@@ -62,78 +62,143 @@ class ServiceNacosCrawl(Prometheus):
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["service_count"] = val
+        self.basic.append({
+            "name": "service_count",
+            "name_cn": "注册服务数",
+            "value": val
+        })
 
     def ip_count(self):
         expr = f"max(nacos_monitor{{name='ipCount',env='{self.env}',instance='{self.instance}'}})"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["ip_count"] = val
+        self.basic.append({
+            "name": "ip_count",
+            "name_cn": "注册ip数",
+            "value": val
+        })
 
     def config_count(self):
         expr = f"max(nacos_monitor{{name='configCount',env='{self.env}',instance='{self.instance}'}})"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["config_count"] = val
+        self.basic.append({
+            "name": "config_count",
+            "name_cn": "注册config数",
+            "value": val
+        })
 
     def config_push_total(self):
         expr = f"sum(nacos_monitor{{name='getConfig',env='{self.env}',instance='{self.instance}'}}) by (name)"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["config_push_total"] = val
+        self.basic.append({
+            "name": "config_push_total",
+            "name_cn": "获取config数",
+            "value": val
+        })
 
     def threads(self):
         expr = f"max(jvm_threads_daemon_threads{{env='{self.env}',instance='{self.instance}'}})"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["threads"] = val
+        self.basic.append({
+            "name": "threads",
+            "name_cn": "后台线程数",
+            "value": val
+        })
 
     def notify_rt(self):
         expr = f"sum(rate(nacos_timer_seconds_sum{{env='{self.env}',instance='{self.instance}'}}[1m]))/sum(rate(nacos_timer_seconds_count{{env='{self.env}',instance='{self.instance}'}}[1m])) * 1000"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["notify_rt"] = val
+        self.basic.append({
+            "name": "notify_rt",
+            "name_cn": "notify_rt",
+            "value": val
+        })
 
     def long_polling(self):
         expr = f"sum(nacos_monitor{{name='longPolling', env='{self.env}',instance='{self.instance}'}})"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["long_polling"] = val
+        self.basic.append({
+            "name": "long_polling",
+            "name_cn": "long_polling",
+            "value": val
+        })
 
     def qps(self):
         expr = f"sum(rate(http_server_requests_seconds_count{{uri='/v1/cs/configs|/nacos/v1/ns/instance|/nacos/v1/ns/health', env='{self.env}',instance='{self.instance}'}}[1m])) by (method,uri)"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["qps"] = val
+        self.basic.append({
+            "name": "qps",
+            "name_cn": "qps",
+            "value": val
+        })
 
     def leader_status(self):
         expr = f"sum(nacos_monitor{{name='leaderStatus', env='{self.env}',instance='{self.instance}'}})"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["leader_status"] = val
+        self.basic.append({
+            "name": "leader_status",
+            "name_cn": "leader状态",
+            "value": val
+        })
 
     def avg_push_cost(self):
         expr = f"sum(nacos_monitor{{name='avgPushCost', env='{self.env}',instance='{self.instance}'}})"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["avg_push_cost"] = val
+        self.basic.append({
+            "name": "avg_push_cost",
+            "name_cn": "avg_push_cost",
+            "value": val
+        })
 
     def max_push_cost(self):
         expr = f"max(nacos_monitor{{name='maxPushCost', env='{self.env}',instance='{self.instance}'}})"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["max_push_cost"] = val
+        self.basic.append({
+            "name": "max_push_cost",
+            "name_cn": "max_push_cost",
+            "value": val
+        })
 
     def config_statistics(self):
         expr = f"sum(nacos_monitor{{name='publish', env='{self.env}',instance='{self.instance}'}}) by (name)"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["config_statistics"] = val
+        self.basic.append({
+            "name": "config_statistics",
+            "name_cn": "config_statistics",
+            "value": val
+        })
 
     def health_check(self):
         expr = f"sum(rate(nacos_monitor{{name='.*HealthCheck', env='{self.env}',instance='{self.instance}'}}[1m])) by (name) * 60"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["health_check"] = val
+        self.basic.append({
+            "name": "health_check",
+            "name_cn": "health_check",
+            "value": val
+        })
 
     def run(self):
         """统一执行实例方法"""

@@ -17,7 +17,8 @@ from db_models.models import (
 )
 from hosts.tasks import (
     host_agent_restart, init_host,
-    insert_host_celery_task
+    insert_host_celery_task, deploy_agent,
+    reinstall_monitor_celery_task
 )
 
 from utils.plugin.ssh import SSH
@@ -514,3 +515,33 @@ class HostsAgentStatusSerializer(Serializer):
         required=True, allow_empty=False,
         error_messages={"required": "必须包含[ip_list]字段"}
     )
+
+
+class HostReinstallSerializer(HostIdsSerializer):
+    """ 主机重新安装序列化类 """
+
+    def create(self, validated_data):
+        """ 主机重装 """
+        host_ids = validated_data.get("host_ids", [])
+        # 不重装监控agent
+        for host_id in host_ids:
+            deploy_agent.delay(host_id, need_monitor=False)
+        Host.objects.filter(
+            id__in=host_ids
+        ).update(init_status=Host.INIT_EXECUTING)
+        return validated_data
+
+
+class MonitorReinstallSerializer(HostIdsSerializer):
+    """ 监控重新安装序列化类 """
+
+    def create(self, validated_data):
+        """ 监控重装 """
+        host_ids = validated_data.get("host_ids", [])
+        user_name = self.context["request"].user.username
+        for host_id in host_ids:
+            reinstall_monitor_celery_task.delay(host_id, user_name)
+        Host.objects.filter(
+            id__in=host_ids
+        ).update(init_status=Host.INIT_EXECUTING)
+        return validated_data
