@@ -1587,7 +1587,7 @@ class DataJson(object):
         _ser_dic = {
             "ip": obj.ip,
             "name": obj.service.app_name,
-            "role": obj.service_role,
+            "role": obj.service_role if obj.service_role else "master",
             "instance_name": obj.service_instance_name,
             "cluster_name": obj.cluster.cluster_name if obj.cluster else None,
             "ports": json.loads(obj.service_port) if obj.service_port else [],

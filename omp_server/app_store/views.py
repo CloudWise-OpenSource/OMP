@@ -551,6 +551,10 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
         for k, v in app_controllers.items():
             if v != "":
                 service_controllers[k] = f"{base_dir}/{v}"
+        if "post_action" in app_obj.extend_fields:
+            service_controllers["post_action"] = os.path.join(
+                base_dir, app_obj.extend_fields.get("post_action")
+            )
         # 切分 ip 字段，构建服务实例名
         ip_split_ls = host_obj.ip.split(".")
         service_name = app_obj.app_name
