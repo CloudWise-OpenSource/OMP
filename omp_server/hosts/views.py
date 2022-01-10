@@ -1,10 +1,7 @@
 """
 主机相关视图
 """
-import os
 import logging
-from django.http import FileResponse
-from django.conf import settings
 from django.db import transaction
 
 from rest_framework.viewsets import GenericViewSet
@@ -33,6 +30,7 @@ from hosts.hosts_serializers import (
 from promemonitor.prometheus import Prometheus
 from promemonitor.grafana_url import explain_url
 from utils.common.exceptions import OperateError
+from utils.common.views import BaseDownLoadTemplateView
 
 logger = logging.getLogger("server")
 
@@ -194,7 +192,7 @@ class HostOperateLogView(GenericViewSet, ListModelMixin):
     get_description = "查询主机操作记录"
 
 
-class HostBatchValidateView(GenericViewSet, ListModelMixin, CreateModelMixin):
+class HostBatchValidateView(BaseDownLoadTemplateView, CreateModelMixin):
     """
         list:
         获取主机批量导入模板
@@ -209,19 +207,9 @@ class HostBatchValidateView(GenericViewSet, ListModelMixin, CreateModelMixin):
     post_description = "主机数据批量验证"
 
     def list(self, request, *args, **kwargs):
-        template_file_name = "import_hosts_template.xlsx"
-        template_path = os.path.join(
-            settings.BASE_DIR.parent,
-            "package_hub", "template", template_file_name)
-        try:
-            file = open(template_path, 'rb')
-            response = FileResponse(file)
-            response["Content-Type"] = "application/octet-stream"
-            response["Content-Disposition"] = f"attachment;filename={template_file_name}"
-        except FileNotFoundError:
-            logger.error("import_hosts_template.xlsx file not found")
-            raise OperateError("模板文件缺失")
-        return response
+        return super(HostBatchValidateView, self).list(
+            request, template_file_name="import_hosts_template.xlsx",
+            *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
