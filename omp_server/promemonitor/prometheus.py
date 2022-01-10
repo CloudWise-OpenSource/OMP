@@ -418,6 +418,7 @@ class Prometheus:
                                 float(item.get('value')[1]))
                             service_list[index]['cpu_status'] = self.get_service_metric_status('cpu', math.ceil(
                                 float(item.get('value')[1])))
+                            service_list[index]['has_cpu_value'] = 1
                             break
                         service_list[index]['cpu_usage'] = None
                         service_list[index]['cpu_status'] = None  # TODO  待阈值判断
@@ -435,9 +436,11 @@ class Prometheus:
                     logger.error('获取自研服务CPU使用率失败！')
                     return service_list
                 for index, ss_service in enumerate(service_list.copy()):
+                    if ss_service.get('has_cpu_value', 0) == 1:
+                        continue
                     for item in ss_cpu_usage_dict.get('data').get('result'):
                         if item.get('metric').get('instance') == ss_service.get('ip') \
-                                and item.get('metric').get('app') == ss_service.get('app_name') \
+                                and item.get('metric').get('job') == f"{ss_service.get('app_name')}Exporter" \
                                 and item.get('metric').get('env') == ss_service.get('env'):
                             service_list[index]['cpu_usage'] = math.ceil(
                                 float(item.get('value')[1]))
@@ -449,7 +452,7 @@ class Prometheus:
 
             else:
                 logger.error(os_cpu_response.text)
-                logger.error('获取开源服务CPU使用率失败！')
+                logger.error('获取自研服务CPU使用率失败！')
             return service_list
         except Exception as e:
             logger.error(f'获取服务cpu使用率失败，报错信息为：{e}')
@@ -457,8 +460,8 @@ class Prometheus:
 
     def get_service_mem_usage(self, service_list):
         open_source_query_url = f'{self.prometheus_api_query_url}service_process_memory_percent'
-        self_service_query_url = f'{self.prometheus_api_query_url}sum(jvm_memory_used_bytes{{area="nonheap"}}) ' \
-                                 f'/ sum(jvm_memory_max_bytes{{area="nonheap"}}) * 100'
+        jvm_total_bytes_query_url = f'{self.prometheus_api_query_url}sum(jvm_memory_max_bytes{{area="heap"}}) by (instance,job,application,env)'
+        node_total_bytes_query_url = f'{self.prometheus_api_query_url}node_memory_MemTotal_bytes'
         try:
             os_mem_response = requests.get(
                 url=open_source_query_url, headers=self.headers, auth=self.basic_auth)
@@ -469,46 +472,65 @@ class Prometheus:
                     logger.error('获取开源服务内存使用率失败！')
                     return service_list
                 for index, os_service in enumerate(service_list.copy()):
+                    service_list[index]['mem_usage'] = None
+                    service_list[index]['mem_status'] = None
                     for item in os_mem_usage_dict.get('data').get('result'):
                         if item.get('metric').get('instance') == os_service.get('ip') \
-                                and item.get('metric').get('metric').get('app') == os_service.get('app_name') \
+                                and item.get('metric').get('app') == os_service.get('app_name') \
                                 and item.get('metric').get('env') == os_service.get('env'):
                             service_list[index]['mem_usage'] = math.ceil(
                                 float(item.get('value')[1]))
                             service_list[index]['mem_status'] = self.get_service_metric_status('mem', math.ceil(
                                 float(item.get('value')[1])))
+                            service_list[index]['has_mem_value'] = 1
                             break
-                        service_list[index]['mem_usage'] = None
-                        service_list[index]['mem_status'] = None  # TODO  待阈值判断
+                        # service_list[index]['mem_usage'] = None
+                        # service_list[index]['mem_status'] = None
 
             else:
                 logger.error(os_mem_response.text)
                 logger.error('获取开源服务内存使用率失败！')
 
-            ss_mem_response = requests.get(
-                url=self_service_query_url, headers=self.headers, auth=self.basic_auth)
-            if ss_mem_response.status_code == 200:
-                ss_mem_usage_dict = ss_mem_response.json()
-                if ss_mem_usage_dict.get('status') != 'success':
-                    logger.error(ss_mem_response.text)
-                    logger.error('获取自研服务内存使用率失败！')
+            jtb_response = requests.get(
+                url=jvm_total_bytes_query_url, headers=self.headers, auth=self.basic_auth)
+            if jtb_response.status_code == 200:
+                jtb_dict = jtb_response.json()
+                if jtb_dict.get('status') != 'success':
+                    logger.error(jtb_response.text)
+                    logger.error('获取自研服务内存使用量失败！')
                     return service_list
-                for index, ss_service in enumerate(service_list.copy()):
-                    for item in ss_mem_usage_dict.get('data').get('result'):
+            else:
+                logger.error(os_mem_response.text)
+                logger.error('获取自研服务内存使用率失败！')
+                return service_list
+
+            ntb_response = requests.get(
+                url=node_total_bytes_query_url, headers=self.headers, auth=self.basic_auth)
+            if ntb_response.status_code == 200:
+                ntb_dict = ntb_response.json()
+                if ntb_dict.get('status') != 'success':
+                    logger.error(ntb_response.text)
+                    logger.error('获取自研服务内存使用量失败！')
+                    return service_list
+            else:
+                logger.error(os_mem_response.text)
+                logger.error('获取主机内存资源量失败！')
+                return service_list
+
+            for index, ss_service in enumerate(service_list.copy()):
+                if ss_service.get('has_mem_value', 0) == 1:
+                    continue
+                for item in jtb_dict.get('data').get('result'):
+                    for ele in ntb_dict.get('data').get('result'):
                         if item.get('metric').get('instance') == ss_service.get('ip') \
-                                and item.get('metric').get('app') == ss_service.get('app_name') \
-                                and item.get('env') == ss_service.get('env'):
+                                and item.get('metric').get('instance') == ele.get('metric').get('instance') \
+                                and item.get('metric').get('job') == f"{ss_service.get('app_name')}Exporter" \
+                                and item.get('metric').get('env') == ss_service.get('env'):
                             service_list[index]['mem_usage'] = math.ceil(
-                                float(item.get('value')[1]))
+                                float(item.get('value')[1]) / float(ele.get('value')[1]) * 100)
                             service_list[index]['mem_status'] = self.get_service_metric_status('mem', math.ceil(
                                 float(item.get('value')[1])))
                             break
-                        service_list[index]['mem_usage'] = None
-                        service_list[index]['mem_status'] = None  # TODO  待阈值判断
-
-            else:
-                logger.error(os_mem_response.text)
-                logger.error('获取开源服务内存使用率失败！')
             return service_list
         except Exception as e:
             logger.error(f'获取服务mem使用率失败，报错信息为：{e}')

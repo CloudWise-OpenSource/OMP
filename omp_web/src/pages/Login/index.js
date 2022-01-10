@@ -42,7 +42,7 @@ const Login = withRouter(({ history }) => {
             },
           });
           //console.log(data)
-          localStorage.setItem("username",data.username)
+          localStorage.setItem("username", data.username);
         }
       })
       .catch((e) => {
@@ -51,9 +51,9 @@ const Login = withRouter(({ history }) => {
       .finally(() => setLoading(false));
   }
 
-  useEffect(()=>{
-    logout("loginPage")
-  },[])
+  useEffect(() => {
+    logout("loginPage");
+  }, []);
 
   return (
     <OmpContentWrapper

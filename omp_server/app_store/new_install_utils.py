@@ -40,7 +40,7 @@ from app_store.deploy_role_utils import DEPLOY_ROLE_UTILS
 logger = logging.getLogger("server")
 
 DIR_KEY = "{data_path}"
-UNIQUE_KEY_ERROR = "后台无法追踪此流程,请重新进行安装操作!"
+UNIQUE_KEY_ERROR = "后台无法追踪此流程或安装流程已开始,请查看安装记录或重新进入部署流程!"
 WEB_CONTAINERS = ["tengine"]
 
 
@@ -59,6 +59,15 @@ class RedisDB(object):
             db=15,
             password=OMP_REDIS_PASSWORD
         )
+
+    def delete_keys(self, keyword):
+        """
+        删除以某个关键字开头的key
+        :param keyword: 关键字
+        :return:
+        """
+        for key in self.conn.scan_iter(f"{keyword}*"):
+            self.conn.delete(key)
 
     def set(self, name, data, timeout=60 * 60 * 8):
         """
@@ -100,6 +109,13 @@ class BaseRedisData(object):
     def __init__(self, unique_key):
         self.unique_key = unique_key
         self.redis = RedisDB()
+
+    def delete_all_keys(self):
+        """
+        删除unique_key相关数据
+        :return:
+        """
+        self.redis.delete_keys(keyword=self.unique_key)
 
     def _get(self, key):
         """
@@ -1963,6 +1979,8 @@ class CreateInstallPlan(object):
                 MainInstallHistory.objects.filter(id=main_obj.id).update(
                     task_id=task_id
                 )
+                # 删除redis中缓存的安装临时数据
+                BaseRedisData(unique_key=self.unique_key).delete_all_keys()
                 # 更新主机上的服务数量
                 _ser_ip_lst = DetailInstallHistory.objects.filter(
                     main_install_history=main_obj,

@@ -1,7 +1,6 @@
 """
 应用商店相关视图
 """
-import os
 import uuid
 import json
 import time
@@ -15,8 +14,6 @@ from rest_framework.mixins import (
 )
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
-from django.http import FileResponse
-from django.conf import settings
 from django.db import transaction
 from django_filters.rest_framework.backends import DjangoFilterBackend
 
@@ -45,6 +42,7 @@ from app_store.app_store_serializers import (
 from app_store import tmp_exec_back_task
 
 from utils.common.exceptions import OperateError
+from utils.common.views import BaseDownLoadTemplateView
 from app_store.tasks import publish_entry
 from rest_framework.filters import OrderingFilter
 from utils.parse_config import (
@@ -337,7 +335,7 @@ class LocalPackageScanResultView(GenericViewSet, ListModelMixin):
             ).count()
             message = f"共扫描到 {len(package_names_lst)} 个安装包，" \
                       f"正在校验中..." \
-                      f"({len(package_names_lst)-count}/{len(package_names_lst)})"
+                      f"({len(package_names_lst) - count}/{len(package_names_lst)})"
         elif stage_status == "check_all_failed":
             message = f"共计 {len(package_names_lst)} 个安装包校验失败!"
         elif stage_status == "publishing":
@@ -392,7 +390,7 @@ class LocalPackageScanResultView(GenericViewSet, ListModelMixin):
         return Response(res)
 
 
-class ApplicationTemplateView(GenericViewSet, ListModelMixin):
+class ApplicationTemplateView(BaseDownLoadTemplateView):
     """
         list:
         获取应用商店下载模板
@@ -401,20 +399,9 @@ class ApplicationTemplateView(GenericViewSet, ListModelMixin):
     get_description = "应用商店下载组件模板"
 
     def list(self, request, *args, **kwargs):
-        template_file_name = "app_publish_readme.md"
-        template_path = os.path.join(
-            settings.BASE_DIR.parent,
-            "package_hub", "template", template_file_name)
-        try:
-            file = open(template_path, 'rb')
-            response = FileResponse(file)
-            response["Content-Type"] = "application/octet-stream"
-            response["Content-Disposition"] = \
-                f"attachment;filename={template_file_name}"
-        except FileNotFoundError:
-            logger.error("template.md file not found")
-            raise OperateError("组件模板文件缺失")
-        return response
+        return super(ApplicationTemplateView, self).list(
+            request, template_file_name="app_publish_readme.md",
+            *args, **kwargs)
 
 
 class DeploymentOperableView(GenericViewSet, ListModelMixin):
@@ -431,7 +418,7 @@ class DeploymentOperableView(GenericViewSet, ListModelMixin):
         return Response(not self.get_queryset().exists())
 
 
-class DeploymentTemplateView(GenericViewSet, ListModelMixin):
+class DeploymentTemplateView(BaseDownLoadTemplateView):
     """
           list:
           获取部署计划模板
@@ -440,20 +427,9 @@ class DeploymentTemplateView(GenericViewSet, ListModelMixin):
     get_description = "获取部署计划模板"
 
     def list(self, request, *args, **kwargs):
-        template_file_name = "deployment.xlsx"
-        template_path = os.path.join(
-            settings.BASE_DIR.parent,
-            "package_hub", "template", template_file_name)
-        try:
-            file = open(template_path, 'rb')
-            response = FileResponse(file)
-            response["Content-Type"] = "application/octet-stream"
-            response["Content-Disposition"] = \
-                f"attachment;filename={template_file_name}"
-        except FileNotFoundError:
-            logger.error("template.md file not found")
-            raise OperateError("组件模板文件缺失")
-        return response
+        return super(DeploymentTemplateView, self).list(
+            request, template_file_name="deployment.xlsx",
+            *args, **kwargs)
 
 
 class DeploymentPlanListView(GenericViewSet, ListModelMixin):
