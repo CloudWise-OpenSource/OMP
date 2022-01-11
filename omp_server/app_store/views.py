@@ -616,7 +616,8 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
         if not host_queryset.exists():
             raise OperateError("导入失败，主机未纳管")
         # 构建 uuid
-        operation_uuid = uuid.uuid4()
+        operation_uuid = serializer.data.get("operation_uuid") if \
+            serializer.data.get("operation_uuid") else uuid.uuid4()
 
         try:
             # 服务对象列表、基础环境字典

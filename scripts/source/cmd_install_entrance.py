@@ -8,6 +8,7 @@
 
 """
 通过命令行安装应用、产品的主体逻辑
+# TODO 主机Agent安装错误时处理逻辑需要补充进来
 """
 
 import os
@@ -33,6 +34,7 @@ from db_models.models import UserProfile
 from db_models.models import MainInstallHistory
 from db_models.models import DetailInstallHistory
 from app_store.cmd_install_utils import ReadDeploymentExcel
+from utils.plugin.public_utils import get_file_md5
 
 HOST_AGENT_WAIT_TIME = 60 * 10
 INFO_FRESH_SECOND = 5
@@ -74,9 +76,9 @@ class DjangoClient(object):
 class MainProcess(object):
     """ 命令行主体安装执行类 """
 
-    def __init__(self, excel_path):
+    def __init__(self, excel_path, excel_md5_value):
         self.excel_path = excel_path
-        self.operation_uuid = None
+        self.operation_uuid = excel_md5_value
         self.host = list()
         self.service = dict()
         self.client = DjangoClient()
@@ -173,7 +175,8 @@ class MainProcess(object):
             })
         data = {
             "instance_info_ls": instance_info_ls,
-            "service_data_ls": self.service.get("service_data_ls")
+            "service_data_ls": self.service.get("service_data_ls"),
+            "operation_uuid": self.operation_uuid
         }
         res = self.client.post(
             url="/api/appStore/deploymentPlanImport/",
@@ -181,7 +184,6 @@ class MainProcess(object):
         )
         if res.get("code") != 0:
             return False, res.get("message")
-        self.operation_uuid = res.get("data", {}).get("operation_uuid")
         return True, "服务分布信息入库成功"
 
     def step_6(self):
@@ -227,6 +229,8 @@ class MainProcess(object):
         )
         if res.get("code") != 0:
             return False, res.get("message")
+        # 增加 5s 等待时间
+        time.sleep(10)
         return True, "执行安装操作成功"
 
     def step_8(self):
@@ -317,7 +321,7 @@ class MainProcess(object):
         }
         return status_dic
 
-    def run(self):
+    def _run(self, start_step=1):
         """
         安装主体程序运行入口
         :return:
@@ -333,7 +337,7 @@ class MainProcess(object):
             "step_8": "调用安装进度显示接口"
         }
         self.print_log("开始进入安装流程")
-        for i in range(1, 20):
+        for i in range(start_step, 20):
             if not hasattr(self, f"step_{i}"):
                 break
             step_pre_msg = step_map_dic[f"step_{i}"]
@@ -347,14 +351,41 @@ class MainProcess(object):
             self.print_log(f"[{step_pre_msg}]执行成功")
         self.print_log("安装成功, 程序结束!")
 
+    def run(self):
+        """
+        初次安装操作
+        :return:
+        """
+        self._run(start_step=1)
+
+    def run_retry(self):
+        """
+        重试安装操作
+        :return:
+        """
+        self._run(start_step=7)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--excel_path", "-data_json",
+        "--excel_path", "-excel_path",
         required=False, help="excel文件位置",
         default=os.path.join(os.path.dirname(PROJECT_DIR), "deployment.xlsx")
     )
     param = parser.parse_args()
     excel_path_arg = param.excel_path
-    MainProcess(excel_path=excel_path_arg).run()
+    if not os.path.exists(excel_path_arg):
+        MainProcess(
+            excel_path=excel_path_arg, excel_md5_value=None
+        ).print_log(
+            f"文件{excel_path_arg}不存在!", error=True
+        )
+        sys.exit(1)
+    _, excel_md5 = get_file_md5(excel_path_arg)
+    if MainInstallHistory.objects.filter(operation_uuid=excel_md5).exists():
+        MainProcess(
+            excel_path=excel_path_arg, excel_md5_value=excel_md5).run_retry()
+    else:
+        MainProcess(
+            excel_path=excel_path_arg, excel_md5_value=excel_md5).run()
