@@ -1,6 +1,7 @@
 """
 应用商店相关视图
 """
+import os
 import uuid
 import json
 import time

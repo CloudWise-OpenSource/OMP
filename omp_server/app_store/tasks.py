@@ -829,6 +829,34 @@ def add_prometheus(main_history_id, queryset=None):
     logger.info("Add Prometheus End")
 
 
+def make_inspection(username):
+    """
+    触发巡检任务
+    :param username:
+    :return:
+    """
+    logger.info("安装成功后触发巡检任务")
+    from rest_framework.test import APIClient
+    from rest_framework.reverse import reverse
+    from db_models.models import UserProfile
+    from db_models.models import Env
+    data = {
+        "inspection_name": "mock", "inspection_type": "deep",
+        "inspection_status": "1", "execute_type": "man",
+        "inspection_operator": username, "env": Env.objects.last().id
+    }
+    user = UserProfile.objects.filter(username=username).last()
+    client = APIClient()
+    client.force_authenticate(user)
+    res = client.post(
+        path=reverse("history-list"),
+        data=json.dumps(data),
+        content_type="application/json"
+    ).json()
+    logger.info(f"安装成功后触发巡检任务的结果为: {res}")
+    return res
+
+
 @shared_task
 def install_service(main_history_id, username="admin"):
     """
@@ -862,3 +890,10 @@ def install_service(main_history_id, username="admin"):
 
     # 安装成功，则注册服务至监控
     add_prometheus(main_history_id)
+
+    # 安装成功，触发巡检任务
+    if MainInstallHistory.objects.filter(
+            id=main_history_id,
+            install_status=MainInstallHistory.INSTALL_STATUS_SUCCESS
+    ).exists():
+        make_inspection(username=username)
