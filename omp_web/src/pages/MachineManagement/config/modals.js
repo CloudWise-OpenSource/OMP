@@ -323,6 +323,37 @@ export const AddMachineModal = ({
           label="用户名"
           name="username"
           key="username"
+          extra={
+            <span style={{ fontSize: 10 }}>
+              使用
+              <strong
+                style={{
+                  fontWeight: 700,
+                  color: "#595959",
+                  margin: "0 1px 0 1px",
+                }}
+              >
+                普通用户
+              </strong>
+              纳管主机时，为确保正常安装服务，请
+              <a
+                style={{
+                  fontWeight: 700,
+                  margin: "0 1px 0 1px",
+                }}
+                onClick={() => {
+                  let a = document.createElement("a");
+                  a.href = apiRequest.machineManagement.downInitScript;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                }}
+              >
+                下载
+              </a>
+              主机初始化脚本，并手动执行
+            </span>
+          }
           rules={[
             {
               required: true,
