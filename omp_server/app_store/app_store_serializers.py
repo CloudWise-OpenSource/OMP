@@ -790,6 +790,12 @@ class DeploymentImportSerializer(Serializer):
         error_messages={"required": "必须包含[host_list]字段"}
     )
 
+    operation_uuid = serializers.CharField(
+        max_length=64,
+        help_text="唯一操作id",
+        required=False
+    )
+
 
 class DeploymentPlanListSerializer(ModelSerializer):
     """ 部署计划列表序列化类 """
