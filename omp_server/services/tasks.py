@@ -40,10 +40,25 @@ def delete_action(service_obj):
     return result
 
 
+def get_app_dir(service_obj):
+    """获取服务app_dir"""
+    base_dir = ""
+    install_detail_args = service_obj.detailinstallhistory_set.first().install_detail_args
+    base_dir_dict = {
+        "base_dir":
+            args.get("default") for args in install_detail_args.get("install_args")
+        if args.get("key") == "base_dir"
+    }
+    base_dir = base_dir_dict.get("base_dir", "")
+    if base_dir and len(base_dir) >= 5:
+        return base_dir
+
+
 def delete_file(service_controllers, service_obj):
     """
     删除文件操作
     """
+    cron_del_str = ""
     salt_obj = SaltClient()
     exe_action = service_controllers.get("stop", "")
     if "hadoop" in exe_action:
@@ -59,12 +74,20 @@ def delete_file(service_controllers, service_obj):
                 break
             logger.info(f"执行 [delete] 操作 {is_success}，原因: {info}")
     base_dir = delete_action(service_obj)
+    app_dir = get_app_dir(service_obj)
+    # TODO 删除定时任务
+    cron_del_str = f"crontab -l |grep -v {app_dir} 2>/dev/null | crontab -"
+    cmd_res, msg = salt_obj.cmd(
+        service_obj.ip, cron_del_str, 600
+    )
+    logger.info(f"执行 [delete] crontab操作 {cmd_res}, 原因: {msg}")
+
     # 删除安装路径
     if base_dir:
         is_success, info = salt_obj.cmd(
             service_obj.ip, f"rm -rf {base_dir}", 600)
         logger.info(f"执行 [delete] 操作 {is_success}，原因: {info}")
-        return is_success
+        return cmd_res and is_success
 
 
 @shared_task
