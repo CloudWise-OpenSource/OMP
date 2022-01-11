@@ -410,6 +410,9 @@ class Prometheus:
                     logger.error('获取开源服务CPU使用率失败！')
                     return service_list
                 for index, os_service in enumerate(service_list.copy()):
+                    if os_service.get('app_name') == 'hadoop':
+                        os_service['app_name'] = os_service.get(
+                            'service_instance_name', 'hadoop').split('_')[0]
                     for item in os_cpu_usage_dict.get('data').get('result'):
                         if item.get('metric').get('instance') == os_service.get('ip') \
                                 and item.get('metric').get('app') == os_service.get('app_name') \
