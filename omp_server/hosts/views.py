@@ -304,15 +304,22 @@ class HostBatchImportView(GenericViewSet, CreateModelMixin):
         return Response("添加成功")
 
 
-class HostInitView(GenericViewSet, CreateModelMixin):
+class HostInitView(BaseDownLoadTemplateView, CreateModelMixin):
     """
         create:
         主机初始化
     """
     queryset = Host.objects.filter(is_deleted=False)
     serializer_class = HostInitSerializer
+    # 操作描述信息
+    get_description = "应用商店下载组件模板"
     # 操作信息描述
     post_description = "主机初始化"
+
+    def list(self, request, *args, **kwargs):
+        return super(HostInitView, self).list(
+            request, template_file_name="init_host.py",
+            parent_path="_modules", *args, **kwargs)
 
 
 class HostsAgentStatusView(GenericViewSet, CreateModelMixin):

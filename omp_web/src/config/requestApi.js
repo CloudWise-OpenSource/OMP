@@ -31,6 +31,8 @@ export const apiRequest = {
     restartMonitorAgent: "/api/promemonitor/restartMonitorAgent/",
     // 主机进入退出维护模式
     hostsMaintain: "/api/hosts/maintain/",
+    // 主机初始化脚本下载地址
+    downInitScript: "/api/hosts/hostInit/",
     // 主机初始化
     hostInit: "/api/hosts/hostInit/",
     // 主机agent状态查询
