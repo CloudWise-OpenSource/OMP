@@ -12,6 +12,7 @@ from rest_framework.serializers import ModelSerializer
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import Serializer
 from utils.common.exceptions import OperateError
+from utils.plugin.public_utils import check_is_ip_address
 from app_store.tmp_exec_back_task import front_end_verified_init
 
 from db_models.models import (
@@ -26,6 +27,7 @@ from app_store.install_utils import (
     ValidateExistService, ValidateInstallService,
     CreateInstallPlan
 )
+from utils.parse_config import HADOOP_ROLE
 
 logger = logging.getLogger("server")
 
@@ -750,10 +752,14 @@ class DeploymentPlanValidateSerializer(Serializer):
                                           f"缺失依赖产品 {name}-{version}"
                     })
 
+        # hadoop 实例列表、角色集合
+        hadoop_instance_ls = []
+        hadoop_role_set = set()
+
         for service_data in service_data_ls:
             # 校验主机数据是否已经存在
             if service_data.get("instance_name") not in instance_name_ls:
-                service_data["validate_error"] = "主机数据不在表格中"
+                service_data["validate_error"] = "主机不在表格中"
                 result_dict["error"].append(service_data)
                 continue
             # 校验服务是否存在
@@ -762,7 +768,43 @@ class DeploymentPlanValidateSerializer(Serializer):
             ).order_by("-created").exists():
                 service_data["validate_error"] = "服务不在应用商店中"
                 result_dict["error"].append(service_data)
+                continue
+            # 如果含 vip 字段，校验是否为 IP 格式
+            if service_data.get("vip"):
+                is_valid, _ = check_is_ip_address(
+                    service_data.get("vip"))
+                if not is_valid:
+                    service_data["validate_error"] = "虚拟IP不合法"
+                    result_dict["error"].append(service_data)
+                    continue
+            # 如果含 role 字段，校验是否含中文逗号
+            if service_data.get("role") and \
+                    "，" in service_data.get("role"):
+                service_data["validate_error"] = "角色请用英文逗号分隔"
+                result_dict["error"].append(service_data)
+                continue
+            # 当服务名为 hadoop 时，记录 hadoop 实例列表、角色集合
+            if service_data.get("service_name") == "hadoop":
+                hadoop_instance_ls.append(service_data)
+                if service_data.get("role"):
+                    hadoop_role_set = hadoop_role_set | set(
+                        service_data.get("role").split(","))
+                continue
             result_dict["correct"].append(service_data)
+
+        # 如果存在 hadoop 实例，则校验角色
+        if hadoop_instance_ls:
+            key_name = "single"
+            if len(hadoop_instance_ls) > 1:
+                key_name = "cluster"
+            diff = set(HADOOP_ROLE.get(key_name)) - hadoop_role_set
+            if diff:
+                for hadoop_instance in hadoop_instance_ls:
+                    hadoop_instance["validate_error"] = f"缺少角色{','.join(diff)}"
+                    result_dict["error"].append(hadoop_instance)
+            else:
+                for hadoop_instance in hadoop_instance_ls:
+                    result_dict["correct"].append(hadoop_instance)
 
         # 按照 row 行号对列表进行排序
         for v in result_dict.values():

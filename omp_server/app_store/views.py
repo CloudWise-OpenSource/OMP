@@ -498,7 +498,7 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
 
     @staticmethod
     def _add_service(service_obj_ls, host_obj, app_obj, env_obj, only_dict,
-                     cluster_dict, is_base_env=False):
+                     cluster_dict, is_base_env=False, vip=None, role=None):
         """ 添加服务 """
         # 服务端口
         service_port = app_obj.app_port
@@ -583,6 +583,8 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
             env=env_obj,
             service_connect_info=connection_obj,
             cluster_id=cluster_id,
+            vip=vip,
+            service_role=role,
         ))
 
     def create(self, request, *args, **kwargs):
@@ -631,6 +633,9 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
             for service_data in service_data_ls:
                 instance_name = service_data.get("instance_name")
                 service_name = service_data.get("service_name")
+                # 服务的角色、虚拟IP
+                vip = service_data.get("vip")
+                role = service_data.get("role")
                 # 主机、应用对象
                 host_obj = host_queryset.filter(
                     instance_name=instance_name).first()
@@ -667,7 +672,7 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                 # 添加服务
                 self._add_service(
                     service_obj_ls, host_obj, app_obj, default_env,
-                    only_dict, cluster_dict)
+                    only_dict, cluster_dict, vip=vip, role=role)
 
             # 亲和力为 tengine 字段 (Web 服务) 列表
             app_target = ApplicationHub.objects.filter(
