@@ -1252,7 +1252,7 @@ class DeploymentPlan(models.Model):
 class BackupSetting(models.Model):
 
     # 校验是否安装该服务，支持的服务
-    backup_service = models.JSONField("备份服务名称")
+    backup_instances = models.JSONField("备份服务实例名称", default=dict)
     is_on = models.BooleanField("是否开启", default=False)
     crontab_detail = models.JSONField("定时任务详情")
     retain_day = models.IntegerField("文件保存天数", default=1)
@@ -1264,7 +1264,7 @@ class BackupSetting(models.Model):
         verbose_name = verbose_name_plural = '备份设置'
 
 
-class BackupHistory(models.Model):
+class BackupHistory(TimeStampMixin):
 
     backup_name = models.CharField("备份任务名称", max_length=128)
     content = models.JSONField('备份内容(服务名):["mysql","arangodb"]')
