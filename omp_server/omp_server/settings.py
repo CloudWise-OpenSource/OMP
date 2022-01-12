@@ -247,3 +247,8 @@ EMAIL_USE_SSL = True
 CUSTOM_THRESHOLD_SERVICES = {
     "kafka": {"kafka_consumergroup_lag"}
 }
+
+# 备份相关配置
+# 可备份的组件
+BACKUP_SERVICE = {"mysql", "arangodb"}
+BACKUP_DEFAULT_PATH = os.path.join(PROJECT_DIR, "data/backup_files")
