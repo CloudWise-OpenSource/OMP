@@ -64,6 +64,7 @@ class ServiceBeanstalkCrawl(Prometheus):
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["total_connections"] = val
+
         self.basic.append({
             "name": "total_connections",
             "name_cn": "总连接数",
@@ -75,6 +76,7 @@ class ServiceBeanstalkCrawl(Prometheus):
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["total_jobs"] = val
+
         self.basic.append({
             "name": "total_jobs",
             "name_cn": "总任务数",
@@ -86,6 +88,7 @@ class ServiceBeanstalkCrawl(Prometheus):
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["buried_jobs"] = val
+
         self.basic.append({
             "name": "buried_jobs",
             "name_cn": "buried job数",
@@ -97,6 +100,7 @@ class ServiceBeanstalkCrawl(Prometheus):
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["delayed_jobs"] = val
+
         self.basic.append({
             "name": "delayed_jobs",
             "name_cn": "延迟的job数",
@@ -108,6 +112,7 @@ class ServiceBeanstalkCrawl(Prometheus):
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["timeout_job_num"] = val
+
         self.basic.append({
             "name": "timeout_job_num",
             "name_cn": "超时的job数",
@@ -119,6 +124,7 @@ class ServiceBeanstalkCrawl(Prometheus):
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["stats_cmd_num"] = val
+
         self.basic.append({
             "name": "stats_cmd_num",
             "name_cn": "stats命令数",
@@ -130,6 +136,7 @@ class ServiceBeanstalkCrawl(Prometheus):
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["reverse_cmd_num"] = val
+
         self.basic.append({
             "name": "reverse_cmd_num",
             "name_cn": "reverse命令数",
@@ -141,6 +148,7 @@ class ServiceBeanstalkCrawl(Prometheus):
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["release_cmd_num"] = val
+
         self.basic.append({
             "name": "release_cmd_num",
             "name_cn": "release命令数",
@@ -152,6 +160,7 @@ class ServiceBeanstalkCrawl(Prometheus):
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["put_cmd_num"] = val
+
         self.basic.append({
             "name": "put_cmd_num",
             "name_cn": "put命令数",
@@ -163,6 +172,7 @@ class ServiceBeanstalkCrawl(Prometheus):
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["peek_cmd_num"] = val
+
         self.basic.append({
             "name": "peek_cmd_num",
             "name_cn": "peak命令数",
@@ -174,6 +184,7 @@ class ServiceBeanstalkCrawl(Prometheus):
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["kick_cmd_num"] = val
+
         self.basic.append({
             "name": "kick_cmd_num",
             "name_cn": "kick命令数",
@@ -185,6 +196,7 @@ class ServiceBeanstalkCrawl(Prometheus):
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["ignore_cmd_num"] = val
+
         self.basic.append({
             "name": "ignore_cmd_num",
             "name_cn": "ignore命令数",
@@ -196,6 +208,7 @@ class ServiceBeanstalkCrawl(Prometheus):
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["delete_cmd_num"] = val
+
         self.basic.append({
             "name": "delete_cmd_num",
             "name_cn": "delete命令数",
@@ -207,6 +220,7 @@ class ServiceBeanstalkCrawl(Prometheus):
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["bury_cmd_num"] = val
+
         self.basic.append({
             "name": "bury_cmd_num",
             "name_cn": "bury命令数",
