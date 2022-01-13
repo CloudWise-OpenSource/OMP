@@ -10,19 +10,44 @@ import os
 from django.conf import settings
 from django.core.validators import EmailValidator
 from rest_framework import status
-from rest_framework.mixins import ListModelMixin, CreateModelMixin, UpdateModelMixin, DestroyModelMixin
+from rest_framework.mixins import ListModelMixin, CreateModelMixin, DestroyModelMixin
 from rest_framework.serializers import Serializer
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.response import Response
 
+from backups.backups_serializers import BackupHistorySerializer
 from backups.backups_utils import send_email as utils_send_email, rm_backend_file, transfer_week
-from db_models.models import BackupSetting, BackupHistory, Env, ApplicationHub, ModuleSendEmailSetting
+from db_models.models import BackupSetting, BackupHistory, Env, ModuleSendEmailSetting, Service
+from utils.common.paginations import PageNumberPager
 from utils.plugin.crontab_utils import CrontabUtils
 
 logger = logging.getLogger("server")
 
 
-class BackupSettingView(GenericViewSet, ListModelMixin, CreateModelMixin, UpdateModelMixin):
+class CanBackupInstancesView(GenericViewSet, ListModelMixin):
+    """
+    获取可备份实例列表
+    """
+    get_description = "读取可备份实例列表"
+    serializer_class = Serializer
+
+    def list(self, request, *args, **kwargs):
+        env_id = request.GET.get("env_id", '1')  # 取不到则默认值为1
+        try:
+            Env.objects.get(id=int(env_id))
+        except Exception as e:
+            logger.error(f"id为{env_id}的环境不存在!详情：{e}")
+            return Response(data={"code": 1, "message": f"id为{env_id}的环境不存在!"})
+        can_backup_instance = Service.objects.filter(
+            env_id=env_id,
+            service__app_name__in=settings.BACKUP_SERVICE
+        ).distinct().values_list("service_instance_name", flat=True)
+        return Response(
+            data=can_backup_instance
+        )
+
+
+class BackupSettingView(GenericViewSet, ListModelMixin, CreateModelMixin):
     """
     操作备份策略
     """
@@ -33,17 +58,20 @@ class BackupSettingView(GenericViewSet, ListModelMixin, CreateModelMixin, Update
     serializer_class = Serializer
 
     def list(self, request, *args, **kwargs):
-        env_id = request.GET.get("env_id")
+        """
+        读取备份策略
+        """
+        env_id = request.GET.get("env_id", '1')  # 取不到则默认值为1
         try:
             Env.objects.get(id=int(env_id))
         except Exception as e:
             logger.error(f"id为{env_id}的环境不存在!详情：{e}")
             return Response(data={"code": 1, "message": f"id为{env_id}的环境不存在!"})
         backup_setting = BackupSetting.objects.filter(env_id=env_id).first()
-        can_backup_service = ApplicationHub.objects.filter(
+        can_backup_instance = Service.objects.filter(
             env_id=env_id,
-            service_name__in=settings.BACKUP_SERVICE
-        ).distinct().values_list("service_name", flat=True)
+            service__app_name__in=settings.BACKUP_SERVICE
+        ).distinct().values_list("service_instance_name", flat=True)
         email_setting = ModuleSendEmailSetting.get_email_settings(
             env_id, BackupSetting.__name__)
         if email_setting:
@@ -55,7 +83,7 @@ class BackupSettingView(GenericViewSet, ListModelMixin, CreateModelMixin, Update
         if not backup_setting:
             return Response(
                 data={
-                    "can_backup_service": list(can_backup_service),
+                    "can_backup_instance": list(can_backup_instance),
                     "backup_setting": {
                         "retain_path": settings.BACKUP_DEFAULT_PATH,
                         "to_users": to_users,
@@ -65,9 +93,9 @@ class BackupSettingView(GenericViewSet, ListModelMixin, CreateModelMixin, Update
             )
         return Response(
             data={
-                "can_backup_service": list(can_backup_service),
+                "can_backup_instance": list(can_backup_instance),
                 "backup_setting": {
-                    "backup_service": backup_setting.backup_service,
+                    "backup_instances": backup_setting.backup_instances,
                     "is_on": backup_setting.is_on,
                     "crontab_detail": backup_setting.crontab_detail,
                     "retain_day": backup_setting.retain_day,
@@ -94,17 +122,19 @@ class BackupSettingView(GenericViewSet, ListModelMixin, CreateModelMixin, Update
                     return message
         return ""
 
-    def update(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):
+        """
+        更新备份策略
+        """
         request_data = json.loads(request.body)
-        env_id = request_data.get("env_id")
+        env_id = request_data.get("env_id", "1")
         try:
             Env.objects.get(id=int(env_id))
         except Exception as e:
             logger.error(f"id为{env_id}的环境不存在!详情：{e}")
             return Response(data={"code": 1, "message": f"id为{env_id}的环境不存在!"})
         is_on = request_data.get("is_on", False)
-        old_setting = BackupSetting.objects.filter(env_id=env_id).first()
-        backup_services = request_data.get("backup_service")
+        backup_instances = request_data.get("backup_instances")
         send_email = request_data.get("send_email", False)
         to_users = request_data.get("to_users", "")
         err_message = self.validate_email_send(send_email, to_users)
@@ -114,31 +144,27 @@ class BackupSettingView(GenericViewSet, ListModelMixin, CreateModelMixin, Update
             ModuleSendEmailSetting.update_email_settings(
                 env_id, BackupSetting.__name__, send_email, to_users
             )
-        # v1.5.0 修改
-        backup_setting = BackupSetting.objects.filter(
-            env_id=env_id
-        ).first()
+        backup_setting = BackupSetting.objects.filter(env_id=env_id).first()
         # 关闭定时策略，删除定时任务
         if not is_on:
-            if old_setting:
+            if backup_setting:
                 try:
                     task_name = request.data.get('xxx')  # TODO 填充task_name
                     exe_cron_obj = CrontabUtils(task_name=task_name)
                     exe_cron_obj.delete_job()
                 except Exception as e:
                     logger.info(f"删除定时任务失败！{str(e)}")
-                if backup_setting:
-                    backup_setting.is_on = False
-                    backup_setting.backup_service = backup_services
-                    backup_setting.save()
-                else:
-                    BackupSetting.objects.create(
-                        env_id=env_id,
-                        backup_service=backup_services,
-                        crontab_detail={},
-                        retain_day=7,
-                        retain_path=settings.BACKUP_DEFAULT_PATH
-                    )
+                backup_setting.is_on = False
+                backup_setting.backup_instances = backup_instances
+                backup_setting.save()
+            else:
+                BackupSetting.objects.create(
+                    env_id=env_id,
+                    backup_service=backup_instances,
+                    crontab_detail={},
+                    retain_day=7,
+                    retain_path=settings.BACKUP_DEFAULT_PATH
+                )
             return Response({})
         retain_day = request_data.get("retain_day", 1)
         retain_path = request_data.get("retain_path", "")
@@ -155,33 +181,29 @@ class BackupSettingView(GenericViewSet, ListModelMixin, CreateModelMixin, Update
             logger.info(f"校验文件夹权限失败：{str(e)}")
             return Response(data={"code": 1, "message": "请确定程序对备份文件保存文件夹有读写权限！"})
 
-        if not backup_services:
+        if not backup_instances:
             return Response(data={"code": 1, "message": "备份服务需必填！"})
-        can_backup_service = ApplicationHub.objects.filter(
+        can_backup_instance = Service.objects.filter(
             env_id=env_id,
-            service_name__in=backup_services
-        ).distinct().values_list("service_name", flat=True)
-        diff_service = set(can_backup_service) - settings.BACKUP_SERVICE
+            service__app_name__in=settings.BACKUP_SERVICE
+        ).distinct().values_list("service_instance_name", flat=True)
+        diff_service = set(backup_instances) - set(can_backup_instance)
         if diff_service:
             return Response(data={"code": 1, "message": f"服务{diff_service}在本环境下不支持备份"})
         crontab_detail = request_data.get("crontab_detail", "")
         if not crontab_detail:
             return Response(data={"code": 1, "message": "请填写备份策略！"})
-        # omp-v-1.5修改，不改变邮箱设置
-        backup_setting = BackupSetting.objects.filter(
-            env_id=env_id
-        ).first()
         if not backup_setting:
             backup_setting = BackupSetting.objects.create(
                 env_id=env_id,
-                backup_service=backup_services,
+                backup_instances=backup_instances,
                 is_on=is_on,
                 crontab_detail=crontab_detail,
                 retain_day=retain_day,
                 retain_path=retain_path
             )
         else:
-            backup_setting.backup_service = backup_services
+            backup_setting.backup_instances = backup_instances
             backup_setting.is_on = is_on
             backup_setting.crontab_detail = crontab_detail
             backup_setting.retain_day = retain_day
@@ -228,22 +250,22 @@ class BackupOnceView(GenericViewSet, CreateModelMixin):
 
     def create(self, request, *args, **kwargs):
         request_data = json.loads(request.body)
-        env_id = request_data.get("env_id")
+        env_id = request_data.get("env_id", "1")
         try:
             Env.objects.get(id=int(env_id))
         except Exception as e:
             logger.error(f"id为{env_id}的环境不存在!详情：{e}")
             return Response(data={"code": 1, "message": f"id为{env_id}的环境不存在!"})
-        backup_services = request_data.get("backup_service")
+        backup_instances = request_data.get("backup_instances")
 
-        if not backup_services:
+        if not backup_instances:
             return Response(data={"code": 1, "message": "请选择需要备份的服务！"})
-        can_backup_service = ApplicationHub.objects.filter(
+        can_backup_instance = Service.objects.filter(
             env_id=env_id,
-            service_name__in=backup_services
-        ).distinct().values_list("service_name", flat=True)
-        diff_service = set(can_backup_service) - settings.BACKUP_SERVICE
-        if not can_backup_service or diff_service:
+            service__app_name__in=settings.BACKUP_SERVICE
+        ).distinct().values_list("service_instance_name", flat=True)
+        diff_service = set(backup_instances) - set(can_backup_instance)
+        if diff_service:
             return Response(data={"code": 1, "message": f"服务{diff_service}在本环境下不支持备份"})
 
         backup_setting = BackupSetting.objects.filter(
@@ -265,7 +287,7 @@ class BackupOnceView(GenericViewSet, CreateModelMixin):
         try:
             BackupHistory.objects.create(
                 backup_name=f"数据备份-{date_str}{history_count + 1}-{env_id}",
-                content=backup_services,
+                content=backup_instances,
                 env_id=env_id,
                 expire_time=expire_time,
                 retain_path=retain_path,
@@ -274,7 +296,7 @@ class BackupOnceView(GenericViewSet, CreateModelMixin):
             # next_time = datetime.datetime.now() + datetime.timedelta(
             #     seconds=3)
             task_name = "backups_cron_task"
-            task_func = "backups.tasks.backups_crontab"  # TODO 填充tasks
+            task_func = "backups.tasks.backups_crontab"  # TODO 填充tasks   去掉定时 马上执行
             cron_obj = CrontabUtils(task_name=task_name, task_func=task_func,
                                     task_kwargs=request.data)
             cron_args = {
@@ -297,42 +319,53 @@ class BackupOnceView(GenericViewSet, CreateModelMixin):
             return Response(data={"code": 1, "message": "备份任务下发失败！请重试！"})
 
 
-class BackupHistoryDeleteView(GenericViewSet, ListModelMixin, DestroyModelMixin):
-    ordering = ("file_deleted", "-id")
-    queryset = BackupHistory.objects.all().extra(
-        select={"expire_time": "datetime(expire_time)"}
-    )
-    values_fields = (
-        "id", "backup_name", "content", "result", "file_name",
-        "file_size", "expire_time", "file_deleted", "message",
-        "operation", "send_email_result", "email_fail_reason"
-    )
+class BackupHistoryView(GenericViewSet, ListModelMixin, DestroyModelMixin):
+    """
+    备份记录相关视图
+    """
+    serializer_class = BackupHistorySerializer
+    # queryset = BackupHistory.objects.all().extra(
+    #     select={"expire_time": "datetime(expire_time)"}
+    # ).order_by("-create_time")   # 分页，过滤，排序
+    pagination_class = PageNumberPager
+    # values_fields = (
+    #     "id", "backup_name", "content", "result", "file_name",
+    #     "file_size", "expire_time", "file_deleted", "message",
+    #     "operation", "send_email_result", "email_fail_reason"
+    # )
 
     def list(self, request, *args, **kwargs):
         """
         获取备份历史记录
         """
-        env_id = request.GET.get("env_id")
+        env_id = request.GET.get("env_id", "1")
         try:
             Env.objects.get(id=int(env_id))
         except Exception as e:
             logger.error(f"id为{env_id}的环境不存在!详情：{e}")
             return Response(data={"code": 1, "message": f"id为{env_id}的环境不存在!"})
-        return self.list(request, env_id=env_id)
+        queryset = BackupHistory.objects.all().order_by("-create_time")  # 分页，过滤，排序
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
     def destroy(self, request, *args, **kwargs):
         """
         删除备份文件，只删除文件
         """
-        request_data = json.loads(request.body)
-        env_id = request_data.get("env_id")
+        env_id = request.GET.get("env_id", "1")
         try:
             Env.objects.get(id=int(env_id))
         except Exception as e:
             logger.error(f"id为{env_id}的环境不存在!详情：{e}")
             return Response(data={"code": 1, "message": f"id为{env_id}的环境不存在!"})
 
-        ids = request_data.get("ids")
+        ids = request.GET.get("ids")
         if not ids or not isinstance(ids, list):
             return Response(data={"code": 1, "message": "请选择需要删除的历史记录！"})
         fail_files = rm_backend_file(ids=ids)

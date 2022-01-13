@@ -562,6 +562,15 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
           case "运行内存":
             result.memory = item[key];
             break;
+          case "虚拟IP":
+            result.vip = item[key];
+            break;
+          case "角色":
+            result.role = item[key];
+            break;
+          case "模式":
+            result.mode = item[key];
+            break;
           default:
             break;
         }

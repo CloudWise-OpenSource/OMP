@@ -92,7 +92,10 @@ class ReadDeploymentExcel(object):
         keys_map = {
             "主机实例名[必填]": "instance_name",
             "服务名[必填]": "service_name",
-            "运行内存": "memory"
+            "运行内存": "memory",
+            "虚拟IP": "vip",
+            "角色": "role",
+            "模式": "mode"
         }
         return self._read(start_row=3, keys=keys_map, table=table)
 
