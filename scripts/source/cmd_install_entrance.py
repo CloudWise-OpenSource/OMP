@@ -281,9 +281,23 @@ class MainProcess(object):
             ).exists():
                 continue_flag = False
         if break_flag:
-            self.print_log("安装失败, 请查看上述报错信息")
             return False, "安装过程出现问题，请查看上述报错信息"
         return True, "安装进度显示成功"
+
+    def step_9(self):
+        """
+        查询post_action操作及结果
+        :return:
+        """
+        post_action_queryset = DetailInstallHistory.objects.filter(
+            main_install_history__operation_uuid=self.operation_uuid
+        ).exclude(post_action_flag=4)
+        for item in post_action_queryset:
+            self.print_log(
+                f"服务 [{item.service.service_instance_name}] 执行 "
+                f"[post_action] 结果为: \n{item.post_action_msg}"
+            )
+        return True, ""
 
     def check_failed_status(self, service_instance_name):
         """
@@ -334,7 +348,8 @@ class MainProcess(object):
             "step_5": "调用服务入库接口",
             "step_6": "调用Agent状态监控接口",
             "step_7": "调用安装部署执行接口",
-            "step_8": "调用安装进度显示接口"
+            "step_8": "调用安装进度显示接口",
+            "step_9": "查询post_action(服务注册)结果"
         }
         self.print_log("开始进入安装流程")
         for i in range(start_step, 20):
