@@ -4,6 +4,7 @@
 import logging
 import os
 import random
+import subprocess
 import sys
 import time
 import json
@@ -24,10 +25,19 @@ if __name__ == '__main__':
 from db_models.models import (
     BackupHistory, Service
 )
-from backups.backups_utils import cmd
 from utils.plugin.salt_client import SaltClient
 
 logger = logging.getLogger("server")
+
+
+def cmd(command):
+    """执行本地shell命令"""
+    p = subprocess.Popen(
+        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    stdout, stderr = p.communicate()
+    _out, _err, _code = \
+        stdout.decode("utf8"), stderr.decode("utf8"), p.returncode
+    return _out, _err, _code
 
 
 class BackupDB(object):
