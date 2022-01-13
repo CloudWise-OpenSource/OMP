@@ -1267,7 +1267,7 @@ class BackupSetting(models.Model):
 class BackupHistory(TimeStampMixin):
 
     backup_name = models.CharField("备份任务名称", max_length=128)
-    content = models.JSONField('备份内容(服务名):["mysql","arangodb"]')
+    content = models.JSONField('备份内容(实例名):["mysql1","arangodb2"]')
     SUCCESS = 1
     ING = 2
     FAIL = 0
