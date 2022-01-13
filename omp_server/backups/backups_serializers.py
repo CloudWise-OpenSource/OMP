@@ -10,3 +10,4 @@ class BackupHistorySerializer(ModelSerializer):
     class Meta:
         model = BackupHistory
         fields = "__all__"
+        write_only_fields = ("id",)

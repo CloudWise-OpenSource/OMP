@@ -6,6 +6,7 @@ import datetime
 import json
 import logging
 import os
+import traceback
 
 from django.conf import settings
 from django.core.validators import EmailValidator
@@ -17,6 +18,7 @@ from rest_framework.response import Response
 
 from backups.backups_serializers import BackupHistorySerializer
 from backups.backups_utils import send_email as utils_send_email, rm_backend_file, transfer_week
+from backups.tasks import backup_service_once
 from db_models.models import BackupSetting, BackupHistory, Env, ModuleSendEmailSetting, Service
 from utils.common.paginations import PageNumberPager
 from utils.plugin.crontab_utils import CrontabUtils
@@ -85,7 +87,12 @@ class BackupSettingView(GenericViewSet, ListModelMixin, CreateModelMixin):
                 data={
                     "can_backup_instance": list(can_backup_instance),
                     "backup_setting": {
+                        "backup_instances": [],
+                        "is_on": False,
+                        # "crontab_detail": None,
+                        "retain_day": 7,
                         "retain_path": settings.BACKUP_DEFAULT_PATH,
+                        "env_id": env_id,
                         "to_users": to_users,
                         "send_email": send_email
                     }
@@ -135,6 +142,9 @@ class BackupSettingView(GenericViewSet, ListModelMixin, CreateModelMixin):
             return Response(data={"code": 1, "message": f"id为{env_id}的环境不存在!"})
         is_on = request_data.get("is_on", False)
         backup_instances = request_data.get("backup_instances")
+        retain_day = request_data.get("retain_day", 30)
+        retain_path = request_data.get("retain_path", "")
+        crontab_detail = request_data.get("crontab_detail", "")
         send_email = request_data.get("send_email", False)
         to_users = request_data.get("to_users", "")
         err_message = self.validate_email_send(send_email, to_users)
@@ -145,30 +155,6 @@ class BackupSettingView(GenericViewSet, ListModelMixin, CreateModelMixin):
                 env_id, BackupSetting.__name__, send_email, to_users
             )
         backup_setting = BackupSetting.objects.filter(env_id=env_id).first()
-        # 关闭定时策略，删除定时任务
-        if not is_on:
-            if backup_setting:
-                try:
-                    task_name = "backups_cron_task"
-                    exe_cron_obj = CrontabUtils(task_name=task_name)
-                    exe_cron_obj.delete_job()
-                except Exception as e:
-                    logger.info(f"删除定时任务失败！{str(e)}")
-                backup_setting.is_on = False
-                backup_setting.backup_instances = backup_instances
-                backup_setting.save()
-            else:
-                BackupSetting.objects.create(
-                    is_on=False,
-                    env_id=env_id,
-                    backup_service=backup_instances,
-                    crontab_detail={},
-                    retain_day=7,
-                    retain_path=settings.BACKUP_DEFAULT_PATH
-                )
-            return Response({})
-        retain_day = request_data.get("retain_day", 1)
-        retain_path = request_data.get("retain_path", "")
         if not retain_path:
             return Response(data={"code": 1, "message": "请确定备份文件保存路径！"})
         try:
@@ -181,6 +167,34 @@ class BackupSettingView(GenericViewSet, ListModelMixin, CreateModelMixin):
         except Exception as e:
             logger.info(f"校验文件夹权限失败：{str(e)}")
             return Response(data={"code": 1, "message": "请确定程序对备份文件保存文件夹有读写权限！"})
+        if not crontab_detail:
+            return Response(data={"code": 1, "message": "请填写备份策略！"})
+        # 关闭定时策略，删除定时任务
+        if not is_on:
+            if backup_setting:
+                try:
+                    task_name = "backups_cron_task"
+                    exe_cron_obj = CrontabUtils(task_name=task_name)
+                    exe_cron_obj.delete_job()
+                except Exception as e:
+                    logger.info(f"删除定时任务失败！{str(e)}")
+                backup_setting.env_id = env_id
+                backup_setting.is_on = False
+                backup_setting.backup_instances = backup_instances
+                backup_setting.retain_path = retain_path
+                backup_setting.crontab_detail = crontab_detail
+                backup_setting.retain_day = retain_day
+                backup_setting.save()
+            else:
+                BackupSetting.objects.create(
+                    is_on=False,
+                    env_id=env_id,
+                    backup_instances=backup_instances,
+                    crontab_detail=crontab_detail,
+                    retain_day=retain_day,
+                    retain_path=retain_path
+                )
+            return Response({})
 
         if not backup_instances:
             return Response(data={"code": 1, "message": "备份服务需必填！"})
@@ -191,9 +205,7 @@ class BackupSettingView(GenericViewSet, ListModelMixin, CreateModelMixin):
         diff_service = set(backup_instances) - set(can_backup_instance)
         if diff_service:
             return Response(data={"code": 1, "message": f"服务{diff_service}在本环境下不支持备份"})
-        crontab_detail = request_data.get("crontab_detail", "")
-        if not crontab_detail:
-            return Response(data={"code": 1, "message": "请填写备份策略！"})
+
         if not backup_setting:
             backup_setting = BackupSetting.objects.create(
                 env_id=env_id,
@@ -232,8 +244,7 @@ class BackupSettingView(GenericViewSet, ListModelMixin, CreateModelMixin):
             }
             is_success, job_name = cron_obj.create_crontab_job(**cron_args)
             if is_success:
-                # 只是想在增加时加个判断及对应操作，增加还是执行父类的create
-                return CreateModelMixin.create(self, request, *args, **kwargs)
+                return Response({})
             else:
                 return Response(data='定时任务已存在，请勿重复操作',
                                 status=status.HTTP_200_OK)
@@ -278,7 +289,7 @@ class BackupOnceView(GenericViewSet, CreateModelMixin):
             expire_days = backup_setting.retain_day
         else:
             retain_path = settings.BACKUP_DEFAULT_PATH
-            expire_days = 7
+            expire_days = 30
 
         date_str = datetime.date.today().strftime('%Y%m%d')
         history_count = BackupHistory.objects.filter(
@@ -287,38 +298,21 @@ class BackupOnceView(GenericViewSet, CreateModelMixin):
         expire_time = datetime.datetime.now() + datetime.timedelta(
             days=expire_days)
         try:
-            BackupHistory.objects.create(
+            history = BackupHistory.objects.create(
                 backup_name=f"数据备份-{date_str}{history_count + 1}-{env_id}",
                 content=backup_instances,
                 env_id=env_id,
                 expire_time=expire_time,
                 retain_path=retain_path,
-                operation="手动执行"
+                operation="手动执行",
+                file_name='-'
             )
-            # next_time = datetime.datetime.now() + datetime.timedelta(
-            #     seconds=3)
-            task_name = "backups_cron_task"
-            task_func = "backups.tasks.backups_crontab"  # TODO 填充tasks   去掉定时 马上执行
-            cron_obj = CrontabUtils(task_name=task_name, task_func=task_func,
-                                    task_kwargs=request.data)
-            cron_args = {
-                'minute': request.data.get('crontab_detail').get('minute'),
-                'hour': request.data.get('crontab_detail').get('hour'),
-                'day_of_month': request.data.get('crontab_detail').get('day'),
-                'month_of_year':
-                    request.data.get('crontab_detail').get('month'),
-                'day_of_week': transfer_week(request)
-            }
-            is_success, job_name = cron_obj.create_crontab_job(**cron_args)
-            if is_success:
-                # 只是想在增加时加个判断及对应操作，增加还是执行父类的create
-                return CreateModelMixin.create(self, request, *args, **kwargs)
-            else:
-                return Response(data='定时任务已存在，请勿重复操作',
-                                status=status.HTTP_200_OK)
+            backup_service_once.delay(backup_instances, history.id)
+            return Response({})
+
         except Exception as e:
-            logger.error(f"添加定时任务失败！{str(e)}")
-            return Response(data={"code": 1, "message": "备份任务下发失败！请重试！"})
+            logger.error(f"备份任务下发失败！{str(e)}详情:{traceback.format_exc(e)}")
+            return Response(data={"code": 1, "message": "备份任务下发失败！"})
 
 
 class BackupHistoryView(GenericViewSet, ListModelMixin, CreateModelMixin):
@@ -330,6 +324,7 @@ class BackupHistoryView(GenericViewSet, ListModelMixin, CreateModelMixin):
     #     select={"expire_time": "datetime(expire_time)"}
     # ).order_by("-create_time")   # 分页，过滤，排序
     pagination_class = PageNumberPager
+
     # values_fields = (
     #     "id", "backup_name", "content", "result", "file_name",
     #     "file_size", "expire_time", "file_deleted", "message",
@@ -408,5 +403,5 @@ class BackupSendEmailView(GenericViewSet, CreateModelMixin):
                 return Response(data={"code": 1, "message": f"{message}"})
         result = utils_send_email(history.id, emails)
         if result:
-            return Response(data={"code": 1, "message": f"更新主机相关阈值过程中出错: {str(result)}!"})
+            return Response(data={"code": 1, "message": f"发送备份邮件过程中出错: {str(result)}!"})
         return Response({})
