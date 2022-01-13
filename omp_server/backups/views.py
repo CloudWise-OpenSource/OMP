@@ -10,7 +10,7 @@ import os
 from django.conf import settings
 from django.core.validators import EmailValidator
 from rest_framework import status
-from rest_framework.mixins import ListModelMixin, CreateModelMixin, DestroyModelMixin
+from rest_framework.mixins import ListModelMixin, CreateModelMixin
 from rest_framework.serializers import Serializer
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.response import Response
@@ -149,7 +149,7 @@ class BackupSettingView(GenericViewSet, ListModelMixin, CreateModelMixin):
         if not is_on:
             if backup_setting:
                 try:
-                    task_name = request.data.get('xxx')  # TODO 填充task_name
+                    task_name = "backups_cron_task"
                     exe_cron_obj = CrontabUtils(task_name=task_name)
                     exe_cron_obj.delete_job()
                 except Exception as e:
@@ -159,6 +159,7 @@ class BackupSettingView(GenericViewSet, ListModelMixin, CreateModelMixin):
                 backup_setting.save()
             else:
                 BackupSetting.objects.create(
+                    is_on=False,
                     env_id=env_id,
                     backup_service=backup_instances,
                     crontab_detail={},
@@ -203,6 +204,7 @@ class BackupSettingView(GenericViewSet, ListModelMixin, CreateModelMixin):
                 retain_path=retain_path
             )
         else:
+            backup_setting.env_id = env_id
             backup_setting.backup_instances = backup_instances
             backup_setting.is_on = is_on
             backup_setting.crontab_detail = crontab_detail
@@ -210,16 +212,16 @@ class BackupSettingView(GenericViewSet, ListModelMixin, CreateModelMixin):
             backup_setting.retain_path = retain_path
             backup_setting.save()
         try:
-            task_name = request.data.get('xxx')  # TODO 填充task_name
+            task_name = "backups_cron_task"
             exe_cron_obj = CrontabUtils(task_name=task_name)
             exe_cron_obj.delete_job()
         except Exception as e:
             logger.info(f"删除定时任务backup_service_{backup_setting}失败，详情：{e}")
         try:
             task_name = "backups_cron_task"
-            task_func = "backups.tasks.backups_crontab"  # TODO 填充tasks
+            task_func = "backups.tasks.backup_service"
             cron_obj = CrontabUtils(task_name=task_name, task_func=task_func,
-                                    task_kwargs=request.data)
+                                    task_kwargs={"backup_setting_id": backup_setting.id})
             cron_args = {
                 'minute': request.data.get('crontab_detail').get('minute'),
                 'hour': request.data.get('crontab_detail').get('hour'),
@@ -319,7 +321,7 @@ class BackupOnceView(GenericViewSet, CreateModelMixin):
             return Response(data={"code": 1, "message": "备份任务下发失败！请重试！"})
 
 
-class BackupHistoryView(GenericViewSet, ListModelMixin, DestroyModelMixin):
+class BackupHistoryView(GenericViewSet, ListModelMixin, CreateModelMixin):
     """
     备份记录相关视图
     """
@@ -354,7 +356,7 @@ class BackupHistoryView(GenericViewSet, ListModelMixin, DestroyModelMixin):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-    def destroy(self, request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):
         """
         删除备份文件，只删除文件
         """

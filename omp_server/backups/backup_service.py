@@ -22,7 +22,7 @@ if __name__ == '__main__':
     django.setup()
 
 from db_models.models import (
-    BackupHistory
+    BackupHistory, Service
 )
 from backups.backups_utils import cmd
 from utils.plugin.salt_client import SaltClient
@@ -48,6 +48,7 @@ class BackupDB(object):
             for k_port in port_json:
                 if k_port.get("key", "") == "service_port":
                     port = k_port.get("port", "")
+                    break
             install_args = json.loads(service_obj.service.app_install_args)
             install_dict = {}
             for args in install_args:
@@ -116,45 +117,53 @@ class BackupDB(object):
         执行备份动作
         """
         back_obj = BackupHistory.objects.filter(id=back_id).first()
-        service_obj = back_obj.service
-        self.omp_backup_dir = back_obj.retain_path
-        service_dict = self.backup_info(service_obj)
-        cmd_str = {}
-        if isinstance(service_dict, dict):
-            if service_obj.service.app_name == "mysql":
-                cmd_str = "test -d {backup_dir} || mkdir -p {backup_dir}&& " \
-                          "chown -R {run_user}:{run_user} {backup_dir} &&" \
-                          " {app_dir}/bin/mysqldump --single-transaction " \
-                          "-P{service_port} -u{service_user} {service_pass} -h'127.0.0.1' --all-databases > " \
-                          "{backup_dir}/{service_name}-{ip}-{tmp}.sql".format(
-                              **service_dict)
-                service_dict["file_name"] = "{service_name}-{ip}-{tmp}.sql".format(
-                    **service_dict)
+        service_instances = back_obj.content
+        for si in service_instances:
+            service_obj = Service.objects.filter(
+                service_instance_name=si).first()
 
-            elif service_obj.service.app_name == "arangodb":
-                cmd_str = "test -d {backup_dir}/{service_name}-{ip}-{tmp} || " \
-                          "mkdir -p {backup_dir}/{service_name}-{ip}-{tmp}&& " \
-                          "chown -R {run_user}:{run_user} {backup_dir} && {app_dir}/bin/arangodump --server.endpoint " \
-                          "tcp://127.0.0.1:{service_port} --server.username {service_user}" \
-                          " --server.password {arangodb_pwd} --all-databases true " \
-                          "--output-directory {backup_dir}/{service_name}-{ip}-{tmp}".format(
-                              **service_dict)
-                service_dict["file_name"] = "{service_name}-{ip}-{tmp}".format(
-                    **service_dict)
-            else:
-                # TODO 应用不合法
-                pass
-        backup_flag, backup_msg = self.salt_client.cmd(
-            target=service_dict.get("ip"), command=(cmd_str,), timeout=self.timeout
-        )
-        if not backup_flag:
-            message = f'{service_dict.get("ip")}上{service_dict.get("ip")}备份失败!'
-            logger.error(f"{message}, 详情为：{backup_msg}")
-            return False, backup_flag
-        self.sync_data_with_omp(service_dict)
-        #
+            self.omp_backup_dir = back_obj.retain_path
+            service_dict = self.backup_info(service_obj)
+            cmd_str = {}
+            if isinstance(service_dict, dict):
+                if service_obj.service.app_name == "mysql":
+                    cmd_str = "test -d {backup_dir} || mkdir -p {backup_dir}&& " \
+                              "chown -R {run_user}:{run_user} {backup_dir} &&" \
+                              " {app_dir}/bin/mysqldump --single-transaction " \
+                              "-P{service_port} -u{service_user} {service_pass} -h'127.0.0.1' --all-databases > " \
+                              "{backup_dir}/{service_name}-{ip}-{tmp}.sql".format(
+                                  **service_dict)
+                    service_dict["file_name"] = "{service_name}-{ip}-{tmp}.sql".format(
+                        **service_dict)
 
-        print(cmd_str)
+                elif service_obj.service.app_name == "arangodb":
+                    cmd_str = "test -d {backup_dir}/{service_name}-{ip}-{tmp} || " \
+                              "mkdir -p {backup_dir}/{service_name}-{ip}-{tmp}&& " \
+                              "chown -R {run_user}:{run_user} {backup_dir} " \
+                              "&& {app_dir}/bin/arangodump --server.endpoint " \
+                              "tcp://127.0.0.1:{service_port} --server.username {service_user}" \
+                              " --server.password {arangodb_pwd} --all-databases true " \
+                              "--output-directory {backup_dir}/{service_name}-{ip}-{tmp}".format(
+                                  **service_dict)
+                    service_dict["file_name"] = "{service_name}-{ip}-{tmp}".format(
+                        **service_dict)
+                else:
+                    # TODO 应用不合法
+                    pass
+            backup_flag, backup_msg = self.salt_client.cmd(
+                target=service_dict.get("ip"), command=(cmd_str,), timeout=self.timeout
+            )
+            if not backup_flag:
+                message = f'{service_dict.get("ip")}上{service_dict.get("service_name")}备份失败!'
+                logger.error(f"{message}, 详情为：{backup_msg}")
+                return False, message
+            sync_flag, sync_msg = self.sync_data_with_omp(service_dict)
+            # print(cmd_str)
+            if not sync_flag:
+                message = f'{service_dict.get("ip")}上{service_dict.get("service_name")}备份失败!'
+                logger.error(f"{message}, 详情为：{sync_msg}")
+                return False, message
+        return True, "Success"
 
 
 if __name__ == '__main__':

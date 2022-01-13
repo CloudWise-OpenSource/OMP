@@ -10,14 +10,12 @@ import tarfile
 
 from celery import shared_task
 from django.conf import settings
+
+from backups.backup_service import BackupDB
 from db_models.models import BackupHistory, EmailSMTPSetting, ModuleSendEmailSetting, BackupSetting
 from utils.plugin.send_email import ModelSettingEmailBackend, SendBackupHistoryEmailContent, many_send, ResultThread
 
 logger = logging.getLogger("server")
-
-script_path = os.path.join(
-    settings.PROJECT_DIR, "omp_server/backups/backup_service.py")
-python3_path = os.path.join(settings.PROJECT_DIR, "component/env/bin/python3")
 
 
 def cmd(command):
@@ -104,21 +102,21 @@ def transfer_week(request):
     return day_of_week
 
 
-def backup_service_data(path, services, history):
+def backup_service_data(path, backup_instances, history):
     """
     备份服务
     :param path: 备份策略路径 '/data/backups'
-    :param services: 需要备份的服务， [] or set()
+    :param backup_instances: 需要备份的服务， [] or set()
     :param history: 本次备份的记录
     :return:
     """
     threading_list = []
-    for service_name in services:
-        cmd_str = f"""{python3_path} {script_path} "['{service_name}']" '{path}' '{history.env_id}'"""
-        _thread = ResultThread(
-            target=cmd,
-            args=(cmd_str,))
-        threading_list.append(_thread)
+
+    backup_script_func = BackupDB().backup_service
+    _thread = ResultThread(
+        target=backup_script_func,
+        args=(history.id,))
+    threading_list.append(_thread)
     threading_list_result = []
     [thread_obj.start() for thread_obj in threading_list]
 
@@ -128,7 +126,7 @@ def backup_service_data(path, services, history):
     all_fail = True
     file_names, resp_list = [], []
     err_message = ""
-    for server_name, result in zip(services, threading_list_result):
+    for service_instance_name, result in zip(backup_instances, threading_list_result):
         _out, _err, _code = result
         logger.info(f"备份结果为：{_out}")
         if _code:
@@ -136,7 +134,7 @@ def backup_service_data(path, services, history):
             continue
         """
         2021-08-24 10:59:42 - INFO 所有环境中的mysql完成备份 \n
-        True  mysql-20210824105934.tar.gz\n
+        True  mysql1-20210824105934.tar.gz\n
         """
         com_str = re.compile(".*\n(True|False)\s(.*)\s(.*)\n")  # NOQA
         if not re.findall(com_str, _out)[0]:
@@ -150,7 +148,7 @@ def backup_service_data(path, services, history):
             {"backup_flag": backup_flag, "msg": msg, "file_name": file_name}
         )
         if backup_flag != "True":
-            err_message += msg if not msg else f"备份服务{server_name}失败!"
+            err_message += msg if not msg else f"备份实例{service_instance_name}失败!"
             continue
         all_fail = False
         file_path = os.path.join(path, file_name)
@@ -169,7 +167,7 @@ def backup_service_data(path, services, history):
             err_message += "压缩合并文件出错！"
             history.result = history.FAIL
             history.file_name = "-"
-            history.file_size = 0
+            history.file_size = None
             history.file_deleted = True
             history.expire_time = None
         else:
@@ -183,16 +181,16 @@ def backup_service_data(path, services, history):
                 err_message += "  创建软连接出错！"
             else:
                 history.result = history.SUCCESS
-            if len(file_names) != len(services):
+            if len(file_names) != len(backup_instances):
                 history.result = history.FAIL
             history.file_name = file_name
             history.file_size = "%.3f" % size
     history.message = {"script_result": resp_list, "err_message": err_message}
     history.save()
     # 删除原文件
-    for service in services:
+    for bi in backup_instances:
         try:
-            old_path = os.path.join(path, service)
+            old_path = os.path.join(path, bi)
             cmd(f"rm -rf {old_path}/*.tar.gz")
         except Exception as e:
             logger.info(f"删除原文件失败！{str(e)}")
