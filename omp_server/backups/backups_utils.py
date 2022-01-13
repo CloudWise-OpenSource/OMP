@@ -4,7 +4,6 @@
 import datetime
 import logging
 import os
-import re
 import subprocess
 import tarfile
 
@@ -127,31 +126,25 @@ def backup_service_data(path, backup_instances, history):
     file_names, resp_list = [], []
     err_message = ""
     for service_instance_name, result in zip(backup_instances, threading_list_result):
-        _out, _err, _code = result
-        logger.info(f"备份结果为：{_out}")
-        if _code:
-            err_message += "执行备份脚本失败！"
+        backup_flag = result[0]
+        backup_message = result[1]
+        logger.info(f"备份结果为：{backup_message}")
+        if not backup_flag:
+            err_message += "执行备份任务失败！"
             continue
         """
         2021-08-24 10:59:42 - INFO 所有环境中的mysql完成备份 \n
         True  mysql1-20210824105934.tar.gz\n
         """
-        com_str = re.compile(".*\n(True|False)\s(.*)\s(.*)\n")  # NOQA
-        if not re.findall(com_str, _out)[0]:
-            err_message += "执行备份脚本失败！"
-            continue
-        backup_flag, msg, file_name = re.findall(com_str, _out)[0]
-        if "False" in backup_flag:
-            err_message += msg
-            continue
         resp_list.append(
-            {"backup_flag": backup_flag, "msg": msg, "file_name": file_name}
+            {"backup_flag": backup_flag, "msg": backup_message,
+                "file_name": f"{service_instance_name}.tar.gz"}
         )
         if backup_flag != "True":
-            err_message += msg if not msg else f"备份实例{service_instance_name}失败!"
+            err_message += backup_message if not backup_message else f"备份实例{service_instance_name}失败!"
             continue
         all_fail = False
-        file_path = os.path.join(path, file_name)
+        file_path = os.path.join(path, f"{service_instance_name}.tar.gz")
         file_names.append(file_path)
     if all_fail:
         history.result = history.FAIL
@@ -185,7 +178,7 @@ def backup_service_data(path, backup_instances, history):
                 history.result = history.FAIL
             history.file_name = file_name
             history.file_size = "%.3f" % size
-    history.message = {"script_result": resp_list, "err_message": err_message}
+    history.message = {"backup_result": resp_list, "err_message": err_message}
     history.save()
     # 删除原文件
     for bi in backup_instances:

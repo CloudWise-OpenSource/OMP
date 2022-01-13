@@ -6,6 +6,7 @@ import logging
 
 from celery import shared_task
 from celery.utils.log import get_task_logger
+from django.conf import settings
 
 from backups.backups_utils import rm_backend_file, backup_service_data
 from db_models.models import BackupSetting, BackupHistory
@@ -49,3 +50,10 @@ def backup_service(**kwargs):
     backup_service_data(path, backup_setting.backup_instances, history)
     # 如果有过期删过期, 更新file_deleted
     rm_backend_file()
+
+
+@shared_task
+def backup_service_once(backup_instances, history_id):
+    path = settings.BACKUP_DEFAULT_PATH
+    history = BackupHistory.objects.get(id=history_id)
+    backup_service_data(path, backup_instances, history)
