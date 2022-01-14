@@ -13,11 +13,8 @@ import os
 import random
 import datetime
 from pathlib import Path
-from utils.parse_config import OMP_MYSQL_HOST
-from utils.parse_config import OMP_MYSQL_PORT
-from utils.parse_config import OMP_MYSQL_USERNAME
-from utils.parse_config import OMP_MYSQL_PASSWORD
-from utils.parse_config import TOKEN_EXPIRATION
+from utils.parse_config import OMP_MYSQL_HOST, OMP_MYSQL_PORT, \
+    OMP_MYSQL_USERNAME, OMP_MYSQL_PASSWORD, TOKEN_EXPIRATION, SSH_CMD_TIMEOUT
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -51,6 +48,7 @@ INSTALLED_APPS = [
     'users',
     'tests',
     'inspection',
+    'service_upgrade'
 ]
 
 MIDDLEWARE = [
