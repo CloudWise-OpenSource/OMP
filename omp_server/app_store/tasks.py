@@ -269,14 +269,20 @@ def front_end_verified(uuid, operation_user, package_name, random_str, ver_dir, 
             return public_action.update_package_status(
                 1,
                 f"安装包{package_name}不能无依赖产品上传")
-        product_obj = ProductHub.objects.filter(pro_name=dependence_product.get("name"),
-                                                pro_version=dependence_product.get(
-                                                    "version")
-                                                ).last()
+        product_version = dependence_product.get("version", "")
+        if not product_version:
+            product_obj = ProductHub.objects.filter(pro_name=dependence_product.get("name")
+                                                    ).last()
+
+        else:
+            product_obj = ProductHub.objects.filter(pro_name=dependence_product.get("name"),
+                                                    pro_version=product_version).last()
         if not product_obj:
             return public_action.update_package_status(
                 1,
                 f"安装包{package_name}依赖的产品包不存在")
+        # 将版本追加至最新版本
+        dependence_product["version"] = product_obj.pro_version
         app_obj = ApplicationHub.objects.filter(product=product_obj)
         for obj in app_obj:
             if obj.app_name == explain_yml[1]['name'] and \
