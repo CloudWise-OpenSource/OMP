@@ -1,13 +1,15 @@
 import { OmpContentWrapper, OmpContentNav } from "@/components";
 import { useState } from "react";
-import { useHistory } from "react-router-dom";
+import { useHistory, useLocation } from "react-router-dom";
 import Installation from "./tabs/installation"
 import Upgrade from "./tabs/upgrade"
 
 const InstallationRecord = () => {
   const history = useHistory();
 
-  const [currentList, setCurrentList] = useState("installation");
+  const tabKey = useLocation().state?.tabKey
+  
+  const [currentList, setCurrentList] = useState(tabKey || "installation");
 
   const contentNavData = [
     {
@@ -19,23 +21,32 @@ const InstallationRecord = () => {
         }
       },
     },
-    // {
-    //   name: "upgrade",
-    //   text: "升级记录",
-    //   handler: () => {
-    //     if (currentList !== "upgrade") {
-    //       setCurrentList("upgrade");
-    //     }
-    //   },
-    // },
+    {
+      name: "upgrade",
+      text: "升级记录",
+      handler: () => {
+        if (currentList !== "upgrade") {
+          setCurrentList("upgrade");
+        }
+      },
+    },
+    {
+      name: "backoff",
+      text: "回滚记录",
+      handler: () => {
+        if (currentList !== "backoff") {
+          setCurrentList("backoff");
+        }
+      },
+    },
   ];
 
   return (
     <OmpContentWrapper>
       <OmpContentNav data={contentNavData} currentFocus={currentList} />
       {currentList == "installation" && <Installation history={history} /> }
-      {/* {currentList == "upgrade" && <Upgrade history={history} /> } */}
-      {/* <Installation history={history} /> */}
+      {currentList == "upgrade" && <Upgrade history={history} /> }
+      {currentList == "backoff" && <Upgrade history={history} />}
     </OmpContentWrapper>
   );
 };

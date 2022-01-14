@@ -1,6 +1,6 @@
 import { Button, Anchor, Spin, Progress } from "antd";
 import { useSelector } from "react-redux";
-import UpgradeInfoItem from "./component/UpgradeInfoItem";
+import InstallInfoItem from "./component/UpgradeInfoItem";
 import { useEffect, useRef, useState } from "react";
 import { LoadingOutlined } from "@ant-design/icons";
 import { apiRequest } from "@/config/requestApi";
@@ -112,7 +112,7 @@ const Content = () => {
             <div>
               {data?.upgrade_detail?.map((item, idx) => {
                 return (
-                  <UpgradeInfoItem
+                  <InstallInfoItem
                     id={`a${idx}`}
                     key={idx}
                     title={item.service_name}

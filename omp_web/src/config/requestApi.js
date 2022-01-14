@@ -139,9 +139,18 @@ export const apiRequest = {
 
     // 批量安装-安装重试操作
     retryInstall: "/api/appStore/retryInstall/",
+
+    // 服务升级选择应用服务列表
+    canUpgrade: "/api/upgrade/can-upgrade",
+
+    // 服务升级动作下发
+    doUpgrade: "/api/upgrade/do-upgrade",
+    // 服务升级页面列表进度查询
+    queryUpgradeProcess: "/api/upgrade/history",
   },
   installHistoryPage: {
     queryInstallHistoryList: "/api/appStore/mainInstallHistory",
+    queryUpgradeHistoryList: "/api/upgrade/history"
   },
   inspection: {
     inspectionList: "/api/inspection/history/",

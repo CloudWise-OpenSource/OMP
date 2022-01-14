@@ -4,6 +4,7 @@ import {
   SendOutlined,
   LoadingOutlined,
   CheckCircleFilled,
+  ScanOutlined,
 } from "@ant-design/icons";
 //import BMF from "browser-md5-file";
 import { fetchPost, fetchGet } from "@/utils/request";
@@ -118,7 +119,7 @@ const ScanServerModal = ({
       title={
         <span>
           <span style={{ position: "relative", left: "-10px" }}>
-            <SendOutlined />
+            <ScanOutlined />
           </span>
           <span>
             {stepNum == 0 && "扫描服务端安装包"}

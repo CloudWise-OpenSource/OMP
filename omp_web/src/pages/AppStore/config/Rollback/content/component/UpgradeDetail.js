@@ -29,7 +29,7 @@ const stepNotOpen = {
     3: <span style={{ color: "#da4e48" }}>升级失败</span>,
   };
 
-const UpgradeDetail = ({ title, ip, status, log, instance_name }) => {
+const UpgradeDetail = ({ title, ip, status, log }) => {
 
   const containerRef = useRef(null)
 
@@ -52,7 +52,7 @@ const UpgradeDetail = ({ title, ip, status, log, instance_name }) => {
           justifyContent: "space-between",
         }}
       >
-        <div style={{ flex: 2 }}>{instance_name}</div>
+        <div style={{ flex: 1 }}>{ip}</div>
         <div style={{ flex: 1 }}>{renderStatus[status]}</div>
         <div style={{ flex: 6, textAlign: "right", paddingRight: 50 }}>
           <a

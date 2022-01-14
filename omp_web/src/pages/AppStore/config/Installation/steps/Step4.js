@@ -236,18 +236,22 @@ const Step4 = () => {
             width: 200,
             backgroundColor: "#fff",
             marginLeft: 20,
-            height: viewHeight - 270,
-            overflowY: "auto",
             paddingTop: 10,
           }}
         >
-          <div style={{ paddingLeft: 5 }}>
+          <div style={{ paddingLeft: 5,
+            
+          }}>
             <Anchor
               style={{}}
               affix={false}
               getContainer={() => {
                 let con = document.getElementById("Step4Wrapper");
                 return con;
+              }}
+              style={{
+                height: viewHeight - 270,
+                overflowY: "auto",
               }}
               onClick={(e) => {
                 e.preventDefault();

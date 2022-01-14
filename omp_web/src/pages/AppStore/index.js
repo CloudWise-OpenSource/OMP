@@ -12,7 +12,15 @@ import {
 } from "antd";
 import { useEffect, useRef, useState } from "react";
 import styles from "./index.module.less";
-import { SearchOutlined, DownloadOutlined } from "@ant-design/icons";
+import {
+  SearchOutlined,
+  DownloadOutlined,
+  DownOutlined,
+  SendOutlined,
+  ScanOutlined,
+  ArrowUpOutlined,
+  SyncOutlined,
+} from "@ant-design/icons";
 import Card from "./config/card.js";
 import { useSelector, useDispatch } from "react-redux";
 import { useHistory } from "react-router-dom";
@@ -24,6 +32,7 @@ import ScanServerModal from "./config/ScanServerModal";
 // 批量安装弹框组件
 import BatchInstallationModal from "./config/BatchInstallationModal";
 import ServiceUpgradeModal from "./config/ServiceUpgradeModal";
+import ServiceRollbackModal from "./config/ServiceRollbackModal";
 import {
   getTabKeyChangeAction,
   getUniqueKeyChangeAction,
@@ -65,6 +74,9 @@ const AppStore = () => {
 
   // 服务升级操作弹框
   const [sUModalVisibility, setSUModalVisibility] = useState(false);
+
+  // 服务回退操作弹框
+  const [sRModalVisibility, setSRModalVisibility] = useState(false);
 
   // 批量安装弹框
   const [bIModalVisibility, setBIModalVisibility] = useState(false);
@@ -127,7 +139,6 @@ const AppStore = () => {
       .then((res) => {
         handleResponse(res, (res) => {
           if (res.data && res.data.data) {
-            console.log(res.data.data);
             setBIserviceList(
               res.data.data.map((item) => ({ ...item, id: item.name }))
             );
@@ -309,35 +320,148 @@ const AppStore = () => {
             >
               批量安装
             </Button>
-            {/* <Button
-              style={{ marginRight: 10 }}
-              onClick={() => {
-                queryBatchInstallationServiceList();
-                setSUModalVisibility(true);
-              }}
-            >
-              服务升级
-            </Button> */}
-            <Dropdown.Button
-              style={{ marginRight: 10 }}
-              onClick={() => {
-                setTimeUnix(new Date().getTime());
-                setReleaseModalVisibility(true);
-              }}
+
+            <Dropdown
               overlay={
-                <Menu
-                  onClick={(e) => {
-                    if (e.key === "1") {
+                <Menu style={{ width: "100%" }}>
+                  <Menu.Item
+                    key="publishing"
+                    style={{ display: "flex" }}
+                    onClick={() => {
+                      setTimeUnix(new Date().getTime());
+                      setReleaseModalVisibility(true);
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 22,
+                          height: 22,
+                          backgroundColor: "#2e7cee",
+                          borderRadius: "50%",
+                        }}
+                      >
+                        <SendOutlined
+                          style={{
+                            color: "#fff",
+                            position: "relative",
+                            left: 6,
+                          }}
+                        />
+                      </div>
+                      <div style={{ paddingLeft: 20 }}>发布服务</div>
+                    </div>
+                  </Menu.Item>
+                  <Menu.Item
+                    key="scanServer"
+                    style={{ display: "flex" }}
+                    onClick={() => {
                       setScanServerModalVisibility(true);
-                    }
-                  }}
-                >
-                  <Menu.Item key="1">扫描服务端</Menu.Item>
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 22,
+                          height: 22,
+                          backgroundColor: "#2e7cee",
+                          borderRadius: "50%",
+                        }}
+                      >
+                        <ScanOutlined
+                          style={{
+                            color: "#fff",
+                            position: "relative",
+                            left: 4,
+                          }}
+                        />
+                      </div>
+                      <div style={{ paddingLeft: 20 }}>扫描服务端</div>
+                    </div>
+                  </Menu.Item>
+                  <Menu.Item
+                    key="upgrade"
+                    style={{ display: "flex" }}
+                    onClick={() => {
+                      setSUModalVisibility(true);
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 22,
+                          height: 22,
+                          backgroundColor: "#2e7cee",
+                          borderRadius: "50%",
+                        }}
+                      >
+                        <ArrowUpOutlined
+                          style={{
+                            color: "#fff",
+                            position: "relative",
+                            left: 4,
+                          }}
+                        />
+                      </div>
+                      <div style={{ paddingLeft: 20 }}>服务升级</div>
+                    </div>
+                  </Menu.Item>
+                  <Menu.Item
+                    key="rollback"
+                    style={{ display: "flex" }}
+                    onClick={() => {
+                      setSRModalVisibility(true);
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 22,
+                          height: 22,
+                          backgroundColor: "#2e7cee",
+                          borderRadius: "50%",
+                        }}
+                      >
+                        <SyncOutlined
+                          style={{
+                            color: "#fff",
+                            position: "relative",
+                            left: 4,
+                          }}
+                        />
+                      </div>
+                      <div style={{ paddingLeft: 20 }}>服务回滚</div>
+                    </div>
+                  </Menu.Item>
                 </Menu>
               }
+              placement="bottomRight"
             >
-              发布服务
-            </Dropdown.Button>
+              <Button style={{ marginRight: 10 }}>
+                更多
+                <DownOutlined style={{ position: "relative", top: 1 }} />
+              </Button>
+            </Dropdown>
           </div>
         </div>
 
@@ -478,6 +602,12 @@ const AppStore = () => {
       <ServiceUpgradeModal
         sUModalVisibility={sUModalVisibility}
         setSUModalVisibility={setSUModalVisibility}
+        dataSource={bIserviceList}
+        initLoading={loading}
+      />
+      <ServiceRollbackModal
+        sRModalVisibility={sRModalVisibility}
+        setSRModalVisibility={setSRModalVisibility}
         dataSource={bIserviceList}
         initLoading={loading}
       />
