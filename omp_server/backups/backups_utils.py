@@ -171,7 +171,7 @@ def rm_backend_file(ids=None):
         histories = BackupHistory.objects.filter(
             expire_time__lte=datetime.datetime.now(),
             file_deleted=False
-        )
+        ).exclude(expire_time=None)
     fail_files = []
     for history in histories:
         expire_file = os.path.join(history.retain_path, history.file_name)
