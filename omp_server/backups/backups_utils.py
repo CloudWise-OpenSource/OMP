@@ -134,7 +134,15 @@ def backup_service_data(history):
     else:
         file_path = os.path.join(history.retain_path, history.file_name)
         size = os.path.getsize(file_path) / 1024 / 1024
-        history.result = history.SUCCESS
+        ln_path = os.path.join(
+            settings.PROJECT_DIR, "data/backup/", history.file_name)
+        cmd_str = f"ln -s {file_path} {ln_path}"
+        _out, _err, _code = cmd(cmd_str)
+        if _code:
+            history.result = history.FAIL
+            err_message += "  创建软连接出错！"
+        else:
+            history.result = history.SUCCESS
         history.file_size = "%.3f" % size
     history.message = {"backup_resp": back_resp, "err_message": err_message}
     history.save()
@@ -178,8 +186,10 @@ def rm_backend_file(ids=None):
             else:
                 history.file_deleted = True
                 history.save()
-        ln_path = os.path.join(settings.ROOT_DIR,
-                               f"data/backup/{history.file_name}")
+        ln_path = os.path.join(
+            settings.PROJECT_DIR, "data/backup/", history.file_name)
+        if expire_file == ln_path:
+            continue
         try:
             os.remove(ln_path)
         except Exception as e:
