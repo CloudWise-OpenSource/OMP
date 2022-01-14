@@ -31,8 +31,7 @@ class InstallServiceExecutor:
 
     @staticmethod
     def now_time():
-        return time.strftime(time.strftime(
-            "%Y-%m-%d %H:%M:%S", time.localtime()))
+        return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
     def create_history(self, detail_obj, is_success=True):
         """ 创建历史记录 """

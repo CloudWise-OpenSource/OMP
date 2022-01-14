@@ -1,10 +1,7 @@
 """
 主机相关视图
 """
-import os
 import logging
-from django.http import FileResponse
-from django.conf import settings
 from django.db import transaction
 
 from rest_framework.viewsets import GenericViewSet
@@ -28,11 +25,13 @@ from hosts.hosts_serializers import (
     HostFieldCheckSerializer, HostAgentRestartSerializer,
     HostOperateLogSerializer, HostBatchValidateSerializer,
     HostBatchImportSerializer, HostDetailSerializer,
-    HostInitSerializer, HostsAgentStatusSerializer
+    HostInitSerializer, HostsAgentStatusSerializer,
+    HostReinstallSerializer, MonitorReinstallSerializer
 )
 from promemonitor.prometheus import Prometheus
 from promemonitor.grafana_url import explain_url
 from utils.common.exceptions import OperateError
+from utils.common.views import BaseDownLoadTemplateView
 
 logger = logging.getLogger("server")
 
@@ -102,6 +101,28 @@ class HostListView(GenericViewSet, ListModelMixin, CreateModelMixin):
         exists_ls.extend(none_ls)
 
         return self.get_paginated_response(exists_ls)
+
+
+class HostReinstallView(GenericViewSet, CreateModelMixin):
+    """
+        create:
+        重启监控Agent接口
+    """
+    queryset = Host.objects.filter(is_deleted=False)
+    serializer_class = HostReinstallSerializer
+    # 操作信息描述
+    post_description = "重装主机Agent"
+
+
+class MonitorReinstallView(GenericViewSet, CreateModelMixin):
+    """
+        create:
+        重启监控Agent接口
+    """
+    queryset = Host.objects.filter(is_deleted=False)
+    serializer_class = MonitorReinstallSerializer
+    # 操作信息描述
+    post_description = "重装监控Agent"
 
 
 class HostDetailView(GenericViewSet, RetrieveModelMixin):
@@ -194,7 +215,7 @@ class HostOperateLogView(GenericViewSet, ListModelMixin):
     get_description = "查询主机操作记录"
 
 
-class HostBatchValidateView(GenericViewSet, ListModelMixin, CreateModelMixin):
+class HostBatchValidateView(BaseDownLoadTemplateView, CreateModelMixin):
     """
         list:
         获取主机批量导入模板
@@ -209,19 +230,9 @@ class HostBatchValidateView(GenericViewSet, ListModelMixin, CreateModelMixin):
     post_description = "主机数据批量验证"
 
     def list(self, request, *args, **kwargs):
-        template_file_name = "import_hosts_template.xlsx"
-        template_path = os.path.join(
-            settings.BASE_DIR.parent,
-            "package_hub", "template", template_file_name)
-        try:
-            file = open(template_path, 'rb')
-            response = FileResponse(file)
-            response["Content-Type"] = "application/octet-stream"
-            response["Content-Disposition"] = f"attachment;filename={template_file_name}"
-        except FileNotFoundError:
-            logger.error("import_hosts_template.xlsx file not found")
-            raise OperateError("模板文件缺失")
-        return response
+        return super(HostBatchValidateView, self).list(
+            request, template_file_name="import_hosts_template.xlsx",
+            *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -293,15 +304,22 @@ class HostBatchImportView(GenericViewSet, CreateModelMixin):
         return Response("添加成功")
 
 
-class HostInitView(GenericViewSet, CreateModelMixin):
+class HostInitView(BaseDownLoadTemplateView, CreateModelMixin):
     """
         create:
         主机初始化
     """
     queryset = Host.objects.filter(is_deleted=False)
     serializer_class = HostInitSerializer
+    # 操作描述信息
+    get_description = "应用商店下载组件模板"
     # 操作信息描述
     post_description = "主机初始化"
+
+    def list(self, request, *args, **kwargs):
+        return super(HostInitView, self).list(
+            request, template_file_name="init_host.py",
+            parent_path="_modules", *args, **kwargs)
 
 
 class HostsAgentStatusView(GenericViewSet, CreateModelMixin):

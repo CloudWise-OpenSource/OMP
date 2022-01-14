@@ -49,14 +49,14 @@ class ServicePostgresqlCrawl(Prometheus):
         """postgresql cpu使用率"""
         expr = f"service_process_cpu_percent{{instance='{self.instance}',app='{self.service_name}'}}"
         val = self.unified_job(*self.query(expr))
-        val = round(float(val), 4) if val else '0.00'
+        val = round(float(val), 4) if val else '-'
         self.ret['cpu_usage'] = f"{val}%"
 
     def mem_usage(self):
         """postgresql 内存使用率"""
         expr = f"service_process_memory_percent{{instance='{self.instance}',app='{self.service_name}'}}"
         val = self.unified_job(*self.query(expr))
-        val = round(float(val), 4) if val else '0.00'
+        val = round(float(val), 4) if val else '-'
         self.ret['mem_usage'] = f"{val}%"
 
     def current_fetch_data(self):
@@ -64,72 +64,132 @@ class ServicePostgresqlCrawl(Prometheus):
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["current_fetch_data"] = val
+        self.basic.append({
+            "name": "current_fetch_data",
+            "name_cn": "当前fetch数据",
+            "value": val
+        })
 
     def current_insert_data(self):
         expr = f"SUM(pg_stat_database_tup_inserted{{release='$release', env='{self.env}',instance='{self.instance}'}})"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["current_insert_data"] = val
+        self.basic.append({
+            "name": "current_insert_data",
+            "name_cn": "当前insert数据",
+            "value": val
+        })
 
     def current_update_data(self):
         expr = f"SUM(pg_stat_database_tup_updated{{env='{self.env}',instance='{self.instance}'}})"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["current_update_data"] = val
+        self.basic.append({
+            "name": "current_update_data",
+            "name_cn": "当前update数据",
+            "value": val
+        })
 
     def max_connections(self):
         expr = f"pg_settings_max_connections{{release='$release', env='{self.env}',instance='{self.instance}'}}"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["max_connections"] = val
+        self.basic.append({
+            "name": "max_connections",
+            "name_cn": "最大连接数",
+            "value": val
+        })
 
     def open_file_descriptors(self):
         expr = f"process_open_fds{{release='$release', env='{self.env}',instance='{self.instance}'}}"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["open_file_descriptors"] = val
+        self.basic.append({
+            "name": "open_file_descriptors",
+            "name_cn": "打开文件描述符数",
+            "value": val
+        })
 
     def shared_buffers(self):
         expr = f"pg_settings_shared_buffers_bytes{{env='{self.env}',instance='{self.instance}'}}"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["shared_buffers"] = val
+        self.basic.append({
+            "name": "shared_buffers",
+            "name_cn": "shared_buffers",
+            "value": val
+        })
 
     def effective_cache(self):
         expr = f"pg_settings_effective_cache_size_bytes{{env='{self.env}',instance='{self.instance}'}}"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["effective_cache"] = val
+        self.basic.append({
+            "name": "effective_cache",
+            "name_cn": "有效缓存",
+            "value": val
+        })
 
     def max_wal_size(self):
         expr = f"pg_settings_max_wal_size_bytes{{env='{self.env}',instance='{self.instance}'}}"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["max_wal_size"] = val
+        self.basic.append({
+            "name": "max_wal_size",
+            "name_cn": "max_wal_size",
+            "value": val
+        })
 
     def random_page_cost(self):
         expr = f"pg_settings_random_page_cost{{env='{self.env}',instance='{self.instance}'}}"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["random_page_cost"] = val
+        self.basic.append({
+            "name": "random_page_cost",
+            "name_cn": "random_page_cost",
+            "value": val
+        })
 
     def seq_page_cost(self):
         expr = f"pg_settings_seq_page_cost{{env='{self.env}',instance='{self.instance}'}}"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["seq_page_cost"] = val
+        self.basic.append({
+            "name": "seq_page_cost",
+            "name_cn": "seq_page_cost",
+            "value": val
+        })
 
     def max_worker_processes(self):
         expr = f"pg_settings_max_worker_processes{{env='{self.env}',instance='{self.instance}'}}"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["max_worker_processes"] = val
+        self.basic.append({
+            "name": "max_worker_processes",
+            "name_cn": "最大进程worker数",
+            "value": val
+        })
 
     def max_parallel_workers(self):
         expr = f"pg_settings_max_parallel_workers{{env='{self.env}',instance='{self.instance}'}}"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["max_parallel_workers"] = val
+        self.basic.append({
+            "name": "max_parallel_workers",
+            "name_cn": "max_parallel_workers",
+            "value": val
+        })
 
     def run(self):
         """统一执行实例方法"""

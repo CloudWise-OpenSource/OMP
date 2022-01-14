@@ -82,7 +82,6 @@ export const AddMachineModal = ({
         port: 22,
         operate_system: "CentOS",
         username: "root",
-        init_host: false,
       }}
     >
       <MessageTip
@@ -324,6 +323,37 @@ export const AddMachineModal = ({
           label="用户名"
           name="username"
           key="username"
+          extra={
+            <span style={{ fontSize: 10 }}>
+              使用
+              <strong
+                style={{
+                  fontWeight: 700,
+                  color: "#595959",
+                  margin: "0 1px 0 1px",
+                }}
+              >
+                普通用户
+              </strong>
+              纳管主机时，为确保正常安装服务，请
+              <a
+                style={{
+                  fontWeight: 700,
+                  margin: "0 1px 0 1px",
+                }}
+                onClick={() => {
+                  let a = document.createElement("a");
+                  a.href = apiRequest.machineManagement.downInitScript;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                }}
+              >
+                下载
+              </a>
+              主机初始化脚本，并手动执行
+            </span>
+          }
           rules={[
             {
               required: true,
@@ -404,31 +434,6 @@ export const AddMachineModal = ({
           ]}
         >
           <Input.Password maxLength={64} placeholder={"请输入密码"} />
-        </Form.Item>
-
-        <Form.Item label="初始化主机">
-          <Input.Group compact>
-            <Form.Item name="init_host" noStyle valuePropName="checked">
-              <Switch style={{ borderRadius: "10px" }} />
-            </Form.Item>
-            <Form.Item name="icon" noStyle>
-              <Tooltip
-                placement="top"
-                title="开启后，主机将进行初始化操作，请使用root用户或具有sudo免密码权限的用户"
-              >
-                <InfoCircleOutlined
-                  name="icon"
-                  style={{
-                    color: "rgba(0,0,0,.45)",
-                    position: "relative",
-                    top: 3,
-                    left: 15,
-                    fontSize: 15,
-                  }}
-                />
-              </Tooltip>
-            </Form.Item>
-          </Input.Group>
         </Form.Item>
       </div>
     </OmpModal>
@@ -1201,13 +1206,6 @@ export const BatchImportMachineModal = ({
             break;
           case "端口[必填]":
             result.port = item[key];
-            break;
-          case "是否执行初始化":
-            if (item[key] === "是") {
-              result.init_host = true;
-            } else {
-              result.init_host = false;
-            }
             break;
           default:
             break;

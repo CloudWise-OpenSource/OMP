@@ -49,14 +49,14 @@ class ServiceIgniteCrawl(Prometheus):
         """ignite cpu使用率"""
         expr = f"service_process_cpu_percent{{instance='{self.instance}',app='{self.service_name}'}}"
         val = self.unified_job(*self.query(expr))
-        val = round(float(val), 4) if val else '0.00'
+        val = round(float(val), 4) if val else '-'
         self.ret['cpu_usage'] = f"{val}%"
 
     def mem_usage(self):
         """ignite 内存使用率"""
         expr = f"service_process_memory_percent{{instance='{self.instance}',app='{self.service_name}'}}"
         val = self.unified_job(*self.query(expr))
-        val = round(float(val), 4) if val else '0.00'
+        val = round(float(val), 4) if val else '-'
         self.ret['mem_usage'] = f"{val}%"
 
     def ignite_started_thread_count(self):
@@ -64,90 +64,165 @@ class ServiceIgniteCrawl(Prometheus):
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["ignite_started_thread_count"] = val
+        self.basic.append({
+            "name": "ignite_started_thread_count",
+            "name_cn": "开启线程数",
+            "value": val
+        })
 
     def sent_messages_count(self):
         expr = f"sent_messages_count{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["sent_messages_count"] = val
+        self.basic.append({
+            "name": "sent_messages_count",
+            "name_cn": "发送message数",
+            "value": val
+        })
 
     def ignite_received_messages_count(self):
         expr = f"ignite_received_messages_count{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["ignite_received_messages_count"] = val
+        self.basic.append({
+            "name": "ignite_received_messages_count",
+            "name_cn": "收到message数",
+            "value": val
+        })
 
     def average_job_wait_time(self):
         expr = f"average_job_wait_time{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["average_job_wait_time"] = val
+        self.basic.append({
+            "name": "average_job_wait_time",
+            "name_cn": "任务平均等待时间",
+            "value": val
+        })
 
     def current_job_wait_time(self):
         expr = f"current_job_wait_time{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["current_job_wait_time"] = val
+        self.basic.append({
+            "name": "current_job_wait_time",
+            "name_cn": "当前任务等待时间",
+            "value": val
+        })
 
     def maximum_job_wait_time(self):
         expr = f"maximum_job_wait_time{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["maximum_job_wait_time"] = val
+        self.basic.append({
+            "name": "maximum_job_wait_time",
+            "name_cn": "最大任务等待时间",
+            "value": val
+        })
 
     def average_job_execute_time(self):
         expr = f"average_job_execute_time{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["average_job_execute_time"] = val
+        self.basic.append({
+            "name": "average_job_execute_time",
+            "name_cn": "任务平均执行时间",
+            "value": val
+        })
 
     def current_job_execute_time(self):
         expr = f"current_job_execute_time{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["current_job_execute_time"] = val
+        self.basic.append({
+            "name": "current_job_execute_time",
+            "name_cn": "当前任务执行时间",
+            "value": val
+        })
 
     def maximum_job_execute_time(self):
         expr = f"maximum_job_execute_time{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["maximum_job_execute_time"] = val
+        self.basic.append({
+            "name": "current_job_execute_time",
+            "name_cn": "任务最大执行时间",
+            "value": val
+        })
 
     def busy_time_percentage(self):
         expr = f"busy_time_percentage{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}*100"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["busy_time_percentage"] = val
+        self.basic.append({
+            "name": "busy_time_percentage",
+            "name_cn": "忙碌时间占比",
+            "value": val
+        })
 
     def ignite_busy_time_total(self):
         expr = f"rate(total_busy_time{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}[5m])"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["ignite_busy_time_total"] = val
+        self.basic.append({
+            "name": "ignite_busy_time_total",
+            "name_cn": "忙碌态总时间",
+            "value": val
+        })
 
     def ignite_idle_time_total(self):
         expr = f"rate(ignite_idle_time_total{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}[5m])"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["ignite_idle_time_total"] = val
+        self.basic.append({
+            "name": "ignite_idle_time_total",
+            "name_cn": "空闲态总时间",
+            "value": val
+        })
 
     def current_daemon_thread_count(self):
         expr = f"current_daemon_thread_count{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["current_daemon_thread_count"] = val
+        self.basic.append({
+            "name": "current_daemon_thread_count",
+            "name_cn": "当前后台线程数",
+            "value": val
+        })
 
     def maximum_thread_count(self):
         expr = f"maximum_thread_count{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["maximum_thread_count"] = val
+        self.basic.append({
+            "name": "maximum_thread_count",
+            "name_cn": "最大线程数",
+            "value": val
+        })
 
     def current_thread_count(self):
         expr = f"current_thread_count{{env='{self.env}',instance='{self.instance}',job='igniteExporter'}}"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["current_thread_count"] = val
+        self.basic.append({
+            "name": "current_thread_count",
+            "name_cn": "当前线程数",
+            "value": val
+        })
 
     def run(self):
         """统一执行实例方法"""

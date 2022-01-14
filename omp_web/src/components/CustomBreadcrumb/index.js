@@ -45,6 +45,8 @@ const breadcrumbNameMap = {
   "install-record": "执行记录",
   service_upgrade: "服务升级",
   "deployment-plan": "部署模板",
+  "data-backup": "数据备份",
+  "backup-record": "备份记录",
 };
 
 // 基于面包屑组件的一层封装，用于匹配当前路由地址，动态展示页面路径

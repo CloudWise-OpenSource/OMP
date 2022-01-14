@@ -17,8 +17,10 @@ import Installation from "@/pages/AppStore/config/Installation";
 import EmailSettings from "src/pages/EmailSettings";
 import RuleCenter from "src/pages/RuleCenter";
 import InstallationRecord from "@/pages/InstallationRecord";
-import Upgrade from "@/pages/AppStore/config/Upgrade"
-import DeploymentPlan from "src/pages/DeploymentPlan";
+import Upgrade from "@/pages/AppStore/config/Upgrade";
+import DeploymentPlan from "@/pages/DeploymentPlan";
+import BackupRecords from "@/pages/BackupRecords";
+import BackupStrategy from "@/pages/BackupStrategy";
 
 import {
   DesktopOutlined,
@@ -29,6 +31,7 @@ import {
   AppstoreOutlined,
   EyeOutlined,
   UnorderedListOutlined,
+  SaveOutlined,
 } from "@ant-design/icons";
 
 export default [
@@ -167,6 +170,23 @@ export default [
         title: "默认指标",
         path: "/rule-center/default-rule",
         component: RuleCenter,
+      },
+    ],
+  },
+  {
+    menuTitle: "数据备份",
+    menuIcon: <SaveOutlined />,
+    menuKey: "/data-backup",
+    children: [
+      {
+        title: "备份记录",
+        path: "/data-backup/backup-record",
+        component: BackupRecords,
+      },
+      {
+        title: "备份策略",
+        path: "/data-backup/backup-strategy",
+        component: BackupStrategy,
       },
     ],
   },

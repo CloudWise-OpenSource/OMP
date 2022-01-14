@@ -15,8 +15,6 @@ from rest_framework.mixins import (
 )
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
-from django.http import FileResponse
-from django.conf import settings
 from django.db import transaction
 from django_filters.rest_framework.backends import DjangoFilterBackend
 
@@ -45,6 +43,7 @@ from app_store.app_store_serializers import (
 from app_store import tmp_exec_back_task
 
 from utils.common.exceptions import OperateError
+from utils.common.views import BaseDownLoadTemplateView
 from app_store.tasks import publish_entry
 from rest_framework.filters import OrderingFilter
 from utils.parse_config import (
@@ -337,7 +336,7 @@ class LocalPackageScanResultView(GenericViewSet, ListModelMixin):
             ).count()
             message = f"共扫描到 {len(package_names_lst)} 个安装包，" \
                       f"正在校验中..." \
-                      f"({len(package_names_lst)-count}/{len(package_names_lst)})"
+                      f"({len(package_names_lst) - count}/{len(package_names_lst)})"
         elif stage_status == "check_all_failed":
             message = f"共计 {len(package_names_lst)} 个安装包校验失败!"
         elif stage_status == "publishing":
@@ -392,7 +391,7 @@ class LocalPackageScanResultView(GenericViewSet, ListModelMixin):
         return Response(res)
 
 
-class ApplicationTemplateView(GenericViewSet, ListModelMixin):
+class ApplicationTemplateView(BaseDownLoadTemplateView):
     """
         list:
         获取应用商店下载模板
@@ -401,20 +400,9 @@ class ApplicationTemplateView(GenericViewSet, ListModelMixin):
     get_description = "应用商店下载组件模板"
 
     def list(self, request, *args, **kwargs):
-        template_file_name = "app_publish_readme.md"
-        template_path = os.path.join(
-            settings.BASE_DIR.parent,
-            "package_hub", "template", template_file_name)
-        try:
-            file = open(template_path, 'rb')
-            response = FileResponse(file)
-            response["Content-Type"] = "application/octet-stream"
-            response["Content-Disposition"] = \
-                f"attachment;filename={template_file_name}"
-        except FileNotFoundError:
-            logger.error("template.md file not found")
-            raise OperateError("组件模板文件缺失")
-        return response
+        return super(ApplicationTemplateView, self).list(
+            request, template_file_name="app_publish_readme.md",
+            *args, **kwargs)
 
 
 class DeploymentOperableView(GenericViewSet, ListModelMixin):
@@ -431,7 +419,7 @@ class DeploymentOperableView(GenericViewSet, ListModelMixin):
         return Response(not self.get_queryset().exists())
 
 
-class DeploymentTemplateView(GenericViewSet, ListModelMixin):
+class DeploymentTemplateView(BaseDownLoadTemplateView):
     """
           list:
           获取部署计划模板
@@ -440,20 +428,9 @@ class DeploymentTemplateView(GenericViewSet, ListModelMixin):
     get_description = "获取部署计划模板"
 
     def list(self, request, *args, **kwargs):
-        template_file_name = "deployment.xlsx"
-        template_path = os.path.join(
-            settings.BASE_DIR.parent,
-            "package_hub", "template", template_file_name)
-        try:
-            file = open(template_path, 'rb')
-            response = FileResponse(file)
-            response["Content-Type"] = "application/octet-stream"
-            response["Content-Disposition"] = \
-                f"attachment;filename={template_file_name}"
-        except FileNotFoundError:
-            logger.error("template.md file not found")
-            raise OperateError("组件模板文件缺失")
-        return response
+        return super(DeploymentTemplateView, self).list(
+            request, template_file_name="deployment.xlsx",
+            *args, **kwargs)
 
 
 class DeploymentPlanListView(GenericViewSet, ListModelMixin):
@@ -521,7 +498,7 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
 
     @staticmethod
     def _add_service(service_obj_ls, host_obj, app_obj, env_obj, only_dict,
-                     cluster_dict, is_base_env=False):
+                     cluster_dict, is_base_env=False, vip=None, role=None):
         """ 添加服务 """
         # 服务端口
         service_port = app_obj.app_port
@@ -551,6 +528,10 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
         for k, v in app_controllers.items():
             if v != "":
                 service_controllers[k] = f"{base_dir}/{v}"
+        if "post_action" in app_obj.extend_fields:
+            service_controllers["post_action"] = os.path.join(
+                base_dir, app_obj.extend_fields.get("post_action")
+            )
         # 切分 ip 字段，构建服务实例名
         ip_split_ls = host_obj.ip.split(".")
         service_name = app_obj.app_name
@@ -602,6 +583,8 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
             env=env_obj,
             service_connect_info=connection_obj,
             cluster_id=cluster_id,
+            vip=vip,
+            service_role=role,
         ))
 
     def create(self, request, *args, **kwargs):
@@ -635,7 +618,8 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
         if not host_queryset.exists():
             raise OperateError("导入失败，主机未纳管")
         # 构建 uuid
-        operation_uuid = uuid.uuid4()
+        operation_uuid = serializer.data.get("operation_uuid") if \
+            serializer.data.get("operation_uuid") else uuid.uuid4()
 
         try:
             # 服务对象列表、基础环境字典
@@ -649,6 +633,9 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
             for service_data in service_data_ls:
                 instance_name = service_data.get("instance_name")
                 service_name = service_data.get("service_name")
+                # 服务的角色、虚拟IP
+                vip = service_data.get("vip")
+                role = service_data.get("role")
                 # 主机、应用对象
                 host_obj = host_queryset.filter(
                     instance_name=instance_name).first()
@@ -685,7 +672,7 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                 # 添加服务
                 self._add_service(
                     service_obj_ls, host_obj, app_obj, default_env,
-                    only_dict, cluster_dict)
+                    only_dict, cluster_dict, vip=vip, role=role)
 
             # 亲和力为 tengine 字段 (Web 服务) 列表
             app_target = ApplicationHub.objects.filter(
