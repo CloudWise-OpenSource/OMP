@@ -1256,7 +1256,7 @@ class BackupSetting(models.Model):
     is_on = models.BooleanField("是否开启", default=False)
     crontab_detail = models.JSONField("定时任务详情")
     retain_day = models.IntegerField("文件保存天数", default=1)
-    retain_path = models.TextField("文件保存路径")
+    retain_path = models.TextField("文件保存路径", default="/data/omp/data/backup/")
     env_id = models.IntegerField("环境id", default=0)
 
     class Meta:
@@ -1284,7 +1284,7 @@ class BackupHistory(TimeStampMixin):
     file_deleted = models.BooleanField("文件是否被删除", default=False)
     create_time = models.DateTimeField("记录生成时间", auto_now_add=True)
     env_id = models.IntegerField("环境id", default=0)
-    retain_path = models.TextField("文件保存路径", default="/data/backups/")
+    retain_path = models.TextField("文件保存路径", default="/data/omp/data/backup/")
     operation = models.CharField("操作方式", default="定时任务执行", max_length=32)
     # omp-v-1.5新增
     NOT_SEND = 3
