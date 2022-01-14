@@ -7,7 +7,6 @@ import os
 import subprocess
 import tarfile
 
-from celery import shared_task
 from django.conf import settings
 
 from backups.backup_service import BackupDB
@@ -101,92 +100,44 @@ def transfer_week(request):
     return day_of_week
 
 
-def backup_service_data(path, backup_instances, history):
+def backup_service_data(history):
     """
     备份服务
-    :param path: 备份策略路径 '/data/backups'
-    :param backup_instances: 需要备份的服务， [] or set()
     :param history: 本次备份的记录
     :return:
     """
-    threading_list = []
 
     backup_script_func = BackupDB().backup_service
     _thread = ResultThread(
         target=backup_script_func,
         args=(history.id,))
-    threading_list.append(_thread)
-    threading_list_result = []
-    [thread_obj.start() for thread_obj in threading_list]
+    _thread.start()
+    _thread.join()
+    thread_result = _thread.get_result()
 
-    for thread_obj in threading_list:
-        thread_obj.join()
-        threading_list_result.append(thread_obj.get_result())
-    all_fail = True
-    file_names, resp_list = [], []
     err_message = ""
-    for service_instance_name, result in zip(backup_instances, threading_list_result):
-        backup_flag = result[0]
-        backup_message = result[1]
-        logger.info(f"备份结果为：{backup_message}")
-        if not backup_flag:
-            err_message += "执行备份任务失败！"
-            continue
-        """
-        2021-08-24 10:59:42 - INFO 所有环境中的mysql完成备份 \n
-        True  mysql1-20210824105934.tar.gz\n
-        """
-        resp_list.append(
-            {"backup_flag": backup_flag, "msg": backup_message,
-                "file_name": f"{service_instance_name}.tar.gz"}
-        )
-        if backup_flag != "True":
-            err_message += backup_message if not backup_message else f"备份实例{service_instance_name}失败!"
-            continue
-        all_fail = False
-        file_path = os.path.join(path, f"{service_instance_name}.tar.gz")
-        file_names.append(file_path)
-    if all_fail:
+
+    backup_flag = thread_result[0]
+    backup_message = thread_result[1]
+    logger.info(f"备份结果为：{backup_message}")
+
+    back_resp = {"backup_flag": backup_flag,
+                 "msg": backup_message, "file_name": history.file_name}
+
+    if not backup_flag:
         history.result = history.FAIL
         history.file_name = "-"
-        history.file_size = 0
+        history.file_size = "-"
         history.file_deleted = True
         history.expire_time = None
+        err_message += backup_message if not backup_message else f"备份任务{history.backup_name}动作执行失败!"
     else:
-        file_name = f"backup-{history.backup_name.split('-', 1)[1]}.tar.gz"
-        new_file_path = os.path.join(path, file_name)
-        status = tar_files(file_names, new_file_path)
-        if not status:
-            err_message += "压缩合并文件出错！"
-            history.result = history.FAIL
-            history.file_name = "-"
-            history.file_size = None
-            history.file_deleted = True
-            history.expire_time = None
-        else:
-            size = os.path.getsize(new_file_path) / 1024 / 1024
-            path_file = os.path.join(
-                settings.ROOT_DIR, f"data/backup/{file_name}")
-            cmd_str = f"ln -s {new_file_path} {path_file}"
-            _out, _err, _code = cmd(cmd_str)
-            if _code:
-                history.result = history.FAIL
-                err_message += "  创建软连接出错！"
-            else:
-                history.result = history.SUCCESS
-            if len(file_names) != len(backup_instances):
-                history.result = history.FAIL
-            history.file_name = file_name
-            history.file_size = "%.3f" % size
-    history.message = {"backup_result": resp_list, "err_message": err_message}
+        file_path = os.path.join(history.retain_path, history.file_name)
+        size = os.path.getsize(file_path) / 1024 / 1024
+        history.result = history.SUCCESS
+        history.file_size = "%.3f" % size
+    history.message = {"backup_resp": back_resp, "err_message": err_message}
     history.save()
-    # 删除原文件
-    for bi in backup_instances:
-        try:
-            old_path = os.path.join(path, bi)
-            cmd(f"rm -rf {old_path}/*.tar.gz")
-        except Exception as e:
-            logger.info(f"删除原文件失败！{str(e)}")
     email_setting = EmailSMTPSetting.objects.first()
     if not email_setting:
         return
@@ -234,14 +185,3 @@ def rm_backend_file(ids=None):
         except Exception as e:
             logger.error(f"删除备份文件软链{ln_path}失败: {str(e)}")
     return fail_files
-
-
-@shared_task
-def backup_once(backup_history_id):
-    """
-    手动备份
-    :param backup_history_id: 历史记录id
-    :return:
-    """
-    history = BackupHistory.objects.get(id=backup_history_id)
-    backup_service_data(history.retain_path, history.content, history)
