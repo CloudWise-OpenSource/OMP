@@ -11,7 +11,11 @@ import {
   Table,
 } from "antd";
 import { useEffect, useRef, useState } from "react";
-import { CopyOutlined, SearchOutlined, ArrowUpOutlined } from "@ant-design/icons";
+import {
+  CopyOutlined,
+  SearchOutlined,
+  ArrowUpOutlined,
+} from "@ant-design/icons";
 //import BMF from "browser-md5-file";
 import { fetchPost, fetchGet } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
@@ -22,9 +26,9 @@ import { useSelector, useDispatch } from "react-redux";
 import { getStep1ChangeAction } from "./Installation/store/actionsCreators";
 import { getUniqueKeyChangeAction } from "../store/actionsCreators";
 
-const ServiceUpgradeModal = ({
-  sUModalVisibility,
-  setSUModalVisibility,
+const ServiceRollbackModal = ({
+  sRModalVisibility,
+  setSRModalVisibility,
   // dataSource,
   installTitle,
   initLoading,
@@ -161,7 +165,7 @@ const ServiceUpgradeModal = ({
             history.push({
               pathname: "/application_management/app_store/service_upgrade",
               state: {
-                history: res.data.history
+                history: res.data.history,
               },
             });
           }
@@ -174,8 +178,8 @@ const ServiceUpgradeModal = ({
   };
 
   useEffect(() => {
-    sUModalVisibility && queryDataList();
-  }, [sUModalVisibility]);
+    sRModalVisibility && queryDataList();
+  }, [sRModalVisibility]);
 
   return (
     <Modal
@@ -184,7 +188,7 @@ const ServiceUpgradeModal = ({
           <span style={{ position: "relative", left: "-10px" }}>
             <ArrowUpOutlined />
           </span>
-          <span>服务升级-选择应用服务</span>
+          <span>服务回滚-选择应用服务</span>
         </span>
       }
       width={600}
@@ -193,9 +197,9 @@ const ServiceUpgradeModal = ({
         setCheckedList([]);
       }}
       onCancel={() => {
-        setSUModalVisibility(false);
+        setSRModalVisibility(false);
       }}
-      visible={sUModalVisibility}
+      visible={sRModalVisibility}
       footer={null}
       //width={1000}
       loading={loading}
@@ -341,7 +345,7 @@ const ServiceUpgradeModal = ({
               justifyContent: "space-between",
             }}
           >
-            <Button onClick={() => setSUModalVisibility(false)}>取消</Button>
+            <Button onClick={() => setSRModalVisibility(false)}>取消</Button>
             <Button
               type="primary"
               style={{ marginLeft: 16 }}
@@ -360,4 +364,4 @@ const ServiceUpgradeModal = ({
   );
 };
 
-export default ServiceUpgradeModal;
+export default ServiceRollbackModal;

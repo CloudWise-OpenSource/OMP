@@ -105,7 +105,7 @@ export default [
       },
       {
         title: "服务升级",
-        path: "/application_management/service_upgrade",
+        path: "/application_management/app_store/service_upgrade",
         notInMenu: true,
         component: Upgrade,
       },

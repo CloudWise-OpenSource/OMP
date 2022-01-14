@@ -1,6 +1,6 @@
 import UpgradeDetail from "./UpgradeDetail";
 import { useState } from "react";
-const UpgradeInfoItem = ({ id, data, title, log,idx }) => {
+const InstallInfoItem = ({ id, data, title, log,idx, instance_name }) => {
   return (
     <div
       id={id}
@@ -49,11 +49,10 @@ const UpgradeInfoItem = ({ id, data, title, log,idx }) => {
           return (
             <UpgradeDetail
               title={title}
-              key={`${title}=${item.ip}=${item.instance_name}`}
+              key={`${title}=${item.ip}`}
               status={item.upgrade_state}
               ip={item.ip}
               log={item.message}
-              instance_name={item.instance_name}
             />
           );
         })}
@@ -62,4 +61,4 @@ const UpgradeInfoItem = ({ id, data, title, log,idx }) => {
   );
 };
 
-export default UpgradeInfoItem;
+export default InstallInfoItem;

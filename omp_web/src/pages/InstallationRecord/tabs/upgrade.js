@@ -15,15 +15,15 @@ import ServiceUpgradeModal from "../config/ServiceUpgradeModal";
 const renderStatus = (text) => {
   switch (text) {
     case 0:
-      return <span>{renderDisc("warning", 7, -1)}等待安装</span>;
+      return <span>{renderDisc("warning", 7, -1)}等待升级</span>;
     case 1:
-      return <span>{renderDisc("warning", 7, -1)}正在安装</span>;
+      return <span>{renderDisc("warning", 7, -1)}正在升级</span>;
     case 2:
-      return <span>{renderDisc("normal", 7, -1)}成功</span>;
+      return <span>{renderDisc("normal", 7, -1)}升级成功</span>;
     case 3:
-      return <span>{renderDisc("critical", 7, -1)}失败</span>;
+      return <span>{renderDisc("critical", 7, -1)}升级失败</span>;
     case 4:
-      return <span>{renderDisc("notMonitored", 7, -1)}正在注册</span>;
+      return <span>{renderDisc("notMonitored", 7, -1)}正在升级</span>;
     default:
       return "-";
   }
@@ -69,16 +69,16 @@ const Upgrade = ({ history }) => {
     },
     {
       title: "服务数量",
-      key: "operator",
+      key: "service_count",
       width: 60,
-      dataIndex: "operator",
+      dataIndex: "service_count",
       align: "center",
       render: nonEmptyProcessing,
     },
     {
       title: "状态",
-      key: "install_status",
-      dataIndex: "install_status",
+      key: "upgrade_state",
+      dataIndex: "upgrade_state",
       width: 100,
       align: "center",
       render: (text) => {
@@ -100,23 +100,6 @@ const Upgrade = ({ history }) => {
       },
     },
     {
-      title: "回滚时间",
-      key: "modified",
-      dataIndex: "modified",
-      align: "center",
-      width: 120,
-      render: (text, record) => {
-        if (record.install_status == 1) {
-          return "-";
-        }
-        if (text) {
-          return moment(text).format("YYYY-MM-DD HH:mm:ss");
-        } else {
-          return "-";
-        }
-      },
-    },
-    {
       title: "操作",
       key: "1",
       width: 50,
@@ -130,10 +113,10 @@ const Upgrade = ({ history }) => {
               <a
                 onClick={() => {
                   history.push({
-                    pathname: "/application_management/app_store/installation",
+                    pathname:
+                      "/application_management/app_store/service_upgrade",
                     state: {
-                      uniqueKey: record.operation_uuid,
-                      step: 3,
+                      history: record.id,
                     },
                   });
                 }}
@@ -158,7 +141,7 @@ const Upgrade = ({ history }) => {
   //auth/users
   function fetchData(pageParams = { current: 1, pageSize: 10 }) {
     setLoading(true);
-    fetchGet(apiRequest.installHistoryPage.queryInstallHistoryList, {
+    fetchGet(apiRequest.installHistoryPage.queryUpgradeHistoryList, {
       params: {
         page: pageParams.current,
         size: pageParams.pageSize,
@@ -247,13 +230,13 @@ const Upgrade = ({ history }) => {
           rowKey={(record) => record.id}
         />
       </div>
-      <ServiceUpgradeModal
+      {/* <ServiceUpgradeModal
         vfModalVisibility={vfModalVisibility}
         setVfModalVisibility={setVfModalVisibility}
         dataSource={serviceList}
         // installTitle={installTitle.current}
         initLoading={loading}
-      />
+      /> */}
     </OmpContentWrapper>
   );
 };
