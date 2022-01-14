@@ -305,9 +305,9 @@ class BackupOnceView(GenericViewSet, CreateModelMixin):
                 expire_time=expire_time,
                 retain_path=retain_path,
                 operation="手动执行",
-                file_name='-'
+                file_name=f"数据备份-{date_str}{history_count + 1}-{env_id}.tar.gz"
             )
-            backup_service_once.delay(backup_instances, history.id)
+            backup_service_once.delay(history.id)
             return Response({})
 
         except Exception as e:

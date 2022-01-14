@@ -251,4 +251,4 @@ CUSTOM_THRESHOLD_SERVICES = {
 # 备份相关配置
 # 可备份的组件
 BACKUP_SERVICE = {"mysql", "arangodb"}
-BACKUP_DEFAULT_PATH = os.path.join(PROJECT_DIR, "data/backup_files")
+BACKUP_DEFAULT_PATH = os.path.join(PROJECT_DIR, "data/backup/")
