@@ -27,6 +27,7 @@ from db_models.models import (
     Host
 )
 from utils.plugin.salt_client import SaltClient
+from django.conf import settings
 
 logger = logging.getLogger("server")
 
@@ -112,9 +113,9 @@ class BackupDB(object):
         )
         if not cp_flag:
             return False, cp_msg
-        self.service_names = self.service_names.append(
+        self.service_names.append(
             service_dict.get('service_name'))
-        self.upload_real_paths = self.upload_real_paths.append(
+        self.upload_real_paths.append(
             os.path.join(salt_data, f"var/cache/salt/master/minions/{ip}/files/*"))
         logger.info(f"成功将节点{source_path}备份的数据同步到omp {file_name}.tar.gz")
         return True, f"{ip}下{''.join(self.service_names)}备份完成"
@@ -125,7 +126,8 @@ class BackupDB(object):
         """
         back_obj = BackupHistory.objects.filter(id=back_id).first()
         service_instances = back_obj.content
-        omp_backup_dir = back_obj.retain_path
+        # omp_backup_dir = back_obj.retain_path
+        omp_backup_dir = settings.BACKUP_DEFAULT_PATH
         for si in service_instances:
             service_obj = Service.objects.filter(
                 service_instance_name=si).first()
@@ -174,19 +176,22 @@ class BackupDB(object):
 
         # 3.将主节点的备份数据同步到备份目录
         file_name = back_obj.file_name
+        name = file_name.replace(".tar.gz", "")
         template_dir = os.path.join(
-            omp_backup_dir, file_name.replace(".tar.gz", ""))
+            omp_backup_dir, name)
         upload_real_paths = " ".join(self.upload_real_paths)
         if len(template_dir) <= 5 or len(upload_real_paths) <= 5:
             return False, "目录异常，防止保护文件丢失触发熔断." \
                           "template_dir:template_dir:{0},upload_real_paths:{1}".format(
                               template_dir, upload_real_paths
                           )
+        cmd_str = "test -d {0} || mkdir -p {0} && cp -rf {1} {0} && rm -rf {1} && cd {2}" \
+                  " && tar -zcf {3} {4} && rm -rf {0}".format(
+                      template_dir, upload_real_paths, omp_backup_dir, file_name, name)
         _out, _err, _code = cmd(
-            "test -d {0} || mkdir -p {0} && cp -rf {1} {0} && rm -rf {1} && cd {2}"
-            " && tar -zcvf {3} {0} && rm -rf {0}".format(
-                template_dir, upload_real_paths, omp_backup_dir, file_name)
+            cmd_str
         )
+        logger.info(f"执行合并备份文件命令{cmd_str}")
         if int(_code) != 0:
             return False, _out
         logger.info(f"{''.join(self.service_names)}备份完成")
