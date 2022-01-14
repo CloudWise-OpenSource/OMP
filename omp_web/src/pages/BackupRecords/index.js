@@ -223,7 +223,7 @@ const BackupRecords = () => {
           onClick={() => {
             checkedList.map((item, idx) => {
               setTimeout(() => {
-                if (record.file_name || record.result === 1) {
+                if (item.file_name || item.result === 1) {
                   // if (item.file_size == 0) {
                   //   message.warning("要下载的文件不存在");
                   //   setDownLoadModal(false);
@@ -245,7 +245,6 @@ const BackupRecords = () => {
               }, idx * 500);
               //}
             });
-            queryListData(pagination);
           }}
         >
           下载
