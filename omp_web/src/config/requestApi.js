@@ -200,9 +200,17 @@ export const apiRequest = {
   dataBackup: {
     // 查询备份历史记录
     queryBackupHistory: "/api/backups/backupHistory/",
-    //备份设置初始值查询
+    // 备份设置初始值查询
     queryBackupSettingData: "/api/backups/backupSettings/",
+    // 更新备份策略
+    updateBackupSetting: "/api/backups/backupSettings/",
     // 获取可备份实例列表
     queryCanBackup: "/api/backups/canBackupInstances/",
+    // 单次备份
+    backupOnce: "/api/backups/backupOnce/",
+    // 删除备份文件
+    deleteBackupFile: "/api/backups/backupHistory/",
+    // 推送备份记录
+    pushEmail: "/api/backups/backupSendEmail/",
   },
 };

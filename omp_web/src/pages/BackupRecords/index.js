@@ -1,23 +1,12 @@
-import {
-  OmpContentWrapper,
-  OmpTable,
-  OmpMessageModal,
-  OmpSelect,
-  OmpDrawer,
-} from "@/components";
-import { Button, message, Menu, Dropdown } from "antd";
+import { OmpContentWrapper, OmpTable, OmpMessageModal } from "@/components";
+import { Button, message, Checkbox, Row, Col, Form, Input } from "antd";
 import { useState, useEffect, useRef } from "react";
 import { handleResponse, _idxInit } from "@/utils/utils";
 import { fetchGet, fetchPost, fetchPatch } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-import {
-  AddMachineModal,
-  UpDateMachineModal,
-  BatchImportMachineModal,
-} from "./config/modals";
-import { useDispatch } from "react-redux";
-import getColumnsConfig, { DetailHost } from "./config/columns";
-import { DownOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
+import star from "./config/asterisk.svg";
+import getColumnsConfig from "./config/columns";
+import { SaveOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 import { useHistory, useLocation } from "react-router-dom";
 
 const BackupRecords = () => {
@@ -26,24 +15,16 @@ const BackupRecords = () => {
   const history = useHistory();
 
   const [loading, setLoading] = useState(false);
+  const [deleteLoading, setDeleteLoadin] = useState(false);
 
-  const [searchLoading, setSearchLoading] = useState(false);
-
-  //添加弹框的控制state
-  const [addModalVisible, setAddMoadlVisible] = useState(false);
-  //修改弹框的控制state
-  const [updateMoadlVisible, setUpdateMoadlVisible] = useState(false);
-
-  // 批量导入弹框
-  const [batchImport, setBatchImport] = useState(false);
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
 
   //选中的数据
   const [checkedList, setCheckedList] = useState([]);
 
   //table表格数据
   const [dataSource, setDataSource] = useState([]);
-  const [ipListSource, setIpListSource] = useState([]);
-  const [selectValue, setSelectValue] = useState(location.state?.ip);
 
   const [pagination, setPagination] = useState({
     current: 1,
@@ -53,48 +34,26 @@ const BackupRecords = () => {
     searchParams: {},
   });
 
-  const [isShowDrawer, setIsShowDrawer] = useState({
-    isOpen: false,
-    src: "",
-    record: {},
-  });
-
-  const [msgShow, setMsgShow] = useState(false);
-
-  const msgRef = useRef(null);
-
   // 定义row存数据
   const [row, setRow] = useState({});
 
-  // 主机详情历史数据
-  const [historyData, setHistoryData] = useState([]);
+  // 备份
+  const [backupModal, setBackupModal] = useState(false);
+  // 删除文件
+  const [deleteModal, setDeleteModal] = useState(false);
+  const [deleteOneModal, setDeleteOneModal] = useState(false);
 
-  // 主机详情基础组件信息
-  const [baseEnvData, setBaseEnvData] = useState([]);
+  // 备份组件全量数据
+  const [canBackupIns, setCanBackupIns] = useState([]);
+  // 选中数据
+  const [backupIns, setBackupIns] = useState([]);
+  // 邮件推送modal弹框
+  const [pushAnalysisModal, setPushAnalysisModal] = useState(false);
 
-  // 主机详情loading
-  const [historyLoading, setHistoryLoading] = useState([]);
-
-  // 重启主机agent
-  const [restartHostAgentModal, setRestartHostAgentModal] = useState(false);
-
-  // 重启监控agent
-  const [restartMonterAgentModal, setRestartMonterAgentModal] = useState(false);
-
-  // 开启维护
-  const [openMaintainModal, setOpenMaintainModal] = useState(false);
-  // 关闭维护
-  const [closeMaintainModal, setCloseMaintainModal] = useState(false);
-
-  // 开启维护（单次）
-  const [openMaintainOneModal, setOpenMaintainOneModal] = useState(false);
-  // 关闭维护（单次）
-  const [closeMaintainOneModal, setCloseMaintainOneModal] = useState(false);
-
-  // 初始化主机
-  const [ininHostModal, setIninHostModal] = useState(false);
-
-  const [showIframe, setShowIframe] = useState({});
+  // 推送表单数据
+  const [pushForm] = Form.useForm();
+  // 点击推送按钮数据
+  const [pushInfo, setPushInfo] = useState();
 
   // 列表查询
   function fetchData(
@@ -113,7 +72,6 @@ const BackupRecords = () => {
     })
       .then((res) => {
         handleResponse(res, (res) => {
-          console.log(res.data.results);
           setDataSource(res.data.results);
           setPagination({
             ...pagination,
@@ -129,396 +87,176 @@ const BackupRecords = () => {
       .finally(() => {
         location.state = {};
         setLoading(false);
-        fetchIPlist();
       });
   }
 
-  const fetchIPlist = () => {
-    setSearchLoading(true);
-    fetchGet(apiRequest.machineManagement.ipList)
-      .then((res) => {
-        handleResponse(res, (res) => {
-          setIpListSource(res.data);
-        });
-      })
-      .catch((e) => console.log(e))
-      .finally(() => {
-        setSearchLoading(false);
-      });
-  };
-
-  const createHost = (data) => {
+  // 查询可选备份项目
+  const queryCanBackup = () => {
     setLoading(true);
-    data.ip = data.IPtext;
-    delete data.IPtext;
-    data.port = `${data.port}`;
-    delete data.icon;
-    fetchPost(apiRequest.machineManagement.hosts, {
-      body: {
-        ...data,
+    fetchGet(apiRequest.dataBackup.queryCanBackup, {
+      params: {
+        env_id: 1,
       },
     })
       .then((res) => {
-        if (res && res.data) {
-          if (res.data.code == 1) {
-            message.warning(res.data.message);
-          }
-          if (res.data.code == 0) {
-            message.success("添加主机成功");
-            fetchData(
-              { current: pagination.current, pageSize: pagination.pageSize },
-              { ip: selectValue },
-              pagination.ordering
-            );
-            setAddMoadlVisible(false);
-          }
-        }
-      })
-      .catch((e) => console.log(e))
-      .finally(() => {
-        setLoading(false);
-      });
-  };
-
-  const upDateHost = (data) => {
-    setLoading(true);
-    data.ip = data.IPtext;
-    delete data.IPtext;
-    data.port = `${data.port}`;
-    fetchPatch(`${apiRequest.machineManagement.hosts}${row.id}/`, {
-      body: {
-        ...data,
-      },
-    })
-      .then((res) => {
-        if (res && res.data) {
-          if (res.data.code == 1) {
-            // msgRef.current = res.data.message
-            // setMsgShow(true)
-            message.warning(res.data.message);
-          }
-          if (res.data.code == 0) {
-            message.success("更新主机信息成功");
-            fetchData(
-              { current: pagination.current, pageSize: pagination.pageSize },
-              { ip: selectValue },
-              pagination.ordering
-            );
-            setUpdateMoadlVisible(false);
-          }
-        }
-      })
-      .catch((e) => console.log(e))
-      .finally(() => {
-        setLoading(false);
-      });
-  };
-
-  // const fetchHistoryData = (id) => {
-  //   setHistoryLoading(true);
-  //   fetchGet(apiRequest.machineManagement.operateLog, {
-  //     params: {
-  //       host_id: id,
-  //     },
-  //   })
-  //     .then((res) => {
-  //       handleResponse(res, (res) => {
-  //         setHistoryData(res.data);
-  //       });
-  //     })
-  //     .catch((e) => console.log(e))
-  //     .finally(() => {
-  //       setHistoryLoading(false);
-  //     });
-  // };
-
-  // 获取主机详情
-  const fetchHostDetail = (id) => {
-    setHistoryLoading(true);
-    fetchGet(`${apiRequest.machineManagement.hostDetail}${id}`)
-      .then((res) => {
-        handleResponse(res, (res) => {
-          const { deployment_information, history } = res.data;
-          setHistoryData(history);
-          setBaseEnvData(deployment_information);
-          console.log(deployment_information);
-        });
-      })
-      .catch((e) => console.log(e))
-      .finally(() => {
-        setHistoryLoading(false);
-      });
-  };
-
-  // 重启监控agent
-  const fetchRestartMonitorAgent = () => {
-    setLoading(true);
-    fetchPost(apiRequest.machineManagement.restartMonitorAgent, {
-      body: {
-        host_ids: checkedList.map((item) => item.id),
-      },
-    })
-      .then((res) => {
-        handleResponse(res, (res) => {
-          if (res.code == 0) {
-            message.success("重启监控Agent任务已下发");
-          }
-          if (res.code == 1) {
-            message.warning(res.message);
-          }
+        handleResponse(res, () => {
+          setCanBackupIns(res.data.data);
         });
       })
       .catch((e) => console.log(e))
       .finally(() => {
         setLoading(false);
-        setRestartMonterAgentModal(false);
-        setCheckedList([]);
-        fetchData(
-          { current: pagination.current, pageSize: pagination.pageSize },
-          { ip: selectValue },
-          pagination.ordering
-        );
       });
   };
 
-  // 重启主机agent
-  const fetchRestartHostAgent = () => {
-    setLoading(true);
-    fetchPost(apiRequest.machineManagement.restartHostAgent, {
-      body: {
-        host_ids: checkedList.map((item) => item.id),
-      },
-    })
-      .then((res) => {
-        handleResponse(res, (res) => {
-          if (res.code == 0) {
-            message.success("重启主机Agent任务已下发");
-          }
-          if (res.code == 1) {
-            message.warning(res.message);
-          }
-        });
-      })
-      .catch((e) => console.log(e))
-      .finally(() => {
-        setLoading(false);
-        setRestartHostAgentModal(false);
-        setCheckedList([]);
-        fetchData(
-          { current: pagination.current, pageSize: pagination.pageSize },
-          { ip: selectValue },
-          pagination.ordering
-        );
-      });
-  };
-
-  // 初始化主机
-  const fetchInitHostAgent = () => {
-    setLoading(true);
-    let hostIdArr = [];
-    hostIdArr = checkedList
-      .filter((item) => {
-        return item.init_status === 1 || item.init_status === 3;
-      })
-      .map((item) => item.id);
-    if (hostIdArr.length === 0) {
-      setLoading(false);
-      setIninHostModal(false);
-      setCheckedList([]);
-      message.success("所选主机已经初始化完成");
+  // 数据备份
+  const backupData = () => {
+    if (canBackupIns.length === 0) {
+      message.warning("当前暂无可用的备份实例");
       return;
     }
-    fetchPost(apiRequest.machineManagement.hostInit, {
-      body: {
-        host_ids: hostIdArr,
-      },
-    })
-      .then((res) => {
-        handleResponse(res, (res) => {
-          if (res.code == 0) {
-            message.success("初始化主机任务已下发");
-          }
-          if (res.code == 1) {
-            message.warning(res.message);
-          }
-        });
-      })
-      .catch((e) => console.log(e))
-      .finally(() => {
-        setLoading(false);
-        setIninHostModal(false);
-        setCheckedList([]);
-        fetchData(
-          { current: pagination.current, pageSize: pagination.pageSize },
-          { ip: selectValue },
-          pagination.ordering
-        );
-      });
-  };
-
-  // 主机进入｜退出维护模式
-  const fetchMaintainChange = (e, checkedList) => {
-    let host_arr = [];
-    if (e) {
-      host_arr = checkedList.filter((item) => {
-        return !item.is_maintenance;
-      });
-    } else {
-      host_arr = checkedList.filter((item) => {
-        return item.is_maintenance;
-      });
-    }
-    if (host_arr.length == 0) {
-      setLoading(false);
-      setOpenMaintainOneModal(false);
-      setCloseMaintainOneModal(false);
-      setOpenMaintainModal(false);
-      setCloseMaintainModal(false);
-      setCheckedList([]);
-      if (e) {
-        message.success("主机开启维护模式成功");
-      } else {
-        message.success("主机关闭维护模式成功");
-      }
+    if (backupIns.length === 0) {
+      message.warning("请选择您定时备份的实例后，再进行保存");
       return;
     }
-    setLoading(true);
-    fetchPost(apiRequest.machineManagement.hostsMaintain, {
+    setBackupLoading(true);
+    fetchPost(apiRequest.dataBackup.backupOnce, {
       body: {
-        is_maintenance: e,
-        host_ids: host_arr.map((item) => item.id),
+        env_id: 1,
+        backup_instances: backupIns,
       },
     })
       .then((res) => {
-        if (res.data.code == 0) {
-          if (e) {
-            message.success("主机开启维护模式成功");
-          } else {
-            message.success("主机关闭维护模式成功");
-          }
-        }
-        if (res.data.code == 1) {
+        if (res.data.code === 0) {
+          message.success("数据备份任务已下发");
+          setBackupModal(false);
+          fetchData({
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+          });
+        } else {
           message.warning(res.data.message);
         }
       })
       .catch((e) => console.log(e))
       .finally(() => {
-        setLoading(false);
-        setOpenMaintainOneModal(false);
-        setCloseMaintainOneModal(false);
-        setOpenMaintainModal(false);
-        setCloseMaintainModal(false);
-        setCheckedList([]);
-        fetchData(
-          { current: pagination.current, pageSize: pagination.pageSize },
-          { ip: selectValue },
-          pagination.ordering
-        );
+        setBackupLoading(false);
       });
   };
 
-  const queryListData = (pageParams = { current: 1, pageSize: 10 }) => {
-    // setLoading(true);
-    fetchGet(apiRequest.dataBackup.queryBackupHistory, {
-      params: {
+  const pushEmail = () => {
+    setPushLoading(true);
+    fetchPost(apiRequest.dataBackup.pushEmail, {
+      body: {
+        ...pushInfo,
         env_id: 1,
-        page_num: pageParams.current,
-        page_size: pageParams.pageSize,
+        to_users: pushForm.getFieldValue("email"),
       },
     })
       .then((res) => {
-        //console.log(serviceDataRes.code);
-        if (res && res.code == 0) {
-          handleResponse(res, () => {
-            console.log(res);
-            // const _idxInit = (data) => {
-            //   let result = [...data];
-            //   result.map((item, i) => {
-            //     result[i]._idx =
-            //       i + 1 + (pageParams.current - 1) * pageParams.pageSize;
-            //   });
-            //   return result;
-            // };
-
-            // setDataSource(_idxInit(res.data.data));
-            // setPagination((pagination) => ({
-            //   ...pagination,
-            //   current: Number(res.data.page_num),
-            //   pageSize: Number(res.data.per_page),
-            //   total: res.data.total,
-            // }));
-          });
+        if (res && res.data) {
+          if (res.data.code == 1) {
+            message.warning(res.data.message);
+          }
+          if (res.data.code == 0) {
+            message.success("推送成功");
+            setPushAnalysisModal(false);
+            fetchData();
+          }
         }
       })
       .catch((e) => console.log(e))
-      .finally(() => {
-        // setLoading(false);
-        //setRow({});
-        setCheckedList([]);
-      });
+      .finally(() => setPushLoading(false));
+  };
+
+  // 删除
+  const deleteBackup = (deleteType = null) => {
+    setDeleteLoadin(true);
+    fetchPost(apiRequest.dataBackup.deleteBackupFile, {
+      body: {
+        env_id: 1,
+        ids: deleteType === "only" ? [row.id] : checkedList.map((e) => e.id),
+      },
+    })
+      .then((res) => {
+        if (res && res.data) {
+          if (res.data.code == 1) {
+            message.warning(res.data.message);
+          }
+          if (res.data.code == 0) {
+            message.success("删除文件成功");
+            setCheckedList([]);
+            setDeleteModal(false);
+            setDeleteOneModal(false);
+            fetchData({
+              current: pagination.current,
+              pageSize: pagination.pageSize,
+            });
+          }
+        }
+      })
+      .catch((e) => console.log(e))
+      .finally(() => setDeleteLoadin(false));
   };
 
   useEffect(() => {
     fetchData({ current: pagination.current, pageSize: pagination.pageSize });
-    queryListData();
+    queryCanBackup();
   }, []);
 
   return (
     <OmpContentWrapper>
       <div style={{ display: "flex" }}>
         <Button
-          // disabled={canBackup.length == 0 || !canBackup}
-          // loading={isLoading}
           style={{ marginRight: 15 }}
           type="primary"
-          // onClick={() => {
-          //   setBackupModal(true);
-          // }}
+          onClick={() => {
+            setBackupModal(true);
+          }}
         >
           备份
         </Button>
         <Button
           style={{ marginRight: 15 }}
           type="primary"
-          // disabled={checkedList.length == 0}
-          // onClick={() => {
-          //   checkedList.map((item, idx) => {
-          //     setTimeout(() => {
-          //       if (item.result !== 2) {
-          //         // if (item.file_size == 0) {
-          //         //   message.warning("要下载的文件不存在");
-          //         //   setDownLoadModal(false);
-          //         //   queryListData(pagination);
-          //         //   return;
-          //         // }
-          //         let a = document.createElement("a");
-          //         a.setAttribute("id", `${idx}-downA`);
-          //         document.body.appendChild(a);
-          //         let dom = document.getElementById(`${idx}-downA`);
-          //         dom.href = `/download-backup/${item.file_name}`;
-          //         dom.click();
-          //         setTimeout(() => {
-          //           document.body.removeChild(dom);
-          //         }, 1000);
-          //       } else {
-          //         message.warning("备份中文件不支持下载");
-          //       }
-          //     }, idx * 500);
-          //     //}
-          //   });
-          //   //setDownLoadModal(false);
-          //   queryListData(pagination);
-          // }}
+          disabled={checkedList.length == 0}
+          onClick={() => {
+            checkedList.map((item, idx) => {
+              setTimeout(() => {
+                if (record.file_name || record.result === 1) {
+                  // if (item.file_size == 0) {
+                  //   message.warning("要下载的文件不存在");
+                  //   setDownLoadModal(false);
+                  //   queryListData(pagination);
+                  //   return;
+                  // }
+                  let a = document.createElement("a");
+                  a.setAttribute("id", `${idx}-downA`);
+                  document.body.appendChild(a);
+                  let dom = document.getElementById(`${idx}-downA`);
+                  dom.href = `/download-backup/${item.file_name}`;
+                  dom.click();
+                  setTimeout(() => {
+                    document.body.removeChild(dom);
+                  }, 1000);
+                } else {
+                  message.warning("该任务文件不支持下载");
+                }
+              }, idx * 500);
+              //}
+            });
+            queryListData(pagination);
+          }}
         >
           下载
         </Button>
         <Button
           style={{ marginRight: 15 }}
-          // disabled={checkedList.length == 0}
+          disabled={checkedList.length == 0}
           //type={"primary"}
-          // onClick={() => {
-          //   setDeleteModal(true);
-          // }}
+          onClick={() => {
+            setDeleteModal(true);
+          }}
         >
           删除
         </Button>
@@ -528,11 +266,10 @@ const BackupRecords = () => {
             style={{ marginLeft: 10 }}
             onClick={() => {
               setCheckedList([]);
-              fetchData(
-                { current: pagination.current, pageSize: pagination.pageSize },
-                { ip: selectValue },
-                pagination.ordering
-              );
+              fetchData({
+                current: pagination.current,
+                pageSize: pagination.pageSize,
+              });
             }}
           >
             刷新
@@ -549,27 +286,26 @@ const BackupRecords = () => {
         <OmpTable
           loading={loading}
           //scroll={{ x: 1900 }}
-          // onChange={(e, filters, sorter) => {
-          //   let ordering = sorter.order
-          //     ? `${sorter.order == "descend" ? "" : "-"}${sorter.columnKey}`
-          //     : null;
-          //   setTimeout(() => {
-          //     fetchData(e, pagination.searchParams, ordering);
-          //   }, 200);
-          // }}
-          columns={getColumnsConfig(
-            setIsShowDrawer,
-            setRow,
-            setUpdateMoadlVisible,
-            fetchHostDetail,
-            setCloseMaintainOneModal,
-            setOpenMaintainOneModal,
-            setShowIframe,
-            history
-          )}
+          onChange={(e, filters, sorter) => {
+            let ordering = sorter.order
+              ? `${sorter.order == "descend" ? "" : "-"}${sorter.columnKey}`
+              : null;
+            setTimeout(() => {
+              fetchData(e, pagination.searchParams, ordering);
+            }, 200);
+          }}
+          columns={getColumnsConfig(setRow, setDeleteOneModal, {
+            pushForm,
+            setPushLoading,
+            setPushAnalysisModal,
+            setPushInfo,
+          })}
           notSelectable={(record) => ({
-            // 文件删除不能选中
-            disabled: record?.file_deleted === true
+            // 执行中、失败、文件删除不能选中
+            disabled:
+              record?.file_deleted === true ||
+              record.result === 0 ||
+              record.result === 2,
           })}
           dataSource={dataSource}
           pagination={{
@@ -600,44 +336,77 @@ const BackupRecords = () => {
           checkedState={[checkedList, setCheckedList]}
         />
       </div>
-      {addModalVisible && (
-        <AddMachineModal
-          setLoading={setLoading}
-          loading={loading}
-          visibleHandle={[addModalVisible, setAddMoadlVisible]}
-          createHost={createHost}
-          msgInfo={{
-            msgShow: msgShow,
-            setMsgShow: setMsgShow,
-            msg: msgRef.current,
-          }}
-        />
-      )}
-      {updateMoadlVisible && (
-        <UpDateMachineModal
-          loading={loading}
-          setLoading={setLoading}
-          visibleHandle={[updateMoadlVisible, setUpdateMoadlVisible]}
-          createHost={upDateHost}
-          row={row}
-          msgInfo={{
-            msgShow: msgShow,
-            setMsgShow: setMsgShow,
-            msg: msgRef.current,
-          }}
-        />
-      )}
-      <DetailHost
-        isShowDrawer={isShowDrawer}
-        setIsShowDrawer={setIsShowDrawer}
-        loading={historyLoading}
-        data={historyData}
-        baseEnv={baseEnvData}
-      />
-      <OmpDrawer showIframe={showIframe} setShowIframe={setShowIframe} />
 
       <OmpMessageModal
-        visibleHandle={[restartHostAgentModal, setRestartHostAgentModal]}
+        visibleHandle={[backupModal, setBackupModal]}
+        title={
+          <span>
+            <SaveOutlined
+              style={{
+                fontSize: 20,
+                paddingRight: "10px",
+                position: "relative",
+                top: 2,
+              }}
+            />
+            数据备份
+          </span>
+        }
+        loading={backupLoading}
+        onFinish={() => {
+          backupData();
+        }}
+      >
+        <div style={{ padding: "10px 20px 20px 20px" }}>
+          <p>
+            <span>
+              <img
+                src={star}
+                style={{ position: "relative", top: -2, left: -3 }}
+              />
+              请选择要备份的实例 :
+            </span>
+          </p>
+          {canBackupIns.length === 0 ? (
+            <span style={{ marginLeft: 20, color: "#a7abb7" }}>
+              暂无可选实例
+            </span>
+          ) : (
+            <Checkbox.Group
+              value={backupIns}
+              onChange={(checkedValues) => {
+                setBackupIns(checkedValues);
+              }}
+              style={{
+                marginLeft: 20,
+              }}
+            >
+              {canBackupIns.map((e) => {
+                return (
+                  <Row>
+                    <Checkbox key={e} value={e} style={{ lineHeight: "32px" }}>
+                      {e}
+                    </Checkbox>
+                  </Row>
+                );
+              })}
+            </Checkbox.Group>
+          )}
+          <p
+            style={{
+              marginTop: 10,
+              marginLeft: 6,
+              fontSize: 14,
+              color: "#595959",
+            }}
+          >
+            是否确认对已选实例进行单次备份操作 ?
+          </p>
+        </div>
+      </OmpMessageModal>
+
+      <OmpMessageModal
+        visibleHandle={[deleteModal, setDeleteModal]}
         title={
           <span>
             <ExclamationCircleOutlined
@@ -652,20 +421,20 @@ const BackupRecords = () => {
             提示
           </span>
         }
-        loading={loading}
+        loading={deleteLoading}
         onFinish={() => {
-          fetchRestartHostAgent();
+          deleteBackup();
         }}
       >
         <div style={{ padding: "20px" }}>
-          确定要重启{" "}
-          <span style={{ fontWeight: 500 }}>{checkedList.length}台</span> 主机{" "}
-          <span style={{ fontWeight: 500 }}>主机Agent</span> ？
+          确定要删除{" "}
+          <span style={{ fontWeight: 500 }}>{checkedList.length}条</span> 记录的{" "}
+          <span style={{ fontWeight: 500 }}>备份文件</span> ？
         </div>
       </OmpMessageModal>
 
       <OmpMessageModal
-        visibleHandle={[restartMonterAgentModal, setRestartMonterAgentModal]}
+        visibleHandle={[deleteOneModal, setDeleteOneModal]}
         title={
           <span>
             <ExclamationCircleOutlined
@@ -680,166 +449,63 @@ const BackupRecords = () => {
             提示
           </span>
         }
-        loading={loading}
+        loading={deleteLoading}
         onFinish={() => {
-          fetchRestartMonitorAgent();
+          deleteBackup("only");
         }}
       >
         <div style={{ padding: "20px" }}>
-          确定要重启{" "}
-          <span style={{ fontWeight: 500 }}>{checkedList.length}台</span> 主机{" "}
-          <span style={{ fontWeight: 500 }}>监控Agent</span> ？
+          确定要删除 <span style={{ fontWeight: 500 }}>当前</span> 记录的{" "}
+          <span style={{ fontWeight: 500 }}>备份文件</span> ？
         </div>
       </OmpMessageModal>
 
       <OmpMessageModal
-        visibleHandle={[openMaintainModal, setOpenMaintainModal]}
-        title={
-          <span>
-            <ExclamationCircleOutlined
+        visibleHandle={[pushAnalysisModal, setPushAnalysisModal]}
+        title={<span>邮件推送</span>}
+        loading={pushLoading}
+        onFinish={() => pushEmail()}
+      >
+        <Form style={{ marginLeft: 40 }} form={pushForm}>
+          <Form.Item
+            name="email"
+            label="接收人"
+            rules={[
+              {
+                type: "email",
+                message: "请输入正确格式的邮箱",
+              },
+            ]}
+          >
+            <Input
+              placeholder="例如: emailname@163.com"
               style={{
-                fontSize: 20,
-                color: "#f0a441",
-                paddingRight: "10px",
-                position: "relative",
-                top: 2,
+                width: 320,
               }}
             />
-            提示
-          </span>
-        }
-        loading={loading}
-        onFinish={() => {
-          fetchMaintainChange(true, checkedList);
-        }}
-      >
-        <div style={{ padding: "20px" }}>
-          确定要对{" "}
-          <span style={{ fontWeight: 500 }}>{checkedList.length}台</span>{" "}
-          主机下发 <span style={{ fontWeight: 500 }}>开启维护模式</span> 操作？
-        </div>
+          </Form.Item>
+          <p
+            style={{
+              marginTop: 30,
+              paddingLeft: 40,
+              fontSize: 13,
+            }}
+          >
+            <ExclamationCircleOutlined style={{ paddingRight: 10 }} />
+            如果需要配置默认的备份记录接收人，请点击
+            <a
+              onClick={() =>
+                history.push({
+                  pathname: "/data-backup/backup-strategy",
+                })
+              }
+              style={{ marginLeft: 4 }}
+            >
+              这里
+            </a>
+          </p>
+        </Form>
       </OmpMessageModal>
-
-      <OmpMessageModal
-        visibleHandle={[closeMaintainModal, setCloseMaintainModal]}
-        title={
-          <span>
-            <ExclamationCircleOutlined
-              style={{
-                fontSize: 20,
-                color: "#f0a441",
-                paddingRight: "10px",
-                position: "relative",
-                top: 2,
-              }}
-            />
-            提示
-          </span>
-        }
-        loading={loading}
-        onFinish={() => {
-          fetchMaintainChange(false, checkedList);
-        }}
-      >
-        <div style={{ padding: "20px" }}>
-          确定要对{" "}
-          <span style={{ fontWeight: 500 }}>{checkedList.length}台</span>{" "}
-          主机下发 <span style={{ fontWeight: 500 }}>关闭维护模式</span> 操作？
-        </div>
-      </OmpMessageModal>
-
-      <OmpMessageModal
-        visibleHandle={[openMaintainOneModal, setOpenMaintainOneModal]}
-        title={
-          <span>
-            <ExclamationCircleOutlined
-              style={{
-                fontSize: 20,
-                color: "#f0a441",
-                paddingRight: "10px",
-                position: "relative",
-                top: 2,
-              }}
-            />
-            提示
-          </span>
-        }
-        loading={loading}
-        onFinish={() => {
-          fetchMaintainChange(true, [row]);
-        }}
-      >
-        <div style={{ padding: "20px" }}>
-          确定要对 <span style={{ fontWeight: 500 }}>当前</span> 主机下发{" "}
-          <span style={{ fontWeight: 500 }}>开启维护模式</span> 操作？
-        </div>
-      </OmpMessageModal>
-
-      <OmpMessageModal
-        visibleHandle={[closeMaintainOneModal, setCloseMaintainOneModal]}
-        title={
-          <span>
-            <ExclamationCircleOutlined
-              style={{
-                fontSize: 20,
-                color: "#f0a441",
-                paddingRight: "10px",
-                position: "relative",
-                top: 2,
-              }}
-            />
-            提示
-          </span>
-        }
-        loading={loading}
-        onFinish={() => {
-          fetchMaintainChange(false, [row]);
-        }}
-      >
-        <div style={{ padding: "20px" }}>
-          确定要对 <span style={{ fontWeight: 500 }}>当前</span> 主机下发{" "}
-          <span style={{ fontWeight: 500 }}>关闭维护模式</span> 操作？
-        </div>
-      </OmpMessageModal>
-
-      <OmpMessageModal
-        visibleHandle={[ininHostModal, setIninHostModal]}
-        title={
-          <span>
-            <ExclamationCircleOutlined
-              style={{
-                fontSize: 20,
-                color: "#f0a441",
-                paddingRight: "10px",
-                position: "relative",
-                top: 2,
-              }}
-            />
-            提示
-          </span>
-        }
-        loading={loading}
-        onFinish={() => {
-          fetchInitHostAgent();
-        }}
-      >
-        <div style={{ padding: "20px" }}>
-          确定要对{" "}
-          <span style={{ fontWeight: 500 }}>{checkedList.length}台</span> 主机{" "}
-          <span style={{ fontWeight: 500 }}>执行初始化</span> ？
-        </div>
-      </OmpMessageModal>
-      <BatchImportMachineModal
-        batchImport={batchImport}
-        setBatchImport={setBatchImport}
-        refreshData={() => {
-          fetchData(
-            { current: pagination.current, pageSize: pagination.pageSize },
-            { ip: selectValue },
-            pagination.ordering
-          );
-        }}
-      ></BatchImportMachineModal>
     </OmpContentWrapper>
   );
 };

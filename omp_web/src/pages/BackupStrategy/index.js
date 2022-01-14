@@ -23,16 +23,12 @@ import {
   SaveOutlined,
 } from "@ant-design/icons";
 import moment from "moment";
+import star from "@/pages/BackupRecords/config/asterisk.svg";
 
 const BackupStrategy = () => {
   const [loading, setLoading] = useState(false);
-  const [pushLoading, setPushLoading] = useState(false);
 
   const [form] = Form.useForm();
-  const [pushForm] = Form.useForm();
-
-  const [dataSource, setDataSource] = useState({});
-  const [pushDataSource, setPushDataSource] = useState({});
 
   const [isOpen, setIsOpen] = useState(false);
   const [pushIsOpen, setPushIsOpen] = useState(false);
@@ -53,174 +49,6 @@ const BackupStrategy = () => {
     "星期日",
   ];
 
-  const queryPatrolStrategyData = () => {
-    fetchGet(apiRequest.inspection.queryPatrolStrategy, {
-      params: {
-        job_type: 0,
-      },
-    })
-      .then((res) => {
-        if (res && res.data && res.data.data) {
-          setDataSource(res.data.data);
-          let data = res.data.data;
-          let crontab_detail = data.crontab_detail;
-          form.setFieldsValue({
-            name: {
-              value: data.job_name,
-            },
-            type: {
-              value: data.job_type + "",
-            },
-            isOpen: {
-              value: !Boolean(data.is_start_crontab),
-            },
-          });
-
-          if (crontab_detail.day_of_week !== "*") {
-            setFrequency("week");
-            form.setFieldsValue({
-              strategy: {
-                frequency: "week",
-                time: moment(
-                  `${crontab_detail.hour}:${crontab_detail.minute}`,
-                  "HH:mm"
-                ),
-                week: crontab_detail.day_of_week,
-              },
-            });
-          }
-
-          if (crontab_detail.day !== "*") {
-            setFrequency("month");
-            form.setFieldsValue({
-              strategy: {
-                frequency: "month",
-                time: moment(
-                  `${crontab_detail.hour}:${crontab_detail.minute}`,
-                  "HH:mm"
-                ),
-                month: crontab_detail.day,
-              },
-            });
-          }
-
-          if (crontab_detail.day == "*" && crontab_detail.day_of_week == "*") {
-            setFrequency("day");
-            form.setFieldsValue({
-              strategy: {
-                frequency: "day",
-                time: moment(
-                  `${crontab_detail.hour}:${crontab_detail.minute}`,
-                  "HH:mm"
-                ),
-              },
-            });
-          }
-
-          setIsOpen(!Boolean(res.data.data.is_start_crontab));
-        }
-      })
-      .catch((e) => {
-        console.log(e);
-      })
-      .finally();
-  };
-
-  // 修改策略的方法，当前无策略时使用post请求，当前有策略时使用put
-  const changeStrategy = (data) => {
-    let queryData = form.getFieldsValue();
-    let timeInfo = form.getFieldValue("strategy");
-    setLoading(true);
-    if (queryData.strategy) timeInfo = queryData.strategy;
-    if (dataSource.job_name) {
-      // 本来有任务，使用更新put
-      fetchPut(apiRequest.inspection.updatePatrolStrategy, {
-        body: {
-          job_type: 0,
-          job_name: queryData.name.value,
-          is_start_crontab: queryData.isOpen.value ? 0 : 1,
-          crontab_detail: {
-            hour: timeInfo.time.format("HH:mm").split(":")[0] || "*",
-            minute: timeInfo.time.format("HH:mm").split(":")[1] || "*",
-            month: "*",
-            day_of_week: timeInfo.week || "*",
-            day: timeInfo.month || "*",
-          },
-          env: 1,
-        },
-      })
-        .then((res) => {
-          if (res && res.data) {
-            if (res.data.code == 1) {
-              message.warning(res.data.message);
-            }
-            if (res.data.code == 0) {
-              message.success("更新巡检策略成功");
-            }
-          }
-        })
-        .catch((e) => console.log(e))
-        .finally(() => {
-          setLoading(false);
-          queryPatrolStrategyData();
-        });
-    } else {
-      // 无任务使用post
-      fetchPost(apiRequest.inspection.createPatrolStrategy, {
-        body: {
-          job_type: "0",
-          job_name: queryData.name.value,
-          is_start_crontab: queryData.isOpen.value ? 0 : 1,
-          crontab_detail: {
-            hour: timeInfo.time.format("HH:mm").split(":")[0] || "*",
-            minute: timeInfo.time.format("HH:mm").split(":")[1] || "*",
-            month: "*",
-            day_of_week: timeInfo.week || "*",
-            day: timeInfo.month || "*",
-          },
-          env: 1,
-        },
-      })
-        .then((res) => {
-          if (res && res.data) {
-            if (res.data.code == 1) {
-              message.warning(res.data.message);
-            }
-            if (res.data.code == 0) {
-              message.success("新增巡检策略成功");
-            }
-          }
-        })
-        .catch((e) => console.log(e))
-        .finally(() => {
-          setLoading(false);
-          queryPatrolStrategyData();
-        });
-    }
-  };
-
-  // 查询推送数据
-  const fetchPushDate = () => {
-    setPushLoading(true);
-    fetchGet(apiRequest.inspection.queryPushConfig)
-      .then((res) => {
-        handleResponse(res, (res) => {
-          if (res && res.data) {
-            const { send_email, to_users } = res.data;
-            pushForm.setFieldsValue({
-              pushIsOpen: send_email,
-              email: to_users,
-            });
-            setPushIsOpen(send_email);
-          }
-        });
-      })
-      .catch((e) => console.log(e))
-      .finally(() => {
-        setPushLoading(false);
-      });
-  };
-
   const queryBackupSettingData = () => {
     setLoading(true);
     fetchGet(apiRequest.dataBackup.queryBackupSettingData, {
@@ -230,58 +58,67 @@ const BackupStrategy = () => {
     })
       .then((res) => {
         handleResponse(res, () => {
-          console.log(res);
           let backup_setting = res.data.data.backup_setting;
           let crontab_detail = backup_setting.crontab_detail;
 
           form.setFieldsValue({
             retain_path: backup_setting.retain_path,
-            retain_day: backup_setting.retain_day,
             pushIsOpen: backup_setting.send_email,
             isOpen: backup_setting.is_on,
             email: backup_setting.to_users,
           });
 
-          if (crontab_detail.day_of_week !== "*") {
-            setFrequency("week");
+          if (backup_setting?.retain_day) {
             form.setFieldsValue({
-              strategy: {
-                frequency: "week",
-                time: moment(
-                  `${crontab_detail.hour}:${crontab_detail.minute}`,
-                  "HH:mm"
-                ),
-                week: crontab_detail.day_of_week,
-              },
+              retain_day: backup_setting.retain_day,
             });
+          }
+          if (crontab_detail && crontab_detail?.day_of_week) {
+            if (crontab_detail?.day_of_week !== "*") {
+              setFrequency("week");
+              form.setFieldsValue({
+                strategy: {
+                  frequency: "week",
+                  time: moment(
+                    `${crontab_detail.hour}:${crontab_detail.minute}`,
+                    "HH:mm"
+                  ),
+                  week: crontab_detail.day_of_week,
+                },
+              });
+            }
+
+            if (crontab_detail?.day !== "*") {
+              setFrequency("month");
+              form.setFieldsValue({
+                strategy: {
+                  frequency: "month",
+                  time: moment(
+                    `${crontab_detail.hour}:${crontab_detail.minute}`,
+                    "HH:mm"
+                  ),
+                  month: crontab_detail.day,
+                },
+              });
+            }
+
+            if (
+              crontab_detail?.day == "*" &&
+              crontab_detail?.day_of_week == "*"
+            ) {
+              setFrequency("day");
+              form.setFieldsValue({
+                strategy: {
+                  frequency: "day",
+                  time: moment(
+                    `${crontab_detail.hour}:${crontab_detail.minute}`,
+                    "HH:mm"
+                  ),
+                },
+              });
+            }
           }
 
-          if (crontab_detail.day !== "*") {
-            setFrequency("month");
-            form.setFieldsValue({
-              strategy: {
-                frequency: "month",
-                time: moment(
-                  `${crontab_detail.hour}:${crontab_detail.minute}`,
-                  "HH:mm"
-                ),
-                month: crontab_detail.day,
-              },
-            });
-          }
-
-          if (crontab_detail.day == "*" && crontab_detail.day_of_week == "*") {
-            setFrequency("day");
-            form.setFieldsValue({
-              strategy: {
-                frequency: "day",
-                time: moment(
-                  `${crontab_detail.hour}:${crontab_detail.minute}`,
-                  "HH:mm"
-                ),
-              },
-            });
-          }
           setBackupIns(backup_setting.backup_instances);
           setIsOpen(backup_setting.is_on);
           setPushIsOpen(backup_setting.send_email);
@@ -303,8 +140,8 @@ const BackupStrategy = () => {
     })
       .then((res) => {
         handleResponse(res, () => {
-          // setCanBackupIns(res.data.data);
-          setCanBackupIns(["mysql1", "arangodb1", "a1", "a2"]);
+          setCanBackupIns(res.data.data);
+          // setCanBackupIns(["mysql1", "arangodb1", "a1", "a2"]);
         });
       })
       .catch((e) => console.log(e))
@@ -315,12 +152,50 @@ const BackupStrategy = () => {
 
   // 保存备份
   const saveBackup = () => {
-    if (form.getFieldValue("isOpen") && backupIns.length === 0) {
-      message.warning("请选择您定时备份的组件后，再进行保存");
+    if (canBackupIns.length === 0) {
+      message.warning("当前暂无可用的备份实例");
       return;
     }
-    console.log(backupIns);
-    console.log(form.getFieldsValue());
+    if (form.getFieldValue("isOpen") && backupIns.length === 0) {
+      message.warning("请选择您定时备份的实例后，再进行保存");
+      return;
+    }
+    setLoading(true);
+    let queryData = form.getFieldsValue();
+    let timeInfo = form.getFieldValue("strategy");
+    if (queryData.strategy) timeInfo = queryData.strategy;
+    fetchPost(apiRequest.dataBackup.updateBackupSetting, {
+      body: {
+        backup_instances: backupIns,
+        env_id: 1,
+        is_on: queryData.isOpen,
+        crontab_detail: {
+          hour: timeInfo.time.format("HH:mm").split(":")[0] || "*",
+          minute: timeInfo.time.format("HH:mm").split(":")[1] || "*",
+          month: "*",
+          day_of_week: timeInfo.week || "*",
+          day: timeInfo.month || "*",
+        },
+        retain_path: queryData.retain_path,
+        send_email: queryData.pushIsOpen,
+        to_users: form.getFieldValue("email"),
+        retain_day: form.getFieldValue("retain_day"),
+      },
+    })
+      .then((res) => {
+        if (res && res.data) {
+          if (res.data.code == 1) {
+            message.warning(res.data.message);
+          }
+          if (res.data.code == 0) {
+            message.success("修改备份策略成功");
+          }
+        }
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
   useEffect(() => {
@@ -342,11 +217,11 @@ const BackupStrategy = () => {
             marginBottom: 30,
           }}
         >
-          <p>请选择要备份的组件(存储基础元数据信息):</p>
+          <p>请选择要备份的实例(存储基础元数据信息):</p>
 
           {canBackupIns.length === 0 ? (
             <span style={{ marginLeft: 30, color: "#a7abb7" }}>
-              暂无可选组件
+              暂无可选实例
             </span>
           ) : (
             <Checkbox.Group
@@ -396,7 +271,7 @@ const BackupStrategy = () => {
           onFinish={saveBackup}
           form={form}
           initialValues={{
-            retain_path: "",
+            retain_path: "/data/omp/data/backup/",
             retain_day: -1,
             pushIsOpen: false,
             isOpen: false,
@@ -409,7 +284,17 @@ const BackupStrategy = () => {
             email: "",
           }}
         >
-          <Form.Item label="备份路径">
+          <Form.Item
+            label={
+              <span>
+                <img
+                  src={star}
+                  style={{ position: "relative", top: -2, left: -3 }}
+                />
+                备份路径
+              </span>
+            }
+          >
             <Input.Group compact>
               <Form.Item
                 name="retain_path"
@@ -440,7 +325,7 @@ const BackupStrategy = () => {
               <Form.Item noStyle>
                 <Tooltip
                   placement="top"
-                  title={"开启定时备份后，会自动备份已勾选的组件"}
+                  title={"开启定时备份后，会自动备份已勾选的实例"}
                 >
                   <InfoCircleOutlined
                     style={{
