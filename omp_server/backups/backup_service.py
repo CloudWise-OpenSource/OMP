@@ -23,7 +23,8 @@ if __name__ == '__main__':
     django.setup()
 
 from db_models.models import (
-    BackupHistory, Service
+    BackupHistory, Service,
+    Host
 )
 from utils.plugin.salt_client import SaltClient
 
@@ -52,12 +53,15 @@ class BackupDB(object):
         获取备份配置所需变量
         """
         try:
+            data_folder = Host.objects.filter(
+                ip=service_obj.ip).first().data_folder
+
             service_connect_info = service_obj.service_connect_info
             port_json = json.loads(service_obj.service_port)
             port = ""
             for k_port in port_json:
                 if k_port.get("key", "") == "service_port":
-                    port = k_port.get("port", "")
+                    port = k_port.get("default", "")
                     break
             install_args = json.loads(service_obj.service.app_install_args)
             install_dict = {}
@@ -69,9 +73,12 @@ class BackupDB(object):
                 "ip": service_obj.ip,
                 "service_pass": f"-p{service_connect_info.service_password}",
                 "service_port": port,
-                "backup_dir": os.path.join(install_dict.get("data_dir", ""), "backupData"),
+                "backup_dir": os.path.join(
+                    os.path.dirname(install_dict.get(
+                        "data_dir", "").replace("{data_path}", data_folder)),
+                    "tmp", "backupData"),
                 "run_user": install_dict.get("run_user", ""),
-                "app_dir": install_dict.get("base_dir", ""),
+                "app_dir": install_dict.get("base_dir", "").replace("{data_path}", data_folder),
                 "tmp": time.strftime("%Y%m%d%H%M%S", time.localtime()) + str(random.randint(1000, 9999)),
                 "arangodb_pwd": service_connect_info.service_password
             }
