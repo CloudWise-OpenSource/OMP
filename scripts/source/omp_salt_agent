@@ -187,6 +187,10 @@ function agent_init() {
   fi
 }
 
+function help() {
+  echo "bash omp_salt_agent [start|stop|status|restart|alive|init]"
+}
+
 function main() {
   case $1 in
   start)
@@ -207,6 +211,9 @@ function main() {
     ;;
   init)
     agent_init
+    ;;
+  *)
+    help
     ;;
   esac
 }
