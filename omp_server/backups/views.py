@@ -355,14 +355,15 @@ class BackupHistoryView(GenericViewSet, ListModelMixin, CreateModelMixin):
         """
         删除备份文件，只删除文件
         """
-        env_id = request.GET.get("env_id", "1")
+        request_data = json.loads(request.body)
+        env_id = request_data.get("env_id", "1")
         try:
             Env.objects.get(id=int(env_id))
         except Exception as e:
             logger.error(f"id为{env_id}的环境不存在!详情：{e}")
             return Response(data={"code": 1, "message": f"id为{env_id}的环境不存在!"})
 
-        ids = request.GET.get("ids")
+        ids = request_data.get("ids")
         if not ids or not isinstance(ids, list):
             return Response(data={"code": 1, "message": "请选择需要删除的历史记录！"})
         fail_files = rm_backend_file(ids=ids)

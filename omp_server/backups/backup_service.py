@@ -27,8 +27,6 @@ from db_models.models import (
     Host
 )
 from utils.plugin.salt_client import SaltClient
-from django.conf import settings
-
 logger = logging.getLogger("server")
 
 
@@ -126,8 +124,7 @@ class BackupDB(object):
         """
         back_obj = BackupHistory.objects.filter(id=back_id).first()
         service_instances = back_obj.content
-        # omp_backup_dir = back_obj.retain_path
-        omp_backup_dir = settings.BACKUP_DEFAULT_PATH
+        omp_backup_dir = back_obj.retain_path
         for si in service_instances:
             service_obj = Service.objects.filter(
                 service_instance_name=si).first()

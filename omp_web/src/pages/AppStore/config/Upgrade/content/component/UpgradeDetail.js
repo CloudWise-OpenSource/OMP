@@ -1,5 +1,5 @@
 import { DownOutlined } from "@ant-design/icons";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const stepOpen = {
   marginTop: 10,
@@ -23,15 +23,17 @@ const stepNotOpen = {
 
 // 状态渲染规则
   const renderStatus = {
-    0: <span style={{ color: "#f0c242" }}>等待安装</span>,
-    1: <span style={{ color: "rgba(0, 0, 0, 0.85)" }}>正在安装</span>,
-    2: <span style={{ color: "rgb(118,204,104)" }}>安装成功</span>,
-    3: <span style={{ color: "#da4e48" }}>安装失败</span>,
+    0: <span style={{ color: "#f0c242" }}>等待升级</span>,
+    1: <span style={{ color: "rgba(0, 0, 0, 0.85)" }}>正在升级</span>,
+    2: <span style={{ color: "rgb(118,204,104)" }}>升级成功</span>,
+    3: <span style={{ color: "#da4e48" }}>升级失败</span>,
   };
 
-const UpgradeDetail = ({ title, ip, status, openName, setOpenName,log }) => {
+const UpgradeDetail = ({ title, ip, status, log, instance_name }) => {
 
   const containerRef = useRef(null)
+
+  const [openName, setOpenName] = useState("")
 
   useEffect(()=>{
     containerRef.current.scrollTop =
@@ -50,7 +52,7 @@ const UpgradeDetail = ({ title, ip, status, openName, setOpenName,log }) => {
           justifyContent: "space-between",
         }}
       >
-        <div style={{ flex: 1 }}>{ip}</div>
+        <div style={{ flex: 2 }}>{instance_name}</div>
         <div style={{ flex: 1 }}>{renderStatus[status]}</div>
         <div style={{ flex: 6, textAlign: "right", paddingRight: 50 }}>
           <a
@@ -62,7 +64,7 @@ const UpgradeDetail = ({ title, ip, status, openName, setOpenName,log }) => {
               }
             }}
           >
-            查看详细安装信息
+            查看详细升级信息
             <DownOutlined
               style={{
                 transform: `rotate(${

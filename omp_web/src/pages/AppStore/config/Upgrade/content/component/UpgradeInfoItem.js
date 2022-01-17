@@ -1,6 +1,6 @@
 import UpgradeDetail from "./UpgradeDetail";
 import { useState } from "react";
-const InstallInfoItem = ({ id, data, title, openName, setOpenName, log,idx }) => {
+const UpgradeInfoItem = ({ id, data, title, log,idx }) => {
   return (
     <div
       id={id}
@@ -44,16 +44,16 @@ const InstallInfoItem = ({ id, data, title, openName, setOpenName, log,idx }) =>
           // paddingTop: 20,
         }}
       >
-        {data.map((item) => {
+        {data?.map((item) => {
+          console.log(item)
           return (
             <UpgradeDetail
               title={title}
-              openName={openName}
-              setOpenName={setOpenName}
-              key={`${title}=${item.ip}`}
-              status={item.status}
+              key={`${title}=${item.ip}=${item.instance_name}`}
+              status={item.upgrade_state}
               ip={item.ip}
-              log={log}
+              log={item.message}
+              instance_name={item.instance_name}
             />
           );
         })}
@@ -62,4 +62,4 @@ const InstallInfoItem = ({ id, data, title, openName, setOpenName, log,idx }) =>
   );
 };
 
-export default InstallInfoItem;
+export default UpgradeInfoItem;

@@ -201,8 +201,7 @@ class InstallServiceExecutor:
     @staticmethod
     def now_time():
         """ 当前时间格式 """
-        return time.strftime(time.strftime(
-            "%Y-%m-%d %H:%M:%S", time.localtime()))
+        return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
     def create_history(self, detail_obj, is_success=True):
         """ 创建历史记录 """
@@ -852,7 +851,7 @@ class InstallServiceExecutor:
             for key, value in POST_INSTALL_SERVICE.items():
                 if not DetailInstallHistory.objects.filter(
                         service__service__app_name=key).exclude(
-                        main_install_history=main_obj
+                    main_install_history=main_obj
                 ).exists():
                     continue
                 post_obj.install_log += \
@@ -1021,7 +1020,8 @@ class InstallServiceExecutor:
             MainInstallHistory.INSTALL_STATUS_SUCCESS
         main_obj.save()
         # doim安装成功后，相关操作
-        doim_ip_set = set([el.service.ip for el in queryset if el.service.service.app_name == DOIM_APP_NAME])
+        doim_ip_set = set(
+            [el.service.ip for el in queryset if el.service.service.app_name == DOIM_APP_NAME])
         if doim_ip_set:
             service_splitting()
         logger.info(f"Main Install Success, id[{self.main_id}]")
