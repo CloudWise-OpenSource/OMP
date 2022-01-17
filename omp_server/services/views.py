@@ -156,6 +156,7 @@ class ServiceActionView(GenericViewSet, CreateModelMixin):
                             service_status=Service.SERVICE_STATUS_DELETING)
                     except Exception as e:
                         logger.error(f"service实例id，不存在{instance}:{e}")
+                        return Response("执行异常")
                 exec_action.delay(action, instance, operation_user, del_file)
             else:
                 raise OperateError("请输入action或id")
