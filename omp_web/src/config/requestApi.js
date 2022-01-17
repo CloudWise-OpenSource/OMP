@@ -29,6 +29,10 @@ export const apiRequest = {
     restartHostAgent: "/api/hosts/restartHostAgent/",
     // 重启监控agent
     restartMonitorAgent: "/api/promemonitor/restartMonitorAgent/",
+     // 重装主机agent
+     reInstallHostAgent: "/api/hosts/hostReinstall/",
+     // 重装监控agent
+     reInstallMonitorAgent: "/api/hosts/monitorReinstall/",
     // 主机进入退出维护模式
     hostsMaintain: "/api/hosts/maintain/",
     // 主机初始化

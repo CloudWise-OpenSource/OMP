@@ -83,6 +83,12 @@ const MachineManagement = () => {
   // 重启监控agent
   const [restartMonterAgentModal, setRestartMonterAgentModal] = useState(false);
 
+  // 重装主机agent
+  const [reInstallHostAgentModal, setReInstallHostAgentModal] = useState(false)
+
+  // 重装监控agent
+  const [reInstallMonterAgentModal, setReInstallMonterAgentModal] = useState(false)
+
   // 开启维护
   const [openMaintainModal, setOpenMaintainModal] = useState(false);
   // 关闭维护
@@ -314,6 +320,68 @@ const MachineManagement = () => {
       });
   };
 
+  // 重装主机agent
+  const fetchInstallHostAgent = ()=>{
+    setLoading(true);
+    fetchPost(apiRequest.machineManagement.reInstallHostAgent, {
+      body: {
+        host_ids: checkedList.map((item) => item.id),
+      },
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          if (res.code == 0) {
+            message.success("重装主机Agent任务已下发");
+          }
+          if (res.code == 1) {
+            message.warning(res.message);
+          }
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setLoading(false);
+        setReInstallHostAgentModal(false);
+        setCheckedList([]);
+        fetchData(
+          { current: pagination.current, pageSize: pagination.pageSize },
+          { ip: selectValue },
+          pagination.ordering
+        );
+      });
+  }
+
+  // 重装监控agent
+  const fetchInstallMonitorAgent = ()=>{
+    setLoading(true);
+    fetchPost(apiRequest.machineManagement.reInstallMonitorAgent, {
+      body: {
+        host_ids: checkedList.map((item) => item.id),
+      },
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          if (res.code == 0) {
+            message.success("重装监控Agent任务已下发");
+          }
+          if (res.code == 1) {
+            message.warning(res.message);
+          }
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setLoading(false);
+        setReInstallMonterAgentModal(false);
+        setCheckedList([]);
+        fetchData(
+          { current: pagination.current, pageSize: pagination.pageSize },
+          { ip: selectValue },
+          pagination.ordering
+        );
+      });
+  }
+
   // 初始化主机
   const fetchInitHostAgent = () => {
     setLoading(true);
@@ -489,6 +557,26 @@ const MachineManagement = () => {
                 }}
               >
                 重启监控Agent
+              </Menu.Item>
+              <Menu.Item
+                key="reInstallHost"
+                style={{ textAlign: "center" }}
+                disabled={checkedList.length == 0}
+                onClick={() => {
+                  setReInstallHostAgentModal(true);
+                }}
+              >
+                重装主机Agent
+              </Menu.Item>
+              <Menu.Item
+                key="reInstallMonitor"
+                style={{ textAlign: "center" }}
+                disabled={checkedList.length == 0}
+                onClick={() => {
+                  setReInstallMonterAgentModal(true);
+                }}
+              >
+                重装监控Agent
               </Menu.Item>
               <Menu.Item
                 key="initHost"
@@ -695,6 +783,62 @@ const MachineManagement = () => {
       >
         <div style={{ padding: "20px" }}>
           确定要重启{" "}
+          <span style={{ fontWeight: 500 }}>{checkedList.length}台</span> 主机{" "}
+          <span style={{ fontWeight: 500 }}>监控Agent</span> ？
+        </div>
+      </OmpMessageModal>
+
+      <OmpMessageModal
+        visibleHandle={[reInstallHostAgentModal, setReInstallHostAgentModal]}
+        title={
+          <span>
+            <ExclamationCircleOutlined
+              style={{
+                fontSize: 20,
+                color: "#f0a441",
+                paddingRight: "10px",
+                position: "relative",
+                top: 2,
+              }}
+            />
+            提示
+          </span>
+        }
+        loading={loading}
+        onFinish={() => {
+          fetchInstallHostAgent();
+        }}
+      >
+        <div style={{ padding: "20px" }}>
+          确定要重装{" "}
+          <span style={{ fontWeight: 500 }}>{checkedList.length}台</span> 主机{" "}
+          <span style={{ fontWeight: 500 }}>主机Agent</span> ？
+        </div>
+      </OmpMessageModal>
+
+      <OmpMessageModal
+        visibleHandle={[reInstallMonterAgentModal, setReInstallMonterAgentModal]}
+        title={
+          <span>
+            <ExclamationCircleOutlined
+              style={{
+                fontSize: 20,
+                color: "#f0a441",
+                paddingRight: "10px",
+                position: "relative",
+                top: 2,
+              }}
+            />
+            提示
+          </span>
+        }
+        loading={loading}
+        onFinish={() => {
+          fetchInstallMonitorAgent()
+        }}
+      >
+        <div style={{ padding: "20px" }}>
+          确定要重装{" "}
           <span style={{ fontWeight: 500 }}>{checkedList.length}台</span> 主机{" "}
           <span style={{ fontWeight: 500 }}>监控Agent</span> ？
         </div>
