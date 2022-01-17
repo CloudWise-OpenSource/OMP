@@ -520,7 +520,7 @@ class HostReinstallSerializer(HostIdsSerializer):
             deploy_agent.delay(host_id, need_monitor=False)
         Host.objects.filter(
             id__in=host_ids
-        ).update(init_status=Host.INIT_EXECUTING)
+        ).update(host_agent=Host.AGENT_DEPLOY_ING)
         return validated_data
 
 
@@ -535,5 +535,5 @@ class MonitorReinstallSerializer(HostIdsSerializer):
             reinstall_monitor_celery_task.delay(host_id, user_name)
         Host.objects.filter(
             id__in=host_ids
-        ).update(init_status=Host.INIT_EXECUTING)
+        ).update(monitor_agent=Host.AGENT_DEPLOY_ING)
         return validated_data

@@ -106,7 +106,7 @@ class HostListView(GenericViewSet, ListModelMixin, CreateModelMixin):
 class HostReinstallView(GenericViewSet, CreateModelMixin):
     """
         create:
-        重启监控Agent接口
+        重装主机Agent接口
     """
     queryset = Host.objects.filter(is_deleted=False)
     serializer_class = HostReinstallSerializer
@@ -117,7 +117,7 @@ class HostReinstallView(GenericViewSet, CreateModelMixin):
 class MonitorReinstallView(GenericViewSet, CreateModelMixin):
     """
         create:
-        重启监控Agent接口
+        重装监控Agent接口
     """
     queryset = Host.objects.filter(is_deleted=False)
     serializer_class = MonitorReinstallSerializer
