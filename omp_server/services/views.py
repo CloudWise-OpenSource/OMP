@@ -150,6 +150,12 @@ class ServiceActionView(GenericViewSet, CreateModelMixin):
             operation_user = data.get("operation_user")
             del_file = data.get("del_file", True)
             if action and instance and operation_user:
+                if action == 4:
+                    try:
+                        Service.objects.filter(id=instance).update(
+                            service_status=Service.SERVICE_STATUS_DELETING)
+                    except Exception as e:
+                        logger.error(f"service实例id，不存在{instance}:{e}")
                 exec_action.delay(action, instance, operation_user, del_file)
             else:
                 raise OperateError("请输入action或id")
