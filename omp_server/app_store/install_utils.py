@@ -60,6 +60,19 @@ def make_lst_unique(lst, key_1, key_2):
     return ret_lst
 
 
+def make_editable(element):
+    """
+    处理参数是否可编辑
+    :param element: 参数字典
+    :return:
+    """
+    if element.get("editable") is False or \
+            str(element.get("editable")).lower() == "false":
+        element["editable"] = False
+    else:
+        element["editable"] = True
+
+
 def make_app_install_args(app_install_args):
     """
     构建安装参数
@@ -72,6 +85,7 @@ def make_app_install_args(app_install_args):
                 DIR_KEY in el.get("default"):
             el["default"] = el["default"].replace(DIR_KEY, "")
             el["dir_key"] = DIR_KEY
+        make_editable(el)
     return app_install_args
 
 
@@ -450,7 +464,10 @@ class ServiceArgsSerializer(object):
         """
         if not obj.app_port:
             return []
-        return json.loads(obj.app_port)
+        port_lst = json.loads(obj.app_port)
+        for item in port_lst:
+            make_editable(item)
+        return port_lst
 
     def get_app_install_args(self, obj):  # NOQA
         """

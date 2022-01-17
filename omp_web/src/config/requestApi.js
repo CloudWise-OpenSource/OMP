@@ -35,6 +35,8 @@ export const apiRequest = {
      reInstallMonitorAgent: "/api/hosts/monitorReinstall/",
     // 主机进入退出维护模式
     hostsMaintain: "/api/hosts/maintain/",
+    // 主机初始化脚本下载地址
+    downInitScript: "/api/hosts/hostInit/",
     // 主机初始化
     hostInit: "/api/hosts/hostInit/",
     // 主机agent状态查询
@@ -185,16 +187,43 @@ export const apiRequest = {
     // 更新邮件全局设置
     updateSetting: "/api/promemonitor/updateSendEmailConfig/",
   },
+  // 指标中心
   ruleCenter: {
+    // 主机指标
     hostThreshold: "/api/promemonitor/hostThreshold/",
+    // 服务指标
     serviceThreshold: "/api/promemonitor/serviceThreshold/",
+    // 定制化指标
     queryCustomThreshold: "/api/promemonitor/customThreshold/",
   },
+  // 部署计划
   deloymentPlan: {
+    // 服务验证
     serviceValidate: "/api/appStore/deploymentPlanValidate/",
+    // 部署计划导入
     serviceImport: "/api/appStore/deploymentPlanImport/",
+    // 部署计划列表
     deploymentList: "/api/appStore/deploymentPlanList/",
+    // 部署是否可用
     deploymentOperable: "/api/appStore/deploymentOperable",
+    // 下载部署计划模板
     deploymentTemplate: "/api/appStore/deploymentTemplate/",
+  },
+  // 数据备份
+  dataBackup: {
+    // 查询备份历史记录
+    queryBackupHistory: "/api/backups/backupHistory/",
+    // 备份设置初始值查询
+    queryBackupSettingData: "/api/backups/backupSettings/",
+    // 更新备份策略
+    updateBackupSetting: "/api/backups/backupSettings/",
+    // 获取可备份实例列表
+    queryCanBackup: "/api/backups/canBackupInstances/",
+    // 单次备份
+    backupOnce: "/api/backups/backupOnce/",
+    // 删除备份文件
+    deleteBackupFile: "/api/backups/backupHistory/",
+    // 推送备份记录
+    pushEmail: "/api/backups/backupSendEmail/",
   },
 };

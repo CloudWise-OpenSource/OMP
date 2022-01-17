@@ -269,14 +269,20 @@ def front_end_verified(uuid, operation_user, package_name, random_str, ver_dir, 
             return public_action.update_package_status(
                 1,
                 f"安装包{package_name}不能无依赖产品上传")
-        product_obj = ProductHub.objects.filter(pro_name=dependence_product.get("name"),
-                                                pro_version=dependence_product.get(
-                                                    "version")
-                                                ).last()
+        product_version = dependence_product.get("version", "")
+        if not product_version:
+            product_obj = ProductHub.objects.filter(pro_name=dependence_product.get("name")
+                                                    ).last()
+
+        else:
+            product_obj = ProductHub.objects.filter(pro_name=dependence_product.get("name"),
+                                                    pro_version=product_version).last()
         if not product_obj:
             return public_action.update_package_status(
                 1,
                 f"安装包{package_name}依赖的产品包不存在")
+        # 将版本追加至最新版本
+        dependence_product["version"] = product_obj.pro_version
         app_obj = ApplicationHub.objects.filter(product=product_obj)
         for obj in app_obj:
             if obj.app_name == explain_yml[1]['name'] and \
@@ -761,13 +767,14 @@ def check_monitor_data(detail_obj):
     return False, _ret_dic
 
 
-def add_prometheus(main_history_id):
+def add_prometheus(main_history_id, queryset=None):
     """ 添加服务到 Prometheus """
     logger.info("Add Prometheus Begin")
     prometheus = PrometheusUtils()
     # TODO 不同类型服务添加监控方式不同，后续版本优化
     # 仅更新已经安装完成的最新服务
-    queryset = DetailInstallHistory.objects.filter(
+    # 给monitor_agent刷新使用，提供detail_obj list。
+    queryset = queryset if queryset else DetailInstallHistory.objects.filter(
         main_install_history_id=main_history_id,
         install_step_status=DetailInstallHistory.INSTALL_STATUS_SUCCESS
     )
@@ -828,6 +835,34 @@ def add_prometheus(main_history_id):
     logger.info("Add Prometheus End")
 
 
+def make_inspection(username):
+    """
+    触发巡检任务
+    :param username:
+    :return:
+    """
+    logger.info("安装成功后触发巡检任务")
+    from rest_framework.test import APIClient
+    from rest_framework.reverse import reverse
+    from db_models.models import UserProfile
+    from db_models.models import Env
+    data = {
+        "inspection_name": "mock", "inspection_type": "deep",
+        "inspection_status": "1", "execute_type": "man",
+        "inspection_operator": username, "env": Env.objects.last().id
+    }
+    user = UserProfile.objects.filter(username=username).last()
+    client = APIClient()
+    client.force_authenticate(user)
+    res = client.post(
+        path=reverse("history-list"),
+        data=json.dumps(data),
+        content_type="application/json"
+    ).json()
+    logger.info(f"安装成功后触发巡检任务的结果为: {res}")
+    return res
+
+
 @shared_task
 def install_service(main_history_id, username="admin"):
     """
@@ -861,3 +896,10 @@ def install_service(main_history_id, username="admin"):
 
     # 安装成功，则注册服务至监控
     add_prometheus(main_history_id)
+
+    # 安装成功，触发巡检任务
+    if MainInstallHistory.objects.filter(
+            id=main_history_id,
+            install_status=MainInstallHistory.INSTALL_STATUS_SUCCESS
+    ).exists():
+        make_inspection(username=username)

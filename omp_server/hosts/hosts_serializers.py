@@ -17,7 +17,8 @@ from db_models.models import (
 )
 from hosts.tasks import (
     host_agent_restart, init_host,
-    insert_host_celery_task
+    insert_host_celery_task, deploy_agent,
+    reinstall_monitor_celery_task
 )
 
 from utils.plugin.ssh import SSH
@@ -101,10 +102,6 @@ class HostSerializer(ModelSerializer):
         required=False,
         queryset=Env.objects.all(),
         error_messages={"does_not_exist": "未找到对应环境"})
-    init_host = serializers.BooleanField(
-        help_text="是否初始化",
-        required=False, default=False, write_only=True,
-    )
     run_user = serializers.CharField(
         help_text="运行用户",
         required=False, default="",
@@ -167,8 +164,9 @@ class HostSerializer(ModelSerializer):
         username = attrs.get("username")
         password = attrs.get("password")
         data_folder = attrs.get("data_folder")
-        init_flag = attrs.get("init_host", False)
         run_user = attrs.get("run_user")
+        # 默认主机初始化标记为 False
+        attrs["init_host"] = False
 
         # 如果提供 run_user，需确保用户为 root
         if run_user and username != "root":
@@ -182,16 +180,6 @@ class HostSerializer(ModelSerializer):
                         f"username-{username},password-{password}")
             raise ValidationError({"ip": "SSH登录失败"})
 
-        # 当需要执行主机初始化时
-        if init_flag:
-            # 校验用户是否具有 sudo 权限
-            is_sudo, _ = ssh.is_sudo()
-            if not is_sudo:
-                logger.info(f"host ssh username permission failed: ip-{ip},port-{port},"
-                            f"username-{username},password-{password}")
-                raise ValidationError({
-                    "username": "用户权限错误，请使用root或具备sudo免密用户"})
-
         # 如果数据分区不存在，则创建数据分区
         success, msg = ssh.cmd(
             f"test -d {data_folder} || mkdir -p {data_folder}")
@@ -200,6 +188,11 @@ class HostSerializer(ModelSerializer):
                         f"username-{username},password-{password},"
                         f"data_folder-{data_folder}")
             raise ValidationError({"data_folder": "创建数据分区操作失败"})
+
+        # 当用户为 root 或具有 sudo 权限时，自动进行初始化
+        is_sudo, _ = ssh.is_sudo()
+        if is_sudo or username == "root":
+            attrs["init_host"] = True
 
         # 如果未传递 env，则指定默认环境
         if not attrs.get("env") and not self.instance:
@@ -234,7 +227,7 @@ class HostSerializer(ModelSerializer):
 
     def update(self, instance, validated_data):
         """ 更新主机 """
-        validated_data.pop("init_host", False)
+        validated_data.pop("init_host")
         # 如果 run_user 存在，则删除
         if "run_user" in validated_data:
             validated_data.pop("run_user")
@@ -420,6 +413,8 @@ class HostBatchValidateSerializer(Serializer):
         """ 单个主机信息验证 """
         host_serializer = HostSerializer(data=host_data)
         if host_serializer.is_valid():
+            host_data["init_host"] = \
+                host_serializer.validated_data.get("init_host")
             return "correct", host_data
         err_ls = []
         for k, v in host_serializer.errors.items():
@@ -473,8 +468,6 @@ class HostBatchValidateSerializer(Serializer):
             if len(v) > 0:
                 v.sort(key=lambda x: x.get("row", 999))
         attrs["result_dict"] = result_dict
-        # print(result_dict["correct"])
-        # print(result_dict["error"])
         logger.info("host batch validate end")
         return attrs
 
@@ -514,3 +507,33 @@ class HostsAgentStatusSerializer(Serializer):
         required=True, allow_empty=False,
         error_messages={"required": "必须包含[ip_list]字段"}
     )
+
+
+class HostReinstallSerializer(HostIdsSerializer):
+    """ 主机重新安装序列化类 """
+
+    def create(self, validated_data):
+        """ 主机重装 """
+        host_ids = validated_data.get("host_ids", [])
+        # 不重装监控agent
+        for host_id in host_ids:
+            deploy_agent.delay(host_id, need_monitor=False)
+        Host.objects.filter(
+            id__in=host_ids
+        ).update(init_status=Host.INIT_EXECUTING)
+        return validated_data
+
+
+class MonitorReinstallSerializer(HostIdsSerializer):
+    """ 监控重新安装序列化类 """
+
+    def create(self, validated_data):
+        """ 监控重装 """
+        host_ids = validated_data.get("host_ids", [])
+        user_name = self.context["request"].user.username
+        for host_id in host_ids:
+            reinstall_monitor_celery_task.delay(host_id, user_name)
+        Host.objects.filter(
+            id__in=host_ids
+        ).update(init_status=Host.INIT_EXECUTING)
+        return validated_data

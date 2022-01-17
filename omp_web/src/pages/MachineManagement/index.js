@@ -578,7 +578,7 @@ const MachineManagement = () => {
               >
                 重装监控Agent
               </Menu.Item>
-              <Menu.Item
+              {/* <Menu.Item
                 key="initHost"
                 style={{ textAlign: "center" }}
                 disabled={checkedList.map((item) => item.id).length == 0}
@@ -587,7 +587,7 @@ const MachineManagement = () => {
                 }}
               >
                 初始化主机
-              </Menu.Item>
+              </Menu.Item> */}
             </Menu>
           }
           placement="bottomCenter"

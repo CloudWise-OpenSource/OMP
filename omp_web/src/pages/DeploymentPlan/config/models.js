@@ -14,6 +14,7 @@ import {
   Steps,
   Upload,
   Switch,
+  Table,
 } from "antd";
 import {
   PlusSquareOutlined,
@@ -202,6 +203,18 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
 
   const [loading, setLoading] = useState(false);
 
+  // 导入部署步骤状态
+  const [hostStep, setHostStep] = useState(null);
+  const [serviceStep, setServiceStep] = useState(null);
+  const [importStep, setImportStep] = useState(null);
+
+  // 导入部署模板状态
+  const [importResult, setImportResult] = useState(null);
+
+  // 主机和服务的正确数据
+  let hostCorrectData = null;
+  let serviceCorrectData = null;
+
   // 轮训控制器
   const hostAgentTimer = useRef(null);
 
@@ -336,145 +349,6 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
     },
   ];
 
-  // 成功的columns
-  const correctColumns = [
-    {
-      title: "实例名称",
-      key: "instance_name",
-      dataIndex: "instance_name",
-      align: "center",
-      //render: nonEmptyProcessing,
-      width: 120,
-      ellipsis: true,
-      fixed: "left",
-      render: (text) => {
-        return (
-          <Tooltip title={text}>
-            <span>{text ? text : "-"}</span>
-          </Tooltip>
-        );
-      },
-    },
-    {
-      title: "IP地址",
-      key: "ip",
-      dataIndex: "ip",
-      align: "center",
-      width: 120,
-      render: (text) => {
-        return (
-          <Tooltip title={text}>
-            <span>{text ? text : "-"}</span>
-          </Tooltip>
-        );
-      },
-      ellipsis: true,
-    },
-    {
-      title: "端口",
-      key: "port",
-      dataIndex: "port",
-      align: "center",
-      width: 80,
-      render: (text) => {
-        return (
-          <Tooltip title={text}>
-            <span>{text ? text : "-"}</span>
-          </Tooltip>
-        );
-      },
-    },
-    {
-      title: "数据分区",
-      key: "data_folder",
-      dataIndex: "data_folder",
-      align: "center",
-      width: 180,
-      render: (text) => {
-        return (
-          <Tooltip title={text}>
-            <span>{text ? text : "-"}</span>
-          </Tooltip>
-        );
-      },
-      ellipsis: true,
-    },
-    {
-      title: "用户名",
-      key: "username",
-      dataIndex: "username",
-      align: "center",
-      width: 120,
-      render: (text) => {
-        return (
-          <Tooltip title={text}>
-            <span>{text ? text : "-"}</span>
-          </Tooltip>
-        );
-      },
-      ellipsis: true,
-    },
-    {
-      title: "密码",
-      key: "password",
-      dataIndex: "password",
-      align: "center",
-      width: 130,
-      render: (text) => {
-        return (
-          <Tooltip title={text}>
-            <span>{text ? text : "-"}</span>
-          </Tooltip>
-        );
-      },
-      ellipsis: true,
-    },
-    {
-      title: "运行用户",
-      key: "run_user",
-      dataIndex: "run_user",
-      align: "center",
-      width: 120,
-      render: (text) => {
-        return (
-          <Tooltip title={text}>
-            <span>{text ? text : "-"}</span>
-          </Tooltip>
-        );
-      },
-      ellipsis: true,
-    },
-    {
-      title: "是否执行初始化",
-      key: "init_host",
-      dataIndex: "init_host",
-      align: "center",
-      width: 120,
-      render: (text) => {
-        return (
-          <span>{text === false ? "否" : text === true ? "是" : "-"}</span>
-        );
-      },
-      ellipsis: true,
-    },
-    {
-      title: "系统",
-      key: "operate_system",
-      dataIndex: "operate_system",
-      align: "center",
-      width: 120,
-      fixed: "right",
-      render: (text) => {
-        return (
-          <Tooltip title={text}>
-            <span>{text ? text : "-"}</span>
-          </Tooltip>
-        );
-      },
-      ellipsis: true,
-    },
-  ];
-
   // 服务失败的columns
   const serviceErrorColumns = [
     {
@@ -562,72 +436,15 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
     },
   ];
 
-  // 服务成功的columns
-  const serviceCorrectColumns = [
-    {
-      title: "实例名称",
-      key: "instance_name",
-      dataIndex: "instance_name",
-      align: "center",
-      //render: nonEmptyProcessing,
-      width: 120,
-      ellipsis: true,
-      //fixed: "left",
-      render: (text) => {
-        return (
-          <Tooltip title={text}>
-            <span>{text ? text : "-"}</span>
-          </Tooltip>
-        );
-      },
-    },
-    {
-      title: "服务名称",
-      key: "service_name",
-      dataIndex: "service_name",
-      align: "center",
-      //render: nonEmptyProcessing,
-      width: 140,
-      ellipsis: true,
-      //fixed: "left",
-      render: (text) => {
-        return (
-          <Tooltip title={text}>
-            <span>{text ? text : "-"}</span>
-          </Tooltip>
-        );
-      },
-    },
-    {
-      title: "运行内存",
-      key: "memory",
-      dataIndex: "memory",
-      align: "center",
-      //render: nonEmptyProcessing,
-      width: 80,
-      ellipsis: true,
-      //fixed: "left",
-      render: (text) => {
-        return (
-          <Tooltip title={text}>
-            <span>{text ? text : "-"}</span>
-          </Tooltip>
-        );
-      },
-    },
-  ];
-
   // 校验主机数据
   const fetchBatchValidate = () => {
+    setLoading(true);
     if (dataSource.length == 0) {
-      message.warning(
-        "解析结果中无有效数据，请确保文件内容格式符合规范后重新上传"
-      );
+      message.warning("节点信息中无有效数据，请补充后重新上传");
+      setHostStep(false);
+      setImportResult(false);
       return;
     }
-    setLoading(true);
-    setTableCorrectData([]);
-    setTableErrorData([]);
     let queryBody = dataSource.map((item) => {
       let result = {};
       for (const key in item) {
@@ -653,13 +470,6 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
           case "端口[必填]":
             result.port = item[key];
             break;
-          case "是否执行初始化":
-            if (item[key] === "是") {
-              result.init_host = true;
-            } else {
-              result.init_host = false;
-            }
-            break;
           case "运行用户":
             result.run_user = item[key];
             break;
@@ -672,7 +482,6 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
         row: item.key,
       };
     });
-    // console.log(queryBody)
     // 校验数据
     fetchPost(apiRequest.machineManagement.batchValidate, {
       body: {
@@ -680,32 +489,35 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
       },
     })
       .then((res) => {
-        handleResponse(res, (res) => {
-          if (res.code == 0) {
-            if (res.data && res.data.error?.length > 0) {
-              setTableErrorData(
-                res.data.error?.map((item, idx) => {
-                  return {
-                    key: idx,
-                    ...item,
-                  };
-                })
-              );
-              setTableColumns(errorColumns);
-            } else {
-              setTableCorrectData(
-                res.data.correct?.map((item, idx) => {
-                  return {
-                    key: idx,
-                    ...item,
-                  };
-                })
-              );
-              setTableColumns(correctColumns);
-            }
-            setStepNum(1);
+        res = res.data;
+        if (res.code == 0) {
+          if (res.data && res.data.error?.length > 0) {
+            setTableErrorData(
+              res.data.error?.map((item, idx) => {
+                return {
+                  key: idx,
+                  ...item,
+                };
+              })
+            );
+            setTableColumns(errorColumns);
+            setHostStep(false);
+            setImportResult(false);
+          } else {
+            hostCorrectData = res.data.correct?.map((item, idx) => {
+              return {
+                key: idx,
+                ...item,
+              };
+            });
+            setHostStep(true);
+            serviceDataValidate();
           }
-        });
+        } else {
+          message.warning(res.message);
+          setHostStep(false);
+          setImportResult(false);
+        }
       })
       .catch((e) => console.log(e))
       .finally(() => {
@@ -716,9 +528,13 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
   // 校验服务数据
   const serviceDataValidate = () => {
     setLoading(true);
-    setServiceTableCorrectData([]);
-    setServiceTableErrorData([]);
-    // 获取主机实例名数组
+    if (serviceDataSource.length == 0) {
+      message.warning("服务分布中无有效数据，请补充后重新上传");
+      setServiceStep(false);
+      setImportResult(false);
+      return;
+    }
+    // 获取主机实例名数组;
     let instanceNameArr = dataSource.map((item) => {
       let instanceName = "";
       for (const key in item) {
@@ -746,6 +562,15 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
           case "运行内存":
             result.memory = item[key];
             break;
+          case "虚拟IP":
+            result.vip = item[key];
+            break;
+          case "角色":
+            result.role = item[key];
+            break;
+          case "模式":
+            result.mode = item[key];
+            break;
           default:
             break;
         }
@@ -763,32 +588,35 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
       },
     })
       .then((res) => {
-        handleResponse(res, (res) => {
-          if (res.code == 0) {
-            if (res.data && res.data.error?.length > 0) {
-              setServiceTableErrorData(
-                res.data.error?.map((item, idx) => {
-                  return {
-                    key: idx,
-                    ...item,
-                  };
-                })
-              );
-              setServiceTableColumns(serviceErrorColumns);
-            } else {
-              setServiceTableCorrectData(
-                res.data.correct?.map((item, idx) => {
-                  return {
-                    key: idx,
-                    ...item,
-                  };
-                })
-              );
-              setServiceTableColumns(serviceCorrectColumns);
-            }
-            setStepNum(2);
+        res = res.data;
+        if (res.code == 0) {
+          if (res.data && res.data.error?.length > 0) {
+            setServiceTableErrorData(
+              res.data.error?.map((item, idx) => {
+                return {
+                  key: idx,
+                  ...item,
+                };
+              })
+            );
+            setServiceTableColumns(serviceErrorColumns);
+            setServiceStep(false);
+            setImportResult(false);
+          } else {
+            serviceCorrectData = res.data.correct?.map((item, idx) => {
+              return {
+                key: idx,
+                ...item,
+              };
+            });
+            setServiceStep(true);
+            startDeployment();
           }
-        });
+        } else {
+          message.warning(res.message);
+          setServiceStep(false);
+          setImportResult(false);
+        }
       })
       .catch((e) => console.log(e))
       .finally(() => {
@@ -799,13 +627,13 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
   // 导入服务数据
   const serviceImport = () => {
     setLoading(true);
-    let instanceArr = tableCorrectData.map((item) => {
+    let instanceArr = hostCorrectData.map((item) => {
       return {
         instance_name: item.instance_name,
         run_user: item.run_user,
       };
     });
-    let serviceArr = serviceTableCorrectData.map((item) => {
+    let serviceArr = serviceCorrectData.map((item) => {
       delete item.key;
       return {
         ...item,
@@ -818,14 +646,18 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
       },
     })
       .then((res) => {
-        handleResponse(res, (res) => {
-          if (res.code === 0) {
-            setNumInfo(res.data);
-            setStepNum(3);
-            // 开始安装
-            startInstall(res.data.operation_uuid);
-          }
-        });
+        res = res.data;
+        if (res.code === 0) {
+          setNumInfo(res.data);
+          setImportStep(true);
+          setImportResult(true);
+          // 开始安装
+          startInstall(res.data.operation_uuid);
+        } else {
+          message.warning(res.message);
+          setImportStep(false);
+          setImportResult(false);
+        }
       })
       .catch((e) => {
         console.log(e);
@@ -839,7 +671,7 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
   const startDeployment = () => {
     setLoading(true);
     // 批量导入主机数据
-    let hostArr = tableCorrectData.map((item) => {
+    let hostArr = hostCorrectData.map((item) => {
       delete item.key;
       return {
         ...item,
@@ -852,11 +684,14 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
       },
     })
       .then((res) => {
-        handleResponse(res, (res) => {
-          if (res.code === 0) {
-            serviceImport();
-          }
-        });
+        res = res.data;
+        if (res.code === 0) {
+          serviceImport();
+        } else {
+          message.warning(res.message);
+          setImportStep(false);
+          setImportResult(false);
+        }
       })
       .catch((e) => console.log(e))
       .finally(() => {});
@@ -864,6 +699,7 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
 
   // 执行安装任务
   const retryInstall = (operation_uuid) => {
+    // 跳转安装页面
     fetchPost(apiRequest.appStore.retryInstall, {
       body: {
         unique_key: operation_uuid,
@@ -889,7 +725,7 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
 
   // 查询主机 agent 状态
   const queryHostAgent = (operation_uuid) => {
-    let ipArr = tableCorrectData.map((item) => {
+    let ipArr = hostCorrectData.map((item) => {
       return item.ip;
     });
     fetchPost(apiRequest.machineManagement.hostsAgentStatus, {
@@ -916,6 +752,20 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
     hostAgentTimer.current = setInterval(() => {
       queryHostAgent(operation_uuid);
     }, 1000);
+  };
+
+  // 点击导入按钮
+  const clickImport = () => {
+    setHostStep(null);
+    setServiceStep(null);
+    setImportStep(null);
+    setImportResult(null);
+    setTableCorrectData([]);
+    setTableErrorData([]);
+    setServiceTableCorrectData([]);
+    setServiceTableErrorData([]);
+    setStepNum(1);
+    fetchBatchValidate();
   };
 
   useEffect(() => {
@@ -964,11 +814,9 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
     >
       <Steps size="small" current={stepNum}>
         <Steps.Step title="上传文件" />
-        <Steps.Step title="主机数据校验" />
-        <Steps.Step title="服务数据校验" />
-        <Steps.Step title="创建结果" />
+        <Steps.Step title="导入结果" />
       </Steps>
-      <div style={{ paddingLeft: 20, paddingTop: 30 }}>
+      <div style={{ paddingLeft: 10, paddingTop: 30 }}>
         <div
           style={{
             visibility: stepNum == 0 ? "visible" : "hidden",
@@ -1049,6 +897,9 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
                         if (item["字段名称(请勿编辑)"]?.includes("请勿编辑")) {
                           return false;
                         }
+                        if (!item["主机实例名[必填]"]) {
+                          return false;
+                        }
                         return true;
                       })
                       .map((item) => {
@@ -1070,11 +921,11 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
               >
                 <Button
                   loading={loading}
-                  onClick={() => fetchBatchValidate()}
+                  onClick={() => clickImport()}
                   type="primary"
                   disabled={columns.length == 0}
                 >
-                  校验
+                  开始导入
                 </Button>
               </div>
             </div>
@@ -1082,234 +933,242 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
         </div>
         {stepNum == 1 && (
           <>
-            {tableErrorData.length > 0 ? (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  paddingBottom: 10,
-                  flexDirection: "column",
-                }}
-              >
-                <p
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    fontSize: 20,
-                    color: "#f73136",
-                  }}
-                >
-                  <CloseCircleFilled
-                    style={{ color: "#f73136", fontSize: 30, marginRight: 10 }}
-                  />
-                  主机数据校验未通过 !
-                </p>
-                <p style={{ fontSize: 13 }}>请核对并修改信息后，再重新提交</p>
-              </div>
-            ) : (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  paddingBottom: 10,
-                }}
-              >
-                <p
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    fontSize: 20,
-                  }}
-                >
-                  <CheckCircleFilled
-                    style={{ color: "#52c41a", fontSize: 30, marginRight: 10 }}
-                  />
-                  主机数据校验通过 !
-                </p>
-              </div>
-            )}
-
-            <OmpTable
-              bordered
-              scroll={{ x: 700 }}
-              columns={tableColumns}
-              dataSource={
-                tableErrorData.length > 0 ? tableErrorData : tableCorrectData
-              }
-              pagination={{
-                pageSize: 5,
-              }}
-            />
-            <div
-              style={{
-                display: "inline-block",
-                marginLeft: "50%",
-                transform: "translateX(-50%)",
-                marginTop: 40,
-              }}
-            >
-              <Button
-                style={{ marginRight: 16 }}
-                onClick={() => {
-                  setStepNum(0);
-                }}
-              >
-                上一步
-              </Button>
-              <Button
-                loading={loading}
-                onClick={() => serviceDataValidate()}
-                type="primary"
-                disabled={tableErrorData.length > 0}
-              >
-                下一步
-              </Button>
-            </div>
-          </>
-        )}
-        {stepNum == 2 && (
-          <>
-            {serviceTableErrorData.length > 0 ? (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  paddingBottom: 10,
-                  flexDirection: "column",
-                }}
-              >
-                <p
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    fontSize: 20,
-                    color: "#f73136",
-                  }}
-                >
-                  <CloseCircleFilled
-                    style={{ color: "#f73136", fontSize: 30, marginRight: 10 }}
-                  />
-                  服务数据校验未通过 !
-                </p>
-                <p style={{ fontSize: 13 }}>请核对并修改信息后，再重新提交</p>
-              </div>
-            ) : (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  paddingBottom: 10,
-                }}
-              >
-                <p
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    fontSize: 20,
-                  }}
-                >
-                  <CheckCircleFilled
-                    style={{ color: "#52c41a", fontSize: 30, marginRight: 10 }}
-                  />
-                  服务数据校验通过 !
-                </p>
-              </div>
-            )}
-
-            <OmpTable
-              bordered
-              scroll={{ x: 700 }}
-              columns={serviceTableColumns}
-              dataSource={
-                serviceTableErrorData.length > 0
-                  ? serviceTableErrorData
-                  : serviceTableCorrectData
-              }
-              pagination={{
-                pageSize: 5,
-              }}
-            />
-            <div
-              style={{
-                display: "inline-block",
-                marginLeft: "50%",
-                transform: "translateX(-50%)",
-                marginTop: 40,
-              }}
-            >
-              <Button
-                style={{ marginRight: 16 }}
-                onClick={() => {
-                  setStepNum(1);
-                }}
-              >
-                上一步
-              </Button>
-              <Button
-                loading={loading}
-                type="primary"
-                onClick={() => {
-                  startDeployment();
-                }}
-                disabled={serviceTableErrorData.length > 0}
-              >
-                开始部署
-              </Button>
-            </div>
-          </>
-        )}
-        {stepNum == 3 && (
-          <>
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                paddingBottom: 20,
-                paddingTop: 30,
+                paddingBottom: 10,
+                flexDirection: "column",
               }}
             >
               <p
-                style={{ display: "flex", alignItems: "center", fontSize: 20 }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  fontSize: 20,
+                }}
               >
-                <CheckCircleFilled
-                  style={{ color: "#52c41a", fontSize: 30, marginRight: 10 }}
-                />
-                模板导入成功 !
+                {hostStep === null && (
+                  <>
+                    <SyncOutlined
+                      spin
+                      style={{
+                        marginRight: 16,
+                      }}
+                    />
+                    正在校验主机数据 ...
+                  </>
+                )}
+                {hostStep === true && (
+                  <>
+                    <CheckCircleFilled
+                      style={{
+                        color: "#52c41a",
+                        fontSize: 30,
+                        marginRight: 10,
+                      }}
+                    />
+                    主机数据校验通过
+                  </>
+                )}
+                {hostStep === false && (
+                  <>
+                    <CloseCircleFilled
+                      style={{
+                        color: "#f73136",
+                        fontSize: 30,
+                        marginRight: 10,
+                      }}
+                    />
+                    主机数据校验未通过
+                  </>
+                )}
               </p>
-            </div>
-            <p style={{ textAlign: "center" }}>
-              成功创建 {numInfo.host_num} 台主机
-            </p>
-            <p style={{ textAlign: "center" }}>
-              本次共导入 {numInfo.product_num} 个产品，{numInfo.service_num}{" "}
-              个服务
-            </p>
 
-            <div
-              style={{
-                display: "inline-block",
-                marginLeft: "50%",
-                transform: "translateX(-50%)",
-                marginTop: 40,
-              }}
-            >
-              <p
-                style={{ display: "flex", alignItems: "center", fontSize: 16 }}
-              >
-                <SyncOutlined
-                  spin
+              {hostStep && (
+                <p
                   style={{
-                    marginRight: 16,
+                    display: "flex",
+                    alignItems: "center",
+                    fontSize: 20,
+                  }}
+                >
+                  {serviceStep === null && (
+                    <>
+                      <SyncOutlined
+                        spin
+                        style={{
+                          marginRight: 16,
+                        }}
+                      />
+                      正在校验服务数据 ...
+                    </>
+                  )}
+                  {serviceStep === true && (
+                    <>
+                      <CheckCircleFilled
+                        style={{
+                          color: "#52c41a",
+                          fontSize: 30,
+                          marginRight: 10,
+                        }}
+                      />
+                      服务数据校验通过
+                    </>
+                  )}
+                  {serviceStep === false && (
+                    <>
+                      <CloseCircleFilled
+                        style={{
+                          color: "#f73136",
+                          fontSize: 30,
+                          marginRight: 10,
+                        }}
+                      />
+                      服务数据校验未通过
+                    </>
+                  )}
+                </p>
+              )}
+
+              {serviceStep && (
+                <p
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    fontSize: 20,
+                  }}
+                >
+                  {importStep === null && (
+                    <>
+                      <SyncOutlined
+                        spin
+                        style={{
+                          marginRight: 16,
+                        }}
+                      />
+                      正在导入模板 ...
+                    </>
+                  )}
+                  {importStep === true && (
+                    <>
+                      <CheckCircleFilled
+                        style={{
+                          color: "#52c41a",
+                          fontSize: 30,
+                          marginRight: 10,
+                        }}
+                      />
+                      部署模板导入成功
+                    </>
+                  )}
+                  {importStep === false && (
+                    <>
+                      <CloseCircleFilled
+                        style={{
+                          color: "#f73136",
+                          fontSize: 30,
+                          marginRight: 10,
+                        }}
+                      />
+                      部署模板导入失败
+                    </>
+                  )}
+                </p>
+              )}
+
+              {tableErrorData.length > 0 && (
+                <Table
+                  bordered
+                  scroll={{ x: 700 }}
+                  columns={tableColumns}
+                  dataSource={
+                    tableErrorData.length > 0
+                      ? tableErrorData
+                      : tableCorrectData
+                  }
+                  pagination={{
+                    pageSize: 5,
                   }}
                 />
-                即将进入安装，请稍后 ...
-              </p>
+              )}
+
+              {serviceTableErrorData.length > 0 && (
+                <Table
+                  bordered
+                  scroll={{ x: 700 }}
+                  columns={serviceTableColumns}
+                  dataSource={
+                    serviceTableErrorData.length > 0
+                      ? serviceTableErrorData
+                      : serviceTableCorrectData
+                  }
+                  pagination={{
+                    pageSize: 5,
+                  }}
+                />
+              )}
+
+              {importStep && (
+                <>
+                  <p style={{ textAlign: "center" }}>
+                    成功创建 {numInfo.host_num} 台主机
+                  </p>
+                  <p style={{ textAlign: "center" }}>
+                    本次共导入 {numInfo.product_num} 个产品，
+                    {numInfo.service_num} 个服务
+                  </p>
+                </>
+              )}
             </div>
+
+            {importResult && (
+              <div
+                style={{
+                  display: "inline-block",
+                  marginLeft: "50%",
+                  transform: "translateX(-50%)",
+                  marginTop: 40,
+                }}
+              >
+                <p
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    fontSize: 16,
+                  }}
+                >
+                  <SyncOutlined
+                    spin
+                    style={{
+                      marginRight: 16,
+                    }}
+                  />
+                  即将进入安装，请稍后 ...
+                </p>
+              </div>
+            )}
+
+            {importResult === false && (
+              <div
+                style={{
+                  display: "inline-block",
+                  marginLeft: "50%",
+                  transform: "translateX(-50%)",
+                  marginTop: 40,
+                }}
+              >
+                <Button
+                  style={{ marginRight: 16 }}
+                  onClick={() => {
+                    setStepNum(0);
+                  }}
+                >
+                  重新上传
+                </Button>
+              </div>
+            )}
           </>
         )}
       </div>

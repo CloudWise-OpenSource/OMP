@@ -49,14 +49,14 @@ class ServiceClickhouseCrawl(Prometheus):
         """clickhouse cpu使用率"""
         expr = f"service_process_cpu_percent{{instance='{self.instance}',app='{self.service_name}'}}"
         val = self.unified_job(*self.query(expr))
-        val = round(float(val), 4) if val else '0.00'
+        val = round(float(val), 4) if val else '-'
         self.ret['cpu_usage'] = f"{val}%"
 
     def mem_usage(self):
         """clickhouse 内存使用率"""
         expr = f"service_process_memory_percent{{instance='{self.instance}',app='{self.service_name}'}}"
         val = self.unified_job(*self.query(expr))
-        val = round(float(val), 4) if val else '0.00'
+        val = round(float(val), 4) if val else '-'
         self.ret['mem_usage'] = f"{val}%"
 
     def query_nums(self):
@@ -64,54 +64,99 @@ class ServiceClickhouseCrawl(Prometheus):
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["query"] = val
+        self.basic.append({
+            "name": "query_nums",
+            "name_cn": "查询总次数",
+            "value": val
+        })
 
     def merge_nums(self):
         expr = f"clickhouse_merge{{env='{self.env}',instance='{self.instance}',job='clickhouseExporter'}}"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["merge"] = val
+        self.basic.append({
+            "name": "merge_nums",
+            "name_cn": "merge总次数",
+            "value": val
+        })
 
     def read_only_replica(self):
         expr = f"sum(clickhouse_readonly_replica{{env='{self.env}',instance='{self.instance}',job='clickhouseExporter'}})"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["read_only_replica"] = val
+        self.basic.append({
+            "name": "read_only_replica",
+            "name_cn": "仅读副本数",
+            "value": val
+        })
 
     def replication(self):
         expr = f"clickhouse_replicated_checks{{env='{self.env}',instance='{self.instance}',job='clickhouseExporter'}}"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["replication"] = val
+        self.basic.append({
+            "name": "replication",
+            "name_cn": "事务数",
+            "value": val
+        })
 
     def clickhouse_read(self):
         expr = f"clickhouse_read{{env='{self.env}',instance='{self.instance}',job='clickhouseExporter'}}"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["clickhouse_read"] = val
+        self.basic.append({
+            "name": "clickhouse_read",
+            "name_cn": "已读字节数",
+            "value": val
+        })
 
     def clickhouse_write(self):
         expr = f"clickhouse_write{{env='{self.env}',instance='{self.instance}',job='clickhouseExporter'}}"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["clickhouse_write"] = val
+        self.basic.append({
+            "name": "clickhouse_write",
+            "name_cn": "已写字节数",
+            "value": val
+        })
 
     def pool_tasks(self):
         expr = f"clickhouse_background_pool_task{{env='{self.env}',instance='{self.instance}',job='clickhouseExporter'}}"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["pool_tasks"] = val
+        self.basic.append({
+            "name": "pool_tasks",
+            "name_cn": "pool task数",
+            "value": val
+        })
 
     def connections(self):
         expr = f"clickhouse_tcp_connection{{env='{self.env}',instance='{self.instance}',job='clickhouseExporter'}}"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
         self.ret["connections"] = val
+        self.basic.append({
+            "name": "connections",
+            "name_cn": "连接数",
+            "value": val
+        })
 
     def clickhouse_memory_tracking(self):
         expr = f"clickhouse_memory_tracking{{env='{self.env}',instance='{self.instance}',job='clickhouseExporter'}}"
         val = self.unified_job(*self.query(expr))
         val = val if val else 0
-        self.ret["memory"] = val
+        self.ret["tracking_memory"] = val
+        self.basic.append({
+            "name": "tracking_memory",
+            "name_cn": "tracking 内存",
+            "value": val
+        })
 
     def run(self):
         """统一执行实例方法"""

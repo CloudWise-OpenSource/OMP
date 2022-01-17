@@ -206,3 +206,33 @@ class SaltClient(object):
             logger.error(
                 f"Execute by salt cp_file with Exception: {traceback.format_exc()}")
             return False, f"发送文件过程中出现错误: {str(e)}"
+
+    def cp_push(self, target, source_path, upload_path):
+        """
+        salt-master从目标服务器拉取文件
+        拉取过来的文件存放路径为：/data/omp/data/salt/var/cache/salt/master/minions/10.0.3.24/files
+        :param target: 目标主机
+        :param source_path: 目标主机上源文件路径，/data/backup
+        :param upload_path: 目标主机上文件名
+        :return:
+        """
+        try:
+            cmd_res = self.client.cmd(
+                tgt=target,
+                fun="cp.push",
+                arg=(source_path,),
+                kwarg={"upload_path": upload_path, "remove_source": True},
+                timeout=60 * 10
+            )
+            logger.info(f"执行拉取文件的接口，获取到的返回结果是: {cmd_res}")
+            if not isinstance(cmd_res, dict):
+                return False, "Salt 执行错误，请检查相关配置是否正确！"
+            if target not in cmd_res:
+                return False, "当前目标主机不在线或该目标主机未纳管！"
+            if cmd_res[target] is True:
+                return True, "success"
+            return False, f"当前出现未知错误: {cmd_res[target]}"
+        except Exception as e:
+            print(traceback.format_exc())
+            logger.error(f"拉取文件过程中程序出现错误: {traceback.format_exc()}")
+            return False, f"拉取文件过程中出现错误: {str(e)}"
