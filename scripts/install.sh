@@ -11,6 +11,9 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PROJECT_FOLDER}/component/env/lib/
 
 PYTHON3="${PROJECT_FOLDER}/component/env/bin/python3"
 OMP_SCRIPT="${PROJECT_FOLDER}/scripts/omp"
+TMP_LOG_PATH="${PROJECT_FOLDER}/tmp/install_omp.log"
+
+test -d "${PROJECT_FOLDER}/tmp" || mkdir "${PROJECT_FOLDER}/tmp"
 
 get_local_ip() {
   ips=$(ip a | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | grep -v "127.0.0.1")
@@ -74,7 +77,7 @@ function install_omp() {
    exit 1
   fi
   MANAGE_PATH="${PROJECT_FOLDER}/omp_server/manage.py"
-  $PYTHON3 $MANAGE_PATH migrate
+  $PYTHON3 $MANAGE_PATH migrate >> $TMP_LOG_PATH
   UPDATE_DATA_PATH="${PROJECT_FOLDER}/scripts/source/update_data.py"
   $PYTHON3 $UPDATE_DATA_PATH
   bash $OMP_SCRIPT all start
