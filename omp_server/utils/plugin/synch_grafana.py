@@ -46,7 +46,7 @@ def synch_grafana_info():
     while try_times <= 3:
         try:
             try_times += 1
-            print(f"start request to: {url}")
+            # print(f"start request to: {url}")
             flag, r = make_request(url=url, headers=headers, payload=payload)
             if not flag:
                 return
