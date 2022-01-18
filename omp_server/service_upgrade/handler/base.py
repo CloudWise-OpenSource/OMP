@@ -1,6 +1,9 @@
 import logging
+import time
 from datetime import datetime
 from functools import reduce
+
+from django.conf import settings
 
 from db_models.models import UpgradeDetail, RollbackDetail, Service
 from utils.plugin.salt_client import SaltClient
@@ -145,6 +148,58 @@ class BaseHandler:
         if not success_state:
             return self.fail_handler()
         return self.success_handler()
+
+
+class StartOperationMixin:
+
+    def handler(self):
+        self.set_service_state()
+        return self.detail, self.service, self.relation_details
+
+    def __call__(self, operation_args, *args, **kwargs):
+        if not self.valid_args(operation_args, self.detail_class):
+            return None
+        self.detail = operation_args[0]
+        self.service = operation_args[1]
+        self.relation_details = operation_args[2]
+        self._log(self.log_message.format(self.union_server), "info")
+        return self.handler()
+
+
+class StopServiceMixin:
+    log_message = "服务实例{}: 停止服务{}"
+
+    def stop_service(self, service):
+        for i in range(2):
+            state, message = self.salt_client.cmd(
+                self.service.ip,
+                f'bash {service.service_controllers.get("stop")}',
+                timeout=settings.SSH_CMD_TIMEOUT
+            )
+            if not state:
+                raise Exception(f"salt执行命令失败，错误输出: {str(message)}")
+            if "[not  running]" in message:
+                # 休眠5秒等待停止
+                time.sleep(5)
+                return True
+            time.sleep(5)
+        return False
+
+
+class StartServiceMixin:
+    log_message = "服务实例{}: 启动服务{}"
+
+    def start_service(self, service):
+        for i in range(2):
+            state, message = self.salt_client.cmd(
+                self.service.ip,
+                service.service_controllers.get("start"),
+                timeout=settings.SSH_CMD_TIMEOUT
+            )
+            if not state:
+                raise Exception(f"salt执行命令失败，错误输出: {str(message)}")
+            time.sleep(10)
+            return True
 
 
 def handler_pipeline(handlers, objs):

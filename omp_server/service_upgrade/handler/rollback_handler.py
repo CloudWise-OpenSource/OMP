@@ -7,10 +7,9 @@ from django.conf import settings
 from django.db import transaction
 
 from db_models.mixins import RollbackStateChoices
-from db_models.models import RollbackDetail, Service
-from service_upgrade.handler.base import BaseHandler
-from service_upgrade.handler.upgrade_handler import StopServiceHandler, \
-    StartServiceHandler, StartUpgradeHandler
+from db_models.models import RollbackDetail, Service, ServiceHistory
+from service_upgrade.handler.base import BaseHandler, StartOperationMixin, \
+    StopServiceMixin, StartServiceMixin
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +26,7 @@ class RollbackBaseHandler(BaseHandler):
             self.service.service_status = Service.SERVICE_STATUS_UNKNOWN
             self.service.save()
             self.detail.rollback_state = getattr(RollbackStateChoices, state)
+            ServiceHistory.create_history(self.service, self.detail)
         self.detail.save()
         # 升级结束更新服务表
         self.sync_relation_details()
@@ -40,6 +40,7 @@ class RollbackBaseHandler(BaseHandler):
             service = relation_detail.upgrade.service
             service.service_status = self.service.service_status
             service.save()
+            ServiceHistory.create_history(service, relation_detail)
             relation_detail.refresh_from_db()
 
     def handler(self):
@@ -54,29 +55,28 @@ class RollbackBaseHandler(BaseHandler):
         return self.detail.upgrade.union_server
 
 
-class StartRollbackHandler(StartUpgradeHandler):
+class StartRollbackHandler(StartOperationMixin, RollbackBaseHandler):
     log_message = "服务实例{}: 开始回滚..."
+    operation_type = "ROLLBACK"
 
     @transaction.atomic
-    def set_service_state(self, rollback_args):
-        rollback_args[0].rollback_state = RollbackStateChoices.UPGRADE_ING
-        rollback_args[0].save()
-        rollback_args[0].refresh_from_db()
-        rollback_args[1].service_status = \
-            Service.SERVICE_STATUS_ROLLBACK
-        rollback_args[1].save()
-        rollback_args[1].refresh_from_db()
-        for detail in rollback_args[2]:
-            detail.rollback_state = RollbackStateChoices.UPGRADE_ING
+    def set_service_state(self):
+        self.detail.rollback_state = RollbackStateChoices.ROLLBACK_ING
+        self.detail.save()
+        self.detail.refresh_from_db()
+        self.service.service_status = Service.SERVICE_STATUS_ROLLBACK
+        self.service.save()
+        self.service.refresh_from_db()
+        for detail in self.relation_details:
+            detail.rollback_state = RollbackStateChoices.ROLLBACK_ING
             service = detail.upgrade.service
-            service.service_status = Service.SERVICE_STATUS_UPGRADE
+            service.service_status = Service.SERVICE_STATUS_ROLLBACK
             service.save()
             detail.save()
             detail.refresh_from_db()
-        return rollback_args
 
 
-class RollBackStopServiceHandler(StopServiceHandler):
+class RollBackStopServiceHandler(StopServiceMixin, RollbackBaseHandler):
     operation_type = "ROLLBACK"
 
     def handler(self):
@@ -93,7 +93,7 @@ class RollBackStopServiceHandler(StopServiceHandler):
         return True
 
 
-class RollBackServiceHandler(BaseHandler):
+class RollBackServiceHandler(RollbackBaseHandler):
     log_message = "服务实例{}: 回滚{}"
     operation_type = "ROLLBACK"
 
@@ -108,8 +108,8 @@ class RollBackServiceHandler(BaseHandler):
         backup_file = os.path.join(backup_package, backup_name)
         rollback_file = self.detail.upgrade.path_info.get('backup_file_path')
         return f"mkdir -p {backup_package} && " \
-            f"mv {self.service.install_folder} {backup_file} && " \
-            f"mv {rollback_file} {self.service.install_folder} && " \
+               f"mv {self.service.install_folder} {backup_file} && " \
+               f"mv {rollback_file} {self.service.install_folder} && " \
                f"echo 备份路径:{backup_file}"
 
     def handler(self):
@@ -127,7 +127,7 @@ class RollBackServiceHandler(BaseHandler):
             cmd_str = f"python {rollback_path} " \
                       f"--local_ip {self.service.ip} " \
                       f"--data_json {data_json_path} " \
-                      f"--version {self.detail.old_version}" \
+                      f"--version {self.detail.upgrade.current_app.app_version}" \
                       f"--backup_path {rollback_file}"
         state, message = self.salt_client.cmd(
             self.service.ip,
@@ -144,7 +144,7 @@ class RollBackServiceHandler(BaseHandler):
         return True
 
 
-class RollBackStartServiceHandler(StartServiceHandler):
+class RollBackStartServiceHandler(StartServiceMixin, RollbackBaseHandler):
     operation_type = "ROLLBACK"
 
     def sync_relation_details(self):
@@ -153,24 +153,34 @@ class RollBackStartServiceHandler(StartServiceHandler):
                 v = getattr(self.detail, k)
                 setattr(relation_detail, k, v)
             relation_detail.save()
+            relation_detail.upgrade.has_rollback = True
+            relation_detail.upgrade.save()
             service = relation_detail.upgrade.service
             service.update_application(
-                self.detail.current_app,
+                self.detail.upgrade.current_app,
                 True,
                 self.service.install_folder
             )
+            ServiceHistory.create_history(service, relation_detail)
             relation_detail.refresh_from_db()
 
     def write_db(self, result=False):
         """写库"""
         state = f"{self.operation_type}_SUCCESS"
         self.detail.rollback_state = getattr(RollbackStateChoices, state)
+        self.detail.upgrade.has_rollback = True
+        self.detail.upgrade.save()
         self.detail.save()
+        # 创建服务操作记录
+        ServiceHistory.create_history(self.service, self.detail)
+        # 升级结束更新服务表
         self.service.update_application(
             self.detail.upgrade.current_app,
             True,
             self.service.install_folder
         )
+        # 同步关联服务
+        self.sync_relation_details()
 
     def handler(self):
         if self.service.is_static:
