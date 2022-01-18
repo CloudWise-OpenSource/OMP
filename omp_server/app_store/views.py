@@ -567,10 +567,9 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                 # 写入集群字典，记录 id
                 cluster_dict[service_name] = (
                     cluster_obj.id, cluster_obj.cluster_name)
-                cluster_id = cluster_obj.id
             elif service_name in cluster_dict:
-                # 存在于集群字典中，记录 id
-                cluster_id = cluster_dict.get(service_name)[0]
+                # 存在于集群字典中
+                pass
             else:
                 # 尚未记录，加入单实例字典
                 only_dict[service_name] = service_instance_name
@@ -712,6 +711,12 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
             with transaction.atomic():
                 # 批量创建 service，return 无 id，需重查获取
                 Service.objects.bulk_create(service_obj_ls)
+
+                # 为所有服务统一补充集群信息
+                for k, v in cluster_dict.items():
+                    Service.objects.filter(
+                        service__app_name=k
+                    ).update(cluster_id=v[0])
                 service_queryset = Service.objects.filter(
                     service_instance_name__in=service_instance_name_ls
                 ).select_related("service")
