@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import Installation from "./tabs/installation"
 import Upgrade from "./tabs/upgrade"
-
+import Rollback from "./tabs/rollback"
 const InstallationRecord = () => {
   const history = useHistory();
 
@@ -46,7 +46,7 @@ const InstallationRecord = () => {
       <OmpContentNav data={contentNavData} currentFocus={currentList} />
       {currentList == "installation" && <Installation history={history} /> }
       {currentList == "upgrade" && <Upgrade history={history} /> }
-      {currentList == "backoff" && <Upgrade history={history} />}
+      {currentList == "backoff" && <Rollback history={history} />}
     </OmpContentWrapper>
   );
 };

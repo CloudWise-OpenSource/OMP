@@ -153,10 +153,19 @@ export const apiRequest = {
     doUpgrade: "/api/upgrade/do-upgrade",
     // 服务升级页面列表进度查询
     queryUpgradeProcess: "/api/upgrade/history",
+
+     // 服务回退选择应用服务列表
+     canRollback: "/api/rollback/can-rollback",
+
+     // 服务回退动作下发
+     doRollback: "/api/rollback/do-rollback",
+     // 服务回退页面列表进度查询
+     queryRollbackProcess: "/api/rollback/history",
   },
   installHistoryPage: {
     queryInstallHistoryList: "/api/appStore/mainInstallHistory",
-    queryUpgradeHistoryList: "/api/upgrade/history"
+    queryUpgradeHistoryList: "/api/upgrade/history",
+    queryRollbackHistoryList: "/api/rollback/history",
   },
   inspection: {
     inspectionList: "/api/inspection/history/",

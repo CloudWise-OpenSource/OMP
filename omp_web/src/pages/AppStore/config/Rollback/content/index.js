@@ -1,6 +1,6 @@
 import { Button, Anchor, Spin, Progress } from "antd";
 import { useSelector } from "react-redux";
-import InstallInfoItem from "./component/UpgradeInfoItem";
+import RollbackInfoItem from "./component/RollbackInfoItem";
 import { useEffect, useRef, useState } from "react";
 import { LoadingOutlined } from "@ant-design/icons";
 import { apiRequest } from "@/config/requestApi";
@@ -12,10 +12,10 @@ import { fetchPost, fetchPut } from "src/utils/request";
 const { Link } = Anchor;
 // 状态渲染规则
 const renderStatus = {
-  0: "等待升级",
-  1: "正在升级",
-  2: "升级成功",
-  3: "升级失败",
+  0: "等待回滚",
+  1: "正在回滚",
+  2: "回滚成功",
+  3: "回滚失败",
   4: "正在注册",
 };
 
@@ -33,28 +33,28 @@ const Content = () => {
 
   const [data, setData] = useState({
     detail: {},
-    upgrade_state: 0,
+    rollback_state: 0,
   });
 
   // 轮训的timer控制器
   const timer = useRef(null);
 
-  const queryUpgradeProcess = () => {
+  const queryRollbackProcess = () => {
     !timer.current && setLoading(true);
     fetchGet(
-      `${apiRequest.appStore.queryUpgradeProcess}/${location?.state?.history}`
+      `${apiRequest.appStore.queryRollbackProcess}/${location?.state?.history}`
     )
       .then((res) => {
         handleResponse(res, (res) => {
           setData(res.data);
           if (
-            res.data.upgrade_state == 0 ||
-            res.data.upgrade_state == 1 ||
-            res.data.upgrade_state == 4
+            res.data.rollback_state == 0 ||
+            res.data.rollback_state == 1 ||
+            res.data.rollback_state == 4
           ) {
             // 状态为未安装或者安装中
             timer.current = setTimeout(() => {
-              queryUpgradeProcess();
+              queryRollbackProcess();
             }, 5000);
           }
         });
@@ -65,15 +65,15 @@ const Content = () => {
       });
   };
 
-  const retryUpgrade = () => {
+  const retryRollback = () => {
     setRetryLoading(true);
     fetchPut(
-      `${apiRequest.appStore.queryUpgradeProcess}/${location?.state?.history}`
+      `${apiRequest.appStore.queryRollbackProcess}/${location?.state?.history}`
     )
       .then((res) => {
         handleResponse(res, (res) => {
           if (res.code == 0) {
-            queryUpgradeProcess();
+            queryRollbackProcess();
           }
         });
       })
@@ -84,7 +84,7 @@ const Content = () => {
   };
 
   useEffect(() => {
-    queryUpgradeProcess();
+    queryRollbackProcess();
     return () => {
       // 页面销毁时清除延时器
       clearTimeout(timer.current);
@@ -110,13 +110,13 @@ const Content = () => {
             }}
           >
             <div>
-              {data?.upgrade_detail?.map((item, idx) => {
+              {data?.rollback_detail?.map((item, idx) => {
                 return (
-                  <InstallInfoItem
+                  <RollbackInfoItem
                     id={`a${idx}`}
                     key={idx}
                     title={item.service_name}
-                    data={item.upgrade_details}
+                    data={item.rollback_details}
                     idx={idx}
                   />
                 );
@@ -148,9 +148,9 @@ const Content = () => {
                 e.preventDefault();
               }}
             >
-              {data?.upgrade_detail?.map((item, idx) => {
+              {data?.rollback_detail?.map((item, idx) => {
                 let hasError =
-                  item.upgrade_details.filter((a) => a.upgrade_state == 3)
+                  item.rollback_details.filter((a) => a.rollback_state == 3)
                     .length !== 0;
                 return (
                   <div style={{ padding: 5 }} key={idx}>
@@ -186,10 +186,10 @@ const Content = () => {
       >
         <div style={{ paddingLeft: 20, display: "flex" }}>
           <div style={{ width: 100 }}>
-            {renderStatus[data.upgrade_state]}
-            {(data.upgrade_state == 0 ||
-              data.upgrade_state == 1 ||
-              data.upgrade_state == 4) && (
+            {renderStatus[data.rollback_state]}
+            {(data.rollback_state == 0 ||
+              data.rollback_state == 1 ||
+              data.rollback_state == 4) && (
               <LoadingOutlined style={{ marginLeft: 10, fontWeight: 600 }} />
             )}
           </div>
@@ -197,18 +197,18 @@ const Content = () => {
         <div style={{ width: "70%" }}>
           <Progress
             percent={(data.success_count / data.all_count * 100).toFixed()}
-            status={data.upgrade_state == 3 && "exception"}
+            status={data.rollback_state == 3 && "exception"}
           />
         </div>
         <div style={{ paddingLeft: 60 }}>
-          {data.upgrade_state == 3 && (
+          {data.rollback_state == 3 && (
             <Button
               loading={retryLoading}
               style={{ marginLeft: 10 }}
               type="primary"
               //disabled={unassignedServices !== 0}
               onClick={() => {
-                retryUpgrade();
+                retryRollback();
               }}
             >
               重试
@@ -223,7 +223,7 @@ const Content = () => {
               history.push({
                 pathname: "/application_management/install-record",
                 state: {
-                  tabKey: "upgrade",
+                  tabKey: "backoff",
                 },
               });
             }}
