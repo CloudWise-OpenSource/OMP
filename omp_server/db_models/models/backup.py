@@ -42,7 +42,6 @@ class BackupHistory(TimeStampMixin):
     env_id = models.IntegerField("环境id", default=0)
     retain_path = models.TextField("文件保存路径", default="/data/omp/data/backup/")
     operation = models.CharField("操作方式", default="定时任务执行", max_length=32)
-    # omp-v-1.5新增
     NOT_SEND = 3
     SEND_RESULT_CHOICES = (
         ("发送成功", SUCCESS),

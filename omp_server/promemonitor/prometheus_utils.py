@@ -447,7 +447,6 @@ class PrometheusUtils(object):
                 service_temp_data['username'] = sd.get('username', '')
                 service_temp_data['password'] = sd.get('password', '')
                 service_temp_data['name'] = sd.get('service_name')
-                # omp1.3 新增对有进程无端口服务的监控
                 service_temp_data['only_process'] = sd.get('only_process')
                 service_temp_data['process_key_word'] = sd.get(
                     'process_key_word')
