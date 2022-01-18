@@ -18,6 +18,7 @@ import EmailSettings from "src/pages/EmailSettings";
 import RuleCenter from "src/pages/RuleCenter";
 import InstallationRecord from "@/pages/InstallationRecord";
 import Upgrade from "@/pages/AppStore/config/Upgrade";
+import Rollback from "@/pages/AppStore/config/Rollback"
 import DeploymentPlan from "@/pages/DeploymentPlan";
 import BackupRecords from "@/pages/BackupRecords";
 import BackupStrategy from "@/pages/BackupStrategy";
@@ -108,6 +109,12 @@ export default [
         path: "/application_management/app_store/service_upgrade",
         notInMenu: true,
         component: Upgrade,
+      },
+      {
+        title: "服务回滚",
+        path: "/application_management/app_store/service_rollback",
+        notInMenu: true,
+        component: Rollback
       },
       {
         title: "部署模板",

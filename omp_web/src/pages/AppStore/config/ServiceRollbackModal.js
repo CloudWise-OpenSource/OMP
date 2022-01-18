@@ -15,6 +15,7 @@ import {
   CopyOutlined,
   SearchOutlined,
   ArrowUpOutlined,
+  SyncOutlined,
 } from "@ant-design/icons";
 //import BMF from "browser-md5-file";
 import { fetchPost, fetchGet } from "@/utils/request";
@@ -32,6 +33,7 @@ const ServiceRollbackModal = ({
   // dataSource,
   installTitle,
   initLoading,
+  fixedParams
 }) => {
   const [loading, setLoading] = useState(false);
 
@@ -67,42 +69,57 @@ const ServiceRollbackModal = ({
     },
     {
       title: "当前版本",
-      key: "version",
-      dataIndex: "version",
+      key: "before_rollback_v",
+      dataIndex: "before_rollback_v",
       align: "center",
       ellipsis: true,
       width: 80,
-      // render: (text, record) => {
-      //   return text[0];
-      // },
+      render: (text, record) => {
+        let v = text || "-";
+        return (
+          <Tooltip title={v}>
+            <div style={{ paddingTop: 2 }}>{v}</div>
+          </Tooltip>
+        );
+      },
     },
     {
-      title: "升级版本",
-      key: "can_upgrade",
-      dataIndex: "can_upgrade",
+      title: "回滚版本",
+      key: "after_rollback_v",
+      dataIndex: "after_rollback_v",
       align: "center",
       ellipsis: true,
       width: 100,
       render: (text, record) => {
-        return text[0].app_version;
+        let v = text || "-";
+        return (
+          <Tooltip title={v}>
+            <div style={{ paddingTop: 2 }}>{v}</div>
+          </Tooltip>
+        );
       },
     },
   ];
 
   const [dataSource, setDataSource] = useState([]);
+  const [allLength, setAllLength] = useState(0)
 
   const queryDataList = (search) => {
     // setRows([]);
     // setCheckedList([]);
     setLoading(true);
-    fetchGet(apiRequest.appStore.canUpgrade, {
+    fetchGet(`${apiRequest.appStore.canRollback}${fixedParams || ""}`, {
       params: {
         search: search,
       },
     })
       .then((res) => {
         handleResponse(res, (res) => {
-          setDataSource(formatResData(res.data.results));
+          let result = formatResData(res.data.results)
+          if(!search || search == undefined){
+            setAllLength(result.map((i) => i.children).flat().length)
+          }
+          setDataSource(result);
         });
       })
       .catch((e) => console.log(e))
@@ -112,27 +129,35 @@ const ServiceRollbackModal = ({
   };
 
   const formatResData = (data = []) => {
-    console.log(data);
     // 遍历数据添加key以及判断父级数据的当前版本
     // （当其子项的当前版本全部一致时设置父级数据版本为此值）
     let result = data.map((item) => {
       let currentVersion = "-";
-      let can_upgrade = [item.can_upgrade];
+      let can_rollback = [];
       let c = Array.from(
         new Set(
           item.children.map((i, idx) => {
             item.children[idx].key = item.children[idx].instance_name;
+            item.children[idx]._id = item.children[idx].id;
             item.children[idx].id = item.children[idx].instance_name;
             item.children[idx].isChildren = item.app_name;
-            return i.version;
+            return i.before_rollback_v;
+          })
+        )
+      );
+      let b = Array.from(
+        new Set(
+          item.children.map((i, idx) => {
+            return i.after_rollback_v;
           })
         )
       );
       c.length == 1 && (currentVersion = c[0]);
+      b.length == 1 && can_rollback.push(b[0]);
       return {
         ...item,
-        version: currentVersion,
-        can_upgrade: can_upgrade,
+        before_rollback_v: currentVersion,
+        after_rollback_v: can_rollback,
         instance_name: item.app_name,
         id: item.app_name || item.instance_name,
         key: item.app_name || item.instance_name,
@@ -148,22 +173,19 @@ const ServiceRollbackModal = ({
     });
   };
 
-  // 升级命令下发
-  const doUpgrade = (checkedList) => {
+  // 回滚命令下发
+  const doRollback = (checkedList) => {
     setLoading(true);
-    fetchPost(apiRequest.appStore.doUpgrade, {
+    fetchPost(apiRequest.appStore.doRollback, {
       body: {
-        choices: checkedList.map((item) => ({
-          app_id: item.can_upgrade[0].app_id,
-          service_id: item.service_id,
-        })),
+        choices: checkedList.map(item=>item._id)
       },
     })
       .then((res) => {
         handleResponse(res, (res) => {
           if (res.code == 0) {
             history.push({
-              pathname: "/application_management/app_store/service_upgrade",
+              pathname: "/application_management/app_store/service_rollback",
               state: {
                 history: res.data.history,
               },
@@ -186,7 +208,7 @@ const ServiceRollbackModal = ({
       title={
         <span>
           <span style={{ position: "relative", left: "-10px" }}>
-            <ArrowUpOutlined />
+            <SyncOutlined />
           </span>
           <span>服务回滚-选择应用服务</span>
         </span>
@@ -249,7 +271,7 @@ const ServiceRollbackModal = ({
         <div style={{ border: "1px solid rgb(235, 238, 242)" }}>
           <Table
             size="small"
-            scroll={{ y: 270 }}
+            scroll={{ y: 295 }}
             loading={loading || initLoading}
             //scroll={{ x: 1900 }}
             columns={columns}
@@ -332,7 +354,7 @@ const ServiceRollbackModal = ({
             <div style={{ marginRight: 15 }}>
               已选择 {checkedList.length} 个
             </div>
-            <div>共 {dataSource.map((i) => i.children).flat().length} 个</div>
+            <div>共 {allLength} 个</div>
           </div>
         </div>
         <div
@@ -352,7 +374,7 @@ const ServiceRollbackModal = ({
               loading={loading || initLoading}
               disabled={checkedList.length == 0}
               onClick={() => {
-                doUpgrade(checkedList);
+                doRollback(checkedList);
               }}
             >
               确认选择

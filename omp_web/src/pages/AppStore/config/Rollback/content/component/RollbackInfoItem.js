@@ -1,6 +1,6 @@
-import UpgradeDetail from "./UpgradeDetail";
+import RollbackDetail from "./RollbackDetail";
 import { useState } from "react";
-const InstallInfoItem = ({ id, data, title, log,idx, instance_name }) => {
+const RollbackInfoItem = ({ id, data, title, log,idx, instance_name }) => {
   return (
     <div
       id={id}
@@ -47,12 +47,13 @@ const InstallInfoItem = ({ id, data, title, log,idx, instance_name }) => {
         {data?.map((item) => {
           console.log(item)
           return (
-            <UpgradeDetail
+            <RollbackDetail
               title={title}
               key={`${title}=${item.ip}`}
-              status={item.upgrade_state}
+              status={item.rollback_state}
               ip={item.ip}
               log={item.message}
+              instance_name={item.instance_name}
             />
           );
         })}
@@ -61,4 +62,4 @@ const InstallInfoItem = ({ id, data, title, log,idx, instance_name }) => {
   );
 };
 
-export default InstallInfoItem;
+export default RollbackInfoItem

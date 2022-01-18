@@ -8,6 +8,7 @@ import { fetchGet } from "@/utils/request";
 import { handleResponse } from "@/utils/utils";
 import { useHistory, useLocation } from "react-router-dom";
 import { fetchPost, fetchPut } from "src/utils/request";
+import ServiceRollbackModal from "../../ServiceRollbackModal";
 
 const { Link } = Anchor;
 // 状态渲染规则
@@ -38,6 +39,9 @@ const Content = () => {
 
   // 轮训的timer控制器
   const timer = useRef(null);
+
+  const [vfModalVisibility, setVfModalVisibility] = useState(false);
+  const [rowId, setRowId] = useState("");
 
   const queryUpgradeProcess = () => {
     !timer.current && setLoading(true);
@@ -196,23 +200,38 @@ const Content = () => {
         </div>
         <div style={{ width: "70%" }}>
           <Progress
-            percent={(data.success_count / data.all_count * 100).toFixed()}
+            percent={((data.success_count / data.all_count) * 100).toFixed()}
             status={data.upgrade_state == 3 && "exception"}
           />
         </div>
         <div style={{ paddingLeft: 60 }}>
           {data.upgrade_state == 3 && (
-            <Button
-              loading={retryLoading}
-              style={{ marginLeft: 10 }}
-              type="primary"
-              //disabled={unassignedServices !== 0}
-              onClick={() => {
-                retryUpgrade();
-              }}
-            >
-              重试
-            </Button>
+            <>
+              <Button
+                loading={retryLoading}
+                style={{ marginLeft: 10 }}
+                type="primary"
+                //disabled={unassignedServices !== 0}
+                onClick={() => {
+                  setRowId(location?.state?.history);
+                  // retryUpgrade();
+                  setVfModalVisibility(true)
+                }}
+              >
+                回滚
+              </Button>
+              <Button
+                loading={retryLoading}
+                style={{ marginLeft: 10 }}
+                type="primary"
+                //disabled={unassignedServices !== 0}
+                onClick={() => {
+                  retryUpgrade();
+                }}
+              >
+                重试
+              </Button>
+            </>
           )}
 
           <Button
@@ -232,6 +251,12 @@ const Content = () => {
           </Button>
         </div>
       </div>
+      <ServiceRollbackModal
+        sRModalVisibility={vfModalVisibility}
+        setSRModalVisibility={setVfModalVisibility}
+        initLoading={retryLoading}
+        fixedParams={`?history_id=${rowId}`}
+      />
     </div>
   );
 };
