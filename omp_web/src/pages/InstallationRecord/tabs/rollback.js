@@ -10,35 +10,29 @@ import {
 import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import moment from "moment";
-import ServiceRollbackModal from "../../AppStore/config/ServiceRollbackModal";
+import ServiceUpgradeModal from "../config/ServiceUpgradeModal";
+
 const renderStatus = (text) => {
   switch (text) {
     case 0:
-      return <span>{renderDisc("warning", 7, -1)}等待升级</span>;
+      return <span>{renderDisc("warning", 7, -1)}等待回滚</span>;
     case 1:
-      return <span>{renderDisc("warning", 7, -1)}正在升级</span>;
+      return <span>{renderDisc("warning", 7, -1)}正在回滚</span>;
     case 2:
-      return <span>{renderDisc("normal", 7, -1)}升级成功</span>;
+      return <span>{renderDisc("normal", 7, -1)}回滚成功</span>;
     case 3:
-      return <span>{renderDisc("critical", 7, -1)}升级失败</span>;
+      return <span>{renderDisc("critical", 7, -1)}回滚失败</span>;
     case 4:
-      return <span>{renderDisc("notMonitored", 7, -1)}正在升级</span>;
+      return <span>{renderDisc("notMonitored", 7, -1)}正在回滚</span>;
     default:
       return "-";
   }
 };
 
-const notProhibit = {
-  cursor: "not-allowed",
-  color: "#bbbbbb",
-};
-
-const Upgrade = ({ history }) => {
+const Rollback = ({ history }) => {
   const [loading, setLoading] = useState(false);
   //table表格数据
   const [dataSource, setDataSource] = useState([]);
-
-  const [rowId, setRowId] = useState("");
 
   const [pagination, setPagination] = useState({
     current: 1,
@@ -83,8 +77,8 @@ const Upgrade = ({ history }) => {
     },
     {
       title: "状态",
-      key: "upgrade_state",
-      dataIndex: "upgrade_state",
+      key: "rollback_state",
+      dataIndex: "rollback_state",
       width: 100,
       align: "center",
       render: (text) => {
@@ -92,7 +86,7 @@ const Upgrade = ({ history }) => {
       },
     },
     {
-      title: "升级时间",
+      title: "回滚时间",
       key: "created",
       dataIndex: "created",
       align: "center",
@@ -120,7 +114,7 @@ const Upgrade = ({ history }) => {
                 onClick={() => {
                   history.push({
                     pathname:
-                      "/application_management/app_store/service_upgrade",
+                      "/application_management/app_store/service_rollback",
                     state: {
                       history: record.id,
                     },
@@ -128,24 +122,6 @@ const Upgrade = ({ history }) => {
                 }}
               >
                 查看
-              </a>
-              <a
-                style={
-                  record.can_rollback
-                    ? { marginLeft: 10 }
-                    : {
-                        marginLeft: 10,
-                        ...notProhibit,
-                      }
-                }
-                onClick={() => {
-                  if (record.can_rollback) {
-                    setRowId(record.id);
-                    setVfModalVisibility(true);
-                  }
-                }}
-              >
-                回滚
               </a>
             </div>
           </div>
@@ -157,7 +133,7 @@ const Upgrade = ({ history }) => {
   //auth/users
   function fetchData(pageParams = { current: 1, pageSize: 10 }) {
     setLoading(true);
-    fetchGet(apiRequest.installHistoryPage.queryUpgradeHistoryList, {
+    fetchGet(apiRequest.installHistoryPage.queryRollbackHistoryList, {
       params: {
         page: pageParams.current,
         size: pageParams.pageSize,
@@ -246,14 +222,15 @@ const Upgrade = ({ history }) => {
           rowKey={(record) => record.id}
         />
       </div>
-      <ServiceRollbackModal
-        sRModalVisibility={vfModalVisibility}
-        setSRModalVisibility={setVfModalVisibility}
+      {/* <ServiceUpgradeModal
+        vfModalVisibility={vfModalVisibility}
+        setVfModalVisibility={setVfModalVisibility}
+        dataSource={serviceList}
+        // installTitle={installTitle.current}
         initLoading={loading}
-        fixedParams={`?history_id=${rowId}`}
-      />
+      /> */}
     </OmpContentWrapper>
   );
 };
 
-export default Upgrade;
+export default Rollback

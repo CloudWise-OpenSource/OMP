@@ -68,9 +68,14 @@ const ServiceUpgradeModal = ({
       align: "center",
       ellipsis: true,
       width: 80,
-      // render: (text, record) => {
-      //   return text[0];
-      // },
+      render: (text, record) => {
+        let v =  text || "-";
+        return (
+          <Tooltip title={v}>
+            <div style={{ paddingTop: 2 }}>{v}</div>
+          </Tooltip>
+        );
+      },
     },
     {
       title: "升级版本",
@@ -80,12 +85,18 @@ const ServiceUpgradeModal = ({
       ellipsis: true,
       width: 100,
       render: (text, record) => {
-        return text[0].app_version;
+        let v =  text[0].app_version || "-";
+        return (
+          <Tooltip title={v}>
+            <div style={{ paddingTop: 2 }}>{v}</div>
+          </Tooltip>
+        );
       },
     },
   ];
 
   const [dataSource, setDataSource] = useState([]);
+  const [allLength, setAllLength] = useState(0)
 
   const queryDataList = (search) => {
     // setRows([]);
@@ -98,7 +109,11 @@ const ServiceUpgradeModal = ({
     })
       .then((res) => {
         handleResponse(res, (res) => {
-          setDataSource(formatResData(res.data.results));
+          let result = formatResData(res.data.results)
+          if(!search || search == undefined){
+            setAllLength(result.map((i) => i.children).flat().length)
+          }
+          setDataSource(result);
         });
       })
       .catch((e) => console.log(e))
@@ -245,7 +260,7 @@ const ServiceUpgradeModal = ({
         <div style={{ border: "1px solid rgb(235, 238, 242)" }}>
           <Table
             size="small"
-            scroll={{ y: 270 }}
+            scroll={{ y: 295 }}
             loading={loading || initLoading}
             //scroll={{ x: 1900 }}
             columns={columns}
@@ -328,7 +343,7 @@ const ServiceUpgradeModal = ({
             <div style={{ marginRight: 15 }}>
               已选择 {checkedList.length} 个
             </div>
-            <div>共 {dataSource.map((i) => i.children).flat().length} 个</div>
+            <div>共 {allLength} 个</div>
           </div>
         </div>
         <div

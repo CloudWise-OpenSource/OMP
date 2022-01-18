@@ -5,7 +5,6 @@ import traceback
 import requests
 
 from db_models.models import MonitorUrl, GrafanaMainPage
-from utils.parse_config import GRAFANA_API_KEY
 
 
 def make_request(url, headers, payload):
@@ -18,8 +17,8 @@ def make_request(url, headers, payload):
     """
     flag = 0
     while flag < 5:
-        response = requests.request(
-            "GET", url, headers=headers, data=payload)
+        response = requests.get(url=url, headers=headers,
+                                data=payload, auth=("admin", "admin"))
         r = json.loads(response.text)
         for url in r:
             if not isinstance(url, dict):
@@ -42,14 +41,12 @@ def synch_grafana_info():
           "query=&starred=false&skipRecent=false&skipStarred=false&" \
           "folderIds=0&layout=folders".format(monitor_url)
     payload = {}
-    headers = {
-        'Authorization': f'Bearer {GRAFANA_API_KEY}'
-    }
+    headers = {'Content-Type': 'application/json'}
     try_times = 0
     while try_times <= 3:
         try:
             try_times += 1
-            print(f"start request to: {url}")
+            # print(f"start request to: {url}")
             flag, r = make_request(url=url, headers=headers, payload=payload)
             if not flag:
                 return
