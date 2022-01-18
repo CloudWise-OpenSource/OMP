@@ -33,6 +33,7 @@ from promemonitor.grafana_views import grafana_proxy_view
 from inspection.urls import router as router_inspection
 from services.urls import router as services_router
 from backups.urls import router as backups_router
+from service_upgrade.urls import upgrade_urlpatterns, rollback_urlpatterns
 
 urlpatterns_inside = [
     path("login/", JwtAPIView.as_view(), name="login"),
@@ -43,7 +44,9 @@ urlpatterns_inside = [
     path("appStore/", include(app_store_router.urls), name="appStore"),
     path('inspection/', include(router_inspection.urls), name="inspection"),
     path("services/", include(services_router.urls), name="services"),
-    path("backups/", include(backups_router.urls), name="backups")
+    path("backups/", include(backups_router.urls), name="backups"),
+    path("upgrade/", include(upgrade_urlpatterns), name="upgrade"),
+    path("rollback/", include(rollback_urlpatterns), name="rollback"),
 ]
 
 urlpatterns = [

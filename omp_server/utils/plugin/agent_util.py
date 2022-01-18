@@ -93,7 +93,6 @@ class Agent(object):
         logger.info(f"delete origin omp_salt_agent for {self.host}")
         omp_salt = os.path.join(self.install_dir, "omp_salt_agent")
         _delete_cron_cmd = f"sed -i '/omp_salt_agent/d' /var/spool/cron/{self.username}; "
-        # OMP-v1.3.0 防止误删除，不删除这个文件夹
         # _stop_agent = f"bash {omp_salt}/bin/omp_salt_agent stop; rm -rf {omp_salt}"
         _stop_agent = f"bash {omp_salt}/bin/omp_salt_agent stop; rm -rf {omp_salt}/data/*"
         final_cmd = f"{_delete_cron_cmd} {_stop_agent}"
@@ -147,7 +146,6 @@ class Agent(object):
         with open(os.path.join(config_tmp_dir, "omp_salt_agent"), "w") as fp:
             _content = _script_content.replace(
                 "UNIQUE_INSTALL_DIR_FLAG", self.install_dir)
-            # OMP-v1.3.0 解决root安装时出现的权限问题
             _content = _content.replace("RUNUSER", self.run_user)
             fp.write(_content)
         script_push_state, script_push_msg = self.ssh.file_push(
@@ -161,7 +159,6 @@ class Agent(object):
         # shutil.rmtree(config_tmp_dir)
 
         # step7: start and init agent
-        # OMP-v1.3.0 增加agent文件夹整体赋权问题
         logger.info(f"init omp_salt_agent for {self.host}!")
         command = f"cd {self.install_dir} && " \
                   f"chown -R {self.run_user}.{self.run_user} {self.agent_name} && " \

@@ -34,8 +34,11 @@ def backup_service(**kwargs):
         create_time__gte=datetime.date.today()
     ).count()
     name = f"{date_str}{history_count + 1}-{backup_setting.env_id}"
-    expire_time = datetime.datetime.now() + datetime.timedelta(
-        days=backup_setting.retain_day)
+    if backup_setting.retain_day == -1:
+        expire_time = None
+    else:
+        expire_time = datetime.datetime.now() + datetime.timedelta(
+            days=backup_setting.retain_day)
     history = BackupHistory.objects.create(
         backup_name=f"数据备份-{name}",
         content=backup_setting.backup_instances,

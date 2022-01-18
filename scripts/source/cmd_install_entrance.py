@@ -390,6 +390,16 @@ if __name__ == '__main__':
     )
     param = parser.parse_args()
     excel_path_arg = param.excel_path
+    if not excel_path_arg:
+        default_path = os.path.join(
+            os.path.dirname(PROJECT_DIR), "deployment.xlsx")
+        MainProcess(
+            excel_path=excel_path_arg, excel_md5_value=None
+        ).print_log(
+            f"excel 文件不存在, 请输入excel绝对路径或将excel放置在{default_path}!",
+            error=True
+        )
+        sys.exit(1)
     if not os.path.exists(excel_path_arg):
         MainProcess(
             excel_path=excel_path_arg, excel_md5_value=None

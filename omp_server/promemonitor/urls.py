@@ -5,9 +5,10 @@ from rest_framework.routers import DefaultRouter
 from promemonitor.views import (
     MonitorUrlViewSet, ListAlertViewSet, UpdateAlertViewSet,
     MaintainViewSet, ReceiveAlertViewSet,
-    MonitorAgentRestartView, GrafanaUrlViewSet, InstanceNameListView, InstrumentPanelView, GetSendEmailConfig,
-    UpdateSendEmailConfig, GetSendAlertSettingView, UpdateSendAlertSettingView, HostThresholdView, ServiceThresholdView,
-    CustomThresholdView
+    MonitorAgentRestartView, GrafanaUrlViewSet, InstanceNameListView,
+    InstrumentPanelView, GetSendEmailConfig, UpdateSendEmailConfig,
+    GetSendAlertSettingView, UpdateSendAlertSettingView, HostThresholdView,
+    ServiceThresholdView, CustomThresholdView
 )
 
 router = DefaultRouter()

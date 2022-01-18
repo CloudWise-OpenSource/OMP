@@ -116,8 +116,6 @@ def exec_action(action, instance, operation_user, del_file=False):
         logger.error("action动作不合法")
         raise ValueError("action动作不合法")
     if action[0] == 'delete':
-        service_obj.service_status = Service.SERVICE_STATUS_DELETING
-        service_obj.save()
         service_port = None
         if service_obj.service_port is not None:
             service_port_ls = json.loads(service_obj.service_port)
@@ -125,8 +123,11 @@ def exec_action(action, instance, operation_user, del_file=False):
                 service_port = service_port_ls[0].get("default", "")
         if service_port is not None:
             # 端口存在则删除prometheus监控的
+            ser_name = service_obj.service.app_name
+            if ser_name == "hadoop":
+                ser_name = service_obj.service_instance_name.split("_", 1)[0]
             service_data = {
-                "service_name": service_obj.service.app_name,
+                "service_name": ser_name,
                 "instance_name": service_obj.service_instance_name,
                 "data_path": None,
                 "log_path": None,
