@@ -132,7 +132,6 @@ class AlertSendWaySetting(models.Model):
 
     @classmethod
     def get_v1_5_email_dict(cls, env_id):
-        # 临时适配1.5，email推送走alert manage
         obj = cls.objects.filter(way_name="email").first()
         kwargs = {
             "server_url": "",
