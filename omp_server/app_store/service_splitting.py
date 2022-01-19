@@ -1,5 +1,6 @@
-from db_models.models import  Service
-from db_models.models import  DetailInstallHistory
+from db_models.models import Service
+from db_models.models import DetailInstallHistory
+from db_models.models import Host
 import json
 import logging
 from utils.plugin.salt_client import SaltClient
@@ -78,19 +79,22 @@ def service_splitting():
                         return False
         try:
             Service.objects.filter(service_instance_name__contains=name).update(service_instance_name=base_name)
+            querysetser = Host.objects.get(ip=ip)
+            querysetser.service_num = querysetser.service_num + 5
+            querysetser.save()
         except Exception as e:
             logger.error('服务名称替换报错 {}'.format(e))
             return False
     # """ 获取表中数据"""
     service_res=service_log_splitting(cw_id,service_id_history)
-    logger.error('日志拆分返回值 {}'.format(service_res))
-    logger.error('进入第二步')
+    logger.info('日志拆分返回值 {}'.format(service_res))
+    logger.info('进入第二步')
 
     if service_res == True:
         res_queryset = Service.objects.filter(service_instance_name__contains=filter_service_name
                                               ).values_list("service_instance_name", 'ip', 'service_controllers')
         for i in res_queryset:
-            logger.error('需要重启服务的对象 {}'.format(i))
+            logger.info('需要重启服务的对象 {}'.format(i))
             res_dist = {}
             if portal_name in i[0]:
                 res_dist[i[1]] = i[2].get('start')
@@ -107,11 +111,10 @@ def service_splitting():
                     command=k,
                     timeout=60
                 )
-                logger.error('服务返回值cmd_flag {}'.format(cmd_flag))
-                logger.error('服务返回值cmd_msg {}'.format(cmd_msg))
+                logger.info('服务返回值cmd_flag {}'.format(cmd_flag))
+                logger.info('服务返回值cmd_msg {}'.format(cmd_msg))
                 if not cmd_flag:
                     logger.error('错误信息 {}'.format(cmd_msg))
-                    # break
                     return False
     else:
         logger.error('日志写入失败 {}'.format(service_res))

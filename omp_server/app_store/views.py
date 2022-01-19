@@ -50,6 +50,7 @@ from utils.parse_config import (
     BASIC_ORDER, AFFINITY_FIELD
 )
 from app_store.new_install_utils import DataJson
+from app_store.new_install_utils import ServiceArgsPortUtils
 
 logger = logging.getLogger("server")
 
@@ -501,18 +502,20 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                      cluster_dict, is_base_env=False, vip=None, role=None):
         """ 添加服务 """
         # 服务端口
-        service_port = app_obj.app_port
+        service_port = json.dumps(ServiceArgsPortUtils().get_app_port(app_obj))
         if not service_port:
             service_port = json.dumps([])
 
         # 获取服务的基础目录、用户名、密码、密文
         base_dir = "/data"
         username, password, password_enc = "", "", ""
-        app_install_args = json.loads(app_obj.app_install_args)
+        app_install_args = ServiceArgsPortUtils().get_app_install_args(app_obj)
         for item in app_install_args:
             if item.get("key") == "base_dir":
-                base_dir = item.get("default").format(
-                    data_path=host_obj.data_folder)
+                base_dir = os.path.join(
+                    host_obj.data_folder,
+                    item.get("default", "").lstrip("/")
+                )
             elif item.get("key") == "username":
                 username = item.get("default")
             elif item.get("key") == "password":
@@ -564,10 +567,9 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                 # 写入集群字典，记录 id
                 cluster_dict[service_name] = (
                     cluster_obj.id, cluster_obj.cluster_name)
-                cluster_id = cluster_obj.id
             elif service_name in cluster_dict:
-                # 存在于集群字典中，记录 id
-                cluster_id = cluster_dict.get(service_name)[0]
+                # 存在于集群字典中
+                pass
             else:
                 # 尚未记录，加入单实例字典
                 only_dict[service_name] = service_instance_name
@@ -709,6 +711,12 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
             with transaction.atomic():
                 # 批量创建 service，return 无 id，需重查获取
                 Service.objects.bulk_create(service_obj_ls)
+
+                # 为所有服务统一补充集群信息
+                for k, v in cluster_dict.items():
+                    Service.objects.filter(
+                        service__app_name=k
+                    ).update(cluster_id=v[0])
                 service_queryset = Service.objects.filter(
                     service_instance_name__in=service_instance_name_ls
                 ).select_related("service")
@@ -770,7 +778,9 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                     # 获取主机对象
                     host_obj = host_queryset.filter(ip=service_obj.ip).first()
 
-                    app_args = json.loads(service_obj.service.app_install_args)
+                    app_args = ServiceArgsPortUtils().get_app_install_args(
+                        service_obj.service
+                    )
                     # 获取服务对应的 run_user 和 memory
                     run_user = run_user_dict.get(host_obj.instance_name, None)
                     memory = service_memory_dict.get(
@@ -801,9 +811,11 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
 
                     # {data_path} 占位符替换
                     for i in app_args:
-                        if "{data_path}" in i.get("default", ""):
-                            i["default"] = i.get("default").format(
-                                data_path=host_obj.data_folder)
+                        if "dir_key" in i:
+                            i["default"] = os.path.join(
+                                host_obj.data_folder,
+                                i.get("default", "").lstrip("/")
+                            )
 
                     # 标记服务是否需要 post
                     post_action_flag = 4
@@ -812,11 +824,9 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                         post_action_flag = 0
 
                     # 服务端口
-                    service_port = service_obj.service.app_port
-                    if not service_port:
-                        service_port = []
-                    else:
-                        service_port = json.loads(service_port)
+                    service_port = ServiceArgsPortUtils().get_app_port(
+                        service_obj.service
+                    )
                     # 构建 detail_install_args
                     detail_install_args = {
                         "ip": service_obj.ip,

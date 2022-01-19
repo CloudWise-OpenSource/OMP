@@ -15,6 +15,7 @@ from copy import deepcopy
 from concurrent.futures import ThreadPoolExecutor
 
 import redis
+from ruamel import yaml
 from django.db import transaction
 from django.db.models import F
 from rest_framework.exceptions import ValidationError
@@ -1120,6 +1121,76 @@ class ServiceArgsPortUtils(object):
         self.run_user = run_user
         self.host_user_map = host_user_map
 
+    @staticmethod
+    def get_product_config():
+        """
+        获取产品配置信息，读取 config/product.yaml 配置文件
+        :return:
+        """
+        config_path = os.path.join(PROJECT_DIR, "config/product.yaml")
+        if not os.path.exists(config_path):
+            return dict(), dict()
+        with open(config_path, "r") as fp:
+            product_config = yaml.load(fp, Loader=yaml.SafeLoader)
+        return product_config.get("install", dict()), \
+            product_config.get("ports", dict())
+
+    @staticmethod
+    def inner_replace_args(target_lst, config_lst):
+        """
+        更新配置参数方法
+        :param target_lst: 源配置列表
+        :param config_lst: 需要更新的配置列表
+        :return:
+        """
+        try:
+            config_dic = {el["key"]: el for el in config_lst}
+            new_lst = list()
+            for item in target_lst:
+                if item.get("key") in config_dic:
+                    new_lst.append(config_dic[item.get("key")])
+                else:
+                    new_lst.append(item)
+            return new_lst
+        except Exception as e:
+            raise GeneralError(
+                f"更新安装参数错误, "
+                f"请检查 {os.path.join(PROJECT_DIR, 'config/product.yaml')} "
+                f"数据格式是否符合规则, 错误信息: {str(e)}"
+            )
+
+    def make_product_config_overwrite(self, app_name, rep_type, lst):
+        """
+        覆盖原有数据库中的yaml，利用 config/product.yaml 中的配置文件覆盖相关参数
+        :param app_name: 服务名称
+        :param rep_type: 替换类型, app_install_args | app_ports
+        :param lst: 替换参数列表
+        :return:
+        """
+        app_install_args_dic, app_ports_dic = self.get_product_config()
+        if rep_type == "app_install_args" and app_name in app_install_args_dic:
+            return self.inner_replace_args(
+                target_lst=lst, config_lst=app_install_args_dic[app_name]
+            )
+        elif rep_type == "app_ports" and app_name in app_ports_dic:
+            return self.inner_replace_args(
+                target_lst=lst, config_lst=app_ports_dic[app_name]
+            )
+        return lst
+
+    @staticmethod
+    def make_editable(element):
+        """
+        处理参数是否可编辑
+        :param element: 参数字典
+        :return:
+        """
+        if element.get("editable") is False or \
+                str(element.get("editable")).lower() == "false":
+            element["editable"] = False
+        else:
+            element["editable"] = True
+
     def get_app_dependence(self, obj):  # NOQA
         """
         解析服务级别的依赖关系
@@ -1139,7 +1210,15 @@ class ServiceArgsPortUtils(object):
         """
         if not obj.app_port:
             return []
-        return json.loads(obj.app_port)
+        origin_ports = json.loads(obj.app_port)
+        final_ports = self.make_product_config_overwrite(
+            app_name=obj.app_name,
+            rep_type="app_ports",
+            lst=origin_ports
+        )
+        for item in final_ports:
+            self.make_editable(item)
+        return final_ports
 
     def format_app_install_args(self, app_install_args):    # NOQA
         """
@@ -1167,7 +1246,15 @@ class ServiceArgsPortUtils(object):
         # 在后续前端提供出安装参数后，我们应该检查其准确性
         if not obj.app_install_args:
             return list()
-        return self.format_app_install_args(json.loads(obj.app_install_args))
+        origin_args = json.loads(obj.app_install_args)
+        final_args = self.make_product_config_overwrite(
+            app_name=obj.app_name,
+            rep_type="app_install_args",
+            lst=origin_args
+        )
+        for item in final_args:
+            self.make_editable(item)
+        return self.format_app_install_args(final_args)
 
     def reformat_install_args(self, install_args):
         """
