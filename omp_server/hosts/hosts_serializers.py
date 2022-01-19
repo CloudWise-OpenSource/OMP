@@ -390,12 +390,23 @@ class HostAgentRestartSerializer(HostIdsSerializer):
 
     def create(self, validated_data):
         """ 主机Agent重启 """
-        for item in validated_data.get("host_ids", []):
+        host_ids = validated_data.get("host_ids", [])
+        filter_host_ids = list(
+            Host.objects.filter(
+                id__in=host_ids,
+                host_agent__in=[
+                    str(Host.AGENT_RUNNING),
+                    str(Host.AGENT_RESTART),
+                    str(Host.AGENT_START_ERROR)
+                ]
+            ).values_list("id", flat=True)
+        )
+        for item in filter_host_ids:
             host_agent_restart.delay(item)
         # 下发任务后批量更新重启主机状态
         Host.objects.filter(
-            id__in=validated_data.get("host_ids", [])
-        ).update(host_agent=1)
+            id__in=filter_host_ids
+        ).update(host_agent=Host.AGENT_RESTART)
         return validated_data
 
 
