@@ -32,8 +32,8 @@ const Card = ({ idx, history, info, tabKey, installOperation }) => {
       className={styles.cardContainer}
       style={{
         transition: "all .2s ease-in-out",
-        width: "calc(94% / 4)",
-        marginLeft: (idx - 1) % 4 !== 0 && "2%",
+        width: "calc(97.7% / 4)",
+        marginLeft: (idx - 1) % 4 !== 0 && "0.75%",
         height: 200,
         boxSizing: "border-box",
         //border: "1px solid #000",

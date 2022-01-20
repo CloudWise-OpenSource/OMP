@@ -11,10 +11,10 @@
 }
 .trigge {
   padding: 0 24px;
-    font-size: 18px;
-    line-height: 64px;
-    cursor: pointer;
-    transition: color 0.3s;
+  font-size: 18px;
+  line-height: 64px;
+  cursor: pointer;
+  transition: color 0.3s;
 }
 .OmpLayoutContainer {
   color: #63656e;
@@ -80,7 +80,7 @@
       //width: 100%;
       //justify-content: flex-end;
       position: relative;
-      top:1px
+      top: 1px;
     }
     .userAvatarIcon {
       position: relative;
@@ -107,9 +107,12 @@
   justify-content: center;
   padding: 0 20px;
   color: #8d919c;
+  color: rgba(255, 255, 255, 0.75);
   font-weight: 500;
-  font-size: 14px;
+  font-size: 15px;
   cursor: pointer;
+  position: relative;
+  top:1px
 }
 
 .headerLinkNohover {
@@ -118,8 +121,9 @@
   justify-content: center;
   padding: 0 15px;
   color: #8d919c;
+  color: rgba(255, 255, 255, 0.75);
   font-weight: 500;
-  font-size: 14px;
+  font-size: 15px;
   cursor: pointer;
 }
 
@@ -129,27 +133,27 @@
 
 :global {
   .ant-layout-sider-has-trigger {
-    position:fixed;
+    position: fixed;
     height: 100%;
   }
   .ant-pagination {
-    color: rgba(0,0,0,0.65) !important;
+    color: rgba(0, 0, 0, 0.65) !important;
   }
   .ant-btn {
-    color: rgba(0,0,0,0.65);
+    color: rgba(0, 0, 0, 0.65);
   }
-  .ant-btn-primary{
+  .ant-btn-primary {
     color: #fff;
   }
-  .ant-menu { 
-    color: rgba(0,0,0,0.65);
+  .ant-menu {
+    color: rgba(0, 0, 0, 0.65);
   }
   .ant-select {
-    color: rgba(0,0,0,0.65) !important;
+    color: rgba(0, 0, 0, 0.65) !important;
   }
   .site-layout .site-layout-background {
     // background: #fff;
-    background-color: #192132;
+    background-color: #161c25;
     color: white;
     height: 60px;
   }
@@ -160,11 +164,11 @@
     cursor: pointer;
     transition: color 0.3s;
   }
-  
+
   #components-layout-demo-custom-trigger .trigger:hover {
     color: #1890ff;
   }
-  
+
   #components-layout-demo-custom-trigger .logo {
     height: 32px;
     margin: 16px;
@@ -174,10 +178,10 @@
     background: #fff;
     color: black;
     font-size: 18px;
-    border-right: 1px solid #d7d9e1,
+    // border-right: 1px solid #f0f0f0
   }
   .ant-layout-sider-children {
-    background: #171e2b;
+    background: #151a21;
   }
   // .site-layout .site-layout-background {
   //   background: #fff;
@@ -226,7 +230,53 @@
   }
 
   // search 的搜索
-  .ant-input-search > .ant-input-group > .ant-input-group-addon:last-child .ant-input-search-button {
-    padding-top:1px
+  .ant-input-search
+    > .ant-input-group
+    > .ant-input-group-addon:last-child
+    .ant-input-search-button {
+    padding-top: 1px;
+  }
+
+  // 按钮高度统一调整
+  .ant-btn {
+    padding: 4px 20px;
+    border-radius: 4px;
+  }
+  .ant-btn-sm {
+    padding: 1px 7px;
+  }
+  // 翻页组件样式修改
+  // .ant-pagination-prev,
+  // .ant-pagination-next,
+  // .ant-pagination-total-text,
+  // .ant-pagination-jump-prev,
+  // .ant-pagination-jump-next {
+  //   height: 30px !important;
+  //   min-width: 30px !important;
+  //   line-height: 30px !important;
+  // }
+  // .ant-pagination-item {
+  //   height: 30px !important;
+  //   min-width: 30px !important;
+  //   line-height: 30px !important;
+  // }
+  // .ant-pagination-options {
+  //   .ant-select-selector {
+  //     height: 30px !important;
+  //     min-width: 30px !important;
+  //     line-height: 30px !important;
+  //   }
+  // }
+  .ant-menu-inline, .ant-menu-vertical, .ant-menu-vertical-left {
+    border-right: none;
+  }
+  // .ant-table-pagination {
+  //   color: red!important;
+  // }
+  // .ant-menu-vertical .ant-menu-item::after, .ant-menu-vertical-left .ant-menu-item::after, .ant-menu-vertical-right .ant-menu-item::after, .ant-menu-inline .ant-menu-item::after {
+  //   border-right:3px solid #4986f7
+  // }
+  .ant-menu-inline .ant-menu-item, .ant-menu-inline .ant-menu-submenu-title {
+    width: 100%;
   }
 }

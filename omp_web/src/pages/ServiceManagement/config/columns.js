@@ -35,7 +35,7 @@ export const DetailHost = ({
         </div>
       }
       headerStyle={{
-        padding:"19px 24px"
+        padding: "19px 24px",
       }}
       placement="right"
       closable={true}
@@ -706,57 +706,64 @@ const getColumnsConfig = (
             }}
             style={{ display: "flex", justifyContent: "space-around" }}
           >
-            {record.monitor_url ? (
-              <a
-                onClick={() => {
-                  setShowIframe({
-                    isOpen: true,
-                    src: record.monitor_url,
-                    record: record,
-                    isLog: false,
-                  });
-                }}
-              >
-                监控
-              </a>
-            ) : (
-              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
-            )}
-
-            {record.log_url ? (
-              <a
-                onClick={() => {
-                  setShowIframe({
-                    isOpen: true,
-                    src: record.log_url,
-                    record: record,
-                    isLog: true,
-                  });
-                }}
-              >
-                日志
-              </a>
-            ) : (
-              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>日志</span>
-            )}
-
-            <Dropdown
-              arrow
-              overlay={renderMenu(
-                // setUpdateMoadlVisible,
-                // setCloseMaintainModal,
-                // setOpenMaintainModal,
-                record,
-                setOperateAciton,
-                setServiceAcitonModal,
-                queryDeleteMsg,
-                deleteConditionReset
+            <div style={{ margin: "auto" }}>
+              {record.monitor_url ? (
+                <a
+                  onClick={() => {
+                    setShowIframe({
+                      isOpen: true,
+                      src: record.monitor_url,
+                      record: record,
+                      isLog: false,
+                    });
+                  }}
+                >
+                  监控
+                </a>
+              ) : (
+                <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
               )}
-            >
-              <a>
-                更多 <DownOutlined style={{ position: "relative", top: 1 }} />
-              </a>
-            </Dropdown>
+
+              {record.log_url ? (
+                <a
+                  style={{ marginLeft: 10 }}
+                  onClick={() => {
+                    setShowIframe({
+                      isOpen: true,
+                      src: record.log_url,
+                      record: record,
+                      isLog: true,
+                    });
+                  }}
+                >
+                  日志
+                </a>
+              ) : (
+                <span style={{ color: "rgba(0, 0, 0, 0.25)", marginLeft: 10 }}>
+                  日志
+                </span>
+              )}
+
+              <Dropdown
+                arrow
+                placement="bottomCenter"
+                overlay={renderMenu(
+                  // setUpdateMoadlVisible,
+                  // setCloseMaintainModal,
+                  // setOpenMaintainModal,
+                  record,
+                  setOperateAciton,
+                  setServiceAcitonModal,
+                  queryDeleteMsg,
+                  deleteConditionReset
+                )}
+              >
+                <a style={{ marginLeft: 10 }}>
+                  更多
+                  {/* <DownOutlined style={{ position: "relative", top: 1 }} /> */}
+                </a>
+              </Dropdown>
+            </div>
           </div>
         );
       },

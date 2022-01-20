@@ -14,7 +14,7 @@ const OmpContentNav = ({ data, currentFocus }) => {
     color: "#4986f7",
     borderBottom: "2px solid #4986f7",
     //paddingBottom:10
-    height: "30px",
+    height: "35px",
     marginRight: 15,
     zIndex: 2,
   };
@@ -29,7 +29,7 @@ const OmpContentNav = ({ data, currentFocus }) => {
               style={
                 currentFocus === item.name
                   ? focusedStyle
-                  : { height: "30px", marginRight: 15 }
+                  : { height: "35px", marginRight: 15 }
               }
               onClick={() => item.handler()}
             >

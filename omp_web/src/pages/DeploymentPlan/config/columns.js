@@ -66,7 +66,7 @@ const getColumnsConfig = (history) => {
     },
     {
       title: "操作",
-      width: 150,
+      width: 100,
       key: "",
       dataIndex: "",
       align: "center",

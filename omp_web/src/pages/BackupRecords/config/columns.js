@@ -154,7 +154,7 @@ const getColumnsConfig = (setRow, setDeleteOneModal, pushData) => {
     },
     {
       title: "操作",
-      width: 120,
+      width: 100,
       key: "",
       dataIndex: "",
       align: "center",
@@ -174,33 +174,53 @@ const getColumnsConfig = (setRow, setDeleteOneModal, pushData) => {
             }}
             style={{ display: "flex", justifyContent: "space-around" }}
           >
-            {record.result === 0 || record.result === 2 ? (
-              <>
-                <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>下载</span>
-                <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>推送</span>
-                <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>删除</span>
-              </>
-            ) : (
-              <>
-                <a
-                  onClick={() => {
-                    if (record.file_name || record.result === 1) {
-                      let a = document.createElement("a");
-                      a.href = `/download-backup/${record.file_name}`;
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                    } else {
-                      message.warning("该任务文件不支持下载");
-                    }
-                  }}
-                >
-                  下载
-                </a>
-                <a onClick={() => clickPush(record)}>推送</a>
-                <a onClick={() => setDeleteOneModal(true)}>删除</a>
-              </>
-            )}
+            <div style={{ margin: "auto" }}>
+              {record.result === 0 || record.result === 2 ? (
+                <>
+                  <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>下载</span>
+                  <span
+                    style={{ color: "rgba(0, 0, 0, 0.25)", marginLeft: 10 }}
+                  >
+                    推送
+                  </span>
+                  <span
+                    style={{ color: "rgba(0, 0, 0, 0.25)", marginLeft: 10 }}
+                  >
+                    删除
+                  </span>
+                </>
+              ) : (
+                <>
+                  <a
+                    onClick={() => {
+                      if (record.file_name || record.result === 1) {
+                        let a = document.createElement("a");
+                        a.href = `/download-backup/${record.file_name}`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                      } else {
+                        message.warning("该任务文件不支持下载");
+                      }
+                    }}
+                  >
+                    下载
+                  </a>
+                  <a
+                    style={{ marginLeft: 10 }}
+                    onClick={() => clickPush(record)}
+                  >
+                    推送
+                  </a>
+                  <a
+                    style={{ marginLeft: 10 }}
+                    onClick={() => setDeleteOneModal(true)}
+                  >
+                    删除
+                  </a>
+                </>
+              )}
+            </div>
           </div>
         );
       },

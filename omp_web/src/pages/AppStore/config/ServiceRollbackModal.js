@@ -73,7 +73,7 @@ const ServiceRollbackModal = ({
       dataIndex: "before_rollback_v",
       align: "center",
       ellipsis: true,
-      width: 80,
+      width: 120,
       render: (text, record) => {
         let v = text || "-";
         return (
@@ -89,7 +89,7 @@ const ServiceRollbackModal = ({
       dataIndex: "after_rollback_v",
       align: "center",
       ellipsis: true,
-      width: 100,
+      width: 120,
       render: (text, record) => {
         let v = text || "-";
         return (

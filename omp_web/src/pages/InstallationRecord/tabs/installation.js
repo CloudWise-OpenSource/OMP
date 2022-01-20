@@ -1,5 +1,6 @@
 import {
   OmpTable,
+  OmpContentWrapper
 } from "@/components";
 import { Button } from "antd";
 import { useState, useEffect } from "react";
@@ -115,7 +116,7 @@ const Installation = ({ history }) => {
     {
       title: "操作",
       key: "1",
-      width: 50,
+      width: 58,
       dataIndex: "1",
       align: "center",
       fixed: "right",
@@ -172,8 +173,8 @@ const Installation = ({ history }) => {
   }, []);
 
   return (
-    <>
-      <div style={{ display: "flex", marginTop: 10 }}>
+    <OmpContentWrapper wrapperStyle={{ paddingBottom:0}}>
+      <div style={{ display: "flex" }}>
         <div style={{ display: "flex", marginLeft: "auto" }}>
           <Button
             style={{ marginLeft: 10 }}
@@ -232,7 +233,7 @@ const Installation = ({ history }) => {
           rowKey={(record) => record.id}
         />
       </div>
-    </>
+    </OmpContentWrapper>
   );
 };
 

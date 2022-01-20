@@ -67,7 +67,7 @@ const ServiceUpgradeModal = ({
       dataIndex: "version",
       align: "center",
       ellipsis: true,
-      width: 80,
+      width: 120,
       render: (text, record) => {
         let v =  text || "-";
         return (
@@ -83,7 +83,7 @@ const ServiceUpgradeModal = ({
       dataIndex: "can_upgrade",
       align: "center",
       ellipsis: true,
-      width: 100,
+      width: 120,
       render: (text, record) => {
         let v =  text[0].app_version || "-";
         return (
