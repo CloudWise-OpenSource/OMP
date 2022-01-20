@@ -224,7 +224,7 @@ const OmpLayout = (props) => {
             color: "white",
             justifyContent: "center",
             // /marginBottom:10,
-            backgroundColor: "#171e2b",
+            backgroundColor: "#151a21",
           }}
         >
           <div className={styles.headerLogo}>
@@ -236,7 +236,7 @@ const OmpLayout = (props) => {
                 cursor: "pointer",
                 position: "relative",
                 top: 1,
-                fontSize: 16,
+                fontSize: 18,
                 fontWeight: 600,
                 display: "flex",
                 alignItems: "center",
@@ -252,8 +252,9 @@ const OmpLayout = (props) => {
           style={{
             height: "calc(100% - 60px)",
             //paddingTop:3,
-            borderRight: "1px solid #d7d9e1",
+            // borderRight: "1px solid #d7d9e1",
             color: "rgba(0,0,0,0.65)",
+            overflowY: "auto"
             // position:"fixed",
             // zIndex:1000,
           }}
@@ -303,8 +304,8 @@ const OmpLayout = (props) => {
             position: "fixed",
             zIndex: 1000,
             transition: collapsed ?"all 0.1s ease-out" : "all 0.4s ease-out",
-            width: collapsed ? "calc(100% - 50px)" : "calc(100% - 200px)",
-            marginLeft: collapsed ? 50 : 200,
+            width: collapsed ? "calc(100% - 49px)" : "calc(100% - 199px)",
+            marginLeft: collapsed ? 49 : 199,
           }}
         >
           <div style={{ display: "flex" }}>

@@ -389,6 +389,7 @@ const AppStore = () => {
                       <div style={{ paddingLeft: 20 }}>扫描服务端</div>
                     </div>
                   </Menu.Item>
+                  <div style={{height:1,backgroundColor:"#e3e3e3",margin:"6px 10px"}}></div>
                   <Menu.Item
                     key="upgrade"
                     style={{ display: "flex" }}
@@ -457,7 +458,7 @@ const AppStore = () => {
               }
               placement="bottomRight"
             >
-              <Button style={{ marginRight: 10 }}>
+              <Button style={{ marginRight: 10, paddingRight:10, paddingLeft:15 }}>
                 更多
                 <DownOutlined style={{ position: "relative", top: 1 }} />
               </Button>

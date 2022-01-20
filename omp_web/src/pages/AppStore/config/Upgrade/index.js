@@ -31,7 +31,12 @@ const Upgrade = () => {
             style={{ fontSize: 16, marginRight: 20 }}
             className={styles.backIcon}
             onClick={() => {
-              history?.goBack();
+              history.push({
+                pathname: "/application_management/install-record",
+                state: {
+                  tabKey: "upgrade",
+                },
+              });
             }}
           />
           服务升级

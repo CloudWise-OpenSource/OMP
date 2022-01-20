@@ -37,6 +37,7 @@ module.exports = {
       modifyVars: {
         "@primary-color": "#4986f7",
         "@text-color": "rgba(0,0,0,0.65)",
+        // "@border-radius-base": "4px"
       },
     }),
     // addPostcssPlugins([require("postcss-px2rem-exclude")({

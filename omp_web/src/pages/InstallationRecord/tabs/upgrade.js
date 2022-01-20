@@ -115,7 +115,7 @@ const Upgrade = ({ history }) => {
       render: function renderFunc(text, record, index) {
         return (
           <div style={{ display: "flex", justifyContent: "space-around" }}>
-            <div>
+            <div style={{ margin: "auto" }}>
               <a
                 onClick={() => {
                   history.push({
@@ -186,7 +186,7 @@ const Upgrade = ({ history }) => {
   }, []);
 
   return (
-    <OmpContentWrapper>
+    <OmpContentWrapper wrapperStyle={{ paddingBottom:0 }}>
       <div style={{ display: "flex" }}>
         <div style={{ display: "flex", marginLeft: "auto" }}>
           <Button
