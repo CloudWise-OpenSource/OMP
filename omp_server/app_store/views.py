@@ -16,14 +16,16 @@ from rest_framework.mixins import (
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import F
 from django_filters.rest_framework.backends import DjangoFilterBackend
 
 from db_models.models import (
-    Labels, ApplicationHub, ProductHub, UploadPackageHistory,
+    Labels, ApplicationHub, Product, ProductHub,
     Env, Host, Service, ServiceConnectInfo,
     DeploymentPlan, ClusterInfo,
     MainInstallHistory, DetailInstallHistory,
     PreInstallHistory, PostInstallHistory,
+    UploadPackageHistory,
 )
 from utils.common.paginations import PageNumberPager
 from app_store.app_store_filters import (
@@ -499,7 +501,8 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
 
     @staticmethod
     def _add_service(service_obj_ls, host_obj, app_obj, env_obj, only_dict,
-                     cluster_dict, is_base_env=False, vip=None, role=None):
+                     cluster_dict, product_dict, host_ins_num_dict,
+                     is_base_env=False, vip=None, role=None):
         """ 添加服务 """
         # 服务端口
         service_port = json.dumps(ServiceArgsPortUtils().get_app_port(app_obj))
@@ -554,6 +557,10 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
         # 集群信息
         cluster_id = None
         if not is_base_env:
+            # 非基础环境，主机服务数量 + 1
+            if not host_ins_num_dict.get(host_obj.ip):
+                host_ins_num_dict[host_obj.ip] = 0
+            host_ins_num_dict[host_obj.ip] += 1
             if service_name in only_dict:
                 # 存在于单实例字典中，删除单实例字典中数据，创建集群
                 only_dict.pop(service_name)
@@ -573,6 +580,11 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
             else:
                 # 尚未记录，加入单实例字典
                 only_dict[service_name] = service_instance_name
+
+        # 如果产品信息不再字典中，将其添加至字典
+        if app_obj.product and \
+                app_obj.product.pro_name not in product_dict:
+            product_dict[app_obj.product.pro_name] = app_obj.product
 
         # 添加服务到列表中
         service_obj_ls.append(Service(
@@ -627,6 +639,10 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
             # 服务对象列表、基础环境字典
             service_obj_ls = []
             base_env_dict = {}
+            # 产品信息字典
+            product_dict = {}
+            # 主机增加实例数量字典
+            host_ins_num_dict = {}
             # 单实例、集群服务字典
             only_dict, cluster_dict = {}, {}
             # tengine 所在主机对象字典
@@ -665,7 +681,8 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                             # base_env 一定为单实例
                             self._add_service(
                                 service_obj_ls, host_obj, base_env_obj, default_env,
-                                only_dict, cluster_dict, is_base_env=True)
+                                only_dict, cluster_dict, product_dict, host_ins_num_dict,
+                                is_base_env=True)
                             # 以 ip 为维度记录，避免重复
                             if host_obj.ip not in base_env_dict:
                                 base_env_dict[host_obj.ip] = []
@@ -674,7 +691,8 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                 # 添加服务
                 self._add_service(
                     service_obj_ls, host_obj, app_obj, default_env,
-                    only_dict, cluster_dict, vip=vip, role=role)
+                    only_dict, cluster_dict, product_dict, host_ins_num_dict,
+                    vip=vip, role=role)
 
             # 亲和力为 tengine 字段 (Web 服务) 列表
             app_target = ApplicationHub.objects.filter(
@@ -687,7 +705,7 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                 for app_obj in tengine_app_list:
                     self._add_service(
                         service_obj_ls, host_obj, app_obj, default_env,
-                        only_dict, cluster_dict)
+                        only_dict, cluster_dict, product_dict, host_ins_num_dict)
 
             service_instance_name_ls = list(map(
                 lambda x: x.service_instance_name, service_obj_ls))
@@ -709,6 +727,23 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
 
             # 数据库入库
             with transaction.atomic():
+
+                # 更新主机服务数量
+                for ip, ins_num in host_ins_num_dict.items():
+                    Host.objects.filter(ip=ip).update(
+                        service_num=F("service_num") + ins_num)
+
+                # 已安装产品信息
+                product_obj_ls = []
+                for pro_name, pro_obj in product_dict.items():
+                    upper_key = ''.join(random.choice(
+                        string.ascii_uppercase) for _ in range(7))
+                    product_obj_ls.append(Product(
+                        product_instance_name=f"{pro_name}-{upper_key}",
+                        product=pro_obj
+                    ))
+                Product.objects.bulk_create(product_obj_ls)
+
                 # 批量创建 service，return 无 id，需重查获取
                 Service.objects.bulk_create(service_obj_ls)
 
@@ -717,6 +752,8 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                     Service.objects.filter(
                         service__app_name=k
                     ).update(cluster_id=v[0])
+
+                # 获取所有服务对象
                 service_queryset = Service.objects.filter(
                     service_instance_name__in=service_instance_name_ls
                 ).select_related("service")
