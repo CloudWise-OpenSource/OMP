@@ -31,7 +31,7 @@ class CreateDatabase(object):
         result = "true" if str_bool.lower() == "true" else None
         return bool(result)
 
-    def explain(self, data):
+    def explain(self, data, default=None):
         """
         将dict list转换成 json
         """
@@ -40,7 +40,7 @@ class CreateDatabase(object):
             if isinstance(data_info, dict) or isinstance(data_info, list):
                 data_info = json.dumps(data_info, ensure_ascii=False)
         else:
-            data_info = None
+            data_info = default
         return data_info
 
     def create_product(self):
@@ -120,7 +120,7 @@ class CreateDatabase(object):
                 "app_type": 1,
                 "app_name": self.json_data.get("name"),
                 "app_version": self.json_data.get("version"),
-                "app_port": self.explain("ports"),
+                "app_port": self.explain("ports", json.dumps([])),
                 "app_dependence": self.explain("dependencies"),
                 "app_install_args": self.explain("install"),
                 "app_controllers": self.explain("control"),

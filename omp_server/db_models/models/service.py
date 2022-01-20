@@ -166,6 +166,12 @@ class Service(TimeStampMixin):
         ordering = ("-created",)
 
     def update_port(self, service_ports, app_ports):
+        """
+        比较服务端口，取并集
+        :param service_ports: 当前服务端口
+        :param app_ports: 目标app服务端口
+        :return: new service_ports
+        """
         # 存储数据格式为[{"default": 18080, "key": "http_port", "name": "服务端口"}]
         port_dict = {}
         for service_port in service_ports:
@@ -176,6 +182,12 @@ class Service(TimeStampMixin):
         return service_ports
 
     def update_controllers(self, application, install_folder):
+        """
+        更新服务管理命令
+        :param application: 服务目标app
+        :param install_folder: 安装目录（用于更新服务命令）
+        :return: new service_controllers
+        """
         _app_controllers = json.loads(application.app_controllers)
         # 获取服务家目录
         install_args = json.loads(application.app_install_args)
@@ -189,6 +201,7 @@ class Service(TimeStampMixin):
         for key, value in _app_controllers.items():
             if not value:
                 continue
+            # 对于hadoop管控命令不动
             if application.app_name == "hadoop" and key in \
                     {"start", "stop", "restart"}:
                 _new_controller[key] = self.service_controllers.get(key)
@@ -203,6 +216,9 @@ class Service(TimeStampMixin):
         return _new_controller
 
     def update_service_connect_info(self):
+        """
+        更新服务链接信息
+        """
         infos = {"username", "password", "username_enc", "password_enc"}
         connect_infos = {}
         for app_info in json.loads(self.service.app_install_args):
@@ -225,6 +241,13 @@ class Service(TimeStampMixin):
         self.service_connect_info = conn_obj
 
     def update_application(self, application, success, install_folder):
+        """
+        更新服务信息
+        :param application: 服务目标app
+        :param success: 是否成功（用于更新服务状态）
+        :param install_folder: 安装目录（用于更新服务命令）
+        :return: self
+        """
         self.service = application
         self.service_port = json.dumps(
             self.update_port(
@@ -240,6 +263,7 @@ class Service(TimeStampMixin):
             self.service_status = self.SERVICE_STATUS_UNKNOWN
         self.update_service_connect_info()
         self.save()
+        return self
 
 
 class ServiceHistory(models.Model):
@@ -250,6 +274,7 @@ class ServiceHistory(models.Model):
         "操作用户", max_length=128, help_text="操作用户")
     description = models.CharField(
         "用户行为描述", max_length=1024, help_text="用户行为描述")
+    # success or failed
     result = models.CharField(
         "操作结果", max_length=1024, default="success", help_text="操作结果")
     created = models.DateTimeField(
@@ -262,3 +287,21 @@ class ServiceHistory(models.Model):
         db_table = "omp_service_operate_log"
         verbose_name = verbose_name_plural = "服务操作记录"
         ordering = ("-created",)
+
+    @classmethod
+    def create_history(cls, service, operation_obj=None, **kwargs):
+        """
+        创建服务操作记录
+        :param service: 被操作的服务
+        :param operation_obj: 操作对象：UpgradeDetail、RollbackDetail
+        :param kwargs: 记录参数，在无操作对象情况下传
+        :return: obj
+        """
+        if operation_obj:
+            operation_kwargs = operation_obj.get_service_history()
+            kwargs.update(operation_kwargs)
+        service_history = cls.objects.create(
+            service=service,
+            **kwargs
+        )
+        return service_history

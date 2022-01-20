@@ -2,8 +2,7 @@ import logging
 import traceback
 
 from django.db import models, transaction
-from rest_framework import filters
-from rest_framework.filters import OrderingFilter
+from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.generics import ListAPIView, GenericAPIView,\
     RetrieveUpdateAPIView
 from rest_framework.response import Response
@@ -13,18 +12,19 @@ from db_models.models import UpgradeHistory, Service, ApplicationHub, Env, \
     UpgradeDetail, RollbackHistory, RollbackDetail
 from utils.common.exceptions import GeneralError
 from utils.common.paginations import PageNumberPager
-from .serializers import UpgradeHistorySerializer, \
-    UpgradeHistoryDetailSerializer, ServiceSerializer, \
-    ApplicationHubSerializer, UpgradeTryAgainSerializer, \
-    RollbackHistorySerializer, RollbackHistoryDetailSerializer, \
-    RollbackTryAgainSerializer, RollbackListSerializer
+from .filters import RollBackHistoryFilter
+from .serializers import UpgradeHistorySerializer, ServiceSerializer, \
+    UpgradeHistoryDetailSerializer,  ApplicationHubSerializer, \
+    UpgradeTryAgainSerializer, RollbackHistorySerializer, \
+    RollbackHistoryDetailSerializer, RollbackTryAgainSerializer, \
+    RollbackListSerializer
 from .tasks import upgrade_service, rollback_service
 
 logger = logging.getLogger(__name__)
 
 
 class UpgradeHistoryListAPIView(ListAPIView):
-    permission_classes = ()
+    # 升级历史记录
     pagination_class = PageNumberPager
     queryset = UpgradeHistory.objects.all()\
         .prefetch_related("upgradedetail_set")
@@ -34,12 +34,14 @@ class UpgradeHistoryListAPIView(ListAPIView):
 
 
 class UpgradeHistoryDetailAPIView(RetrieveUpdateAPIView):
+    # 升级历史记录详情
     queryset = UpgradeHistory.objects.all()\
         .prefetch_related("upgradedetail_set")
     serializer_class = UpgradeHistoryDetailSerializer
     lookup_url_kwarg = 'pk'
 
     def update(self, request, *args, **kwargs):
+        # put 升级重试
         instance = self.get_object()
         serializer = UpgradeTryAgainSerializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -48,10 +50,11 @@ class UpgradeHistoryDetailAPIView(RetrieveUpdateAPIView):
 
 
 class UpgradeChoiceAllVersionListAPIView(GenericAPIView):
+    # 可升级服务列表（可选择升级的目标）
     queryset = Service.objects.filter(
         service_status__in=[0, 1, 2, 3, 4, 9]
     ).select_related("service")
-    filter_backends = (filters.SearchFilter, )
+    filter_backends = (SearchFilter, )
     search_fields = ("service__app_name",)
 
     def get_service_info(self, services_data):
@@ -119,6 +122,7 @@ class UpgradeChoiceAllVersionListAPIView(GenericAPIView):
 
 
 class UpgradeChoiceMaxVersionListAPIView(UpgradeChoiceAllVersionListAPIView):
+    # 可升级服务列表（只展示可供升级的最高版本）
     def get_service_max_app(self, apps):
         max_apps = {}
         for app in apps:
@@ -165,8 +169,9 @@ class UpgradeChoiceMaxVersionListAPIView(UpgradeChoiceAllVersionListAPIView):
 
 
 class DoUpgradeAPIView(GenericAPIView):
-
+    # 升级服务
     def valid_can_upgrade(self, data):
+        # 校验信息
         services = list(
             Service.objects.filter(
                 id__in=data.keys(),
@@ -251,7 +256,6 @@ class DoUpgradeAPIView(GenericAPIView):
 
 
 class RollbackHistoryListAPIView(ListAPIView):
-    permission_classes = ()
     pagination_class = PageNumberPager
     queryset = RollbackHistory.objects.all()\
         .prefetch_related("rollbackdetail_set")
@@ -275,15 +279,14 @@ class RollbackHistoryDetailAPIView(RetrieveUpdateAPIView):
 
 
 class RollbackChoiceListAPIView(GenericAPIView):
-    permission_classes = ()
     queryset = UpgradeDetail.objects.filter(
         upgrade_state__in=[
             UpgradeStateChoices.UPGRADE_SUCCESS,
             UpgradeStateChoices.UPGRADE_FAIL
         ]
     ).exclude(has_rollback=True).exclude(service__isnull=True)
-    filter_backends = (filters.SearchFilter, )
-    search_fields = ("target_app__app_name",)
+    filter_backends = (SearchFilter, RollBackHistoryFilter)
+    search_fields = ("target_app__app_name", )
 
     def get(self, requests):
         queryset = self.filter_queryset(self.get_queryset())
@@ -344,7 +347,10 @@ class DoRollbackAPIView(GenericAPIView):
             union_server = detail.get("union_server")
             if not union_server:
                 raise GeneralError(f"实例{union_server}不在平台纳管范围！")
-            if union_app.get(union_server, float("inf")) != rollback_app_id:
+            if not union_app.get(union_server):
+                union_app[union_server] = rollback_app_id
+                continue
+            if union_app.get(union_server) != rollback_app_id:
                 raise GeneralError(f"实例{union_server}将回滚的服务版本不一致！")
         with transaction.atomic():
             history = RollbackHistory.objects.create(
@@ -361,5 +367,5 @@ class DoRollbackAPIView(GenericAPIView):
                 ]
             )
         rollback_service.delay(history.id)
-        # todo: rollback data.json && ???
+        # todo: rollback data.json && 升级、回滚过程中禁止取消维护模式
         return Response({"history": history.id})

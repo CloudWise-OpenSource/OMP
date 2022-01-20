@@ -30,7 +30,7 @@ stop() {
     echo "${APP_NAME} [not running]"
     return 0
   else
-    ps -ef | grep "${PROJECT_FOLDER}/component/env/bin/celery" |grep -v scheduler | grep -v grep | cut -c 9-15 | xargs kill -9
+    ps -ef | grep "${PROJECT_FOLDER}/component/env/bin/celery" |grep -v scheduler | grep -v grep | awk '{print $2}' | xargs kill -9
     sleep 3
     real_status
     if [ $? -eq 0 ]; then
