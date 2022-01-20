@@ -69,7 +69,9 @@ def load_rollback_detail(rollback_detail):
     relation_details = list(
         RollbackDetail.objects.filter(
             upgrade__union_server=rollback_detail.upgrade.union_server
-        ).exclude(id=rollback_detail.id)
+        ).exclude(id=rollback_detail.id).exclude(
+            history_id=rollback_detail.history.id
+        )
     )
     return rollback_detail, service, relation_details
 
@@ -180,6 +182,10 @@ class StopServiceMixin:
                 raise Exception(f"salt执行命令失败，错误输出: {str(message)}")
             if "[not  running]" in message:
                 # 休眠5秒等待停止
+                time.sleep(5)
+                return True
+            # 回滚有可能服务无包报错,也算停止
+            if "[running]" not in message:
                 time.sleep(5)
                 return True
             time.sleep(5)

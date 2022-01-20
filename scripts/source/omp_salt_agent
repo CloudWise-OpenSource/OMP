@@ -154,7 +154,7 @@ function agent_status() {
 }
 
 function agent_stop() {
-  ps -ef | grep "${OMP_DIR}/env/bin/salt-minion" | grep -v grep | cut -c 9-15 | xargs kill -9
+  ps -ef | grep "${OMP_DIR}/env/bin/salt-minion" | grep -v grep | awk '{print $2}' | xargs kill -9
   sleep 1
   agent_status
 }

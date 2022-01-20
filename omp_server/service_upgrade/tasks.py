@@ -5,11 +5,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed, wait, \
 from celery import shared_task
 
 from db_models.mixins import UpgradeStateChoices, RollbackStateChoices
-from db_models.models import UpgradeHistory, UpgradeDetail, RollbackHistory, \
+from db_models.models import UpgradeHistory, RollbackHistory, \
     RollbackDetail, Maintain
 from promemonitor.alertmanager import Alertmanager
-from service_upgrade.handler.base import load_upgrade_detail, handler_pipeline, \
-    load_rollback_detail
+from service_upgrade.handler.base import load_upgrade_detail, \
+    handler_pipeline, load_rollback_detail
 from service_upgrade.handler.rollback_handler import rollback_handlers
 from service_upgrade.handler.upgrade_handler import upgrade_handlers
 from utils.parse_config import BASIC_ORDER, THREAD_POOL_MAX_WORKERS
@@ -30,7 +30,7 @@ def computer_operation_sorted(details):
     # 通过服务依赖确定服务升级、回滚顺序
     order_layer_details = {}
     service_layer = get_service_order()
-    max_index = len(service_layer)
+    max_index = max(service_layer.values()) + 1
     union_service = set()
     for detail in details:
         if isinstance(detail, RollbackDetail):
@@ -44,8 +44,8 @@ def computer_operation_sorted(details):
         if union_server in union_service:
             continue
         union_service.add(union_server)
-        s_i = service_layer.get(app_name)
-        if not s_i:
+        s_i = service_layer.get(app_name, None)
+        if s_i is None:
             s_i = max_index + int(extend_fields.get("level", 0))
         if s_i not in order_layer_details:
             order_layer_details[s_i] = [detail]

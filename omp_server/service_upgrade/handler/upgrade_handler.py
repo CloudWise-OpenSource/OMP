@@ -186,7 +186,7 @@ class UpgradeServiceHandler(UpgradeBaseHandler):
         cmd_str = f"python {upgrade_path} " \
                   f"--local_ip {self.service.ip} " \
                   f"--data_json {data_json_path} " \
-                  f"--version {self.detail.current_app.app_version}" \
+                  f"--version {self.detail.current_app.app_version} " \
                   f"--backup_path " \
                   f"{self.detail.path_info.get('backup_file_path')}"
         state, message = self.salt_client.cmd(

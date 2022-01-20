@@ -127,7 +127,7 @@ class RollBackServiceHandler(RollbackBaseHandler):
             cmd_str = f"python {rollback_path} " \
                       f"--local_ip {self.service.ip} " \
                       f"--data_json {data_json_path} " \
-                      f"--version {self.detail.upgrade.current_app.app_version}" \
+                      f"--version {self.detail.upgrade.current_app.app_version} " \
                       f"--backup_path {rollback_file}"
         state, message = self.salt_client.cmd(
             self.service.ip,
@@ -135,7 +135,7 @@ class RollBackServiceHandler(RollbackBaseHandler):
             settings.SSH_CMD_TIMEOUT
         )
         if not state:
-            self._log("回滚服务包失败!\n错误信息: {}".format(message), "error")
+            self._log(f"执行回滚命令失败:{cmd_str}!\n错误信息: {message}", "error")
             return False
         if "备份路径:" in message:
             self.detail.path_info.update(
