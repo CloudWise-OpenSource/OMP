@@ -43,7 +43,8 @@ class CanBackupInstancesView(GenericViewSet, ListModelMixin):
         can_backup_instance = Service.objects.filter(
             env_id=env_id,
             service__app_name__in=settings.BACKUP_SERVICE
-        ).distinct().values_list("service_instance_name", flat=True)
+        ).filter(service_status=Service.SERVICE_STATUS_NORMAL).distinct().values_list("service_instance_name",
+                                                                                      flat=True)
         return Response(
             data=can_backup_instance
         )

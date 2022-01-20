@@ -23,7 +23,8 @@ from db_models.models import (
 )
 from utils.common.exceptions import ValidationError
 from utils.common.paginations import PageNumberPager
-from app_store.install_utils import ServiceArgsSerializer
+# from app_store.install_utils import ServiceArgsSerializer
+from app_store.new_install_utils import ServiceArgsPortUtils
 from app_store.new_install_utils import BaseRedisData
 
 from app_store.new_install_serializers import (
@@ -189,7 +190,7 @@ class GetInstallArgsByIpView(GenericViewSet, ListModelMixin):
             if item.app_name not in install_ser or \
                     item.app_version != install_ser[item.app_name].get("version"):
                 continue
-            install_args = ServiceArgsSerializer().get_app_install_args(item)
+            install_args = ServiceArgsPortUtils().get_app_install_args(item)
             install_args.insert(
                 0, {
                     "key": "instance_name",
@@ -204,7 +205,7 @@ class GetInstallArgsByIpView(GenericViewSet, ListModelMixin):
                 "instance_name":
                     item.app_name + "-" + "-".join(ip.split(".")[-2:]),
                 "install_args": install_args,
-                "ports": ServiceArgsSerializer().get_app_port(item)
+                "ports": ServiceArgsPortUtils().get_app_port(item)
             }
             _ret_data.append(_app)
         if len(_ret_data) != len(services_lst):
