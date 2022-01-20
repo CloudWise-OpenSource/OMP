@@ -1064,5 +1064,9 @@ class RetryInstallSerializer(Serializer):
         main_install_history = MainInstallHistory.objects.filter(
             operation_uuid=unique_key
         ).last()
-        install_service_task.delay(main_install_history.id)
+        # 调用异步任务，存储异步任务执行id
+        task_id = install_service_task.delay(main_install_history.id)
+        MainInstallHistory.objects.filter(
+            id=main_install_history.id
+        ).update(task_id=task_id)
         return validated_data

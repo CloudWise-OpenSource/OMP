@@ -136,13 +136,16 @@ def backup_service_data(history):
         size = os.path.getsize(file_path) / 1024 / 1024
         ln_path = os.path.join(
             settings.PROJECT_DIR, "data/backup/", history.file_name)
-        cmd_str = f"ln -s {file_path} {ln_path}"
-        _out, _err, _code = cmd(cmd_str)
-        if _code:
-            history.result = history.FAIL
-            err_message += "  创建软连接出错！"
-        else:
+        if file_path == ln_path:
             history.result = history.SUCCESS
+        else:
+            cmd_str = f"ln -s {file_path} {ln_path}"
+            _out, _err, _code = cmd(cmd_str)
+            if _code:
+                history.result = history.FAIL
+                err_message += "  创建软连接出错！"
+            else:
+                history.result = history.SUCCESS
         history.file_size = "%.3f" % size
     history.message = {"backup_resp": back_resp, "err_message": err_message}
     history.save()
