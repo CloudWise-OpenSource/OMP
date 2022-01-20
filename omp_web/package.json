@@ -33,7 +33,7 @@
   },
   "scripts": {
     "start": "react-app-rewired start",
-    "build": "react-app-rewired build",
+    "build": "CI=false && react-app-rewired build",
     "test": "react-app-rewired test",
     "eject": "react-app-rewired eject",
     "publish": "rsync -avzP --delete -e 'ssh -p36000' ./dist/* root@10.0.9.67:/root/domh/ompServer/frontend/"
