@@ -73,7 +73,9 @@ class UpgradeHistoryDetailSerializer(serializers.ModelSerializer):
     def get_upgrade_details(self, obj, key):
         if hasattr(obj, key):
             return getattr(obj, key)
-        details = obj.upgradedetail_set.all()
+        details = obj.upgradedetail_set.filter(
+            service__isnull=False
+        )
         upgrade_details = UpgradeDetailSerializer(details, many=True).data
         # 合并服务
         upgrade_result = {}
@@ -139,7 +141,9 @@ class RollbackHistoryDetailSerializer(serializers.ModelSerializer):
     def get_rollback_details(self, obj, key):
         if hasattr(obj, key):
             return getattr(obj, key)
-        details = obj.rollbackdetail_set.all()
+        details = obj.rollbackdetail_set.filter(
+            upgrade__service__isnull=False
+        )
         rollback_details = RollbackDetailSerializer(details, many=True).data
         # 合并服务
         rollback_result = {}
