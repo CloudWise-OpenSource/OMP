@@ -141,6 +141,7 @@ class ServiceActionView(GenericViewSet, CreateModelMixin):
     """
     queryset = Service.objects.all()
     serializer_class = ServiceActionSerializer
+    post_description = "执行启动停止或卸载操作"
 
     def create(self, request, *args, **kwargs):
         many_data = self.request.data.get('data')
@@ -170,6 +171,7 @@ class ServiceDeleteView(GenericViewSet, CreateModelMixin):
     """
     queryset = Service.objects.all()
     serializer_class = ServiceDeleteSerializer
+    post_description = "查看服务删除校验依赖"
 
     def create(self, request, *args, **kwargs):
         """

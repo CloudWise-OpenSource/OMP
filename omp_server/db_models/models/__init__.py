@@ -11,10 +11,9 @@ from .product import Labels, UploadPackageHistory, ProductHub, \
     ApplicationHub, Product
 from .service import ServiceConnectInfo, ClusterInfo, Service, ServiceHistory
 from .threshold import HostThreshold, ServiceThreshold, ServiceCustomThreshold
-from .user import UserProfile, OperateLog
-from .upgrade import UpgradeHistory, UpgradeDetail, RollbackHistory,\
+from .user import UserProfile, OperateLog, UserLoginLog
+from .upgrade import UpgradeHistory, UpgradeDetail, RollbackHistory, \
     RollbackDetail
-
 
 __all__ = [
     # 邮箱设置
@@ -59,6 +58,7 @@ __all__ = [
     # 用户
     UserProfile,
     OperateLog,
+    UserLoginLog,
     # 升级
     UpgradeHistory,
     UpgradeDetail,
