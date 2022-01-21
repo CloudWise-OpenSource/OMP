@@ -32,7 +32,10 @@ start() {
 }
 
 stop() {
-  ps -ef | grep "${PROJECT_FOLDER}/component/env/bin/salt-master" | grep -v grep | awk '{print $2}' | xargs kill -9
+  real_status
+  if [ $? -eq 0 ]; then
+    ps -ef | grep "${PROJECT_FOLDER}/component/env/bin/salt-master" | grep -v grep | awk '{print $2}' | xargs kill -9
+  fi
   sleep 3
   real_status
   if [ $? -eq 0 ]; then
