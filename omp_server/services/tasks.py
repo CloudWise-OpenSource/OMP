@@ -145,7 +145,6 @@ def exec_action(action, instance, operation_user, del_file=False):
             is_success = delete_file(service_controllers, service_obj)
         else:
             is_success = True
-        service_obj.delete()
         host_instances = Host.objects.filter(ip=service_obj.ip)
         for instance in host_instances:
             HostOperateLog.objects.create(username=operation_user,
@@ -154,6 +153,7 @@ def exec_action(action, instance, operation_user, del_file=False):
                                           host=instance)
         if not service_obj.service.is_base_env:
             with transaction.atomic():
+                service_obj.delete()
                 Host.objects.filter(ip=service_obj.ip).update(
                     service_num=F("service_num") - 1)
                 # 当服务被删除时，应该将其所在的集群都连带删除

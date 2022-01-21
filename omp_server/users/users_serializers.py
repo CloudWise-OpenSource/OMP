@@ -19,8 +19,12 @@ from rest_framework.serializers import (
 )
 from rest_framework_jwt.serializers import JSONWebTokenSerializer
 
-from db_models.models import (UserProfile, OperateLog)
+from db_models.models import (
+    UserProfile, OperateLog,
+    UserLoginLog
+)
 from utils.common.validators import UserPasswordValidator
+from promemonitor.alert_util import utc_to_local
 
 
 class UserSerializer(ModelSerializer):
@@ -80,10 +84,36 @@ class UserSerializer(ModelSerializer):
 class OperateLogSerializer(ModelSerializer):
     """ 用户操作记录序列化 """
 
+    create_time = serializers.SerializerMethodField()
+
     class Meta:
         """ 元数据 """
         model = OperateLog
+        fields = (
+            "id", "username", "request_ip", "request_method",
+            "description", "create_time"
+        )
+
+    def get_create_time(self, obj):
+        if obj.create_time:
+            return utc_to_local(obj.create_time)
+        return obj.create_time
+
+
+class UserLoginOperateSerializer(ModelSerializer):
+    """登录记录序列化"""
+
+    login_time = serializers.SerializerMethodField()
+
+    class Meta:
+        """ 元数据 """
+        model = UserLoginLog
         fields = "__all__"
+
+    def get_login_time(self, obj):
+        if obj.login_time:
+            return utc_to_local(obj.login_time)
+        return obj.login_time
 
 
 class JwtSerializer(JSONWebTokenSerializer):

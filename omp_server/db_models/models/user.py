@@ -40,3 +40,19 @@ class OperateLog(models.Model):
         """ 元数据 """
         db_table = "omp_user_operate_log"
         verbose_name = verbose_name_plural = "用户操作记录"
+
+
+class UserLoginLog(models.Model):
+    """用户登陆记录"""
+    objects = None
+    username = models.CharField(max_length=128, verbose_name="Username")
+    login_time = models.DateTimeField(
+        blank=True, null=True, verbose_name="Login time")
+    ip = models.CharField(max_length=32, null=True,
+                          blank=True, verbose_name="Login ip")
+    role = models.CharField(
+        max_length=128, verbose_name="role ", null=True, blank=True)
+
+    class Meta:
+        db_table = "omp_login_log"
+        verbose_name = verbose_name_plural = "用户登陆记录"
