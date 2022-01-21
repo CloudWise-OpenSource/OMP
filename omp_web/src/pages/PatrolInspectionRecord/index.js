@@ -201,7 +201,9 @@ const PatrolInspectionRecord = () => {
   return (
     <OmpContentWrapper>
       <div style={{ display: "flex" }}>
-        <Button type="primary" onClick={() => setDeepAnalysisModal(true)}>
+        <Button type="primary" 
+        // size="middle" 
+        onClick={() => setDeepAnalysisModal(true)}>
           深度分析
         </Button>
 
@@ -226,6 +228,7 @@ const PatrolInspectionRecord = () => {
             报告名称:
           </span>
           <Input
+            // size="middle"
             placeholder="输入报告名称"
             style={{ width: 200 }}
             allowClear

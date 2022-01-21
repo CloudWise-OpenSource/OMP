@@ -399,7 +399,7 @@ const ServiceManagement = () => {
           }
           placement="bottomCenter"
         >
-          <Button style={{ marginLeft: 10 }}>
+          <Button style={{ marginLeft: 10, paddingRight:10, paddingLeft:15 }}>
             更多
             <DownOutlined />
           </Button>

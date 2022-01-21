@@ -592,7 +592,7 @@ const MachineManagement = () => {
           }
           placement="bottomCenter"
         >
-          <Button style={{ marginLeft: 10 }}>
+          <Button style={{ marginLeft: 10, paddingRight:10, paddingLeft:15 }}>
             更多
             <DownOutlined />
           </Button>
@@ -663,10 +663,10 @@ const MachineManagement = () => {
             setShowIframe,
             history
           )}
-          notSelectable={(record) => ({
-            // 部署中的不能选中
-            disabled: record?.host_agent == 3 || record?.monitor_agent == 3,
-          })}
+          // notSelectable={(record) => ({
+          //   // 部署中的不能选中
+          //   disabled: record?.host_agent == 3 || record?.monitor_agent == 3,
+          // })}
           dataSource={dataSource}
           pagination={{
             showSizeChanger: true,

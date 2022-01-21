@@ -162,7 +162,7 @@ const Rollback = ({ history }) => {
   }, []);
 
   return (
-    <OmpContentWrapper>
+    <OmpContentWrapper wrapperStyle={{ paddingBottom:0}}>
       <div style={{ display: "flex" }}>
         <div style={{ display: "flex", marginLeft: "auto" }}>
           <Button

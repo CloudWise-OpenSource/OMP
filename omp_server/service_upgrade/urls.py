@@ -1,9 +1,9 @@
 from django.urls import path
 
-from service_upgrade.views import UpgradeChoiceMaxVersionListAPIView,\
+from service_upgrade.views import UpgradeChoiceMaxVersionListAPIView, \
     UpgradeHistoryListAPIView, UpgradeHistoryDetailAPIView, DoUpgradeAPIView, \
     RollbackHistoryListAPIView, RollbackHistoryDetailAPIView, \
-    RollbackChoiceListAPIView
+    RollbackChoiceListAPIView, DoRollbackAPIView
 
 upgrade_urlpatterns = [
     path('history', UpgradeHistoryListAPIView.as_view(), name="history"),
@@ -28,5 +28,5 @@ rollback_urlpatterns = [
         'can-rollback',
         RollbackChoiceListAPIView.as_view(),
         name="can-rollback"),
-    path('do-rollback', DoUpgradeAPIView.as_view(), name="do-rollback")
+    path('do-rollback', DoRollbackAPIView.as_view(), name="do-rollback")
 ]

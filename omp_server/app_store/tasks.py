@@ -291,6 +291,11 @@ def front_end_verified(uuid, operation_user, package_name, random_str, ver_dir, 
                     1,
                     f"安装包{package_name}依赖的产品包存在同服务同版本的服务包")
         upload_obj.package_status = 0
+        upload_obj.package_path = os.path.join(
+            package_dir.get("verified"),
+            f"{product_obj.pro_name}-{product_obj.pro_version}"
+        )
+        upload_obj.save()
         tmp_dir = [file_name]
     else:
         count = ApplicationHub.objects.filter(app_version=versions,

@@ -294,57 +294,63 @@ const getColumnsConfig = (
       render: function renderFunc(text, record, index) {
         return (
           <div style={{ display: "flex", justifyContent: "space-around" }}>
-            {record.monitor_url ? (
-              <a
-                onClick={() => {
-                  //record.is_read == 0 && updateAlertRead([record.id]);
-                  setShowIframe({
-                    isOpen: true,
-                    src: record.monitor_url,
-                    record: {
-                      ...record,
-                      ip: record.ip,
-                    },
-                    isLog: false,
-                  });
-                }}
-              >
-                监控
-              </a>
-            ) : (
-              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
-            )}
+            <div style={{ margin: "auto" }}>
+              {record.monitor_url ? (
+                <a
+                  onClick={() => {
+                    //record.is_read == 0 && updateAlertRead([record.id]);
+                    setShowIframe({
+                      isOpen: true,
+                      src: record.monitor_url,
+                      record: {
+                        ...record,
+                        ip: record.ip,
+                      },
+                      isLog: false,
+                    });
+                  }}
+                >
+                  监控
+                </a>
+              ) : (
+                <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
+              )}
 
-            {record.type == "host" ? (
-              <a
-                onClick={() =>
-                  history.push({
-                    pathname: "/status-patrol/patrol-inspection-record",
-                  })
-                }
-              >
-                分析
-              </a>
-            ) : record.log_url ? (
-              <a
-                onClick={() => {
-                  //record.is_read == 0 && updateAlertRead([record.id]);
-                  setShowIframe({
-                    isOpen: true,
-                    src: record.log_url,
-                    record: {
-                      ...record,
-                      ip: record.ip,
-                    },
-                    isLog: true,
-                  });
-                }}
-              >
-                日志
-              </a>
-            ) : (
-              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>日志</span>
-            )}
+              {record.type == "host" ? (
+                <a
+                  style={{ marginLeft: 10 }}
+                  onClick={() =>
+                    history.push({
+                      pathname: "/status-patrol/patrol-inspection-record",
+                    })
+                  }
+                >
+                  分析
+                </a>
+              ) : record.log_url ? (
+                <a
+                  style={{ marginLeft: 10 }}
+                  onClick={() => {
+                    //record.is_read == 0 && updateAlertRead([record.id]);
+                    setShowIframe({
+                      isOpen: true,
+                      src: record.log_url,
+                      record: {
+                        ...record,
+                        ip: record.ip,
+                      },
+                      isLog: true,
+                    });
+                  }}
+                >
+                  日志
+                </a>
+              ) : (
+                <span style={{ color: "rgba(0, 0, 0, 0.25)", marginLeft: 10 }}>
+                  日志
+                </span>
+              )}
+            </div>
           </div>
         );
       },

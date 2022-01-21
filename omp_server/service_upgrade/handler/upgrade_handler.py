@@ -1,6 +1,5 @@
 import json
 import logging
-import time
 import os
 import random
 from datetime import datetime
@@ -9,9 +8,9 @@ from django.conf import settings
 from django.db import transaction
 
 from db_models.mixins import UpgradeStateChoices
-from db_models.models import UpgradeDetail, Service, Maintain
-from promemonitor.alertmanager import Alertmanager
-from service_upgrade.handler.base import BaseHandler
+from db_models.models import UpgradeDetail, Service, ServiceHistory
+from service_upgrade.handler.base import BaseHandler, StartOperationMixin, \
+    StopServiceMixin, StartServiceMixin
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +26,7 @@ class UpgradeBaseHandler(BaseHandler):
             state = f"{self.operation_type}_FAIL"
             self.service.service_status = Service.SERVICE_STATUS_UNKNOWN
             self.service.save()
+            ServiceHistory.create_history(self.service, self.detail)
             self.detail.upgrade_state = getattr(UpgradeStateChoices, state)
         self.detail.save()
         # 升级结束更新服务表
@@ -41,6 +41,7 @@ class UpgradeBaseHandler(BaseHandler):
             service = relation_detail.service
             service.service_status = self.service.service_status
             service.save()
+            ServiceHistory.create_history(service, relation_detail)
             relation_detail.refresh_from_db()
 
     def handler(self):
@@ -55,15 +56,8 @@ class UpgradeBaseHandler(BaseHandler):
         return self.detail.union_server
 
 
-class StartUpgradeHandler(UpgradeBaseHandler):
+class StartUpgradeHandler(StartOperationMixin, UpgradeBaseHandler):
     log_message = "服务实例{}: 开始升级..."
-
-    def set_alert_maintain(self):
-        has_maintain = Maintain.objects.filter(
-            matcher_name="env", matcher_value=self.service.env.name
-        ).exists()
-        if not has_maintain:
-            Alertmanager().set_maintain_by_env_name(self.service.env.name)
 
     @transaction.atomic
     def set_service_state(self):
@@ -81,39 +75,8 @@ class StartUpgradeHandler(UpgradeBaseHandler):
             detail.save()
             detail.refresh_from_db()
 
-    def handler(self):
-        self.set_alert_maintain()
-        self.set_service_state()
-        return self.detail, self.service, self.relation_details
 
-    def __call__(self, operation_args, *args, **kwargs):
-        if not self.valid_args(operation_args, self.detail_class):
-            return None
-        self.detail = operation_args[0]
-        self.service = operation_args[1]
-        self.relation_details = operation_args[2]
-        self._log(self.log_message.format(self.union_server), "info")
-        return self.handler()
-
-
-class StopServiceHandler(UpgradeBaseHandler):
-    log_message = "服务实例{}: 停止服务{}"
-
-    def stop_service(self, service):
-        for i in range(2):
-            state, message = self.salt_client.cmd(
-                self.service.ip,
-                f'bash {service.service_controllers.get("stop")}',
-                timeout=settings.SSH_CMD_TIMEOUT
-            )
-            if not state:
-                raise Exception(f"salt执行命令失败，错误输出: {str(message)}")
-            if "[not  running]" in message:
-                # 休眠5秒等待停止
-                time.sleep(5)
-                return True
-            time.sleep(5)
-        return False
+class StopServiceHandler(StopServiceMixin, UpgradeBaseHandler):
 
     def handler(self):
         if self.service.is_static:
@@ -223,7 +186,7 @@ class UpgradeServiceHandler(UpgradeBaseHandler):
         cmd_str = f"python {upgrade_path} " \
                   f"--local_ip {self.service.ip} " \
                   f"--data_json {data_json_path} " \
-                  f"--version {self.detail.current_app.app_version}" \
+                  f"--version {self.detail.current_app.app_version} " \
                   f"--backup_path " \
                   f"{self.detail.path_info.get('backup_file_path')}"
         state, message = self.salt_client.cmd(
@@ -233,8 +196,7 @@ class UpgradeServiceHandler(UpgradeBaseHandler):
         return state
 
 
-class StartServiceHandler(UpgradeBaseHandler):
-    log_message = "服务实例{}: 启动服务{}"
+class StartServiceHandler(StartServiceMixin, UpgradeBaseHandler):
 
     def sync_relation_details(self):
         for relation_detail in self.relation_details:
@@ -269,18 +231,6 @@ class StartServiceHandler(UpgradeBaseHandler):
         self._log(self.log_message.format(self.union_server, '失败!'), "error")
         self.write_db(False)
         return self.detail, self.service, self.relation_details
-
-    def start_service(self, service):
-        for i in range(2):
-            state, message = self.salt_client.cmd(
-                self.service.ip,
-                service.service_controllers.get("start"),
-                timeout=settings.SSH_CMD_TIMEOUT
-            )
-            if not state:
-                raise Exception(f"salt执行命令失败，错误输出: {str(message)}")
-            time.sleep(10)
-            return True
 
     def handler(self):
         if self.service.is_static:

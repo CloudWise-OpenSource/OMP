@@ -42,7 +42,7 @@ const InstallationRecord = () => {
   ];
 
   return (
-    <OmpContentWrapper>
+    <OmpContentWrapper wrapperStyle={{ padding:0}}>
       <OmpContentNav data={contentNavData} currentFocus={currentList} />
       {currentList == "installation" && <Installation history={history} /> }
       {currentList == "upgrade" && <Upgrade history={history} /> }

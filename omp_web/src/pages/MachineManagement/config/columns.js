@@ -37,7 +37,7 @@ export const DetailHost = ({
         </div>
       }
       headerStyle={{
-        padding:"19px 24px"
+        padding: "19px 24px",
       }}
       placement="right"
       closable={true}
@@ -607,7 +607,7 @@ const getColumnsConfig = (
       //ellipsis: true,
       render: (text) => {
         if (nonEmptyProcessing(text) == "-") return "-";
-        return text ? "是" : "否";
+        return text ? "开" : "关";
       },
     },
     // {
@@ -727,10 +727,12 @@ const getColumnsConfig = (
               }}
               style={{ display: "flex", justifyContent: "space-around" }}
             >
-              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
-              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>
-                更多 <DownOutlined style={{ position: "relative", top: 1 }} />
-              </span>
+              <div style={{ margin: "auto" }}>
+                <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
+                <span style={{ color: "rgba(0, 0, 0, 0.25)", marginLeft: 10 }}>
+                  更多
+                </span>
+              </div>
             </div>
           );
         }
@@ -739,38 +741,39 @@ const getColumnsConfig = (
             onClick={() => {
               setRow(record);
             }}
-            style={{ display: "flex", justifyContent: "space-around" }}
+            style={{ display: "flex" }}
           >
-            {record.monitor_url ? (
-              <a
-                onClick={() => {
-                  setShowIframe({
-                    isOpen: true,
-                    src: record.monitor_url,
-                    record: record,
-                    isLog: false,
-                  });
-                }}
-              >
-                监控
-              </a>
-            ) : (
-              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
-            )}
-
-            <Dropdown
-              arrow
-              overlay={renderMenu(
-                setUpdateMoadlVisible,
-                setCloseMaintainModal,
-                setOpenMaintainModal,
-                record
+            <div style={{ margin: "auto" }}>
+              {record.monitor_url ? (
+                <a
+                  onClick={() => {
+                    setShowIframe({
+                      isOpen: true,
+                      src: record.monitor_url,
+                      record: record,
+                      isLog: false,
+                    });
+                  }}
+                >
+                  监控
+                </a>
+              ) : (
+                <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
               )}
-            >
-              <a>
-                更多 <DownOutlined style={{ position: "relative", top: 1 }} />
-              </a>
-            </Dropdown>
+
+              <Dropdown
+                arrow
+                placement="bottomCenter"
+                overlay={renderMenu(
+                  setUpdateMoadlVisible,
+                  setCloseMaintainModal,
+                  setOpenMaintainModal,
+                  record
+                )}
+              >
+                <a style={{ marginLeft: 10 }}>更多</a>
+              </Dropdown>
+            </div>
           </div>
         );
       },

@@ -31,7 +31,12 @@ const Rollback = () => {
             style={{ fontSize: 16, marginRight: 20 }}
             className={styles.backIcon}
             onClick={() => {
-              history?.goBack();
+              history.push({
+                pathname: "/application_management/install-record",
+                state: {
+                  tabKey: "backoff",
+                },
+              });
             }}
           />
           服务回滚
