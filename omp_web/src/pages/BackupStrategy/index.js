@@ -152,10 +152,6 @@ const BackupStrategy = () => {
 
   // 保存备份
   const saveBackup = () => {
-    if (canBackupIns.length === 0) {
-      message.warning("当前暂无可用的备份实例");
-      return;
-    }
     if (form.getFieldValue("isOpen") && backupIns.length === 0) {
       message.warning("请选择您定时备份的实例后，再进行保存");
       return;
