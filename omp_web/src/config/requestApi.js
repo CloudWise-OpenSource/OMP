@@ -235,4 +235,16 @@ export const apiRequest = {
     // 推送备份记录
     pushEmail: "/api/backups/backupSendEmail/",
   },
+  operationRecord: {
+    // 登录日志
+    queryLoginLog: "/api/users/UserLoginLog/",
+    // 系统记录
+    querySystemLog: "/api/users/operateLog/",
+  },
+  faultSelfHealing: {
+    // 自愈列表
+    querySelfHealingList: "/api/users/users/",
+    // 故障策略
+    querySelfHealingStrategy: "/api/promemonitor/listAlert/"
+  }
 };
