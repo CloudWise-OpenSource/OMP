@@ -42,7 +42,7 @@ stop() {
 }
 
 real_status() {
-  tengine_status=$(ps -ef | grep nginx | grep ${PROJECT_FOLDER} | grep -v grep)
+  tengine_status=$(ps -ef | grep nginx | grep ${PROJECT_FOLDER}/component/tengine | grep -v grep)
   if [ -n "$tengine_status" ]; then
     return 0
   else

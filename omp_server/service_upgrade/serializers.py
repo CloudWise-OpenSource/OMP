@@ -24,6 +24,7 @@ class UpgradeHistorySerializer(serializers.ModelSerializer):
 
 class RollbackHistorySerializer(serializers.ModelSerializer):
     service_count = serializers.SerializerMethodField()
+    operator = serializers.CharField(source="operator.username")
     state_display = serializers.CharField(source="get_rollback_state_display")
 
     def get_service_count(self, obj):
@@ -50,17 +51,20 @@ class UpgradeDetailSerializer(serializers.ModelSerializer):
 
 class RollbackDetailSerializer(serializers.ModelSerializer):
 
-    ip = serializers.CharField(source="service.ip")
+    ip = serializers.CharField(source="upgrade.service.ip")
     service_name = serializers.CharField(source="upgrade.target_app.app_name")
     state_display = serializers.CharField(source="get_rollback_state_display")
+    instance_name = serializers.CharField(
+        source="upgrade.service.service_instance_name")
 
     class Meta:
         model = RollbackDetail
         fields = ("id", "ip", "service_name", "rollback_state", "message",
-                  "state_display")
+                  "state_display", "instance_name")
 
 
 class UpgradeHistoryDetailSerializer(serializers.ModelSerializer):
+    operator = serializers.CharField(source="operator.username")
     upgrade_detail = serializers.SerializerMethodField()
     can_rollback = serializers.SerializerMethodField()
     success_count = serializers.SerializerMethodField()
@@ -69,7 +73,9 @@ class UpgradeHistoryDetailSerializer(serializers.ModelSerializer):
     def get_upgrade_details(self, obj, key):
         if hasattr(obj, key):
             return getattr(obj, key)
-        details = obj.upgradedetail_set.all()
+        details = obj.upgradedetail_set.filter(
+            service__isnull=False
+        )
         upgrade_details = UpgradeDetailSerializer(details, many=True).data
         # 合并服务
         upgrade_result = {}
@@ -127,6 +133,7 @@ class UpgradeHistoryDetailSerializer(serializers.ModelSerializer):
 
 
 class RollbackHistoryDetailSerializer(serializers.ModelSerializer):
+    operator = serializers.CharField(source="operator.username")
     rollback_detail = serializers.SerializerMethodField()
     success_count = serializers.SerializerMethodField()
     all_count = serializers.SerializerMethodField()
@@ -134,7 +141,9 @@ class RollbackHistoryDetailSerializer(serializers.ModelSerializer):
     def get_rollback_details(self, obj, key):
         if hasattr(obj, key):
             return getattr(obj, key)
-        details = obj.rollbackdetail_set.all()
+        details = obj.rollbackdetail_set.filter(
+            upgrade__service__isnull=False
+        )
         rollback_details = RollbackDetailSerializer(details, many=True).data
         # 合并服务
         rollback_result = {}
@@ -182,7 +191,7 @@ class RollbackHistoryDetailSerializer(serializers.ModelSerializer):
         return self.get_rollback_details(obj, "all_count")
 
     class Meta:
-        model = UpgradeHistory
+        model = RollbackHistory
         fields = ("id", "operator", "rollback_detail", "rollback_state",
                   "created",  "success_count",  "all_count")
 
@@ -249,12 +258,13 @@ class ServiceSerializer(serializers.ModelSerializer):
 
 class RollbackListSerializer(serializers.ModelSerializer):
 
-    before_rollback = serializers.CharField(source="target_app.app_version")
-    after_rollback = serializers.CharField(source="current_app.app_version")
+    before_rollback_v = serializers.CharField(source="target_app.app_version")
+    after_rollback_v = serializers.CharField(source="current_app.app_version")
     app_name = serializers.CharField(source="target_app.app_name")
     ip = serializers.CharField(source="service.ip")
+    instance_name = serializers.CharField(source="service.service_instance_name")
 
     class Meta:
         model = UpgradeDetail
-        fields = ("id", "ip", "service_id", "app_name", "before_rollback",
-                  "after_rollback")
+        fields = ("id", "ip", "service_id", "app_name", "before_rollback_v",
+                  "after_rollback_v", "instance_name")

@@ -107,6 +107,7 @@ basic_order:
     - postgreSql
     - prometheus
     - pushgateway
+    - aopsUtils
   1:
     - keepalived
     - httpd

@@ -71,6 +71,19 @@ class UpgradeDetail(UpgradeStateMixin, TimeStampMixin):
         db_table = "omp_upgrade_detail"
         verbose_name = verbose_name_plural = '单个服务升级记录'
 
+    def get_service_history(self):
+        """
+        组织服务操作记录参数
+        :return: dict
+        """
+        return {
+            "username": self.history.operator.username,
+            "description": f"服务自版本{self.current_app.app_version}"
+                           f"升级至版本{self.target_app.app_version}",
+            "result": "success" if self.upgrade_state == 2 else "failed",
+            "created": self.created
+        }
+
 
 class RollbackHistory(RollBackStateMixin, TimeStampMixin):
 
@@ -105,3 +118,16 @@ class RollbackDetail(RollBackStateMixin, TimeStampMixin):
     class Meta:
         db_table = "omp_rollback_detail"
         verbose_name = verbose_name_plural = '单个服务回滚记录'
+
+    def get_service_history(self):
+        """
+        组织服务操作记录参数
+        :return: dict
+        """
+        return {
+            "username": self.history.operator.username,
+            "description": f"服务自版本{self.upgrade.target_app.app_version}"
+                           f"回滚至版本{self.upgrade.current_app.app_version}",
+            "result": "success" if self.rollback_state == 2 else "failed",
+            "created": self.created
+        }
