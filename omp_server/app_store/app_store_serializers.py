@@ -697,7 +697,7 @@ class DeploymentPlanValidateSerializer(Serializer):
                 version = dependence.get("version")
                 pro_obj = pro_queryset.filter(
                     pro_name=name).order_by("-created").first()
-                if not pro_obj or pro_obj.pro_version != version:
+                if not pro_obj or not pro_obj.pro_version.startswith(version):
                     result_dict["error"].append({
                         "row": -2,
                         "instance_name": "待补充",
@@ -738,7 +738,7 @@ class DeploymentPlanValidateSerializer(Serializer):
                 version = dependence.get("version")
                 app_obj = app_queryset.filter(
                     app_name=name).order_by("-created").first()
-                if not app_obj or app_obj.app_version != version:
+                if not app_obj or not app_obj.app_version.startswith(version):
                     # 如果为 base_env 则跳过
                     if base_env_queryset.filter(
                             app_name=name, app_version=version
@@ -862,7 +862,7 @@ class ExecutionRecordSerializer(ModelSerializer):
     def get_duration(self, obj):
         if not obj.end_time:
             return "-"
-        return timedelta_strftime(obj.end_time-obj.created)
+        return timedelta_strftime(obj.end_time - obj.created)
 
     class Meta:
         model = ExecutionRecord
