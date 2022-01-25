@@ -12,7 +12,7 @@ def create_execution_record(instance, created=False, *args, **kwargs):
     module = instance.__class__.__name__
     obj, _ = ExecutionRecord.objects.get_or_create(
         module=module,
-        module_id=instance.id
+        module_id=instance.module_id
     )
     old_state = obj.state
     state = f"{module.upper()}_{instance.execution_record_state}"
@@ -24,7 +24,7 @@ def create_execution_record(instance, created=False, *args, **kwargs):
     obj.created = instance.created
     if ("SUCCESS" in obj.state or "FAIL" in obj.state) and \
             obj.state != old_state:
-        obj.end_time = datetime.datetime.now()
+        obj.end_time = instance.modified
     obj.count = instance.operate_count()
     obj.save()
 
