@@ -151,23 +151,23 @@ export default [
       },
     ],
   },
-  {
-    menuTitle: "故障自愈",
-    menuIcon: <InteractionOutlined />,
-    menuKey: "/fault-selfHealing",
-    children: [
-      {
-        title: "自愈列表",
-        path: "/fault-selfHealing/selfHealing-record",
-        component: SelfHealingRecord,
-      },
-      {
-        title: "自愈策略",
-        path: "/fault-selfHealing/selfHealing-strategy",
-        component: SelfHealingStrategy,
-      },
-    ],
-  },
+  // {
+  //   menuTitle: "故障自愈",
+  //   menuIcon: <InteractionOutlined />,
+  //   menuKey: "/fault-selfHealing",
+  //   children: [
+  //     {
+  //       title: "自愈列表",
+  //       path: "/fault-selfHealing/selfHealing-record",
+  //       component: SelfHealingRecord,
+  //     },
+  //     {
+  //       title: "自愈策略",
+  //       path: "/fault-selfHealing/selfHealing-strategy",
+  //       component: SelfHealingStrategy,
+  //     },
+  //   ],
+  // },
   {
     menuTitle: "状态巡检",
     menuIcon: <EyeOutlined />,
