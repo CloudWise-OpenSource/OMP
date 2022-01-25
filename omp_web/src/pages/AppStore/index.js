@@ -323,7 +323,7 @@ const AppStore = () => {
 
             <Dropdown
               overlay={
-                <Menu style={{ width: "100%" }}>
+                <Menu style={{ width: "calc(100% + 40px)",position:"relative",left:-20 }}>
                   <Menu.Item
                     key="publishing"
                     style={{ display: "flex" }}
@@ -336,6 +336,7 @@ const AppStore = () => {
                       style={{
                         display: "flex",
                         alignItems: "center",
+                        padding:"5px 0 5px 5px"
                       }}
                     >
                       <div
@@ -354,7 +355,7 @@ const AppStore = () => {
                           }}
                         />
                       </div>
-                      <div style={{ paddingLeft: 20 }}>发布服务</div>
+                      <div style={{ paddingLeft: 20 }}>上传发布服务</div>
                     </div>
                   </Menu.Item>
                   <Menu.Item
@@ -368,6 +369,7 @@ const AppStore = () => {
                       style={{
                         display: "flex",
                         alignItems: "center",
+                        padding:"5px 0 5px 5px"
                       }}
                     >
                       <div
@@ -386,7 +388,7 @@ const AppStore = () => {
                           }}
                         />
                       </div>
-                      <div style={{ paddingLeft: 20 }}>扫描服务端</div>
+                      <div style={{ paddingLeft: 20 }}>扫描发布服务</div>
                     </div>
                   </Menu.Item>
                   <div style={{height:1,backgroundColor:"#e3e3e3",margin:"6px 10px"}}></div>
@@ -401,6 +403,7 @@ const AppStore = () => {
                       style={{
                         display: "flex",
                         alignItems: "center",
+                        padding:"5px 0 5px 5px"
                       }}
                     >
                       <div
@@ -433,6 +436,7 @@ const AppStore = () => {
                       style={{
                         display: "flex",
                         alignItems: "center",
+                        padding:"5px 0 5px 5px"
                       }}
                     >
                       <div

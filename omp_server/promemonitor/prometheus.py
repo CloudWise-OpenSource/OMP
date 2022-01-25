@@ -531,8 +531,9 @@ class Prometheus:
                                 and item.get('metric').get('env') == ss_service.get('env'):
                             service_list[index]['mem_usage'] = math.ceil(
                                 float(item.get('value')[1]) / float(ele.get('value')[1]) * 100)
-                            service_list[index]['mem_status'] = self.get_service_metric_status('mem', math.ceil(
-                                float(item.get('value')[1])))
+                            service_list[index]['mem_status'] = self.get_service_metric_status('mem',
+                                                                                               service_list[index][
+                                                                                                   'mem_usage'])
                             break
             return service_list
         except Exception as e:
@@ -541,7 +542,7 @@ class Prometheus:
 
     def get_service_info(self, service_list):
         """
-        获取主机负载基本信息
+        获取服务负载基本信息
         """
         for index, service in enumerate(service_list.copy()):
             service_list[index]['cpu_usage'] = None

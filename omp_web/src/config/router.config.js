@@ -18,10 +18,14 @@ import EmailSettings from "src/pages/EmailSettings";
 import RuleCenter from "src/pages/RuleCenter";
 import InstallationRecord from "@/pages/InstallationRecord";
 import Upgrade from "@/pages/AppStore/config/Upgrade";
-import Rollback from "@/pages/AppStore/config/Rollback"
+import Rollback from "@/pages/AppStore/config/Rollback";
 import DeploymentPlan from "@/pages/DeploymentPlan";
 import BackupRecords from "@/pages/BackupRecords";
 import BackupStrategy from "@/pages/BackupStrategy";
+import LoginLog from "@/pages/LoginLog";
+import SystemLog from "@/pages/SystemLog";
+import SelfHealingRecord from "@/pages/SelfHealingRecord";
+import SelfHealingStrategy from "@/pages/SelfHealingStrategy";
 
 import {
   DesktopOutlined,
@@ -33,6 +37,8 @@ import {
   EyeOutlined,
   UnorderedListOutlined,
   SaveOutlined,
+  SolutionOutlined,
+  InteractionOutlined,
 } from "@ant-design/icons";
 
 export default [
@@ -114,7 +120,7 @@ export default [
         title: "服务回滚",
         path: "/application_management/app_store/service_rollback",
         notInMenu: true,
-        component: Rollback
+        component: Rollback,
       },
       {
         title: "部署模板",
@@ -142,6 +148,23 @@ export default [
         title: "监控设置",
         path: "/application-monitoring/monitoring-settings",
         component: MonitoringSettings,
+      },
+    ],
+  },
+  {
+    menuTitle: "故障自愈",
+    menuIcon: <InteractionOutlined />,
+    menuKey: "/fault-selfHealing",
+    children: [
+      {
+        title: "自愈列表",
+        path: "/fault-selfHealing/selfHealing-record",
+        component: SelfHealingRecord,
+      },
+      {
+        title: "自愈策略",
+        path: "/fault-selfHealing/selfHealing-strategy",
+        component: SelfHealingStrategy,
       },
     ],
   },
@@ -194,6 +217,23 @@ export default [
         title: "备份策略",
         path: "/data-backup/backup-strategy",
         component: BackupStrategy,
+      },
+    ],
+  },
+  {
+    menuTitle: "操作记录",
+    menuIcon: <SolutionOutlined />,
+    menuKey: "/operation-record",
+    children: [
+      {
+        title: "登录日志",
+        path: "/operation-record/login-log",
+        component: LoginLog,
+      },
+      {
+        title: "系统记录",
+        path: "/operation-record/system-log",
+        component: SystemLog,
       },
     ],
   },

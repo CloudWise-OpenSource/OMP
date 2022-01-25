@@ -16,8 +16,8 @@ from app_store.views import (
     ExecuteLocalPackageScanView, LocalPackageScanResultView,
     ApplicationTemplateView, DeploymentPlanValidateView,
     DeploymentPlanImportView, DeploymentPlanListView,
-    DeploymentOperableView, DeploymentTemplateView
-)
+    DeploymentOperableView, DeploymentTemplateView,
+    ExecutionRecordAPIView)
 from app_store.views_for_install import (
     ComponentEntranceView,
     ProductEntranceView,
@@ -177,4 +177,10 @@ router.register(
     "retryInstall",
     RetryInstallView,
     basename="retryInstall"
+)
+
+router.register(
+    "executionRecord",
+    ExecutionRecordAPIView,
+    basename="ExecutionRecord"
 )

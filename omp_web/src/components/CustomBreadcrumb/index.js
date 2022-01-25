@@ -47,6 +47,12 @@ const breadcrumbNameMap = {
   "deployment-plan": "部署模板",
   "data-backup": "数据备份",
   "backup-record": "备份记录",
+  "operation-record": "操作记录",
+  "login-log": "登录日志",
+  "system-log": "系统记录",
+  "fault-selfHealing":"故障自愈",
+  "selfHealing-record":"自愈列表",
+  "selfHealing-strategy":"自愈策略"
 };
 
 // 基于面包屑组件的一层封装，用于匹配当前路由地址，动态展示页面路径

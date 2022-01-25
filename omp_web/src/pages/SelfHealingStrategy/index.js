@@ -25,7 +25,7 @@ import {
 import moment from "moment";
 import star from "@/pages/BackupRecords/config/asterisk.svg";
 
-const BackupStrategy = () => {
+const SelfHealingStrategy = () => {
   const [loading, setLoading] = useState(false);
 
   const [form] = Form.useForm();
@@ -152,6 +152,10 @@ const BackupStrategy = () => {
 
   // 保存备份
   const saveBackup = () => {
+    if (canBackupIns.length === 0) {
+      message.warning("当前暂无可用的备份实例");
+      return;
+    }
     if (form.getFieldValue("isOpen") && backupIns.length === 0) {
       message.warning("请选择您定时备份的实例后，再进行保存");
       return;
@@ -520,4 +524,4 @@ const BackupStrategy = () => {
   );
 };
 
-export default BackupStrategy;
+export default SelfHealingStrategy;

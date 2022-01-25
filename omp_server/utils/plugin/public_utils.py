@@ -89,3 +89,50 @@ def check_ip_port(ip, port):
         return_tuple = (False, "failed")
     sock_obj.close()
     return return_tuple
+
+
+class DurationTime:
+
+    def __init__(self, seconds):
+        self.second = seconds
+        self.minute = self.hour = self.day = 0
+
+    def analysis_day(self):
+        day, hour = divmod(self.hour, 24)
+        setattr(self, "hour", hour)
+        setattr(self, "day", day)
+
+    def analysis_hour(self):
+        hour, minute = divmod(self.minute, 60)
+        setattr(self, "minute", minute)
+        setattr(self, "hour", hour)
+
+    def analysis_minute(self):
+        minute, second = divmod(self.second, 60)
+        setattr(self, "second", second)
+        setattr(self, "minute", minute)
+
+    def __call__(self, *args, **kwargs):
+        for key in ["minute", "hour", "day"]:
+            getattr(self, f"analysis_{key}")()
+            if not getattr(self, key):
+                return self
+        return self
+
+
+def timedelta_strftime(timedelta):
+    """
+    四舍五入格式化timedelta
+    :param timedelta: <class datetime.timedelta>
+    :return: "XX天XX时XX分XX秒"
+    """
+    seconds = round(timedelta.total_seconds())
+    duration = DurationTime(seconds)()
+    en_zh = [("day", "天"), ("hour", "时"), ("minute", "分"), ("second", "秒")]
+    strftime = ""
+    for en, zh in en_zh:
+        if strftime:
+            strftime += f"{getattr(duration, en)}{zh}"
+        elif not strftime and getattr(duration, en):
+            strftime += f"{getattr(duration, en)}{zh}"
+    return strftime
