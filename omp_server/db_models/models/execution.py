@@ -36,7 +36,8 @@ class ExecutionRecord(TimeStampMixin):
         choices=ModuleChoices.choices,
         default=ModuleChoices.INSTALL
     )
-    module_id = models.IntegerField("执行记录的id", default=0)
+    # UpgradeHistory.id & MainInstallHistory.operation_uuid
+    module_id = models.CharField("执行记录的id", max_length=36, default="0")
     operator = models.CharField(
         "操作用户",
         max_length=150,

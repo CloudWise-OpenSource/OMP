@@ -856,7 +856,9 @@ class ExecutionRecordSerializer(ModelSerializer):
     def get_can_rollback(self, obj):
         if obj.module != "UpgradeHistory":
             return False
-        module_obj = getattr(models, obj.module).objects.get(id=obj.module_id)
+        module_obj = getattr(models, obj.module).objects.get(
+            id=int(obj.module_id)
+        )
         return module_obj.can_roll_back
 
     def get_duration(self, obj):
@@ -867,4 +869,5 @@ class ExecutionRecordSerializer(ModelSerializer):
     class Meta:
         model = ExecutionRecord
         fields = ("id", "operator", "count", "state", "state_display",
-                  "can_rollback", "duration")
+                  "can_rollback", "duration", "created", "end_time",
+                  "module", "module_id")

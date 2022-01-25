@@ -49,13 +49,17 @@ class MainInstallHistory(TimeStampMixin):
         return self.install_status
 
     def operate_count(self, exclude_service_ids=None):
-        # 安装服务个数
+        # 安装服务个数, exclude_service_ids删除服务前触发
         queryset = self.detailinstallhistory_set.filter(
             service__isnull=False
         )
         if exclude_service_ids:
             queryset = queryset.exclude(service_id__in=exclude_service_ids)
         return queryset.count()
+
+    @property
+    def module_id(self):
+        return self.operation_uuid
 
 
 class PreInstallHistory(TimeStampMixin):

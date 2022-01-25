@@ -47,6 +47,10 @@ class UpgradeHistory(UpgradeStateMixin, TimeStampMixin):
             )
         return queryset.count()
 
+    @property
+    def module_id(self):
+        return str(self.id)
+
 
 class UpgradeDetail(UpgradeStateMixin, TimeStampMixin):
     history = models.ForeignKey(
@@ -129,6 +133,10 @@ class RollbackHistory(RollBackStateMixin, TimeStampMixin):
                 upgrade__service_id__in=exclude_service_ids
             )
         return queryset.count()
+
+    @property
+    def module_id(self):
+        return str(self.id)
 
 
 class RollbackDetail(RollBackStateMixin, TimeStampMixin):
