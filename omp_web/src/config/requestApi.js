@@ -166,6 +166,7 @@ export const apiRequest = {
     queryInstallHistoryList: "/api/appStore/mainInstallHistory",
     queryUpgradeHistoryList: "/api/upgrade/history",
     queryRollbackHistoryList: "/api/rollback/history",
+    queryAllList: "/api/appStore/executionRecord/",
   },
   inspection: {
     inspectionList: "/api/inspection/history/",
