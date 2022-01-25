@@ -32,6 +32,11 @@ class BackupHistory(TimeStampMixin):
         ("备份中", ING),
         ("失败", FAIL)
     )
+    result_dict = {
+        SUCCESS: "成功",
+        ING: "备份中",
+        FAIL: "失败"
+    }
     result = models.IntegerField("结果", choices=RESULT_CHOICES, default=ING)
     message = models.JSONField("返回信息", default=dict)
     file_name = models.CharField("备份文件名", max_length=128, default="")
@@ -61,7 +66,8 @@ class BackupHistory(TimeStampMixin):
         return f"""
                 备份任务名称：{self.backup_name}\n
                 备份服务：{','.join(self.content)}\n
-                备份时间：{self.create_time.strftime("%Y-%m-%d %H:%M:%S")}
+                备份时间：{self.create_time.strftime("%Y-%m-%d %H:%M:%S")}\n
+                备份结果：{self.result_dict.get(self.result)}
                 """
 
     def fetch_file_kwargs(self):

@@ -1,6 +1,7 @@
 from .backup import BackupSetting, BackupHistory
 from .email import EmailSMTPSetting, ModuleSendEmailSetting
 from .env import Env
+from .execution import ExecutionRecord
 from .host import Host, HostOperateLog
 from .inspection import InspectionHistory, InspectionCrontab, InspectionReport
 from .install import MainInstallHistory, PreInstallHistory, \
@@ -68,4 +69,6 @@ __all__ = [
     # 备份
     BackupSetting,
     BackupHistory,
+    # 执行记录
+    ExecutionRecord
 ]

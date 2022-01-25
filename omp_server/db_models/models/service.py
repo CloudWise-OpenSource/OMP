@@ -74,8 +74,7 @@ class ClusterInfo(TimeStampMixin, DeleteMixin):
 
 
 class Service(TimeStampMixin):
-    """ 服务表 """
-
+    """ 服务表 (删除前会触发update_execution_record)"""
     objects = None
     SERVICE_STATUS_NORMAL = 0
     SERVICE_STATUS_STARTING = 1
