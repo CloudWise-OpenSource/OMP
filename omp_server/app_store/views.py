@@ -673,7 +673,7 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                         app_name = dependence.get("name")
                         version = dependence.get("version")
                         base_env_obj = base_env_queryset.filter(
-                            app_name=app_name, app_version=version
+                            app_name=app_name, app_version__startswith=version
                         ).order_by("-created").first()
                         # 如果服务的依赖中有 base_env，并且对应 ip 上不存在则写入
                         if base_env_obj and \
@@ -954,7 +954,6 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
 
 
 class ExecutionRecordAPIView(GenericViewSet, ListModelMixin):
-
     queryset = ExecutionRecord.objects.exclude(count=0).all()
     pagination_class = PageNumberPager
     filter_backends = (OrderingFilter, SearchFilter)
