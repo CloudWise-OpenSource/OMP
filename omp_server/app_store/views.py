@@ -25,8 +25,7 @@ from db_models.models import (
     DeploymentPlan, ClusterInfo,
     MainInstallHistory, DetailInstallHistory,
     PreInstallHistory, PostInstallHistory,
-    UploadPackageHistory,
-)
+    UploadPackageHistory, ExecutionRecord)
 from utils.common.paginations import PageNumberPager
 from app_store.app_store_filters import (
     LabelFilter, ComponentFilter, ServiceFilter, UploadPackageHistoryFilter,
@@ -37,7 +36,8 @@ from app_store.app_store_serializers import (
     UploadPackageSerializer, RemovePackageSerializer,
     UploadPackageHistorySerializer, ExecuteLocalPackageScanSerializer,
     PublishPackageHistorySerializer, DeploymentPlanValidateSerializer,
-    DeploymentImportSerializer, DeploymentPlanListSerializer
+    DeploymentImportSerializer, DeploymentPlanListSerializer,
+    ExecutionRecordSerializer
 )
 from app_store.app_store_serializers import (
     ProductDetailSerializer, ApplicationDetailSerializer
@@ -47,7 +47,7 @@ from app_store import tmp_exec_back_task
 from utils.common.exceptions import OperateError
 from utils.common.views import BaseDownLoadTemplateView
 from app_store.tasks import publish_entry
-from rest_framework.filters import OrderingFilter
+from rest_framework.filters import OrderingFilter, SearchFilter
 from utils.parse_config import (
     BASIC_ORDER, AFFINITY_FIELD
 )
@@ -951,3 +951,15 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
             "product_num": pro_queryset.count(),
             "service_num": len(service_data_ls),
         })
+
+
+class ExecutionRecordAPIView(GenericViewSet, ListModelMixin):
+
+    queryset = ExecutionRecord.objects.exclude(count=0).all()
+    pagination_class = PageNumberPager
+    filter_backends = (OrderingFilter, SearchFilter)
+    search_fields = ("module",)
+    ordering_fields = ("-created",)
+    serializer_class = ExecutionRecordSerializer
+    # 操作信息描述
+    get_description = "查询执行记录"

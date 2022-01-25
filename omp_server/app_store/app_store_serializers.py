@@ -12,14 +12,14 @@ from rest_framework.serializers import ModelSerializer
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import Serializer
 from utils.common.exceptions import OperateError
-from utils.plugin.public_utils import check_is_ip_address
+from utils.plugin.public_utils import check_is_ip_address, timedelta_strftime
 from app_store.tmp_exec_back_task import front_end_verified_init
 
 from db_models.models import (
     ApplicationHub, ProductHub, UploadPackageHistory,
     Service, DetailInstallHistory, MainInstallHistory, Product,
-    DeploymentPlan
-)
+    DeploymentPlan, ExecutionRecord)
+from db_models import models
 
 from app_store.install_utils import (
     make_lst_unique, ServiceArgsSerializer,
@@ -846,3 +846,25 @@ class DeploymentPlanListSerializer(ModelSerializer):
         """ 元数据 """
         model = DeploymentPlan
         fields = "__all__"
+
+
+class ExecutionRecordSerializer(ModelSerializer):
+    state_display = serializers.CharField(source="get_state_display")
+    can_rollback = serializers.SerializerMethodField()
+    duration = serializers.SerializerMethodField()
+
+    def get_can_rollback(self, obj):
+        if obj.module != "UpgradeHistory":
+            return False
+        module_obj = getattr(models, obj.module).objects.get(id=obj.module_id)
+        return module_obj.can_roll_back
+
+    def get_duration(self, obj):
+        if not obj.end_time:
+            return "-"
+        return timedelta_strftime(obj.end_time-obj.created)
+
+    class Meta:
+        model = ExecutionRecord
+        fields = ("id", "operator", "count", "state", "state_display",
+                  "can_rollback", "duration")
