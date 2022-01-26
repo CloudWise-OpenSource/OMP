@@ -19,7 +19,7 @@ def update_execution_record(sender, instance, *args, **kwargs):
             continue
         execution_record = ExecutionRecord.objects.filter(
             module=history.__class__.__name__,
-            module_id=history.id
+            module_id=history.module_id
         ).first()
         if not execution_record:
             continue
