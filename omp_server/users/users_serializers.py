@@ -24,7 +24,6 @@ from db_models.models import (
     UserLoginLog
 )
 from utils.common.validators import UserPasswordValidator
-from promemonitor.alert_util import utc_to_local
 
 
 class UserSerializer(ModelSerializer):
@@ -96,7 +95,7 @@ class OperateLogSerializer(ModelSerializer):
 
     def get_create_time(self, obj):
         if obj.create_time:
-            return utc_to_local(obj.create_time)
+            return str(obj.create_time).split(".")[0]
         return obj.create_time
 
 
@@ -112,7 +111,7 @@ class UserLoginOperateSerializer(ModelSerializer):
 
     def get_login_time(self, obj):
         if obj.login_time:
-            return utc_to_local(obj.login_time)
+            return str(obj.login_time).split(".")[0]
         return obj.login_time
 
 
