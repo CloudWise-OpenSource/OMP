@@ -77,6 +77,7 @@ OMP 安装包内部包含了其使用的绝大部分组件，但是缺少 `MySQL
 # Agent端：https://cloud.189.cn/web/share?code=2UBj6nAJBvue（访问码：e47h）
 
 # 快速搭建方式如下：
+# 特别注意：以下使用的local_ip指本机的IP地址，并请确保要纳管的主机能够通过该IP地址访问OMP！！！！！！！！！！！！！！
 $ tar -xf omp_open-0.1.tar.gz -C /data && cd /data/omp && bash scripts/install.sh local_ip
 # 如有grafana报错，可使用 ./component/env/bin/python3 ./scripts/source/update_grafana.py local_ip 进行更新操作
 # 如上操作后可通过 http://local_ip:19001 访问OMP页面
