@@ -123,6 +123,15 @@ class HostSerializer(ModelSerializer):
             "init_status"
         )
 
+    # def get_service_num(self, obj):
+    #     """
+    #     获取主机上的
+    #     :param obj:
+    #     :return:
+    #     """
+    #     return Service.objects.filter(
+    #         ip=obj.ip, service__is_base_env=False).count()
+
     def validate_instance_name(self, instance_name):
         """ 校验实例名是否重复 """
         queryset = Host.objects.all()
