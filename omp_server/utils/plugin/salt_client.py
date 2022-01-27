@@ -137,12 +137,13 @@ class SaltClient(object):
                 f"Execute by salt fun_for_multi with Exception: {traceback.format_exc()}")
             return False, f"执行{str(fun)}过程中出现错误: {str(e)}"
 
-    def cmd(self, target, command, timeout):
+    def cmd(self, target, command, timeout, real_timeout=None):
         """
         执行shell命令接口
         :param target: 目标agent的id，一般为ip
         :param command: 将要执行的shell命令
-        :param timeout: 超时时间
+        :param timeout: salt连接超时时间
+        :param real_timeout: cmd命令执行超时时间
         :return: 命令执行结果
         """
         try:
@@ -153,7 +154,8 @@ class SaltClient(object):
                 fun="cmd.run",
                 arg=(command,),
                 timeout=timeout,
-                full_return=True
+                full_return=True,
+                kwarg={"timeout": real_timeout}
             )
             logger.info(f"Execute by salt cmd res: {cmd_res}")
             if not isinstance(cmd_res, dict):
@@ -165,6 +167,8 @@ class SaltClient(object):
             if 'retcode' not in cmd_res[target]:
                 return False, f"当前执行未出现预期结果，详情如下: {cmd_res[target]}"
             if cmd_res[target]["retcode"] != 0:
+                return False, cmd_res[target]["ret"]
+            if "Timed out after" in cmd_res[target]["ret"]:
                 return False, cmd_res[target]["ret"]
             return True, cmd_res[target]["ret"]
         except Exception as e:
