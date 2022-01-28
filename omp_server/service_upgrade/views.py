@@ -170,6 +170,7 @@ class UpgradeChoiceMaxVersionListAPIView(UpgradeChoiceAllVersionListAPIView):
 
 class DoUpgradeAPIView(GenericAPIView):
     # 升级服务
+    # todo：校验升级依赖
     def valid_can_upgrade(self, data):
         # 校验信息
         services = list(

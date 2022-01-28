@@ -99,7 +99,8 @@ class UserLoginOperateView(ListModelMixin, RetrieveModelMixin, GenericViewSet):
         retrieve:
         查询一条操作记录
     """
-    queryset = UserLoginLog.objects.all().order_by("-login_time")
+    queryset = UserLoginLog.objects.all().exclude(
+        username="匿名用户").order_by("-login_time")
     serializer_class = UserLoginOperateSerializer
     pagination_class = PageNumberPager
     filter_backends = (DjangoFilterBackend, OrderingFilter)

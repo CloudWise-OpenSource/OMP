@@ -15,6 +15,7 @@ from .threshold import HostThreshold, ServiceThreshold, ServiceCustomThreshold
 from .user import UserProfile, OperateLog, UserLoginLog
 from .upgrade import UpgradeHistory, UpgradeDetail, RollbackHistory, \
     RollbackDetail
+from .self_heal import SelfHealingSetting, SelfHealingHistory
 
 __all__ = [
     # 邮箱设置
@@ -69,6 +70,9 @@ __all__ = [
     # 备份
     BackupSetting,
     BackupHistory,
+    # 自愈
+    SelfHealingHistory,
+    SelfHealingSetting,
     # 执行记录
     ExecutionRecord
 ]

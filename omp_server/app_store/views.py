@@ -958,7 +958,8 @@ class ExecutionRecordAPIView(GenericViewSet, ListModelMixin):
     pagination_class = PageNumberPager
     filter_backends = (OrderingFilter, SearchFilter)
     search_fields = ("module",)
-    ordering_fields = ("-created",)
+    ordering_fields = ("created",)
+    ordering = ('-created',)
     serializer_class = ExecutionRecordSerializer
     # 操作信息描述
     get_description = "查询执行记录"
