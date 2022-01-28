@@ -28,6 +28,7 @@ from db_models.models import Env
 from db_models.models import HostThreshold
 from db_models.models import ServiceThreshold
 from db_models.models import ServiceCustomThreshold
+from db_models.models import SelfHealingSetting
 
 
 def create_default_user():
@@ -146,6 +147,20 @@ def create_threshold():
         ServiceCustomThreshold(**item).save()
 
 
+def create_self_healing_setting():
+    """添加默认自愈策略"""
+    if SelfHealingSetting.objects.all().count != 0:
+        return
+    default_setting = dict()
+    default_setting = {
+        "used": False,
+        "alert_count": 1,
+        "max_healing_count": 5,
+        "env_id": 1
+    }
+    SelfHealingSetting(**default_setting).save()
+
+
 def main():
     """
     基础数据创建流程
@@ -159,6 +174,8 @@ def main():
     create_default_env()
     # 添加默认告警阈值规则
     create_threshold()
+    #添加默认自愈策略
+    create_self_healing_setting()
 
 
 if __name__ == '__main__':

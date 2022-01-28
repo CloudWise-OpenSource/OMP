@@ -12,9 +12,9 @@ from .product import Labels, UploadPackageHistory, ProductHub, \
 from .service import ServiceConnectInfo, ClusterInfo, Service, ServiceHistory
 from .threshold import HostThreshold, ServiceThreshold, ServiceCustomThreshold
 from .user import UserProfile, OperateLog
-from .upgrade import UpgradeHistory, UpgradeDetail, RollbackHistory,\
+from .upgrade import UpgradeHistory, UpgradeDetail, RollbackHistory, \
     RollbackDetail
-
+from .self_heal import SelfHealingSetting, SelfHealingHistory
 
 __all__ = [
     # 邮箱设置
@@ -68,4 +68,7 @@ __all__ = [
     # 备份
     BackupSetting,
     BackupHistory,
+    # 自愈
+    SelfHealingHistory,
+    SelfHealingSetting,
 ]
