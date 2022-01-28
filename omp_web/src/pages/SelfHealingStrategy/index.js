@@ -32,7 +32,6 @@ const SelfHealingStrategy = () => {
 
   const [isOpen, setIsOpen] = useState(false);
 
-  const alertCountRef = useRef(null)
   // const [maxHealingCount, setMaxHealingCount] = useState(0);
 
   // const onHealingCountChange = (e) => {
@@ -62,7 +61,6 @@ const SelfHealingStrategy = () => {
                 value: res.data.max_healing_count,
               }
             });
-            alertCountRef.current = res.data.alert_count
           }
         });
       })
@@ -77,15 +75,12 @@ const SelfHealingStrategy = () => {
     console.log(data)
     let used = data.isOpen;
     let max_healing_count = 0;
-    let alert_count = 0;
     if (used) {
       max_healing_count = data.times.value;
-      alert_count = alertCountRef.current;
     }
     setLoading(true);
     fetchPost(apiRequest.faultSelfHealing.setSelfHealingSetting, {
       body: {
-        alert_count: alert_count,
         max_healing_count: max_healing_count,
         used: used,
       },
