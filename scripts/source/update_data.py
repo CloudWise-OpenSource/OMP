@@ -149,7 +149,7 @@ def create_threshold():
 
 def create_self_healing_setting():
     """添加默认自愈策略"""
-    if SelfHealingSetting.objects.all().count != 0:
+    if SelfHealingSetting.objects.all().count() != 0:
         return
     default_setting = dict()
     default_setting = {
