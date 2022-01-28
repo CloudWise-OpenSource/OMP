@@ -12,7 +12,7 @@ const getColumnsConfig = (
 ) => {
   return [
     {
-      title: "服务名称",
+      title: "实例名称",
       key: "alert_instance_name",
       dataIndex: "alert_instance_name",
       align: "center",

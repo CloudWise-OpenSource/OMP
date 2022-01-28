@@ -19,6 +19,9 @@ import { useHistory, useLocation } from "react-router-dom";
 const ExceptionList = () => {
   const history = useHistory();
   const location = useLocation();
+
+  const initIp = location.state?.ip
+
   const [loading, setLoading] = useState(false);
 
   const [searchLoading, setSearchLoading] = useState(false);
@@ -27,14 +30,14 @@ const ExceptionList = () => {
   const [dataSource, setDataSource] = useState([]);
   const [ipListSource, setIpListSource] = useState([]);
 
-  const [selectValue, setSelectValue] = useState(location.state?.ip);
+  const [selectValue, setSelectValue] = useState(initIp);
 
   const [instanceSelectValue, setInstanceSelectValue] = useState();
 
   const [searchParams, setSearchParams] = useState({});
 
   // 筛选label
-  const [labelControl, setLabelControl] = useState("ip");
+  const [labelControl, setLabelControl] = useState(initIp ? "ip" : "instance_name");
 
   const [showIframe, setShowIframe] = useState({});
 
