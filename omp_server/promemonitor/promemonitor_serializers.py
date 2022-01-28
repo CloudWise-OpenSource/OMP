@@ -17,7 +17,7 @@ from utils.common.validators import (
 )
 
 logger = logging.getLogger('server')
-
+from services.self_healing import self_healing
 
 class MonitorUrlListSerializer(ListSerializer):
 
@@ -243,6 +243,10 @@ class ReceiveAlertSerializer(Serializer):
                     ip=alert_info.get('alert_host_ip')).update(
                     service_status=Service.SERVICE_STATUS_STOP, alert_count=F("alert_count") + 1)  # TODO 后续在模型中增加异常字段
         Alert.objects.bulk_create(alert_obj_list)
+        logger.info("监控接收文件的长度开始{}".format(len(alert_obj_list)))
+        self_healing(alert_obj_list)
+        logger.info("监控接收文件的长度结束{}".format(len(alert_obj_list)))
+
         return validated_data
 
 
