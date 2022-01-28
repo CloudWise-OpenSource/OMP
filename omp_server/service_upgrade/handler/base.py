@@ -79,6 +79,7 @@ def load_rollback_detail(rollback_detail):
 class BaseHandler:
     log_message = ""
     operation_type = ""
+    no_need_print = False
 
     def __init__(self, salt_client):
         self.salt_client = salt_client
@@ -100,10 +101,11 @@ class BaseHandler:
     def success_handler(self):
         """成功处理"""
         self.detail.handler_info[self.__class__.__name__] = True
-        self._log(
-            self.log_message.format(self.union_server, '成功!'),
-            "info"
-        )
+        if not (self.service.is_static and self.no_need_print):
+            self._log(
+                self.log_message.format(self.union_server, '成功!'),
+                "info"
+            )
         self.write_db(True)
         return self.detail, self.service, self.relation_details
 
@@ -135,8 +137,10 @@ class BaseHandler:
         # 执行成功部分跳过
         if self.detail.handler_info.get(self.__class__.__name__):
             return self.detail, self.service, self.relation_details
-
-        self._log(self.log_message.format(self.union_server, '中...'), "info")
+        if not (self.service.is_static and self.no_need_print):
+            self._log(self.log_message.format(
+                self.union_server, '中...'), "info"
+            )
 
         try:
             success_state = self.handler()
@@ -170,6 +174,7 @@ class StartOperationMixin:
 
 class StopServiceMixin:
     log_message = "服务实例{}: 停止服务{}"
+    no_need_print = True
 
     def stop_service(self, service):
         for i in range(2):
@@ -194,6 +199,7 @@ class StopServiceMixin:
 
 class StartServiceMixin:
     log_message = "服务实例{}: 启动服务{}"
+    no_need_print = True
 
     def start_service(self, service):
         for i in range(2):

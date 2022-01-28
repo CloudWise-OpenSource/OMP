@@ -1,6 +1,7 @@
 from .backup import BackupSetting, BackupHistory
 from .email import EmailSMTPSetting, ModuleSendEmailSetting
 from .env import Env
+from .execution import ExecutionRecord
 from .host import Host, HostOperateLog
 from .inspection import InspectionHistory, InspectionCrontab, InspectionReport
 from .install import MainInstallHistory, PreInstallHistory, \
@@ -11,7 +12,7 @@ from .product import Labels, UploadPackageHistory, ProductHub, \
     ApplicationHub, Product
 from .service import ServiceConnectInfo, ClusterInfo, Service, ServiceHistory
 from .threshold import HostThreshold, ServiceThreshold, ServiceCustomThreshold
-from .user import UserProfile, OperateLog
+from .user import UserProfile, OperateLog, UserLoginLog
 from .upgrade import UpgradeHistory, UpgradeDetail, RollbackHistory, \
     RollbackDetail
 from .self_heal import SelfHealingSetting, SelfHealingHistory
@@ -59,6 +60,7 @@ __all__ = [
     # 用户
     UserProfile,
     OperateLog,
+    UserLoginLog,
     # 升级
     UpgradeHistory,
     UpgradeDetail,
@@ -71,4 +73,6 @@ __all__ = [
     # 自愈
     SelfHealingHistory,
     SelfHealingSetting,
+    # 执行记录
+    ExecutionRecord
 ]

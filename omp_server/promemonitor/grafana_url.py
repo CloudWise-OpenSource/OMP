@@ -134,6 +134,10 @@ def explain_url(explain_info, is_service=None):
             service_name = instance_info.get('app_name')
         else:
             service_name = instance_info.get('instance_name')
+        if instance_info.get('is_web'):
+            instance_info['monitor_url'] = None
+            instance_info['log_url'] = None
+            continue
         service_ip = instance_info.get('ip')
         if instance_info.get('type') == 'service' \
                 or is_service:

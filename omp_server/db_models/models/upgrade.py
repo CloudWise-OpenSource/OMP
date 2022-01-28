@@ -33,6 +33,24 @@ class UpgradeHistory(UpgradeStateMixin, TimeStampMixin):
             has_rollback=False
         ).exists()
 
+    @property
+    def execution_record_state(self):
+        # 执行记录使用
+        return self.upgrade_state
+
+    def operate_count(self, exclude_service_ids=None):
+        # 升级服务个数
+        queryset = self.upgradedetail_set.filter(service__isnull=False)
+        if exclude_service_ids:
+            queryset = queryset.exclude(
+                service_id__in=exclude_service_ids
+            )
+        return queryset.count()
+
+    @property
+    def module_id(self):
+        return str(self.id)
+
 
 class UpgradeDetail(UpgradeStateMixin, TimeStampMixin):
     history = models.ForeignKey(
@@ -99,6 +117,26 @@ class RollbackHistory(RollBackStateMixin, TimeStampMixin):
     class Meta:
         db_table = "omp_rollback_history"
         verbose_name = verbose_name_plural = '回滚历史记录'
+
+    @property
+    def execution_record_state(self):
+        # 执行记录使用
+        return self.rollback_state
+
+    def operate_count(self, exclude_service_ids=None):
+        # 升级服务个数
+        queryset = self.rollbackdetail_set.filter(
+            upgrade__service__isnull=False
+        )
+        if exclude_service_ids:
+            queryset = queryset.exclude(
+                upgrade__service_id__in=exclude_service_ids
+            )
+        return queryset.count()
+
+    @property
+    def module_id(self):
+        return str(self.id)
 
 
 class RollbackDetail(RollBackStateMixin, TimeStampMixin):

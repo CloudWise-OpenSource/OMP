@@ -296,7 +296,7 @@ def front_end_verified(uuid, operation_user, package_name, random_str, ver_dir, 
             f"{product_obj.pro_name}-{product_obj.pro_version}"
         )
         upload_obj.save()
-        tmp_dir = [file_name]
+        tmp_dir = [file_name, versions, tmp_dir]
     else:
         count = ApplicationHub.objects.filter(app_version=versions,
                                               app_name=name).count()
@@ -304,7 +304,7 @@ def front_end_verified(uuid, operation_user, package_name, random_str, ver_dir, 
             return public_action.update_package_status(
                 1,
                 f"安装包{package_name}已存在:请确保name联合version唯一")
-        tmp_dir = [file_name]
+        tmp_dir = [file_name, versions, tmp_dir]
     explain_yml[1]['image'] = image
     explain_yml[1]['package_name'] = package_name
     explain_yml[1]['tmp_dir'] = tmp_dir
@@ -571,9 +571,27 @@ def exec_clear(clear_dir):
         return None
     if online == 0 or 'back_end_verified' in clear_dir:
         clear_out = public_utils.local_cmd(
-            f'rm -rf {clear_dir} && mkdir {clear_dir}')
+            f'rm -rf {clear_dir}')
+        logger.info(clear_dir)
         if clear_out[2] != 0:
             logger.error('清理环境失败')
+
+
+def clear_check(need_rm):
+    """
+    梳理要删除的包
+    """
+    result = []
+    for tmp_dir in need_rm:
+        if ".tar" in tmp_dir[0]:
+            result.append(tmp_dir[0])
+            result.append(tmp_dir[2].rsplit('/', 1)[0])
+        else:
+            rm_dir = tmp_dir[0].rsplit('/', 1)[0]
+            result.append(rm_dir)
+            result.append(f"{rm_dir[:-10]}*")
+    logger.info("需要删除的目录:" + " ".join(result))
+    return " ".join(result)
 
 
 @shared_task
@@ -606,8 +624,8 @@ def publish_bak_end(uuid, exc_len):
                 if valid_uuids.count() != 0 and valid_success != 0:
                     publish_entry(uuid)
                 else:
-                    exec_clear(os.path.join(
-                        package_hub, package_dir.get('back_end_verified')))
+                    exec_clear("{0}/*".format(os.path.join(
+                        package_hub, package_dir.get('back_end_verified'))))
                 exc_task = False
     finally:
         re = redis.Redis(host=OMP_REDIS_HOST, port=OMP_REDIS_PORT, db=9,
@@ -660,6 +678,7 @@ def publish_entry(uuid):
     # 中间结果转入创表函数
     product_obj = None
     tmp_dir = []
+    front_dir = []
     for line in valid_info:
         if line.get('kind') == 'product':
             CreateDatabase(line).create_product()
@@ -709,11 +728,16 @@ def publish_entry(uuid):
             logger.error('移动或删除失败')
             return None
         valid_packages_obj.append(line['package_name'].id)
+        if "front_end_verified" in tmp_dir[0]:
+            front_dir.append(tmp_dir)
     clear_dir = os.path.dirname(tmp_dir[0]) if os.path.isfile(valid_dir) else \
         os.path.dirname(os.path.dirname(tmp_dir[0]))
     UploadPackageHistory.objects.filter(id__in=valid_packages_obj).update(
         package_status=3)
-    exec_clear(clear_dir)
+    need_rm = clear_check(front_dir)
+    if not need_rm:
+        need_rm = f"{clear_dir}/*"
+    exec_clear(need_rm)
 
 
 def check_monitor_data(detail_obj):

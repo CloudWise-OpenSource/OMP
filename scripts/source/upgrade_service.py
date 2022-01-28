@@ -4,6 +4,7 @@ import re
 import sys
 import time
 from datetime import datetime
+import random
 
 import django
 from django.db import transaction
@@ -23,6 +24,7 @@ from db_models.models import UserProfile, UploadPackageHistory, Service, \
 from db_models.mixins import UpgradeStateChoices, RollbackStateChoices
 from service_upgrade.tasks import get_service_order, upgrade_service, \
     rollback_service
+from utils.plugin.public_utils import local_cmd
 
 
 def log_print(message, level="info"):
@@ -36,9 +38,9 @@ class BaseOperation:
     services_level_key = "service_levels"
     _lock_key = "operation_lock"
 
-    def __init__(self, service_packages, ip=None):
+    def __init__(self, service_package, ip=None):
         self.redis = RedisDB()
-        self.service_packages = service_packages
+        self.service_package = service_package
         self.ip = ip
 
     @property
@@ -117,7 +119,7 @@ class BaseOperation:
 
     def __call__(self, *args, **kwargs):
         regular = re.compile(r"([a-zA-Z0-9]+)-.*\.tar\.gz")
-        service_info = regular.findall(self.service_packages)
+        service_info = regular.findall(self.service_package)
         if not service_info:
             log_print("服务包包名格式错误！", "error")
             return False
@@ -132,33 +134,51 @@ class BaseOperation:
 
 
 class Upgrade(BaseOperation):
+    _valid_lock_key = "valid_package"
 
     def valid_package(self):
-        back_end_verified_init(
-            operation_user=UserProfile.objects.first().username
-        )
-        package = UploadPackageHistory.objects.filter(
-            package_name=self.service_packages
-        ).last()
-        if not package:
-            log_print(f"未找到服务包：{self.service_packages}!", "error")
-            return None
-        while True:
-            package.refresh_from_db()
-            if package.package_status in [
-                package.PACKAGE_STATUS_FAILED,
-                package.PACKAGE_STATUS_PUBLISH_FAILED
-            ]:
-                log_print(f"校验服务包失败，失败详情:{package.error_msg}", "error")
+        # 校验服务包会删目录，需要锁,并且保证back_end_verified_path目录下无其他包
+        with self.redis.conn.lock(self._valid_lock_key):
+            frond_package_path = os.path.join(
+                PROJECT_DIR,
+                "package_hub/front_end_verified",
+                self.service_package
+            )
+            back_end_verified_path = os.path.join(
+                PROJECT_DIR, "package_hub/back_end_verified"
+            )
+            _cmd_str = f'mv {frond_package_path} {back_end_verified_path}'
+            _out, _err, _code = local_cmd(_cmd_str)
+            if _code:
+                log_print(f"执行移动文件:{_cmd_str}发生错误:{_out}")
+            back_end_verified_init(
+                operation_user=UserProfile.objects.first().username
+            )
+            package = UploadPackageHistory.objects.filter(
+                package_name=self.service_package
+            ).last()
+            if not package:
+                log_print(f"未找到服务包：{self.service_package}!", "error")
                 return None
-            if package.package_status == package.PACKAGE_STATUS_PUBLISH_SUCCESS:
-                log_print("校验服务包通过！")
-                return ApplicationHub.objects.filter(
-                    app_package=package).first()
-            log_print("校验服务包中...")
-            time.sleep(3)
+            while True:
+                package.refresh_from_db()
+                if package.package_status in [
+                    package.PACKAGE_STATUS_FAILED,
+                    package.PACKAGE_STATUS_PUBLISH_FAILED
+                ]:
+                    log_print(
+                        f"校验服务包失败，失败详情:{package.error_msg}", "error")
+                    return None
+                if package.package_status == \
+                        package.PACKAGE_STATUS_PUBLISH_SUCCESS:
+                    log_print("校验服务包通过！")
+                    return ApplicationHub.objects.filter(
+                        app_package=package).first()
+                log_print("校验服务包中...")
+                time.sleep(random.uniform(1, 2))
 
     def upgrade(self, app):
+        # 重新升级，原有升级记录不动
         with transaction.atomic():
             history = UpgradeHistory.objects.create(
                 env=Env.objects.first(),
@@ -219,7 +239,7 @@ class Rollback(BaseOperation):
 
     def handle(self):
         app = ApplicationHub.objects.filter(
-            app_package__package_name=self.service_packages
+            app_package__package_name=self.service_package
         ).first()
         if not app:
             log_print("未找到该服务包相关信息，不可回滚！", "error")

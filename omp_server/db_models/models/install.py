@@ -43,6 +43,24 @@ class MainInstallHistory(TimeStampMixin):
         db_table = "omp_main_install_history"
         verbose_name = verbose_name_plural = "主安装记录表"
 
+    @property
+    def execution_record_state(self):
+        # 执行记录使用
+        return self.install_status
+
+    def operate_count(self, exclude_service_ids=None):
+        # 安装服务个数, exclude_service_ids删除服务前触发
+        queryset = self.detailinstallhistory_set.filter(
+            service__isnull=False
+        )
+        if exclude_service_ids:
+            queryset = queryset.exclude(service_id__in=exclude_service_ids)
+        return queryset.count()
+
+    @property
+    def module_id(self):
+        return self.operation_uuid
+
 
 class PreInstallHistory(TimeStampMixin):
     """ 记录安装过程中主机的操作记录内容 """
@@ -108,7 +126,7 @@ class DetailInstallHistory(TimeStampMixin):
         (INSTALL_STATUS_SUCCESS, "安装成功"),
         (INSTALL_STATUS_FAILED, "安装失败"),
     )
-
+    # 若修改on_delete，需处理update_execution_record
     service = models.ForeignKey(
         Service, null=True, blank=True,
         on_delete=models.SET_NULL, help_text="关联服务对象")

@@ -471,8 +471,8 @@ const ReleaseModal = ({
               <Button
                 type="primary"
                 disabled={
-                  (dataSource.filter((i) => i.package_status == 0).length == 0) ||
-                  (dataSource.filter((i) => i.package_status == 2).length !== 0)
+                  dataSource.filter((i) => i.package_status == 0).length == 0 ||
+                  dataSource.filter((i) => i.package_status == 2).length !== 0
                 }
                 loading={loading}
                 onClick={() => {
@@ -532,6 +532,12 @@ const ReleaseModal = ({
                   本次成功发布{" "}
                   {dataSource.filter((item) => item.package_status == 3).length}
                   个 服务
+                </p>
+                <p style={{ textAlign: "center" }}>
+                  发布完成的安装包存放路径:{" "}
+                  <span style={{ fontWeight: 500, color: "rgba(0,0,0,0.8)" }}>
+                    omp/package_hub/verified/
+                  </span>{" "}
                 </p>
               </div>
             )}
