@@ -105,11 +105,11 @@ export default [
       //   notInMenu: true,
       //   component: Installation,
       // },
-      // {
-      //   title: "执行记录",
-      //   path: "/application_management/install-record",
-      //   component: InstallationRecord,
-      // },
+      {
+        title: "执行记录",
+        path: "/application_management/install-record",
+        component: InstallationRecord,
+      },
       {
         title: "服务升级",
         path: "/application_management/app_store/service_upgrade",
@@ -230,11 +230,11 @@ export default [
         path: "/operation-record/login-log",
         component: LoginLog,
       },
-      {
-        title: "系统记录",
-        path: "/operation-record/system-log",
-        component: SystemLog,
-      },
+      // {
+      //   title: "系统记录",
+      //   path: "/operation-record/system-log",
+      //   component: SystemLog,
+      // },
     ],
   },
   {
