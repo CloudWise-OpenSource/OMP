@@ -20,6 +20,8 @@ import {
     const history = useHistory();
   
     const location = useLocation();
+
+    const initIp = location.state?.ip
   
     const [loading, setLoading] = useState(false);
   
@@ -32,7 +34,7 @@ import {
     const [dataSource, setDataSource] = useState([]);
     const [ipListSource, setIpListSource] = useState([]);
   
-    const [selectValue, setSelectValue] = useState(location.state?.ip);
+    const [selectValue, setSelectValue] = useState(initIp);
   
     const [instanceSelectValue, setInstanceSelectValue] = useState();
   
@@ -45,7 +47,7 @@ import {
     });
   
     // 筛选label
-    const [labelControl, setLabelControl] = useState("ip");
+    const [labelControl, setLabelControl] = useState(initIp? "ip":"instance_name");
   
     const [showIframe, setShowIframe] = useState({});
   
@@ -55,7 +57,7 @@ import {
       ordering
     ) {
       setLoading(true);
-      fetchGet(apiRequest.Alert.listAlert, {
+      fetchGet(apiRequest.faultSelfHealing.querySelfHealingList, {
         params: {
           page: pageParams.current,
           size: pageParams.pageSize,
@@ -101,7 +103,7 @@ import {
   
     const updateAlertRead = (ids = []) => {
       setLoading(true);
-      fetchPost(apiRequest.Alert.updateAlert, {
+      fetchPost(apiRequest.faultSelfHealing.selfHeadlingIsRead, {
         body: {
           ids: ids,
           is_read: 1,
@@ -154,8 +156,8 @@ import {
                     },
                     {
                       ...pagination.searchParams,
-                      start_alert_time: null,
-                      end_alert_time: null,
+                      query_start_time: null,
+                      query_end_time: null,
                     },
                     pagination.ordering
                   );
@@ -169,10 +171,10 @@ import {
                       },
                       {
                         ...pagination.searchParams,
-                        start_alert_time: moment(e[0]).format(
+                        query_start_time: moment(e[0]).format(
                           "YYYY-MM-DD HH:mm:ss"
                         ),
-                        end_alert_time: moment(e[1]).format(
+                        query_end_time: moment(e[1]).format(
                           "YYYY-MM-DD HH:mm:ss"
                         ),
                       },
@@ -196,8 +198,8 @@ import {
                       },
                       {
                         ...pagination.searchParams,
-                        alert_host_ip: null,
-                        alert_instance_name: null,
+                        host_ip: null,
+                        instance_name: null,
                       },
                       pagination.ordering
                     );
@@ -220,7 +222,7 @@ import {
                           current: 1,
                           pageSize: pagination.pageSize,
                         },
-                        { ...pagination.searchParams, alert_host_ip: value },
+                        { ...pagination.searchParams, host_ip: value },
                         pagination.ordering
                       );
                     }}
@@ -243,7 +245,7 @@ import {
                           },
                           {
                             ...pagination.searchParams,
-                            alert_instance_name: null,
+                            instance_name: null,
                           },
                           pagination.ordering
                         );
@@ -258,7 +260,7 @@ import {
                           },
                           {
                             ...pagination.searchParams,
-                            alert_instance_name: instanceSelectValue,
+                            instance_name: instanceSelectValue,
                           },
                           pagination.ordering
                         );
@@ -272,7 +274,7 @@ import {
                         },
                         {
                           ...pagination.searchParams,
-                          alert_instance_name: instanceSelectValue,
+                          instance_name: instanceSelectValue,
                         },
                         pagination.ordering
                       );
