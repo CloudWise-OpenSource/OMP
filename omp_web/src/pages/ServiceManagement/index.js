@@ -22,6 +22,10 @@ import { useHistory, useLocation } from "react-router-dom";
 const ServiceManagement = () => {
   const location = useLocation();
 
+  const initIp = location.state?.ip
+
+  console.log(initIp)
+
   const history = useHistory();
 
   const dispatch = useDispatch();
@@ -36,13 +40,13 @@ const ServiceManagement = () => {
   //table表格数据
   const [dataSource, setDataSource] = useState([]);
   const [ipListSource, setIpListSource] = useState([]);
-  const [selectValue, setSelectValue] = useState(location.state?.ip);
+  const [selectValue, setSelectValue] = useState(initIp);
 
   const [labelsData, setLabelsData] = useState([]);
 
   const [instanceSelectValue, setInstanceSelectValue] = useState("");
 
-  const [labelControl, setLabelControl] = useState("ip");
+  const [labelControl, setLabelControl] = useState(initIp ? "ip" : "instance_name");
 
   const [installationRecordModal, setInstallationRecordModal] = useState(false);
 

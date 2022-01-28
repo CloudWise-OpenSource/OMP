@@ -244,8 +244,13 @@ export const apiRequest = {
   },
   faultSelfHealing: {
     // 自愈列表
-    querySelfHealingList: "/api/users/users/",
-    // 故障策略
-    querySelfHealingStrategy: "/api/promemonitor/listAlert/"
+    querySelfHealingList: "/api/services/ListSelfHealingHistory/",
+    // "/api/services/ListSelfHealingHistory/",
+    // 自愈已读
+    selfHeadlingIsRead: "/api/services/UpdateSelfHealingHistory/",
+    // 自愈策略查询
+    querySelfHealingStrategy: "/api/services/SelfHealingSetting/",
+    // 自愈策略修改
+    setSelfHealingSetting: "/api/services/SelfHealingSetting/"
   }
 };

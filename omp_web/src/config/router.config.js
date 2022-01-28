@@ -105,11 +105,11 @@ export default [
       //   notInMenu: true,
       //   component: Installation,
       // },
-      {
-        title: "执行记录",
-        path: "/application_management/install-record",
-        component: InstallationRecord,
-      },
+      // {
+      //   title: "执行记录",
+      //   path: "/application_management/install-record",
+      //   component: InstallationRecord,
+      // },
       {
         title: "服务升级",
         path: "/application_management/app_store/service_upgrade",
@@ -151,23 +151,23 @@ export default [
       },
     ],
   },
-  // {
-  //   menuTitle: "故障自愈",
-  //   menuIcon: <InteractionOutlined />,
-  //   menuKey: "/fault-selfHealing",
-  //   children: [
-  //     {
-  //       title: "自愈列表",
-  //       path: "/fault-selfHealing/selfHealing-record",
-  //       component: SelfHealingRecord,
-  //     },
-  //     {
-  //       title: "自愈策略",
-  //       path: "/fault-selfHealing/selfHealing-strategy",
-  //       component: SelfHealingStrategy,
-  //     },
-  //   ],
-  // },
+  {
+    menuTitle: "故障自愈",
+    menuIcon: <InteractionOutlined />,
+    menuKey: "/fault-selfHealing",
+    children: [
+      {
+        title: "自愈列表",
+        path: "/fault-selfHealing/selfHealing-record",
+        component: SelfHealingRecord,
+      },
+      {
+        title: "自愈策略",
+        path: "/fault-selfHealing/selfHealing-strategy",
+        component: SelfHealingStrategy,
+      },
+    ],
+  },
   {
     menuTitle: "状态巡检",
     menuIcon: <EyeOutlined />,
