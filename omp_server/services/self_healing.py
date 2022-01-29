@@ -35,7 +35,6 @@ def self_healing(alert_list):
                         SelfHealingHistory.objects.create(
                             is_read=0, host_ip=alert_list[i].alert_host_ip,
                             service_name=alert_list[i].alert_service_name, state=2,
-                            # alert_time=datetime.datetime.strptime(alert_list[i].alert_time, "%Y-%m-%d %H:%M:%S"),
                             alert_time=alert_list[i].alert_time,
                             fingerprint=alert_list[i].fingerprint,
                             env_id=env_id,
@@ -86,6 +85,7 @@ def self_healing(alert_list):
                             """ 修改表中数据的时间状态"""
                             SelfHealingHistory.objects.filter(
                                 host_ip=service_replace_list[i].get("ip"),
+                                start_time=alert_list[i].create_time,
                                 service_name=service_replace_list[i].get("service_instance_name")) \
                                 .update(state=1, healing_count=count,
                                         end_time=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
@@ -95,8 +95,9 @@ def self_healing(alert_list):
                 logger.info("step5 到达循环条件之后依然有问题列表: {}".format(service_replace_list))
                 for i in range(len(service_replace_list)):
                     SelfHealingHistory.objects.filter(
-                        host_ip=service_replace_list[i].get("ip"), service_name
-                        =service_replace_list[i].get("service_instance_name")) \
+                        host_ip=service_replace_list[i].get("ip"),
+                        start_time=alert_list[i].create_time,
+                        service_name=service_replace_list[i].get("service_instance_name")) \
                         .update(state=0, healing_count=max_healing_count,
                                 end_time=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
     return True
