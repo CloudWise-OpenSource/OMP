@@ -97,34 +97,33 @@ monitor_port:
 # 安装时顺序从小到大执行，同级别并发执行
 basic_order:
   0:
-    - jdk
-    - safeRM
-    - tengine
-    - mysql
-    - redis
-    - arangodb
-    - minio
-    - postgreSql
-    - prometheus
-    - pushgateway
-    - aopsUtils
+  - jdk
+  - safeRM
+  - tengine
+  - mysql
+  - redis
+  - arangodb
+  - minio
+  - postgreSql
+  - prometheus
+  - pushgateway
+  - aopsUtils
   1:
-    - keepalived
-    - httpd
-    - elasticsearch
-    - ignite
-    - zookeeper
-    - rocketmq
-    - wkhtmltox
-    - tomcat
+  - keepalived
+  - httpd
+  - elasticsearch
+  - zookeeper
+  - rocketmq
+  - wkhtmltox
+  - tomcat
   2:
-    - nacos
-    - xxlJob
-    - kafka
-    - clickhouse
-    - hadoop
+  - nacos
+  - xxlJob
+  - kafka
+  - clickhouse
+  - hadoop
   3:
-    - flink
+  - flink
 
 
 # 亲和力服务名称
@@ -135,15 +134,15 @@ affinity:
 # hadoop 角色信息
 hadoop_role:
   single:
-    - namenode
-    - secondarynamenode
-    - datanode
-    - resourcemanager
-    - nodemanager
+  - namenode
+  - secondarynamenode
+  - datanode
+  - resourcemanager
+  - nodemanager
   cluster:
-    - namenode
-    - datanode
-    - resourcemanager
-    - nodemanager
-    - zkfc
-    - journalnode
+  - namenode
+  - datanode
+  - resourcemanager
+  - nodemanager
+  - zkfc
+  - journalnode

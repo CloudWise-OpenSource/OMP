@@ -52,6 +52,9 @@ class UserLoginLog(models.Model):
                           blank=True, verbose_name="Login ip")
     role = models.CharField(
         max_length=128, verbose_name="role ", null=True, blank=True)
+    request_result = models.CharField(
+        "请求结果", max_length=512,
+        null=True, blank=True, help_text="请求结果")
 
     class Meta:
         db_table = "omp_login_log"

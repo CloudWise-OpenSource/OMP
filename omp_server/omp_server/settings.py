@@ -14,7 +14,9 @@ import random
 import datetime
 from pathlib import Path
 from utils.parse_config import OMP_MYSQL_HOST, OMP_MYSQL_PORT, \
-    OMP_MYSQL_USERNAME, OMP_MYSQL_PASSWORD, TOKEN_EXPIRATION, SSH_CMD_TIMEOUT
+    OMP_MYSQL_USERNAME, OMP_MYSQL_PASSWORD, TOKEN_EXPIRATION
+
+# , SSH_CMD_TIMEOUT
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -250,3 +252,55 @@ CUSTOM_THRESHOLD_SERVICES = {
 # 可备份的组件
 BACKUP_SERVICE = {"mysql", "arangodb"}
 BACKUP_DEFAULT_PATH = os.path.join(PROJECT_DIR, "data/backup/")
+
+INTERFACE_KINDS = {"/api/appStore/upload/": "修改",
+                   "/api/appStore/remove/": "删除",
+                   "/api/appStore/publish/": "修改",
+                   "/api/appStore/executeLocalPackageScan/": "修改",
+                   "/api/appStore/deploymentPlanValidate/": "查看",
+                   "/api/appStore/deploymentPlanImport/": "增加",
+                   "/api/appStore/createInstallInfo/": "增加",
+                   "/api/appStore/executeInstall/": "增加",
+                   "/api/appStore/checkInstallInfo/": "查看",
+                   "/api/appStore/createServiceDistribution/": "增加",
+                   "/api/appStore/checkServiceDistribution/": "查看",
+                   "/api/appStore/createInstallPlan/": "新增",
+                   "/api/appStore/createComponentInstallInfo/": "新增",
+                   "/api/appStore/retryInstall/": "修改",
+                   "/api/backups/backupSettings/": "修改",
+                   "/api/backups/backupOnce/": "新增",
+                   "/api/backups/backupHistory/": "删除",
+                   "/api/backups/backupSendEmail/": "新增",
+                   "/api/hosts/hosts/": "修改",
+                   "/api/hosts/fields/": "查看",
+                   "/api/hosts/maintain/": "修改",
+                   "/api/hosts/restartHostAgent/": "修改",
+                   "/api/hosts/batchValidate/": "查看",
+                   "/api/hosts/batchImport/": "新增",
+                   "/api/hosts/hostInit/": "修改",
+                   "/api/hosts/hostsAgentStatus/": "查询",
+                   "/api/hosts/hostReinstall/": "修改",
+                   "/api/hosts/monitorReinstall/": "修改",
+                   "/api/inspection/history/": "查询",
+                   "/api/inspection/crontab/": "新增",
+                   "/api/inspection/inspectionSendEmailSetting/": "修改",
+                   "/api/inspection/inspectionSendEmail/": "查询",
+                   "/api/promemonitor/monitorurl/": "修改",
+                   "/api/promemonitor/updateAlert/": "修改",
+                   "/api/promemonitor/restartMonitorAgent/": "修改",
+                   "/api/promemonitor/globalMaintain/": "修改",
+                   "/api/promemonitor/receiveAlert/": "新增",
+                   "/api/promemonitor/updateSendEmailConfig/": "修改",
+                   "/api/promemonitor/updateSendAlertSetting/": "新增",
+                   "/api/promemonitor/hostThreshold/": "修改",
+                   "/api/promemonitor/serviceThreshold/": "修改",
+                   "/api/promemonitor/customThreshold/": "修改",
+                   "/api/upgrade/do-upgrade/": "修改",
+                   "/api/rollback/do-rollback/": "修改",
+                   "/api/services/action/": "修改",
+                   "/api/services/delete/": "查询",
+                   "/api/services/SelfHealingSetting/": "修改",
+                   "/api/services/UpdateSelfHealingHistory/": "修改",
+                   "/api/users/users/": "新增",
+                   "/api/users/updatePassword/": "修改"
+                   }
