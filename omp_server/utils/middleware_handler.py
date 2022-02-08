@@ -89,7 +89,8 @@ class OperationLogMiddleware(MiddlewareMixin):
                 'put': '修改',
                 'get': '查看',
                 'delete': '删除',
-                'trace': '查看'
+                'trace': '查看',
+                'patch': '修改'
             }
             method_st = method_dc.get(_method)
             if not method_st:
