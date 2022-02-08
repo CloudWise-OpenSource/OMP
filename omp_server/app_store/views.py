@@ -239,6 +239,7 @@ class PublishViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
     serializer_class = PublishPackageHistorySerializer
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     filter_class = PublishPackageHistoryFilter
+    post_description = "上传应用商店安装包发布"
 
     def create(self, request, *args, **kwargs):
         params = request.data

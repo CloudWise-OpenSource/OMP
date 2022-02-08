@@ -112,7 +112,6 @@ basic_order:
     - keepalived
     - httpd
     - elasticsearch
-    - ignite
     - zookeeper
     - rocketmq
     - wkhtmltox

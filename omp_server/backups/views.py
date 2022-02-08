@@ -326,6 +326,9 @@ class BackupHistoryView(GenericViewSet, ListModelMixin, CreateModelMixin):
     # ).order_by("-create_time")   # 分页，过滤，排序
     pagination_class = PageNumberPager
 
+    post_description = "删除备份记录文件"
+    get_description = "获取备份历史记录"
+
     # values_fields = (
     #     "id", "backup_name", "content", "result", "file_name",
     #     "file_size", "expire_time", "file_deleted", "message",
