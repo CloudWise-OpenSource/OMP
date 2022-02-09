@@ -12,6 +12,7 @@ from .product import Labels, UploadPackageHistory, ProductHub, \
     ApplicationHub, Product
 from .service import ServiceConnectInfo, ClusterInfo, Service, ServiceHistory
 from .threshold import HostThreshold, ServiceThreshold, ServiceCustomThreshold
+from .tool import ToolInfo, ToolExecuteMainHistory, ToolExecuteDetailHistory
 from .user import UserProfile, OperateLog, UserLoginLog
 from .upgrade import UpgradeHistory, UpgradeDetail, RollbackHistory, \
     RollbackDetail
@@ -74,5 +75,9 @@ __all__ = [
     SelfHealingHistory,
     SelfHealingSetting,
     # 执行记录
-    ExecutionRecord
+    ExecutionRecord,
+    # 小工具
+    ToolInfo,
+    ToolExecuteMainHistory,
+    ToolExecuteDetailHistory
 ]
