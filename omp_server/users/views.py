@@ -121,6 +121,7 @@ class JwtAPIView(JSONWebTokenAPIView):
     def validate_ip(str_ip):
         """
         校验ip格式
+        暂时不用
         """
         try:
             ipaddress.ip_address(str_ip)
@@ -133,9 +134,9 @@ class JwtAPIView(JSONWebTokenAPIView):
     def _get_login_log(request):
         """
         创建登陆记录
+        暂时不用
         """
         login_ip, routeable = ipware.get_client_ip(request)
-        # TODO 角色管理
         data = {
             'username': request.data.get("username", ""),
             'login_time': timezone.now(),
@@ -169,7 +170,7 @@ class JwtAPIView(JSONWebTokenAPIView):
         response_data = api_settings.JWT_RESPONSE_PAYLOAD_HANDLER(
             token, user, request)
         response = Response(response_data)
-        self._get_login_log(request)
+        # self._get_login_log(request)
         if api_settings.JWT_AUTH_COOKIE:
             # remember 取值 True，则 cookie 过期时间为 7 天
             expiration_time = api_settings.JWT_EXPIRATION_DELTA

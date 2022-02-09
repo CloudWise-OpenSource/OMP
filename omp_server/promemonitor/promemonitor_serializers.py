@@ -15,7 +15,7 @@ from utils.common.serializers import HostIdsSerializer
 from utils.common.validators import (
     NoEmojiValidator, NoChineseValidator
 )
-
+import json
 logger = logging.getLogger('server')
 from services.self_healing import self_healing
 
@@ -234,7 +234,8 @@ class ReceiveAlertSerializer(Serializer):
                 fingerprint=alert_info.get('fingerprint'),
                 # env='default'  # TODO 此版本默认不赋值
             )
-            alert_obj_list.append(alert)
+            alert.save()
+            alert_obj_list.append(alert.id)
             if alert_info.get('alert_type') == 'host':
                 Host.objects.filter(ip=alert_info.get('alert_host_ip')).update(
                     alert_num=F("alert_num") + 1)
@@ -242,10 +243,9 @@ class ReceiveAlertSerializer(Serializer):
                 Service.objects.filter(service_instance_name=alert_info.get('alert_instance_name')).filter(
                     ip=alert_info.get('alert_host_ip')).update(
                     service_status=Service.SERVICE_STATUS_STOP, alert_count=F("alert_count") + 1)  # TODO 后续在模型中增加异常字段
-        Alert.objects.bulk_create(alert_obj_list)
         logger.info("监控接收文件的长度开始{}".format(len(alert_obj_list)))
         self_healing.delay(alert_obj_list)
-        logger.info("监控接收文件的长度结束{}".format(len(alert_obj_list)))
+        logger.info("监控接收文件的信息{}".format((alert_obj_list)))
         return validated_data
 
 class MonitorAgentRestartSerializer(HostIdsSerializer):

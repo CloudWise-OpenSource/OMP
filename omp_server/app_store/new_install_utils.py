@@ -295,8 +295,13 @@ class BaseRedisData(object):
                 _data["use_exist"][item["name"]] = item.get(
                     "exist_instance", [])
                 continue
+            # TODO 优化版本间若依赖选择
             _data["install"][item["name"]] = {
-                "version": item["version"],
+                # "version": item["version"],
+                "version": ApplicationHub.objects.filter(
+                    app_name=item["name"],
+                    app_version__startswith=item["version"]
+                ).last().app_version,
                 "product": None
             }
         self.redis.set(

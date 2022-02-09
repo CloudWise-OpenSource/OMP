@@ -70,7 +70,7 @@ class ListSelfHealingHistoryView(GenericViewSet, ListModelMixin):
         SelfHealingTimeFilter,
     )
     filter_class = SelfHealingHistoryFilter
-    ordering_fields = ("host_ip", "service_name", "state", "alert_time", "end_time")
+    ordering_fields = ("host_ip", "instance_name", "state", "alert_time", "end_time")
 
 
 class UpdateSelfHealingHistoryView(CreateModelMixin, GenericViewSet):

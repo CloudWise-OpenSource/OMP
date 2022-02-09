@@ -59,6 +59,8 @@ class MonitorUrlViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
     """
     serializer_class = MonitorUrlSerializer
     queryset = MonitorUrl.objects.all()
+    get_description = "查询监控地址配置"
+    patch_description = "修改监控地址配置"
 
     def get_serializer(self, *args, **kwargs):
         serializer_class = self.get_serializer_class()

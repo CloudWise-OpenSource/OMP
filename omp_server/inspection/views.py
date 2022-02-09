@@ -64,6 +64,7 @@ class InspectionHistoryView(ListModelMixin, GenericViewSet, CreateModelMixin):
     dynamic_fields = ("start_time",)
     # 操作描述信息
     get_description = "查询巡检历史记录列表"
+    post_description = "查询巡检历史记录列表"
 
     def list(self, request, *args, **kwargs):
         # 获取序列化数据列表
