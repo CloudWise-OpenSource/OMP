@@ -157,7 +157,7 @@ export default [
     menuKey: "/fault-selfHealing",
     children: [
       {
-        title: "自愈列表",
+        title: "自愈记录",
         path: "/fault-selfHealing/selfHealing-record",
         component: SelfHealingRecord,
       },

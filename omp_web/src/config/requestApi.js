@@ -243,7 +243,7 @@ export const apiRequest = {
     querySystemLog: "/api/users/operateLog/",
   },
   faultSelfHealing: {
-    // 自愈列表
+    // 自愈记录
     querySelfHealingList: "/api/services/ListSelfHealingHistory/",
     // "/api/services/ListSelfHealingHistory/",
     // 自愈已读

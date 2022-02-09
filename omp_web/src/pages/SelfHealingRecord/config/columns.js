@@ -124,8 +124,11 @@ const getColumnsConfig = (
       // sorter: (a, b) => a.alert_time - b.alert_time,
       // sortDirections: ["descend", "ascend"],
       render: (text) => {
-        let str = moment(text).format("YYYY-MM-DD HH:mm:ss");
-        return str;
+        if(text){
+          let str = moment(text).format("YYYY-MM-DD HH:mm:ss");
+          return str;
+        }
+        return "-"
       },
     },
     {
@@ -138,8 +141,11 @@ const getColumnsConfig = (
       // sorter: (a, b) => a.create_time - b.create_time,
       // sortDirections: ["descend", "ascend"],
       render: (text) => {
-        let str = moment(text).format("YYYY-MM-DD HH:mm:ss");
-        return str;
+        if(text){
+          let str = moment(text).format("YYYY-MM-DD HH:mm:ss");
+          return str;
+        }
+        return "-"
       },
     },
     {
