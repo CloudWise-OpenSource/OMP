@@ -51,7 +51,7 @@ const breadcrumbNameMap = {
   "login-log": "登录日志",
   "system-log": "系统记录",
   "fault-selfHealing":"故障自愈",
-  "selfHealing-record":"自愈列表",
+  "selfHealing-record":"自愈记录",
   "selfHealing-strategy":"自愈策略"
 };
 
