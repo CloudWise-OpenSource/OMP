@@ -99,7 +99,7 @@ class ToolInfo(TimeStampMixin):
         "模板文件相对路径", null=True, blank=True, help_text="模板文件相对路径")
     # 在执行对象为服务时需要获取除ServiceConnectInfo中以外的信息
     # ["service_port", "metrics_port"]
-    obj_connection_args = models.JSONField("目标对象连接信息", default=list,)
+    obj_connection_args = models.JSONField("目标对象连接信息", default=list, )
     # 存储脚本执行参数，存储列表类型数据
     # 在入库时需要对每个参数的类型进行校验（前端展示效果）
     script_args = models.JSONField("脚本执行参数", default=list)
@@ -157,7 +157,7 @@ class ToolExecuteMainHistory(models.Model):
     def duration(self):
         if not all([self.end_time, self.start_time]):
             return "-"
-        return timedelta_strftime(self.end_time-self.start_time)
+        return timedelta_strftime(self.end_time - self.start_time)
 
 
 class ToolExecuteDetailHistory(TimeStampMixin):
