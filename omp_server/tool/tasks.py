@@ -33,6 +33,9 @@ class ThreadUtils:
         self.count = 0
 
     def check_result(self, future_list):
+        """
+        查看线程结果
+        """
         for future in as_completed(future_list):
             is_success, message = future.result()
             if not is_success:
@@ -50,6 +53,34 @@ class ThreadUtils:
         tool_detail_obj.execute_log += "{1} {0}\n".format(
             message, timezone.now())
         tool_detail_obj.save()
+
+    def receive_file(self, tool_detail_obj, receive_files, ip):
+        """
+        接收文件
+        """
+        self.send_message(tool_detail_obj, 2)
+        pull_dc = receive_files.get("output_files", [])
+        receive_to = receive_files.get("receive_to", "/tmp")
+        upload_real_paths = []
+        for file in pull_dc:
+            status, message = self.salt.cp_push(
+                target=ip,
+                source_path=file,
+                upload_path=file.rsplit("/", 1))
+            upload_real_paths.append(
+                os.path.join(self.salt_data, f"var/cache/salt/master/minions/{ip}/files/*"))
+            if not status:
+                tool_detail_obj.status = ToolExecuteDetailHistory.STATUS_FAILED
+                self.send_message(tool_detail_obj, message)
+                return False
+        if upload_real_paths:
+            _out, _err, _code = public_utils.local_cmd(
+                f'mv {" ".join(upload_real_paths)} {receive_to}')
+            if _code != 0:
+                tool_detail_obj.status = ToolExecuteDetailHistory.STATUS_FAILED
+                self.send_message(tool_detail_obj, _out)
+                return False
+        return True
 
     def single_tool_executor(self, tool_detail_obj):
         """
@@ -90,28 +121,9 @@ class ThreadUtils:
         # 获取目标输出文件
         receive_files = tool_detail_obj.get_receive_files()
         if receive_files:
-            self.send_message(tool_detail_obj, 2)
-            pull_dc = receive_files.get("output_files", [])
-            receive_to = receive_files.get("receive_to", "/tmp")
-            upload_real_paths = []
-            for file in pull_dc:
-                status, message = self.salt.cp_push(
-                    target=ip,
-                    source_path=file,
-                    upload_path=file.rsplit("/", 1))
-                upload_real_paths.append(
-                    os.path.join(self.salt_data, f"var/cache/salt/master/minions/{ip}/files/*"))
-                if not status:
-                    tool_detail_obj.status = ToolExecuteDetailHistory.STATUS_FAILED
-                    self.send_message(tool_detail_obj, message)
-                    return status, message
-            if upload_real_paths:
-                _out, _err, _code = public_utils.local_cmd(
-                    f'mv {" ".join(upload_real_paths)} {receive_to}')
-                if _code != 0:
-                    tool_detail_obj.status = ToolExecuteDetailHistory.STATUS_FAILED
-                    self.send_message(tool_detail_obj, _out)
-                    return False, _out
+            status = self.receive_file(tool_detail_obj, receive_files, ip)
+        if not status:
+            return False, "执行失败"
         self.send_message(tool_detail_obj, 3)
         return True, "执行成功"
 
@@ -144,7 +156,7 @@ def exec_tools_main(tool_main_id):
             )
             future_list.append(future_obj)
         thread_obj.check_result(future_list)
-
+    # 查看各个任务执行状态，修改主状态页。
     exec_ed_status = ToolExecuteMainHistory.STATUS_FAILED if thread_obj.error \
         else ToolExecuteMainHistory.STATUS_SUCCESS
     exec_ed_dc = {
