@@ -8,11 +8,13 @@
 
 """
 实用工具数据库表结构
+原始小工具校验前地址：omp/package_hub/tool/verify_tar/
 原始小工具tar包地址：omp/package_hub/tool/tar/
 小工具解压后包地址: omp/package_hub/tool/folder/
 上传的文件地址: omp/package_hub/tool/upload_data/
 运行产生的的文件地址: omp/package_hub/tool/download_data/
 """
+import os
 
 from django.db import models
 
@@ -76,7 +78,7 @@ class ToolInfo(TimeStampMixin):
     source_package_md5 = models.CharField(
         "源码包md5值", max_length=32,
         blank=True, null=True, help_text="源码包md5值")
-    # 原始tar包相对路径，package_hub/tool/tar/{}
+    # 原始tar包相对路径，package_hub/tool/tar/{kafka_tool.tar.gz}
     source_package_path = models.CharField(
         "源码包相对路径", max_length=128, null=False)
     # 存储实用工具目录路径，如package_hub/tool/folder/{kafka-package_md5}
@@ -116,6 +118,11 @@ class ToolInfo(TimeStampMixin):
 
     def load_default_form(self):
         return "runuser, timeout, task_name, target_name"
+
+    @property
+    def logo(self):
+        # http://10.0.0.1:19001/tool/{logo_path}
+        return os.path.join(self.tool_folder_path, "logo.svg")
 
 
 class ToolExecuteMainHistory(models.Model):
