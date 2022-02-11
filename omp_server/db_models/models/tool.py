@@ -157,6 +157,7 @@ class ToolExecuteMainHistory(models.Model):
         db_table = "omp_tool_execute_main_history"
         verbose_name = verbose_name_plural = "实用工具执行记录"
 
+    @property
     def duration(self):
         if not all([self.end_time, self.start_time]):
             return "-"

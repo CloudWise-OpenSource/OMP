@@ -1,5 +1,4 @@
 from rest_framework import serializers
-# from rest_framework.exceptions import ValidationError
 from db_models.models import (
     ToolExecuteMainHistory,
     ToolExecuteDetailHistory,
@@ -11,13 +10,14 @@ class ToolInfoSerializer(serializers.ModelSerializer):
     class Meta:
         """ 元数据 """
         model = ToolInfo
-        fields = ["target_name"]
+        fields = ("target_name",)
 
 
 class ToolDetailSerializer(serializers.ModelSerializer):
-    tool = ToolInfoSerializer(many=True)
+    tool = ToolInfoSerializer()
     duration = serializers.SerializerMethodField()
     tool_detail = serializers.SerializerMethodField()
+    count = serializers.SerializerMethodField()
 
     class Meta:
         """ 元数据 """
@@ -25,7 +25,10 @@ class ToolDetailSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def get_duration(self, obj):
-        return obj.get_duration()
+        return obj.duration
+
+    def get_count(self, obj):
+        return ToolExecuteDetailHistory.objects.filter(main_history=obj).count()
 
     def get_tool_detail(self, obj):
         """
@@ -41,5 +44,4 @@ class ToolDetailSerializer(serializers.ModelSerializer):
                     "log": obj.execute_log
                 }
             )
-        tool_list.append({"count": len(tool_obj)})
         return tool_list
