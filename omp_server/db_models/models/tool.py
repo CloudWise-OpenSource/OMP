@@ -110,15 +110,41 @@ class ToolInfo(TimeStampMixin):
         verbose_name = verbose_name_plural = "实用工具基本信息表"
 
     def load_default_form(self):
-        return "runuser, timeout, task_name, target_name"
+        return [
+            {
+                'key': 'runuser',
+                'name': '执行用户',
+                'type': 'input',
+                'default': '',
+                'required': True
+             },
+            {
+                'key': 'timeout',
+                'name': '超时时间',
+                'type': 'input',
+                'default': 60,
+                'required': True
+            }
+        ]
 
-    # 目前支持的参数类型
-    # "select"：单选, "select_multiple"：多选, "file"：文件, "input"：单行文本
+    # 目前支持的参数类型（"select_multiple"：多选暂不支持）
+    # "select"：单选, "file"：文件, "input"：单行文本
 
     @property
     def logo(self):
         # http://10.0.0.1:19001/tool/{logo_path}
         return os.path.join(self.tool_folder_path, "logo.svg")
+
+    @property
+    def templates(self):
+        templates = []
+        for template in self.template_filepath:
+            templates.append(os.path.join(self.tool_folder_path, template))
+        return templates
+
+    @property
+    def tar_url(self):
+        return self.source_package_path
 
 
 class ToolExecuteMainHistory(models.Model):
