@@ -47,6 +47,7 @@ urlpatterns_inside = [
     path("backups/", include(backups_router.urls), name="backups"),
     path("upgrade/", include(upgrade_urlpatterns), name="upgrade"),
     path("rollback/", include(rollback_urlpatterns), name="rollback"),
+    path("tool/", include(rollback_urlpatterns), name="tool"),
 ]
 
 urlpatterns = [
