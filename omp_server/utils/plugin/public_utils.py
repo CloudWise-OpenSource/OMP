@@ -136,3 +136,11 @@ def timedelta_strftime(timedelta):
         elif not strftime and getattr(duration, en):
             strftime += f"{getattr(duration, en)}{zh}"
     return strftime
+
+
+def file_md5(file_path):
+    # md5校验生成
+    md5_out = local_cmd(f'md5sum {file_path}')
+    if md5_out[2] != 0:
+        return None
+    return md5_out[0].split()[0]
