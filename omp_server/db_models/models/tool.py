@@ -27,14 +27,14 @@ class ToolInfo(TimeStampMixin):
 
     objects = None
 
-    KIND_MANAGE = 0
+    KIND_MANAGEMENT = 0
     KIND_CHECK = 1
-    KIND_SECURE = 2
+    KIND_SECURITY = 2
     KIND_OTHER = 3
     TOOL_KIND_CHOICES = (
-        (KIND_MANAGE, "管理工具"),
+        (KIND_MANAGEMENT, "管理工具"),
         (KIND_CHECK, "检查工具"),
-        (KIND_SECURE, "安全工具"),
+        (KIND_SECURITY, "安全工具"),
         (KIND_OTHER, "其他工具")
     )
 
@@ -43,13 +43,6 @@ class ToolInfo(TimeStampMixin):
     SCRIPT_TYPE_CHOICES = (
         (SCRIPT_TYPE_PYTHON3, "python3"),
         (SCRIPT_TYPE_SHELL, "shell")
-    )
-
-    TARGET_TYPE_HOST = 0
-    TARGET_TYPE_SERVICE = 1
-    TARGET_TYPE_CHOICES = (
-        (TARGET_TYPE_HOST, "主机"),
-        (TARGET_TYPE_SERVICE, "服务")
     )
 
     OUTPUT_TERMINAL = 0
@@ -91,14 +84,14 @@ class ToolInfo(TimeStampMixin):
         null=False, blank=False, help_text="脚本相对路径")
     send_package = models.JSONField(
         "需要发送的文件相对路径", max_length=128,
-        null=False, blank=False, help_text="需要发送的文件相对路径")
+        default=list, help_text="需要发送的文件相对路径")
     # 存储readme的内容
     readme_info = models.TextField(
         "readme信息", null=True, blank=True, help_text="readme信息")
     # 如果脚本需要模板文件，那么该模板文件的相对路径需要存储到下面字段中
     # 此字段存储列表类型数据
     template_filepath = models.JSONField(
-        "模板文件相对路径", null=True, blank=True, help_text="模板文件相对路径")
+        "模板文件相对路径", default=list, help_text="模板文件相对路径")
     # 在执行对象为服务时需要获取除ServiceConnectInfo中以外的信息
     # ["service_port", "metrics_port"]
     obj_connection_args = models.JSONField("目标对象连接信息", default=list,)
@@ -107,7 +100,7 @@ class ToolInfo(TimeStampMixin):
     script_args = models.JSONField("脚本执行参数", default=list)
     # 脚本输出的类型，终端/文件
     output = models.IntegerField(
-        "脚本的输出类型", choices=TARGET_TYPE_CHOICES,
+        "脚本的输出类型", choices=OUTPUT_TYPE_CHOICES,
         default=0, help_text="脚本的输出类型")
     desc = models.TextField("描述信息", help_text="描述信息")
 
@@ -118,6 +111,9 @@ class ToolInfo(TimeStampMixin):
 
     def load_default_form(self):
         return "runuser, timeout, task_name, target_name"
+
+    # 目前支持的参数类型
+    # "select"：单选, "select_multiple"：多选, "file"：文件, "input"：单行文本
 
     @property
     def logo(self):
@@ -154,7 +150,7 @@ class ToolExecuteMainHistory(models.Model):
         "开始时间", null=True, auto_now_add=True, help_text="开始时间")
     end_time = models.DateTimeField(
         "结束时间", null=True, auto_now=True, help_text="结束时间")
-    form_answer = models.JSONField("任务表单提交结果", default={})
+    form_answer = models.JSONField("任务表单提交结果", default=dict)
 
     class Meta:
         """元数据"""
@@ -224,7 +220,7 @@ class ToolExecuteDetailHistory(TimeStampMixin):
         :return: local_files：需要发送的文件，send_to：发送的位置
         """
         return {
-            "local_files": ["/data/omp/package_hub/tool/kafka/input.txt", ],
+            "local_files": ["/data/omp/package_hub/tool/upload_data/input.txt"],
             "send_to": "/data/omp_packages/tool/kafka/"
         }
 
@@ -235,5 +231,5 @@ class ToolExecuteDetailHistory(TimeStampMixin):
         """
         return {
             "output_files": ["/data/omp_packages/tool/kafka/output.txt", ],
-            "receive_to": "/data/omp/data/tool/kafka/"
+            "receive_to": "/data/omp/package_hub/tool/download_data/"
         }
