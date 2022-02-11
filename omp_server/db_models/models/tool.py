@@ -71,10 +71,10 @@ class ToolInfo(TimeStampMixin):
     source_package_md5 = models.CharField(
         "源码包md5值", max_length=32,
         blank=True, null=True, help_text="源码包md5值")
-    # 原始tar包相对路径，package_hub/tool/tar/{kafka_tool.tar.gz}
+    # 原始tar包相对路径，package_hub/tool/{tar/kafka_tool.tar.gz}
     source_package_path = models.CharField(
         "源码包相对路径", max_length=128, null=False)
-    # 存储实用工具目录路径，如package_hub/tool/folder/{kafka-package_md5}
+    # 存储实用工具目录路径，如package_hub/tool/{folder/kafka-package_md5}
     tool_folder_path = models.CharField(
         "实用工具目录相对路径", max_length=128,
         null=False, blank=False, help_text="实用工具目录相对路径")
@@ -102,7 +102,7 @@ class ToolInfo(TimeStampMixin):
     output = models.IntegerField(
         "脚本的输出类型", choices=OUTPUT_TYPE_CHOICES,
         default=0, help_text="脚本的输出类型")
-    desc = models.TextField("描述信息", help_text="描述信息")
+    description = models.TextField("描述信息", help_text="描述信息")
 
     class Meta:
         """元数据"""
@@ -148,8 +148,7 @@ class ToolExecuteMainHistory(models.Model):
         default=0, help_text="main执行状态")
     start_time = models.DateTimeField(
         "开始时间", null=True, auto_now_add=True, help_text="开始时间")
-    end_time = models.DateTimeField(
-        "结束时间", null=True, auto_now=True, help_text="结束时间")
+    end_time = models.DateTimeField("结束时间", null=True,  help_text="结束时间")
     form_answer = models.JSONField("任务表单提交结果", default=dict)
 
     class Meta:
