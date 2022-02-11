@@ -194,7 +194,7 @@ class ValidToolTar:
         old_package_folder = os.path.join(
             self.tmp_package, f"{package_name}_{md5}/{package_name}")
         new_package_folder = os.path.join(
-            verified_folder_path, f"{package_name}_{md5}")
+            verified_folder_path, f"{package_name}-{md5}")
         _out, _err, _code = local_cmd(
             f"mv {old_tar_path} {new_tar_path} && "
             f"mv {old_package_folder} {new_package_folder}"
@@ -207,7 +207,7 @@ class ValidToolTar:
         if self.tool_info["output"] == ToolInfo.OUTPUT_FILE:
             self.tool_info["script_args"].append(
                 {'key': 'output', 'name': 'output',
-                 'type': 'file','required': True}
+                 'type': 'file', 'required': True}
             )
         ToolInfo(**self.tool_info).save()
         self.rm_tool_package()
@@ -231,15 +231,18 @@ class ValidToolTar:
             f"mkdir -p {tar_folder} && tar -xf {file_path} -C {tar_folder}"
         )
         if _code:
+            self.rm_tool_package()
             return _out
         self.folder_path = os.path.join(tar_folder, package_name)
         if not os.path.isfile(
                 os.path.join(self.folder_path, f"{package_name}.yaml")
         ):
+            self.rm_tool_package()
             return f"{self.tar_file}中必须包含文件{package_name}.yaml！"
         try:
             self.verify_yaml_info(package_name)
         except Exception as e:
+            self.rm_tool_package()
             return str(e)
         if os.path.isfile(os.path.join(self.folder_path, "README.md")):
             self.read_read_me()
