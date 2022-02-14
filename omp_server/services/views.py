@@ -223,6 +223,8 @@ class ServiceStatusView(GenericViewSet, ListModelMixin):
     queryset = Service.objects.filter(
         service__is_base_env=False)
     serializer_class = ServiceStatusSerializer
+    authentication_classes = ()
+    permission_classes = ()
     # 操作描述信息
     get_description = "查询服务状态"
 
@@ -233,7 +235,6 @@ class ServiceStatusView(GenericViewSet, ListModelMixin):
         # 实时获取服务动态git
         prometheus_obj = Prometheus()
         is_success, prometheus_dict = prometheus_obj.get_all_service_status()
-        print(prometheus_dict)
         if is_success:
             stop_ls = []
             natural_ls = []
@@ -256,7 +257,6 @@ class ServiceStatusView(GenericViewSet, ListModelMixin):
 
         serializer = self.get_serializer(real_query, many=True)
         serializer_data = serializer.data
-        print(serializer_data)
 
         # 若获取成功，则动态覆盖服务状态
         if is_success:
