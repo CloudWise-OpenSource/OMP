@@ -72,10 +72,10 @@ class ToolInfo(TimeStampMixin):
     source_package_md5 = models.CharField(
         "源码包md5值", max_length=32,
         blank=True, null=True, help_text="源码包md5值")
-    # 原始tar包相对路径，package_hub/tool/tar/{kafka_tool.tar.gz}
+    # 原始tar包相对路径，package_hub/tool/{tar/kafka_tool.tar.gz}
     source_package_path = models.CharField(
         "源码包相对路径", max_length=128, null=False)
-    # 存储实用工具目录路径，如package_hub/tool/folder/{kafka-package_md5}
+    # 存储实用工具目录路径，如package_hub/tool/{folder/kafka-package_md5}
     tool_folder_path = models.CharField(
         "实用工具目录相对路径", max_length=128,
         null=False, blank=False, help_text="实用工具目录相对路径")
@@ -103,7 +103,7 @@ class ToolInfo(TimeStampMixin):
     output = models.IntegerField(
         "脚本的输出类型", choices=OUTPUT_TYPE_CHOICES,
         default=0, help_text="脚本的输出类型")
-    desc = models.TextField("描述信息", help_text="描述信息")
+    description = models.TextField("描述信息", help_text="描述信息")
 
     class Meta:
         """元数据"""
@@ -111,15 +111,41 @@ class ToolInfo(TimeStampMixin):
         verbose_name = verbose_name_plural = "实用工具基本信息表"
 
     def load_default_form(self):
-        return "runuser, timeout, task_name, target_name"
+        return [
+            {
+                'key': 'runuser',
+                'name': '执行用户',
+                'type': 'input',
+                'default': '',
+                'required': True
+             },
+            {
+                'key': 'timeout',
+                'name': '超时时间',
+                'type': 'input',
+                'default': 60,
+                'required': True
+            }
+        ]
 
-    # 目前支持的参数类型
-    # "select"：单选, "select_multiple"：多选, "file"：文件, "input"：单行文本
+    # 目前支持的参数类型（"select_multiple"：多选暂不支持）
+    # "select"：单选, "file"：文件, "input"：单行文本
 
     @property
     def logo(self):
         # http://10.0.0.1:19001/tool/{logo_path}
         return os.path.join(self.tool_folder_path, "logo.svg")
+
+    @property
+    def templates(self):
+        templates = []
+        for template in self.template_filepath:
+            templates.append(os.path.join(self.tool_folder_path, template))
+        return templates
+
+    @property
+    def tar_url(self):
+        return self.source_package_path
 
 
 class ToolExecuteMainHistory(models.Model):
@@ -149,8 +175,7 @@ class ToolExecuteMainHistory(models.Model):
         default=0, help_text="main执行状态")
     start_time = models.DateTimeField(
         "开始时间", null=True, auto_now_add=True, help_text="开始时间")
-    end_time = models.DateTimeField(
-        "结束时间", null=True, auto_now=True, help_text="结束时间")
+    end_time = models.DateTimeField("结束时间", null=True,  help_text="结束时间")
     form_answer = models.JSONField("任务表单提交结果", default=dict)
 
     class Meta:
