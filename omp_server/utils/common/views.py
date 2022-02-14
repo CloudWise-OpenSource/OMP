@@ -5,9 +5,11 @@ from django.conf import settings
 from django.http import FileResponse
 
 from rest_framework.viewsets import GenericViewSet
-from rest_framework.mixins import ListModelMixin
+from rest_framework.mixins import ListModelMixin, CreateModelMixin
 
+from db_models.models import UploadFileHistory
 from utils.common.exceptions import OperateError
+from utils.common.serializers import UploadFileSerializer
 
 logger = logging.getLogger("server")
 
@@ -28,8 +30,8 @@ class BaseDownLoadTemplateView(GenericViewSet, ListModelMixin):
             settings.BASE_DIR.parent,
             "package_hub", parent_path, template_file_name)
         try:
-            file = open(template_path, 'rb')
-            response = FileResponse(file)
+            with open(template_path, 'rb') as file:
+                response = FileResponse(file)
             response["Content-Type"] = "application/octet-stream"
             response["Content-Disposition"] = \
                 f"attachment;filename={template_file_name}"
@@ -37,3 +39,10 @@ class BaseDownLoadTemplateView(GenericViewSet, ListModelMixin):
             logger.error(f"{template_path} not found")
             raise OperateError("组件模板文件缺失")
         return response
+
+
+class UploadFileAPIView(GenericViewSet, CreateModelMixin):
+
+    post_description = "上传文件"
+    queryset = UploadFileHistory.objects.all()
+    serializer_class = UploadFileSerializer

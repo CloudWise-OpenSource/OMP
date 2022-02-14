@@ -16,6 +16,7 @@
 """
 import os
 
+from django.conf import settings
 from django.db import models
 
 from db_models.mixins import TimeStampMixin
@@ -72,10 +73,10 @@ class ToolInfo(TimeStampMixin):
     source_package_md5 = models.CharField(
         "源码包md5值", max_length=32,
         blank=True, null=True, help_text="源码包md5值")
-    # 原始tar包相对路径，package_hub/tool/{tar/kafka_tool.tar.gz}
+    # 原始tar包相对路径，package_hub/{tool/tar/kafka_tool.tar.gz}
     source_package_path = models.CharField(
         "源码包相对路径", max_length=128, null=False)
-    # 存储实用工具目录路径，如package_hub/tool/{folder/kafka-package_md5}
+    # 存储实用工具目录路径，如package_hub/{tool/folder/kafka-package_md5}
     tool_folder_path = models.CharField(
         "实用工具目录相对路径", max_length=128,
         null=False, blank=False, help_text="实用工具目录相对路径")
@@ -132,20 +133,35 @@ class ToolInfo(TimeStampMixin):
     # "select"：单选, "file"：文件, "input"：单行文本
 
     @property
+    def package_name(self):
+        return self.tool_folder_path.split("/")[-1]
+
+    @property
     def logo(self):
-        # http://10.0.0.1:19001/tool/{logo_path}
+        # http://10.0.0.1:19001/{logo_path}
         return os.path.join(self.tool_folder_path, "logo.svg")
 
     @property
     def templates(self):
         templates = []
         for template in self.template_filepath:
-            templates.append(os.path.join(self.tool_folder_path, template))
+            templates.append(
+                {
+                    "name": template.split("/")[-1],
+                    "sub_url": os.path.join(self.tool_folder_path, template)
+                }
+            )
         return templates
 
     @property
     def tar_url(self):
-        return self.source_package_path
+        return os.path.join(self.source_package_path)
+
+    def valid_upload_file(self, *args, **kwargs):
+        return f"package_hub/tool/upload_data/{self.package_name}"
+
+    def upload_file_url(self, file_name, **kwargs):
+        return os.path.join(f"tool/upload_data/{self.package_name}", file_name)
 
 
 class ToolExecuteMainHistory(models.Model):
@@ -188,6 +204,19 @@ class ToolExecuteMainHistory(models.Model):
         if not all([self.end_time, self.start_time]):
             return "-"
         return timedelta_strftime(self.end_time - self.start_time)
+
+    def get_input_files(self):
+        files = []
+        for answer in self.form_answer:
+            if answer.get("type") == "file" and answer.get("value"):
+                files.append(
+                    os.path.join(
+                        settings.PROJECT_DIR,
+                        "package_hub",
+                        answer.get("value").get("file_url")
+                    )
+                )
+        return files
 
 
 class ToolExecuteDetailHistory(TimeStampMixin):
@@ -271,21 +300,22 @@ class ToolExecuteDetailHistory(TimeStampMixin):
         获取需要发送的文件
         :return: local_files：需要发送的文件，send_to：发送的位置
         """
-        local_files = []
-        project_dir = os.path.abspath(__file__).rsplit("omp_server", 1)[0]
+        local_files = self.main_history.get_input_files()
         tool_dir = self.get_tools_dir()
         tool_folder_path = tool_dir.get("tool_folder_path")
         send_package = tool_dir.get("send_package")
         local_files.append(os.path.join(
-            project_dir, tool_folder_path, tool_dir.get("script_path")))
+            settings.PROJECT_DIR, tool_folder_path, tool_dir.get("script_path")))
         if send_package:
             local_files.append(os.path.join(
-                project_dir, tool_folder_path, send_package))
+                settings.PROJECT_DIR, tool_folder_path, send_package))
         # local_files.extend(self.get_input_files())
-        os.path.join(self.get_data_dir, f"omp_packages/{tool_folder_path}")
         return {
             "local_files": local_files,
-            "send_to": os.path.join(self.get_data_dir, f"omp_packages/tool/{tool_folder_path}")
+            "send_to": os.path.join(
+                self.get_data_dir,
+                f"omp_packages/{tool_folder_path}"
+            )
         }
 
     def get_receive_files(self):
@@ -294,14 +324,13 @@ class ToolExecuteDetailHistory(TimeStampMixin):
         :return: output_files：需要接受的文件，receive_to：接收文件的存放位置
         """
         output_files = []
-        for file in self.get_input_files():
-            output_files.append(
-                os.path.join(self.get_data_dir, "omp_packages/tool/", self.get_tools_dir.get("tool_folder_path"),
-                             file.rsplit("/", 1)[1]))
-        receive_to = os.path.join(os.path.abspath(__file__).rsplit("omp_server", 1)[0],
-                                  "package_hub/tool/download_data/")
-
+        for k, v in self.execute_args.items():
+            if k == "output":
+                output_files.append(v)
         return {
             "output_files": output_files,
-            "receive_to": receive_to
+            "receive_to": os.path.join(
+                settings.PROJECT_DIR,
+                "package_hub/tool/download_data/"
+            )
         }

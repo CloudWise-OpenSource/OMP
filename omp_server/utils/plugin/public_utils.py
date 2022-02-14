@@ -141,6 +141,17 @@ def timedelta_strftime(timedelta):
 def file_md5(file_path):
     # md5校验生成
     md5_out = local_cmd(f'md5sum {file_path}')
+
     if md5_out[2] != 0:
         return None
     return md5_out[0].split()[0]
+
+
+def format_location_size(size):
+    # 格式化文件大小
+    if int(size/1024) < 100:
+        return "%.3f" % (size / 1024) + "K"
+    size = size/1024
+    if int(size/1024) < 100:
+        return "%.3f" % (size / 1024) + "M"
+    return "%.3f" % (size/1024/1024) + "G"
