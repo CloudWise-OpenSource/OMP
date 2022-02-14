@@ -20,6 +20,7 @@ from django.db import models
 
 from db_models.mixins import TimeStampMixin
 from utils.plugin.public_utils import timedelta_strftime
+from db_models.models import Host
 
 
 class ToolInfo(TimeStampMixin):
@@ -205,24 +206,61 @@ class ToolExecuteDetailHistory(TimeStampMixin):
         db_table = "omp_tool_execute_detail_history"
         verbose_name = verbose_name_plural = "实用工具执行详情表"
 
+    @property
+    def get_data_dir(self):
+        if hasattr(self, "data_dir"):
+            return self.data_dir
+        data_obj = Host.objects.filter(ip=self.target_ip).first()
+        data_dir = data_obj.data_folder if data_obj else "/tmp"
+        setattr(self, "data_dir", data_dir)
+        return data_dir
+
+    @property
+    def get_tools_dir(self):
+        if hasattr(self, "tools_dir"):
+            return self.tools_dir
+        tools = self.main_history.tool
+        tools_dir = {
+            "tool_folder_path": tools.tool_folder_path,
+            "script_path": tools.script_path,
+            "send_package": tools.send_package
+        }
+        setattr(self, "tools_dir", tools_dir)
+        return tools_dir
+
     def get_cmd_str(self):
         """
         获取执行命令
         :return: 命令字符串
         """
-        return "/data/omp_salt_agent/env/bin/python3 --server " \
-               " 10.0.14.157:9092 --role consumer" \
-               " --input /data/omp_packages/tool/kafka/input.txt" \
-               " --output /data/omp_packages/tool/kafka/output.txt"
+        # 自定义不支持
+        interpret_dir = os.path.join(
+            self.get_data_dir, "omp_salt_agent/env/bin/python3")
+        for key, value in self.execute_args.items():
+            if value:
+                interpret_dir += " --{0} {1}".format(key, value)
+        return interpret_dir
 
     def get_send_files(self):
         """
         获取需要发送的文件
         :return: local_files：需要发送的文件，send_to：发送的位置
         """
+        local_files = []
+        project_dir = os.path.abspath(__file__).rsplit("omp_server", 1)[0]
+        tool_dir = self.get_tools_dir()
+        tool_folder_path = tool_dir.get("tool_folder_path")
+        send_package = tool_dir.get("send_package")
+        local_files.append(os.path.join(
+            project_dir, tool_folder_path, tool_dir.get("script_path")))
+        if send_package:
+            local_files.append(os.path.join(
+                project_dir, tool_folder_path, send_package))
+        # local_files.extend(self.get_input_files())
+        os.path.join(self.get_data_dir, f"omp_packages/{tool_folder_path}")
         return {
-            "local_files": ["/data/omp/package_hub/tool/upload_data/input.txt"],
-            "send_to": "/data/omp_packages/tool/kafka/"
+            "local_files": local_files,
+            "send_to": os.path.join(self.get_data_dir, f"omp_packages/tool/{tool_folder_path}")
         }
 
     def get_receive_files(self):
@@ -230,7 +268,15 @@ class ToolExecuteDetailHistory(TimeStampMixin):
         获取需要接受的文件
         :return: output_files：需要接受的文件，receive_to：接收文件的存放位置
         """
+        output_files = []
+        for file in self.get_input_files():
+            output_files.append(
+                os.path.join(self.get_data_dir, "omp_packages/tool/", self.get_tools_dir.get("tool_folder_path"),
+                             file.rsplit("/", 1)[1]))
+        receive_to = os.path.join(os.path.abspath(__file__).rsplit("omp_server", 1)[0],
+                                  "package_hub/tool/download_data/")
+
         return {
-            "output_files": ["/data/omp_packages/tool/kafka/output.txt", ],
-            "receive_to": "/data/omp/package_hub/tool/download_data/"
+            "output_files": output_files,
+            "receive_to": receive_to
         }

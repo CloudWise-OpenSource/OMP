@@ -133,8 +133,7 @@ def exec_tools_main(tool_main_id):
     """
     工具执行类
     """
-    # ToolExecuteMainHistory ToolExecuteDetailHistory
-    tool_main_obj = ToolExecuteMainHistory.objects.filter(id=tool_main_id)
+    tool_main_obj = ToolExecuteMainHistory.objects.select_related().filter(id=tool_main_id)
     exec_ing_dc = {
         "status": ToolExecuteMainHistory.STATUS_RUNNING,
         "start_time": timezone.now()
@@ -145,8 +144,9 @@ def exec_tools_main(tool_main_id):
         logger.error(f"主工具执行id不存在{tool_main_id}")
         raise ValueError(f"主工具执行id不存在{tool_main_id}")
     # 开始下发各个目标节点任务
-    tool_detail_objs = ToolExecuteMainHistory.objects.filter(
-        tool=tool_main_obj)
+    tool_detail_objs = tool_main_obj.first().toolexecutedetailhistory_set.all()
+    # tool_detail_objs = ToolExecuteMainHistory.objects.filter(
+    #    tool=tool_main_obj)
     thread_obj = ThreadUtils()
     with ThreadPoolExecutor(THREAD_POOL_MAX_WORKERS) as executor:
         future_list = []
