@@ -34,6 +34,7 @@ from inspection.urls import router as router_inspection
 from services.urls import router as services_router
 from backups.urls import router as backups_router
 from tool.urls import router as tool_router
+from utils.common.urls import router as common_router
 from service_upgrade.urls import upgrade_urlpatterns, rollback_urlpatterns
 
 urlpatterns_inside = [
@@ -49,6 +50,7 @@ urlpatterns_inside = [
     path("upgrade/", include(upgrade_urlpatterns), name="upgrade"),
     path("rollback/", include(rollback_urlpatterns), name="rollback"),
     path("tool/", include(tool_router.urls), name="tool"),
+    path("common/", include(common_router.urls), name="common"),
 ]
 
 urlpatterns = [

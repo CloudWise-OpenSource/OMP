@@ -202,8 +202,8 @@ class ValidToolTar:
         if _code:
             return _out
         self.tool_info["source_package_md5"] = md5
-        self.tool_info["tool_folder_path"] = f"folder/{package_name}-{md5}"
-        self.tool_info["source_package_path"] = f"tar/{tar_save_name}"
+        self.tool_info["tool_folder_path"] = f"tool/folder/{package_name}-{md5}"
+        self.tool_info["source_package_path"] = f"tool/tar/{tar_save_name}"
         if self.tool_info["output"] == ToolInfo.OUTPUT_FILE:
             self.tool_info["script_args"].append(
                 {'key': 'output', 'name': 'output',

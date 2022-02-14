@@ -31,6 +31,7 @@ class UpgradeHistoryListAPIView(ListAPIView):
     filter_backends = (OrderingFilter, )
     serializer_class = UpgradeHistorySerializer
     ordering_fields = ("-id", )
+    get_description = "升级历史记录页"
 
 
 class UpgradeHistoryDetailAPIView(RetrieveUpdateAPIView):
@@ -39,6 +40,8 @@ class UpgradeHistoryDetailAPIView(RetrieveUpdateAPIView):
         .prefetch_related("upgradedetail_set")
     serializer_class = UpgradeHistoryDetailSerializer
     lookup_url_kwarg = 'pk'
+    get_description = "升级历史记录详情页"
+    put_description = "升级重试"
 
     def update(self, request, *args, **kwargs):
         # put 升级重试
@@ -56,6 +59,7 @@ class UpgradeChoiceAllVersionListAPIView(GenericAPIView):
     ).select_related("service")
     filter_backends = (SearchFilter, )
     search_fields = ("service__app_name",)
+    get_description = "可升级服务列表"
 
     def get_service_info(self, services_data):
         """
@@ -123,6 +127,8 @@ class UpgradeChoiceAllVersionListAPIView(GenericAPIView):
 
 class UpgradeChoiceMaxVersionListAPIView(UpgradeChoiceAllVersionListAPIView):
     # 可升级服务列表（只展示可供升级的最高版本）
+    get_description = "可升级服务列表"
+
     def get_service_max_app(self, apps):
         max_apps = {}
         for app in apps:
@@ -169,9 +175,10 @@ class UpgradeChoiceMaxVersionListAPIView(UpgradeChoiceAllVersionListAPIView):
 
 
 class DoUpgradeAPIView(GenericAPIView):
-    # 升级服务
-    # todo：校验升级依赖
+    post_description = "升级服务"
+
     def valid_can_upgrade(self, data):
+        # todo：校验升级依赖
         # 校验信息
         services = list(
             Service.objects.filter(
@@ -263,6 +270,7 @@ class RollbackHistoryListAPIView(ListAPIView):
     filter_backends = (OrderingFilter, )
     serializer_class = RollbackHistorySerializer
     ordering_fields = ("-id", )
+    get_description = "回滚历史记录页"
 
 
 class RollbackHistoryDetailAPIView(RetrieveUpdateAPIView):
@@ -270,6 +278,8 @@ class RollbackHistoryDetailAPIView(RetrieveUpdateAPIView):
         .prefetch_related("rollbackdetail_set")
     serializer_class = RollbackHistoryDetailSerializer
     lookup_url_kwarg = 'pk'
+    get_description = "回滚历史记录详情页"
+    put_description = "回滚重试"
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -288,6 +298,7 @@ class RollbackChoiceListAPIView(GenericAPIView):
     ).exclude(has_rollback=True).exclude(service__isnull=True)
     filter_backends = (SearchFilter, RollBackHistoryFilter)
     search_fields = ("target_app__app_name", )
+    get_description = "可回滚服务列表页"
 
     def get(self, requests):
         queryset = self.filter_queryset(self.get_queryset())
@@ -313,6 +324,7 @@ class RollbackChoiceListAPIView(GenericAPIView):
 
 
 class DoRollbackAPIView(GenericAPIView):
+    get_description = "回滚服务"
 
     def post(self, requests):
         if UpgradeHistory.objects.filter(
