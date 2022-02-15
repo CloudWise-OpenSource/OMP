@@ -113,20 +113,10 @@ class ToolInfo(TimeStampMixin):
 
     def load_default_form(self):
         return [
-            {
-                'key': 'runuser',
-                'name': '执行用户',
-                'type': 'input',
-                'default': '',
-                'required': True
-             },
-            {
-                'key': 'timeout',
-                'name': '超时时间',
-                'type': 'input',
-                'default': 60,
-                'required': True
-            }
+            {"task_name": self.name},
+            {"target_objs": []},
+            {'runuser': ''},
+            {'timeout': 60}
         ]
 
     # 目前支持的参数类型（"select_multiple"：多选暂不支持）

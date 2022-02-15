@@ -33,7 +33,7 @@ from promemonitor.grafana_views import grafana_proxy_view
 from inspection.urls import router as router_inspection
 from services.urls import router as services_router
 from backups.urls import router as backups_router
-from tool.urls import router as tool_router
+from tool.urls import urlpatterns
 from utils.common.urls import router as common_router
 from service_upgrade.urls import upgrade_urlpatterns, rollback_urlpatterns
 
@@ -49,7 +49,7 @@ urlpatterns_inside = [
     path("backups/", include(backups_router.urls), name="backups"),
     path("upgrade/", include(upgrade_urlpatterns), name="upgrade"),
     path("rollback/", include(rollback_urlpatterns), name="rollback"),
-    path("tool/", include(tool_router.urls), name="tool"),
+    path("tool/", include(urlpatterns), name="tool"),
     path("common/", include(common_router.urls), name="common"),
 ]
 
