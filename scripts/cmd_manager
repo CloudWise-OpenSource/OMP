@@ -25,6 +25,8 @@ INSTALL_SERVICE_PATH="${PROJECT_FOLDER}/scripts/source/cmd_install_entrance.py"
 UPGRADE_SERVICE_PATH="${PROJECT_FOLDER}/scripts/source/upgrade_service.py"
 ROLLBACK_SERVICE_PATH="${PROJECT_FOLDER}/scripts/source/rollback_service.py"
 SERVICE_MANAGER_PATH="${PROJECT_FOLDER}/scripts/source/service_manager.py"
+SCAN_TAR_FILE_PATH="${PROJECT_FOLDER}/scripts/source/scan_tar_file.py"
+
 
 function help() {
   echo -e $HELP_MSG
@@ -44,6 +46,10 @@ function rollback() {
 
 function service() {
   $PYTHON3 $SERVICE_MANAGER_PATH $@
+}
+
+function scan() {
+  $PYTHON3 $SCAN_TAR_FILE_PATH
 }
 
 function uninstall_all_service_and_host() {
@@ -91,6 +97,10 @@ else
   service)
     shift
     service "$@"
+    ;;
+  scan)
+    shift
+    scan "$@"
     ;;
   *)
     shift
