@@ -7,6 +7,28 @@ from rest_framework import serializers
 from db_models.models import Service
 
 
+class ServiceStatusSerializer(serializers.ModelSerializer):
+    is_web = serializers.SerializerMethodField()
+    is_base_env = serializers.BooleanField(source="service.is_base_env")
+    service_status = serializers.CharField(source="get_service_status_display")
+    app_version = serializers.CharField(source="service.app_version")
+    app_name = serializers.CharField(source="service.app_name")
+
+    class Meta:
+        """ 元数据 """
+        model = Service
+        fields = (
+            "ip", "app_name", "app_version", "service_status",
+            "is_base_env", "is_web", "service_instance_name"
+        )
+
+    def get_is_web(self, obj):
+        """ 或是是否为 web 服务 """
+        if obj.service.extend_fields.get("affinity", "") == "tengine":
+            return True
+        return False
+
+
 class ServiceSerializer(serializers.ModelSerializer):
     """ 服务序列化器 """
 

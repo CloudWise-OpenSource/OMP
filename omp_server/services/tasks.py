@@ -91,7 +91,7 @@ def delete_file(service_controllers, service_obj):
 
 
 @shared_task
-def exec_action(action, instance, operation_user, del_file=False):
+def exec_action(action, instance, operation_user, del_file=False, need_sleep=True):
     # edit by vum: 增加服务的目标成功状态、失败状态
     action_json = {
         "1": ["start", 1, 0, 4],
@@ -181,7 +181,8 @@ def exec_action(action, instance, operation_user, del_file=False):
         time_style = time.strftime("%Y-%m-%d %H:%M:%S", time_array)
         is_success, info = salt_obj.cmd(ip, exe_action, 600)
         # TODO 服务状态维护问题，临时解决方案，休眠保持中间态
-        time.sleep(35)
+        if need_sleep:
+            time.sleep(35)
         service_obj.service_status = action[2] if is_success else action[3]
         service_obj.save()
         logger.info(f"执行 [{action[0]}] 操作 {is_success}，原因: {info}")
@@ -193,6 +194,7 @@ def exec_action(action, instance, operation_user, del_file=False):
             service=service_obj
         )
         logger.info(f"服务操作详情:{info}")
+        return ip, info
     else:
         logger.error(f"数据库无{action[0]}动作")
         raise ValueError(f"数据库无{action[0]}动作")
