@@ -201,7 +201,7 @@ const SelfHealingStrategy = () => {
 
       <div className={styles.header} style={{ marginTop: 50 }}>
         <FileSearchOutlined style={{ paddingRight: 5 }} />
-        备份策略
+        自愈策略
       </div>
       <div
         style={{

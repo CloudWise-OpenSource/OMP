@@ -254,7 +254,7 @@ const OmpLayout = (props) => {
             //paddingTop:3,
             // borderRight: "1px solid #d7d9e1",
             color: "rgba(0,0,0,0.65)",
-            overflowY: "auto"
+            overflowY: "auto",
             // position:"fixed",
             // zIndex:1000,
           }}
@@ -303,7 +303,7 @@ const OmpLayout = (props) => {
             justifyContent: "space-between",
             position: "fixed",
             zIndex: 1000,
-            transition: collapsed ?"all 0.1s ease-out" : "all 0.4s ease-out",
+            transition: collapsed ? "all 0.1s ease-out" : "all 0.4s ease-out",
             width: collapsed ? "calc(100% - 49px)" : "calc(100% - 199px)",
             marginLeft: collapsed ? 49 : 199,
           }}
@@ -395,7 +395,11 @@ const OmpLayout = (props) => {
               // 应用商店content大背景不是白色，特殊处理
               backgroundColor:
                 location.pathname == "/application_management/app_store" ||
-                location.pathname.includes("installation") || location.pathname.includes("service_upgrade") || location.pathname.includes("service_rollback") ||
+                location.pathname.includes("installation") ||
+                location.pathname.includes("service_upgrade") ||
+                location.pathname.includes("service_rollback") ||
+                (location.pathname.includes("tool-management") &&
+                  !location.pathname.includes("tool-execution")) ||
                 location.pathname.includes("/homepage")
                   ? undefined
                   : "#fff",
@@ -411,6 +415,7 @@ const OmpLayout = (props) => {
             height: 30,
             padding: 0,
             paddingTop: 0,
+            paddingLeft: 195,
           }}
         >
           Copyright © 2020-2021 Cloudwise.All Rights Reserved{" "}

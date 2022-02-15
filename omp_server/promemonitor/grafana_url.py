@@ -165,7 +165,8 @@ def explain_url(explain_info, is_service=None):
                     instance_info['monitor_url'] = grafana_url + url_dict.get(
                         'service', 'noservice') + f"?var-ip={service_ip}&var-app={service_name}&kiosk=tv"
             instance_info['log_url'] = grafana_url + \
-                url_dict.get('log', 'nolog') + f"?var-app={service_name}"
+                url_dict.get(
+                    'log', 'nolog') + f"?var-app={service_name}" + f"&var-instance={service_ip}"
         else:
             instance_info['monitor_url'] = grafana_url + \
                 url_dict.get('node', 'nohosts') + \
