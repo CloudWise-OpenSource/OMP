@@ -221,9 +221,9 @@
         "regex": "",
         "skipUrlSync": false,
         "sort": 0,
-        "tagValuesQuery": "jkb",
+        "tagValuesQuery": "",
         "tags": [],
-        "tagsQuery": "jkb",
+        "tagsQuery": "",
         "type": "query",
         "useTags": false
       },
