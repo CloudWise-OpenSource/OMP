@@ -140,17 +140,19 @@ const AlarmLog = () => {
       fetchData(pagination, {
         alert_host_ip: location.state?.ip,
         alert_instance_name: location.state?.alert_instance_name,
-        start_alert_time: moment(initTime).format(
-          "YYYY-MM-DD HH:mm:ss"
-        ),
-        end_alert_time: moment(initTime).format(
-          "YYYY-MM-DD HH:mm:ss"
-        ),
+        start_alert_time: moment(initTime).format("YYYY-MM-DD HH:mm:ss"),
+        end_alert_time: moment(initTime).format("YYYY-MM-DD HH:mm:ss"),
       });
-    }else{
+    } else {
+      let currentTime = moment();
+      let aMonthAgoTime = moment().subtract(1, "months");
+      console.log(currentTime, aMonthAgoTime);
+      setTime([aMonthAgoTime, currentTime]);
       fetchData(pagination, {
         alert_host_ip: location.state?.ip,
         alert_instance_name: location.state?.alert_instance_name,
+        start_alert_time: aMonthAgoTime.format("YYYY-MM-DD HH:mm:ss"),
+        end_alert_time: currentTime.format("YYYY-MM-DD HH:mm:ss"),
       });
     }
   }, []);
@@ -188,10 +190,7 @@ const AlarmLog = () => {
               } else {
                 let result = e.filter((item) => item);
                 if (result.length == 2) {
-                  setTime([
-                    moment(e[0]),
-                    moment(e[1]),
-                  ]);
+                  setTime([moment(e[0]), moment(e[1])]);
                   fetchData(
                     {
                       current: 1,

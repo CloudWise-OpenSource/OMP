@@ -26,6 +26,11 @@ import LoginLog from "@/pages/LoginLog";
 import SystemLog from "@/pages/SystemLog";
 import SelfHealingRecord from "@/pages/SelfHealingRecord";
 import SelfHealingStrategy from "@/pages/SelfHealingStrategy";
+import ToolManagement from "@/pages/ToolManagement";
+import TaskRecord from "@/pages/TaskRecord";
+import ToolDetails from "@/pages/ToolManagement/detail";
+import ToolExecution from "@/pages/ToolExecution";
+import ToolExecutionResults from "@/pages/ToolExecutionResults"
 
 import {
   DesktopOutlined,
@@ -39,6 +44,7 @@ import {
   SaveOutlined,
   SolutionOutlined,
   InteractionOutlined,
+  ToolOutlined
 } from "@ant-design/icons";
 
 export default [
@@ -217,6 +223,41 @@ export default [
         title: "备份策略",
         path: "/data-backup/backup-strategy",
         component: BackupStrategy,
+      },
+    ],
+  },
+  {
+    menuTitle: "实用工具",
+    menuIcon: <ToolOutlined />,
+    menuKey: "/utilitie",
+    children: [
+      {
+        title: "工具管理",
+        path: "/utilitie/tool-management",
+        component: ToolManagement,
+      },
+      {
+        title: "工具详情",
+        path: "/utilitie/tool-management/tool-management-detail/:id",
+        notInMenu: true,
+        component: ToolDetails,
+      },
+      {
+        title: "工具执行",
+        path: "/utilitie/tool-management/tool-execution/:id",
+        notInMenu: true,
+        component: ToolExecution,
+      },
+      {
+        title: "执行结果",
+        path: "/utilitie/tool-management/tool-execution-results/:id",
+        notInMenu: true,
+        component: ToolExecutionResults,
+      },
+      {
+        title: "任务记录",
+        path: "/utilitie/task-record",
+        component: TaskRecord,
       },
     ],
   },

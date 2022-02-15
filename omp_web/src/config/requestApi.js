@@ -252,5 +252,9 @@ export const apiRequest = {
     querySelfHealingStrategy: "/api/services/SelfHealingSetting/",
     // 自愈策略修改
     setSelfHealingSetting: "/api/services/SelfHealingSetting/"
+  },
+  // 实用工具
+  utilitie: {
+    queryList: "/api/tool/toolList/",
   }
 };

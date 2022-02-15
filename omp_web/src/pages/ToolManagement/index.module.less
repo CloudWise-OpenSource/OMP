@@ -1,0 +1,79 @@
+.header {
+    background-color: #fff;
+    padding-bottom: 14px;
+    //display: flex;
+    //padding:20px;
+    .headerTabRow {
+      display: flex;
+      //align-items: center;
+      justify-content: space-between;
+      .headerTab {
+        display: flex;
+        color: #4f4f4f;
+        font-size: 14px;
+        margin-top: 20px;
+        & > div:nth-child(1) {
+          padding-left: 20px;
+          //margin-top: 20px;
+          cursor: pointer;
+        }
+        & > div:nth-child(2) {
+          padding-left: 10px;
+          padding-right: 10px;
+          //margin-top: 20px;
+          color: #b9b9b9;
+        }
+        & > div:nth-child(3) {
+          //margin-top: 20px;
+          cursor: pointer;
+        }
+        & > div:nth-child(4) {
+          padding-left: 10px;
+          padding-right: 10px;
+          //margin-top: 20px;
+          color: #b9b9b9;
+        }
+        & > div:nth-child(3) {
+         // margin-top: 20px;
+          cursor: pointer;
+        }
+        & > div:nth-child(5) {
+          // margin-top: 20px;
+           cursor: pointer;
+         }
+      }
+      .headerBtn {
+          display: flex;
+          padding-top: 10px;
+          padding-bottom: 5px;
+          position: relative;
+          top: 3px;
+          padding-right:20px
+      }
+    }
+  
+    .headerHr {
+      border-top: solid 1px #e7e7e7;
+      border-left: solid 1px #e7e7e7;
+    }
+  
+    .headerSearch {
+      padding-left: 20px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      .headerSearchCondition {
+          position: relative;
+          top:5px;
+          display: flex;
+          & > p {
+              padding-right: 20px;
+              cursor: pointer;
+          }
+      }
+      .headerSearchInfo {
+          color: #818181;
+          padding-right: 10px;
+      }
+    }
+  }
