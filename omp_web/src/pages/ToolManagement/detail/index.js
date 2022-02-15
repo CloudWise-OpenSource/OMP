@@ -242,48 +242,46 @@ const Details = () => {
             />
           </div>
         </div>
-        <div className={styles.detailContent}>
-          <div className={styles.detailContentTitle}>下载示例文件</div>
-          <div className={styles.tableContainer}>
-            <Table
-              size="middle"
-              columns={[
-                {
-                  title: "名称",
-                  key: "name",
-                  dataIndex: "name",
-                  align: "center",
-                  width: 300,
-                },
-                {
-                  title: "操作",
-                  key: "mandatoryField",
-                  dataIndex: "mandatoryField",
-                  align: "center",
-                  width: 100,
-                  render: () => {
-                    return <a>下载</a>;
+        {info && info.templates && info.templates.length > 0 && (
+          <div className={styles.detailContent}>
+            <div className={styles.detailContentTitle}>下载示例文件</div>
+            <div className={styles.tableContainer}>
+              <Table
+                size="middle"
+                columns={[
+                  {
+                    title: "名称",
+                    key: "name",
+                    dataIndex: "name",
+                    align: "center",
+                    width: 300,
                   },
-                },
-              ]}
-              pagination={false}
-              dataSource={[
-                {
-                  name: "xxx_template.yaml",
-                  type: "输入框",
-                  default: "-",
-                  mandatoryField: "是",
-                },
-                {
-                  name: "xxx_template.sh",
-                  type: "输入框",
-                  default: "-",
-                  mandatoryField: "是",
-                },
-              ]}
-            />
+                  {
+                    title: "操作",
+                    key: "sub_url",
+                    dataIndex: "sub_url",
+                    align: "center",
+                    width: 100,
+                    render: (text) => {
+                      return (
+                        <a
+                          onClick={() => {
+                            downloadFile(`/${text}`);
+                          }}
+                        >
+                          下载
+                        </a>
+                      );
+                    },
+                  },
+                ]}
+                pagination={false}
+                dataSource={info.templates}
+              />
+            </div>
           </div>
-        </div>
+        )}
+
         <div className={styles.readme}>
           <div className={styles.readmeTitle}>
             <FileProtectOutlined style={{ fontSize: 16, marginRight: 10 }} />
