@@ -5,9 +5,14 @@
 from rest_framework.routers import DefaultRouter
 from tool.views import (
     ToolListView,
-    ToolDetailView
+    ToolDetailView,
+    GetToolDetailView,
+    ToolFormDetailAPIView,
 )
 
 router = DefaultRouter()
 router.register("toolList", ToolListView, basename="toolList")
 router.register("toolList", ToolDetailView, basename="toolList")
+router.register(r'result', GetToolDetailView, basename="result")
+router.register(r'form', ToolFormDetailAPIView, basename="form")
+urlpatterns = router.urls

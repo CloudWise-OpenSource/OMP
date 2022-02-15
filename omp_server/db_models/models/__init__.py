@@ -13,6 +13,7 @@ from .product import Labels, UploadPackageHistory, ProductHub, \
 from .service import ServiceConnectInfo, ClusterInfo, Service, ServiceHistory
 from .threshold import HostThreshold, ServiceThreshold, ServiceCustomThreshold
 from .tool import ToolInfo, ToolExecuteMainHistory, ToolExecuteDetailHistory
+from .upload import UploadFileHistory
 from .user import UserProfile, OperateLog, UserLoginLog
 from .upgrade import UpgradeHistory, UpgradeDetail, RollbackHistory, \
     RollbackDetail
@@ -79,5 +80,7 @@ __all__ = [
     # 小工具
     ToolInfo,
     ToolExecuteMainHistory,
-    ToolExecuteDetailHistory
+    ToolExecuteDetailHistory,
+    # 上传文件公共表
+    UploadFileHistory
 ]

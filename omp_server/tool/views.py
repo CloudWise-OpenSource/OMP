@@ -1,22 +1,30 @@
-from django.shortcuts import render
-
 # Create your views here.
-import os
-import logging
 
-from django.conf import settings
-from django.http import FileResponse
-from rest_framework.viewsets import GenericViewSet
-from rest_framework.mixins import RetrieveModelMixin, ListModelMixin
-from db_models.models import ToolInfo
-from app_store.views import AppStoreListView
-from tool.tool_serializers import (ToolListSerializer, ToolDetailSerializer)
-from tool.tool_filters import ToolFilter
 from django_filters.rest_framework.backends import DjangoFilterBackend
+from rest_framework.viewsets import GenericViewSet
+from rest_framework.mixins import RetrieveModelMixin
+from db_models.models import (ToolExecuteMainHistory, ToolInfo)
+from tool.tool_filters import ToolFilter
+from tool.serializers import (ToolDetailSerializer, ToolFormDetailSerializer, ToolListSerializer,
+                              ToolInfoDetailSerializer)
+from app_store.views import AppStoreListView
 from utils.common.paginations import PageNumberPager
-from utils.common.exceptions import OperateError
 
-logger = logging.getLogger("server")
+
+class GetToolDetailView(GenericViewSet, RetrieveModelMixin):
+    """
+    获取可备份实例列表
+    """
+
+    queryset = ToolExecuteMainHistory.objects.all()
+    get_description = "任务详情页"
+    serializer_class = ToolDetailSerializer
+
+
+class ToolFormDetailAPIView(GenericViewSet, RetrieveModelMixin):
+    queryset = ToolInfo.objects.all()
+    get_description = "小工具执行表单页"
+    serializer_class = ToolFormDetailSerializer
 
 
 class ToolListView(AppStoreListView):
@@ -37,6 +45,6 @@ class ToolListView(AppStoreListView):
 class ToolDetailView(GenericViewSet, RetrieveModelMixin):
     """获取实用工具详情"""
     queryset = ToolInfo.objects.all().order_by("-created")
-    serializer_class = ToolDetailSerializer
+    serializer_class = ToolInfoDetailSerializer
     # 操作描述信息
     get_description = "获取实用工具详情"

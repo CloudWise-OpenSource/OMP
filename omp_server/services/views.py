@@ -15,7 +15,8 @@ from services.tasks import exec_action
 from services.services_filters import ServiceFilter
 from services.services_serializers import (
     ServiceSerializer, ServiceDetailSerializer,
-    ServiceActionSerializer, ServiceDeleteSerializer
+    ServiceActionSerializer, ServiceDeleteSerializer,
+    ServiceStatusSerializer
 )
 from promemonitor.prometheus import Prometheus
 from promemonitor.grafana_url import explain_url
@@ -212,3 +213,61 @@ class ServiceDeleteView(GenericViewSet, CreateModelMixin):
         res = res & set(service_json.values())
         res = "存在依赖信息:" + ",".join(res) if res else "无依赖信息"
         return Response(res)
+
+
+class ServiceStatusView(GenericViewSet, ListModelMixin):
+    """
+        list:
+        查询服务列表
+    """
+    queryset = Service.objects.filter(
+        service__is_base_env=False)
+    serializer_class = ServiceStatusSerializer
+    authentication_classes = ()
+    permission_classes = ()
+    # 操作描述信息
+    get_description = "查询服务状态"
+
+    def list(self, request, *args, **kwargs):
+        # 获取序列化数据列表
+        queryset = self.get_queryset()
+        real_query = queryset
+        # 实时获取服务动态git
+        prometheus_obj = Prometheus()
+        is_success, prometheus_dict = prometheus_obj.get_all_service_status()
+        if is_success:
+            stop_ls = []
+            natural_ls = []
+            no_monitor_ls = []
+            ing_ls = []
+            for service in queryset:
+                # 当服务状态为 '正常' 和 '异常' 时
+                if service.service_status in (Service.SERVICE_STATUS_NORMAL, Service.SERVICE_STATUS_STOP):
+                    key_name = f"{service.ip}_{service.service_instance_name}"
+                    status = prometheus_dict.get(key_name, None)
+                    if status is None:
+                        no_monitor_ls.append(service)
+                    elif not status:
+                        stop_ls.append(service)
+                    else:
+                        natural_ls.append(service)
+                else:
+                    ing_ls.append(service)
+            real_query = stop_ls + ing_ls + natural_ls + no_monitor_ls
+
+        serializer = self.get_serializer(real_query, many=True)
+        serializer_data = serializer.data
+
+        # 若获取成功，则动态覆盖服务状态
+        if is_success:
+            for service_obj in serializer_data:
+                # 如果服务状态为 '正常' 和 '停止' 的服务，通过 Prometheus 动态更新
+                if service_obj.get("service_status") in ("正常", "停止"):
+                    # 如果是 web 服务，则状态直接置为正常
+                    if service_obj.get("is_web"):
+                        service_obj["service_status"] = True
+                        continue
+                    key_name = f"{service_obj.get('ip')}_{service_obj.get('service_instance_name')}"
+                    status = prometheus_dict.get(key_name, None)
+                    service_obj["service_status"] = status
+        return Response(serializer_data)

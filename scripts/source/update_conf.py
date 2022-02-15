@@ -190,6 +190,9 @@ server {
     location /download-backup/ {
         alias %s/data/backup/;
     }
+    location /tool/ {
+        alias %s/package_hub/tool/;
+    }
     location /download/ {
         alias %s/tmp/;
     }
@@ -211,6 +214,7 @@ server {
     }
 }
 """ % (
+    PROJECT_FOLDER,
     PROJECT_FOLDER,
     PROJECT_FOLDER,
     PROJECT_FOLDER,
