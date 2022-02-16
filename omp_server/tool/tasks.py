@@ -107,6 +107,7 @@ class ThreadUtils:
             cmd_str = 'su -s /bin/bash {1} -c "{0}"'.format(
                 cmd_str, tool_detail_obj.run_user
             )
+        self.send_message(tool_detail_obj, f"执行脚本的命令: {cmd_str}")
         status, message = self.salt.cmd(
             target=ip,
             command=cmd_str,
@@ -114,7 +115,10 @@ class ThreadUtils:
             real_timeout=tool_detail_obj.time_out
         )
         if not status:
-            tool_detail_obj.status = ToolExecuteDetailHistory.STATUS_FAILED
+            if 'Timed out' in message:
+                tool_detail_obj.status = ToolExecuteDetailHistory.STATUS_TIMEOUT
+            else:
+                tool_detail_obj.status = ToolExecuteDetailHistory.STATUS_FAILED
             self.send_message(tool_detail_obj, message)
             return status, message
         self.send_message(tool_detail_obj, message)
