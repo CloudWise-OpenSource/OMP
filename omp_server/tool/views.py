@@ -1,24 +1,35 @@
 # Create your views here.
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework.backends import DjangoFilterBackend
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import ListAPIView, CreateAPIView
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import RetrieveModelMixin
 from db_models.models import (ToolExecuteMainHistory, ToolInfo, Host, Service)
 from tool.tool_filters import ToolFilter
 from tool.serializers import ToolListSerializer, ToolInfoDetailSerializer, \
-    ToolTargetObjectServiceSerializer
+    ToolTargetObjectServiceSerializer, ToolFormAnswerSerializer
 from app_store.views import AppStoreListView
 from utils.common.paginations import PageNumberPager
 from tool.serializers import ToolDetailSerializer, ToolFormDetailSerializer,\
     ToolTargetObjectHostSerializer
 
 
+class ToolRetrieveAPIMixin:
+
+    def load_tool_obj(self):
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        tool = get_object_or_404(
+            ToolInfo.objects.all(),
+            **{self.lookup_field: self.kwargs[lookup_url_kwarg]}
+        )
+        self.kwargs.update(tool=tool)
+        return tool
+
+
 class GetToolDetailView(GenericViewSet, RetrieveModelMixin):
     """
-    获取可备份实例列表
+    任务详情页
     """
-
     queryset = ToolExecuteMainHistory.objects.all()
     get_description = "任务详情页"
     serializer_class = ToolDetailSerializer
@@ -54,18 +65,13 @@ class ToolDetailView(GenericViewSet, RetrieveModelMixin):
     get_description = "获取实用工具详情"
 
 
-class ToolTargetObjectAPIView(ListAPIView):
+class ToolTargetObjectAPIView(ListAPIView, ToolRetrieveAPIMixin):
 
     get_description = "小工具执行对象展示页"
     pagination_class = PageNumberPager
 
     def get(self, request, *args, **kwargs):
-        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
-        tool = get_object_or_404(
-            ToolInfo.objects.all(),
-            **{self.lookup_field: self.kwargs[lookup_url_kwarg]}
-        )
-        self.kwargs.update(tool=tool)
+        self.load_tool_obj()
         return self.list(request, *args, **kwargs)
 
     def get_queryset(self):
@@ -79,3 +85,13 @@ class ToolTargetObjectAPIView(ListAPIView):
         if self.kwargs["tool"].target_name == "host":
             return ToolTargetObjectHostSerializer
         return ToolTargetObjectServiceSerializer
+
+
+class ToolFormAnswerAPIView(CreateAPIView, ToolRetrieveAPIMixin):
+    permission_classes = ()
+    get_description = "小工具执行表单页"
+    serializer_class = ToolFormAnswerSerializer
+
+    def post(self, request, *args, **kwargs):
+        self.load_tool_obj()
+        return self.create(request, *args, **kwargs)

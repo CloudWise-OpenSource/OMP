@@ -3,14 +3,13 @@
 """
 
 from rest_framework import serializers
-from rest_framework.serializers import Serializer
 from rest_framework.exceptions import ValidationError
 
 from db_models import models
 from db_models.models import Host, UploadFileHistory
 
 
-class HostIdsSerializer(Serializer):
+class HostIdsSerializer(serializers.Serializer):
     """ 主机 id 列表序列化类 """
 
     host_ids = serializers.ListField(
@@ -32,7 +31,7 @@ class HostIdsSerializer(Serializer):
         return host_ids
 
 
-class UploadFileSerializer(Serializer):
+class UploadFileSerializer(serializers.Serializer):
 
     file = serializers.FileField(
         help_text="上传的文件",
