@@ -181,7 +181,7 @@ class ToolExecuteMainHistory(models.Model):
         default=0, help_text="main执行状态")
     start_time = models.DateTimeField(
         "开始时间", null=True, auto_now_add=True, help_text="开始时间")
-    end_time = models.DateTimeField("结束时间", null=True,  help_text="结束时间")
+    end_time = models.DateTimeField("结束时间", null=True, help_text="结束时间")
     form_answer = models.JSONField("任务表单提交结果", default=dict)
 
     class Meta:
@@ -218,11 +218,13 @@ class ToolExecuteDetailHistory(TimeStampMixin):
     STATUS_RUNNING = 1
     STATUS_SUCCESS = 2
     STATUS_FAILED = 3
+    STATUS_TIMEOUT = 4
     STATUS_TYPE_CHOICES = (
         (STATUS_READY, "待执行"),
         (STATUS_RUNNING, "执行中"),
         (STATUS_SUCCESS, "执行成功"),
         (STATUS_FAILED, "执行失败"),
+        (STATUS_TIMEOUT, "执行超时"),
     )
 
     main_history = models.ForeignKey(

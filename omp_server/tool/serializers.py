@@ -18,6 +18,7 @@ class ToolDetailSerializer(serializers.ModelSerializer):
     duration = serializers.SerializerMethodField()
     tool_detail = serializers.SerializerMethodField()
     count = serializers.SerializerMethodField()
+    tool_args = serializers.SerializerMethodField()
 
     class Meta:
         """ 元数据 """
@@ -27,16 +28,22 @@ class ToolDetailSerializer(serializers.ModelSerializer):
     def get_duration(self, obj):
         return obj.duration
 
+    def tools_boj_ls(self, obj):
+        if hasattr(self, "tools_obj"):
+            return self.tools_obj
+        tools_obj = ToolExecuteDetailHistory.objects.filter(main_history=obj)
+        setattr(self, "tools_obj", tools_obj)
+        return tools_obj
+
     def get_count(self, obj):
-        return ToolExecuteDetailHistory.objects.filter(main_history=obj).count()
+        return self.tools_boj_ls(obj).count()
 
     def get_tool_detail(self, obj):
         """
         获取detail详情
         """
         tool_list = []
-        tool_obj = ToolExecuteDetailHistory.objects.filter(main_history=obj)
-        for obj in tool_obj:
+        for obj in self.tools_boj_ls(obj):
             tool_list.append(
                 {
                     "ip": obj.target_ip,
@@ -45,6 +52,18 @@ class ToolDetailSerializer(serializers.ModelSerializer):
                 }
             )
         return tool_list
+
+    def get_tool_args(self, obj):
+        tool_args = []
+        detail_args = obj.toolexecutedetailhistory_set.first().execute_args
+        for args in obj.tool.script_args:
+            value = detail_args.get(args.get('key'), "")
+            if value:
+                tool_args.append({
+                    "name": args.get('name'),
+                    "value": value
+                })
+        return tool_args
 
 
 class ToolFormDetailSerializer(serializers.ModelSerializer):
