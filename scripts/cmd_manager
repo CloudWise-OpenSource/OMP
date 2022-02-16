@@ -7,9 +7,9 @@ HELP_MSG="
 2. 产品安装操作(使用excel模板进行安装)\n
 \t bash cmd_manager install [excel的绝对路径(不填写默认寻找与OMP同级目录下的deployment.xlsx)]\n
 3. 产品的升级(仅升级单个服务)\n
-\t bash cmd_manager upgrade [服务安装包(如: mysql-xxxxx.tar.gz)] [服务所在ip(不填默认升级该服务所有实例)]
+\t bash cmd_manager upgrade [服务安装包(如: mysql-xxxxx.tar.gz)] [服务所在ip(不填默认升级该服务所有实例)]\n
 4. 产品的回滚(仅回滚单个服务最近一次升级记录)\n
-\t bash cmd_manager rollback [服务名(如: mysql)] [服务所在ip(不填默认回滚该服务所有实例)]
+\t bash cmd_manager rollback [服务名(如: mysql)] [服务所在ip(不填默认回滚该服务所有实例)]\n
 "
 
 CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
