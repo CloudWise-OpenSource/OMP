@@ -1,11 +1,3 @@
-/*
- * @Author: your name
- * @Date: 2021-06-25 15:27:32
- * @LastEditTime: 2021-06-28 11:37:20
- * @LastEditors: Please set LastEditors
- * @Description: In User Settings Edit
- * @FilePath: /omp-fontend123/src/component/ContentNav/index.js
- */
 import styles from "./index.module.less";
 
 // 用于面包屑导航组件下部的 切换页面content的导航

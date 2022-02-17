@@ -418,7 +418,7 @@ const OmpLayout = (props) => {
             paddingLeft: 195,
           }}
         >
-          Copyright © 2020-2021 Cloudwise.All Rights Reserved{" "}
+          Copyright © 2020-2022 Cloudwise.All Rights Reserved{" "}
         </Footer>
       </Layout>
       <OmpModal
