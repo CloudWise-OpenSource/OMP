@@ -235,10 +235,23 @@ class HostBatchValidateView(BaseDownLoadTemplateView, CreateModelMixin):
             *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        ips = Host.objects.all().values_list("ip", flat=True)
+        request_data = []
+        repeat_data = []
+        for host in request.data.get("host_list"):
+            if not host.get("ip") in ips:
+                request_data.append(host)
+            else:
+                host["init_host"] = True
+                repeat_data.append(host)
+        if len(request_data) == 0:
+            return Response({"correct": repeat_data, "error": []})
+        serializer = self.get_serializer(data=request_data)
         if not serializer.is_valid():
             logger.error(f"host batch validate failed:{request.data}")
             raise ValidationError("数据格式错误")
+        serializer.validated_data.get("result_dict", {}).get(
+            "correct", []).extend(repeat_data)
         return Response(serializer.validated_data.get("result_dict"))
 
 
@@ -264,7 +277,10 @@ class HostBatchImportView(GenericViewSet, CreateModelMixin):
                 # 主机初始化信息，批量创建过程中无 id，故以 ip 作为键
                 host_init_info = {}
                 host_objs = []
+                ips = Host.objects.all().values_list("ip", flat=True)
                 for host in serializer.data.get("host_list"):
+                    if host.get("ip") in ips:
+                        continue
                     # 若存在行号、运行用户则删除
                     if "row" in host:
                         host.pop("row")

@@ -112,22 +112,12 @@ class ToolInfo(TimeStampMixin):
         verbose_name = verbose_name_plural = "实用工具基本信息表"
 
     def load_default_form(self):
-        return [
-            {
-                'key': 'runuser',
-                'name': '执行用户',
-                'type': 'input',
-                'default': '',
-                'required': True
-             },
-            {
-                'key': 'timeout',
-                'name': '超时时间',
-                'type': 'input',
-                'default': 60,
-                'required': True
-            }
-        ]
+        return {
+            "task_name": self.name,
+            "target_objs": [],
+            'runuser': '',
+            'timeout': 60
+        }
 
     # 目前支持的参数类型（"select_multiple"：多选暂不支持）
     # "select"：单选, "file"：文件, "input"：单行文本
@@ -191,7 +181,7 @@ class ToolExecuteMainHistory(models.Model):
         default=0, help_text="main执行状态")
     start_time = models.DateTimeField(
         "开始时间", null=True, auto_now_add=True, help_text="开始时间")
-    end_time = models.DateTimeField("结束时间", null=True,  help_text="结束时间")
+    end_time = models.DateTimeField("结束时间", null=True, help_text="结束时间")
     form_answer = models.JSONField("任务表单提交结果", default=dict)
 
     class Meta:
@@ -208,12 +198,12 @@ class ToolExecuteMainHistory(models.Model):
     def get_input_files(self):
         files = []
         for answer in self.form_answer:
-            if answer.get("type") == "file" and answer.get("value"):
+            if answer.get("type") == "file" and answer.get("default"):
                 files.append(
                     os.path.join(
                         settings.PROJECT_DIR,
                         "package_hub",
-                        answer.get("value").get("file_url")
+                        answer.get("default").get("file_url")
                     )
                 )
         return files
@@ -228,11 +218,13 @@ class ToolExecuteDetailHistory(TimeStampMixin):
     STATUS_RUNNING = 1
     STATUS_SUCCESS = 2
     STATUS_FAILED = 3
+    STATUS_TIMEOUT = 4
     STATUS_TYPE_CHOICES = (
         (STATUS_READY, "待执行"),
         (STATUS_RUNNING, "执行中"),
         (STATUS_SUCCESS, "执行成功"),
         (STATUS_FAILED, "执行失败"),
+        (STATUS_TIMEOUT, "执行超时"),
     )
 
     main_history = models.ForeignKey(
@@ -273,11 +265,11 @@ class ToolExecuteDetailHistory(TimeStampMixin):
     def get_tools_dir(self):
         if hasattr(self, "tools_dir"):
             return self.tools_dir
-        tools = self.main_history.tool
+        tool = self.main_history.tool
         tools_dir = {
-            "tool_folder_path": tools.tool_folder_path,
-            "script_path": tools.script_path,
-            "send_package": tools.send_package
+            "tool_folder_path": tool.tool_folder_path,
+            "script_path": tool.script_path,
+            "send_package": tool.send_package
         }
         setattr(self, "tools_dir", tools_dir)
         return tools_dir
@@ -309,7 +301,6 @@ class ToolExecuteDetailHistory(TimeStampMixin):
         if send_package:
             local_files.append(os.path.join(
                 settings.PROJECT_DIR, tool_folder_path, send_package))
-        # local_files.extend(self.get_input_files())
         return {
             "local_files": local_files,
             "send_to": os.path.join(
@@ -323,12 +314,9 @@ class ToolExecuteDetailHistory(TimeStampMixin):
         获取需要接受的文件
         :return: output_files：需要接受的文件，receive_to：接收文件的存放位置
         """
-        output_files = []
-        for k, v in self.execute_args.items():
-            if k == "output":
-                output_files.append(v)
+        output = self.execute_args.get("output", "").split(",")
         return {
-            "output_files": output_files,
+            "output_files": output if len(output[0]) != 0 else [],
             "receive_to": os.path.join(
                 settings.PROJECT_DIR,
                 "package_hub/tool/download_data/"
