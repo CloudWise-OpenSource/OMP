@@ -317,6 +317,7 @@ class ToolExecuteDetailHistory(TimeStampMixin):
         """
         output_files = []
         for k, v in self.execute_args.items():
+            # ToDo 可能不对
             if k == "output":
                 output_files.append(v)
         return {

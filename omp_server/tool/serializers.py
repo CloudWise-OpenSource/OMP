@@ -49,6 +49,7 @@ class ToolDetailSerializer(serializers.ModelSerializer):
                     "ip": obj.target_ip,
                     "status": obj.status,
                     "log": obj.execute_log
+                    # ToDo "url"
                 }
             )
         return tool_list
