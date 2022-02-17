@@ -134,6 +134,11 @@ KERNEL_KEYWORD = [
     "vm.max_map_count",
     "vm.swappiness",
 ]
+TO_MODIFY_HOST_NAME = [
+    "localhost",
+    "localhost.localhost",
+    "localhost.domain",
+]
 
 
 class BaseInit(object):
@@ -245,7 +250,7 @@ class BaseInit(object):
 class InitHost(BaseInit):
     """ 初始化节点信息 """
 
-    def __init__(self):
+    def __init__(self, host_name, local_ip):
         self.m_list = [
             ('env_set_timezone', '设置时区'),
             ('env_set_firewall', '关闭防火墙'),
@@ -254,7 +259,11 @@ class InitHost(BaseInit):
             ('env_set_file_limit', '设置文件句柄数'),
             ('env_set_kernel', '设置内核参数'),
             ('env_set_disable_selinux', '关闭selinux'),
+            ('set_hostname', '设置主机名'),
         ]
+        # TODO
+        self.hostname = host_name
+        self.local_ip = local_ip
 
     def env_set_timezone(self):
         """ 设置时区 """
@@ -339,6 +348,15 @@ class InitHost(BaseInit):
                 "sed -i 's#^SELINUX=.*#SELINUX=disabled#g' /etc/selinux/config")
             self.cmd("setenforce 0")
 
+    def set_hostname(self):
+        """设置主机名"""
+        _out, _err, _code = self.cmd("echo $(hostname)")
+        if _out.strip().lower() in TO_MODIFY_HOST_NAME:
+            self.cmd('echo "{0}" >/etc/hostname'.format(self.hostname))
+            self.cmd('echo "{0}" > /proc/sys/kernel/hostname'.format(self.hostname))
+            self.cmd("hostname {0}".format(self.hostname))
+            self.cmd('echo "{0}    {1}" >> /etc/hosts'.format(self.local_ip, self.hostname))
+
 
 class ValidInit(BaseInit):
     def __init__(self):
@@ -349,6 +367,7 @@ class ValidInit(BaseInit):
             ('valid_env_file_limit', '校验文件具柄数'),
             ('valid_env_kernel', '校验内核参数'),
             ('valid_env_disable_selinux', '校验selinux'),
+            ('valid_host_name', '校验host_name'),
         ]
 
     def valid_env_timezone(self):
@@ -417,6 +436,11 @@ class ValidInit(BaseInit):
             not i.strip().startswith('#')
         ], "selinux 校验失败"
 
+    def valid_host_name(self):
+        """校验host_name不含localhost"""
+        _out, _err, _code = self.cmd("echo $(hostname)")
+        assert _out.strip().lower() not in TO_MODIFY_HOST_NAME, "校验主机名失败"
+
 
 def usage(error=None):
     script_full_path = os.path.join(CURRENT_DIR, os.path.basename(__file__))
@@ -437,16 +461,19 @@ def usage(error=None):
 def main():
     command_list = ('init', 'valid', 'init_valid', 'help')
     try:
-        if len(sys.argv) != 2 or sys.argv[1] not in command_list:
+        if len(sys.argv) != 4 or sys.argv[1] not in command_list:
             usage(error='参数错误: {}'.format(sys.argv[1:]))
+        host_name = sys.argv[2]
+        local_ip = sys.argv[3]
         if sys.argv[1] == 'init':
-            init = InitHost()
+
+            init = InitHost(host_name, local_ip)
             init.run()
         elif sys.argv[1] == 'valid':
             check = ValidInit()
             check.run()
         elif sys.argv[1] == 'init_valid':
-            init = InitHost()
+            init = InitHost(host_name, local_ip)
             init.run()
             logger.info("init success")
             check = ValidInit()

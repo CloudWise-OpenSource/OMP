@@ -64,3 +64,4 @@ OMP_MYSQL_PASSWORD = os.getenv(
 BASIC_ORDER = CONFIG_DIC.get("basic_order", {})
 AFFINITY_FIELD = CONFIG_DIC.get("affinity", {})
 HADOOP_ROLE = CONFIG_DIC.get("hadoop_role", {})
+HOSTNAME_PREFIX = CONFIG_DIC.get("hostname_prefix", {})
