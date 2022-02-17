@@ -29,6 +29,7 @@ from utils.plugin.monitor_agent import MonitorAgentManager
 from utils.plugin.crypto import AESCryptor
 from utils.plugin.agent_util import Agent
 from app_store.tasks import add_prometheus
+from utils.parse_config import HOSTNAME_PREFIX
 
 # 屏蔽celery任务日志中的paramiko日志
 logging.getLogger("paramiko").setLevel(logging.WARNING)
@@ -221,9 +222,10 @@ def real_init_host(host_obj):
                      f"detail: {script_push_msg}")
         raise Exception("send script failed")
 
+    modified_host_name = str(HOSTNAME_PREFIX) + "-" + "-".join(host_obj.ip.split(".")[-2:])
     # 执行初始化
     is_success, script_msg = _ssh.cmd(
-        f"python /tmp/{init_script_name} init_valid")
+        f"python /tmp/{init_script_name} init_valid {modified_host_name} {host_obj.ip}")
     if not (is_success and "init success" in script_msg and "valid success" in script_msg):
         logger.error(f"init host [{host_obj.id}] failed: execute init failed, "
                      f"detail: {script_push_msg}")
