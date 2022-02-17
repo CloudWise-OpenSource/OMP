@@ -207,7 +207,7 @@ class ValidToolTar:
         if self.tool_info["output"] == ToolInfo.OUTPUT_FILE:
             self.tool_info["script_args"].append(
                 {'key': 'output', 'name': 'output',
-                 'type': 'file', 'required': True}
+                 'type': 'input', 'required': True}
             )
         ToolInfo(**self.tool_info).save()
         self.rm_tool_package()
