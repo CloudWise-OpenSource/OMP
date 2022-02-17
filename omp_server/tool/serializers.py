@@ -48,12 +48,15 @@ class ToolDetailSerializer(serializers.ModelSerializer):
         """
         tool_list = []
         for obj in self.tools_boj_ls(obj):
+            url = ""
+            if obj.output:
+                url = f"tool/download_data/{obj.output.get('file')[0]}"
             tool_list.append(
                 {
                     "ip": obj.target_ip,
                     "status": obj.status,
-                    "log": obj.execute_log
-                    # ToDo "url"
+                    "log": obj.execute_log,
+                    "url": url
                 }
             )
         return tool_list
@@ -226,7 +229,7 @@ class ToolFormAnswerSerializer(serializers.Serializer):
             ids.append(value.get("id"))
             modifiable_kwargs = value.get("modifiable_kwargs", {})
             for _arg in tool.obj_connection_args:
-                assert _arg in modifiable_kwargs,\
+                assert _arg in modifiable_kwargs, \
                     f"服务{value.get('instance_name')}的参数{_arg}必填！"
         target_ips = list(
             Service.objects.filter(

@@ -301,7 +301,6 @@ class ToolExecuteDetailHistory(TimeStampMixin):
         if send_package:
             local_files.append(os.path.join(
                 settings.PROJECT_DIR, tool_folder_path, send_package))
-        # local_files.extend(self.get_input_files())
         return {
             "local_files": local_files,
             "send_to": os.path.join(
@@ -315,18 +314,11 @@ class ToolExecuteDetailHistory(TimeStampMixin):
         获取需要接受的文件
         :return: output_files：需要接受的文件，receive_to：接收文件的存放位置
         """
-
-
-def get_receive_files(self):
-    """
-    获取需要接受的文件
-    :return: output_files：需要接受的文件，receive_to：接收文件的存放位置
-    """
-    output = self.execute_args.get("output")
-    return {
-        "output_files": [output] if output else [],
-        "receive_to": os.path.join(
-            settings.PROJECT_DIR,
-            "package_hub/tool/download_data/"
-        )
-    }
+        output = self.execute_args.get("output", "").split(",")
+        return {
+            "output_files": output if len(output[0]) != 0 else [],
+            "receive_to": os.path.join(
+                settings.PROJECT_DIR,
+                "package_hub/tool/download_data/"
+            )
+        }
