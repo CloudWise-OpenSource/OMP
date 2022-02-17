@@ -53,6 +53,7 @@ class ToolDetailSerializer(serializers.ModelSerializer):
                     "ip": obj.target_ip,
                     "status": obj.status,
                     "log": obj.execute_log
+                    # ToDo "url"
                 }
             )
         return tool_list
@@ -313,7 +314,7 @@ class ToolFormAnswerSerializer(serializers.Serializer):
             }
             remote_folder = os.path.join(
                 view_kwargs["data_folders"].get(target_obj.get("ip"), "/tmp"),
-                f"omp_packages"
+                "omp_packages"
             )
             # output file
             if "output" in execute_args:

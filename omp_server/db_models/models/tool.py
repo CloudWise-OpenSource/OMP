@@ -315,11 +315,18 @@ class ToolExecuteDetailHistory(TimeStampMixin):
         获取需要接受的文件
         :return: output_files：需要接受的文件，receive_to：接收文件的存放位置
         """
-        output = self.execute_args.get("output")
-        return {
-            "output_files": [output] if output else [],
-            "receive_to": os.path.join(
-                settings.PROJECT_DIR,
-                "package_hub/tool/download_data/"
-            )
-        }
+
+
+def get_receive_files(self):
+    """
+    获取需要接受的文件
+    :return: output_files：需要接受的文件，receive_to：接收文件的存放位置
+    """
+    output = self.execute_args.get("output")
+    return {
+        "output_files": [output] if output else [],
+        "receive_to": os.path.join(
+            settings.PROJECT_DIR,
+            "package_hub/tool/download_data/"
+        )
+    }
