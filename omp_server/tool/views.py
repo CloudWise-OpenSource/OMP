@@ -10,7 +10,7 @@ from tool.serializers import ToolListSerializer, ToolInfoDetailSerializer, \
     ToolTargetObjectServiceSerializer, ToolFormAnswerSerializer
 from app_store.views import AppStoreListView
 from utils.common.paginations import PageNumberPager
-from tool.serializers import ToolDetailSerializer, ToolFormDetailSerializer,\
+from tool.serializers import ToolDetailSerializer, ToolFormDetailSerializer, \
     ToolTargetObjectHostSerializer
 
 
@@ -66,7 +66,6 @@ class ToolDetailView(GenericViewSet, RetrieveModelMixin):
 
 
 class ToolTargetObjectAPIView(ListAPIView, ToolRetrieveAPIMixin):
-
     get_description = "小工具执行对象展示页"
     pagination_class = PageNumberPager
 
