@@ -235,7 +235,7 @@ class HostBatchValidateView(BaseDownLoadTemplateView, CreateModelMixin):
             *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
-        ips = [i.get("ip") for i in Host.objects.all().values("ip")]
+        ips = Host.objects.all().values_list("ip", flat=True)
         request_data = []
         repeat_data = []
         for host in request.data.get("host_list"):
@@ -277,7 +277,7 @@ class HostBatchImportView(GenericViewSet, CreateModelMixin):
                 # 主机初始化信息，批量创建过程中无 id，故以 ip 作为键
                 host_init_info = {}
                 host_objs = []
-                ips = [i.get("ip") for i in Host.objects.all().values("ip")]
+                ips = Host.objects.all().values_list("ip", flat=True)
                 for host in serializer.data.get("host_list"):
                     if host.get("ip") in ips:
                         continue
