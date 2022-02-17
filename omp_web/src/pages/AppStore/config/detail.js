@@ -443,6 +443,57 @@ const AppStoreDetail = () => {
                         return text || "-";
                       },
                     },
+                    // {
+                    //   title: "安装",
+                    //   key: "c",
+                    //   dataIndex: "c",
+                    //   align: "center",
+                    //   render: (text, record) => {
+                    //     return (
+                    //       <a
+                    //         onClick={() => {
+                    //           setLoading(true);
+                    //           fetchPost(
+                    //             apiRequest.appStore.createComponentInstallInfo,
+                    //             {
+                    //               body: {
+                    //                 high_availability: false,
+                    //                 install_component: [{
+                    //                   name:record.name,
+                    //                   version:record.version
+                    //                 }],
+                    //               },
+                    //             }
+                    //           )
+                    //             .then((res) => {
+                    //               //console.log(operateObj[operateAciton])
+                    //               handleResponse(res, (res) => {
+                    //                 if (res.data && res.data.data) {
+                    //                   dispatch(
+                    //                     getStep1ChangeAction(res.data.data)
+                    //                   );
+                    //                   dispatch(
+                    //                     getUniqueKeyChangeAction(
+                    //                       res.data.unique_key
+                    //                     )
+                    //                   );
+                    //                 }
+                    //                 history.push(
+                    //                   "/application_management/app_store/installation"
+                    //                 );
+                    //               });
+                    //             })
+                    //             .catch((e) => console.log(e))
+                    //             .finally(() => {
+                    //               setLoading(false);
+                    //             });
+                    //         }}
+                    //       >
+                    //         点击安装
+                    //       </a>
+                    //     );
+                    //   },
+                    // },
                   ]}
                   pagination={false}
                   dataSource={currentVersionDataSource.pro_services}
