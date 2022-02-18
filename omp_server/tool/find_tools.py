@@ -263,8 +263,6 @@ def verify_tar_files(tmp_package, tar_files):
         success = True
         for future in as_completed(all_task):
             if future.result():
-                print(future.__dict__)
-                print(future.__dir__())
                 logger.info(future.result())
                 success = False
     return success
