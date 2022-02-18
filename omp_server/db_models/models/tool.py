@@ -282,6 +282,12 @@ class ToolExecuteDetailHistory(TimeStampMixin):
         # 自定义不支持
         interpret_dir = os.path.join(
             self.get_data_dir, "omp_salt_agent/env/bin/python3")
+        tool_dir = self.get_tools_dir
+        scripts_dir = os.path.join(self.get_data_dir,
+                                   f"omp_packages/{tool_dir.get('tool_folder_path', '')}",
+                                   tool_dir.get("script_path")
+                                   )
+        interpret_dir = interpret_dir + " " + scripts_dir
         for key, value in self.execute_args.items():
             if value:
                 interpret_dir += " --{0} {1}".format(key, value)
