@@ -72,14 +72,14 @@ class ThreadUtils:
                              f"var/cache/salt/master/minions/{ip}/files/{file.rsplit('/', 1)[1]}"))
             if not status:
                 tool_detail_obj.status = ToolExecuteDetailHistory.STATUS_FAILED
-                self.send_message(tool_detail_obj, message)
+                self.send_message(tool_detail_obj, message=message)
                 return False
         if upload_real_paths:
             _out, _err, _code = public_utils.local_cmd(
                 f'mv {" ".join(upload_real_paths)} {receive_to}')
             if _code != 0:
                 tool_detail_obj.status = ToolExecuteDetailHistory.STATUS_FAILED
-                self.send_message(tool_detail_obj, _out)
+                self.send_message(tool_detail_obj, message=_out)
                 return False
         return True
 
@@ -89,7 +89,7 @@ class ThreadUtils:
         """
         tool_detail_obj.status = ToolExecuteDetailHistory.STATUS_RUNNING
         # 发送文件
-        ip = tool_detail_obj.ip
+        ip = tool_detail_obj.target_ip
         self.send_message(tool_detail_obj, 0)
         send_dc = tool_detail_obj.get_send_files()
         send_to = send_dc.get("send_to", "/tmp")
@@ -108,7 +108,7 @@ class ThreadUtils:
             cmd_str = 'su -s /bin/bash {1} -c "{0}"'.format(
                 cmd_str, tool_detail_obj.run_user
             )
-        self.send_message(tool_detail_obj, f"执行脚本的命令: {cmd_str}")
+        self.send_message(tool_detail_obj, message=f"执行脚本的命令: {cmd_str}")
         status, message = self.salt.cmd(
             target=ip,
             command=cmd_str,
@@ -120,9 +120,9 @@ class ThreadUtils:
                 tool_detail_obj.status = ToolExecuteDetailHistory.STATUS_TIMEOUT
             else:
                 tool_detail_obj.status = ToolExecuteDetailHistory.STATUS_FAILED
-            self.send_message(tool_detail_obj, message)
+            self.send_message(tool_detail_obj, message=message)
             return status, message
-        self.send_message(tool_detail_obj, message)
+        self.send_message(tool_detail_obj, message=message)
         # 获取目标输出文件
         receive_files = tool_detail_obj.get_receive_files()
         if receive_files:
