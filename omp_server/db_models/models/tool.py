@@ -197,15 +197,9 @@ class ToolExecuteMainHistory(models.Model):
 
     def get_input_files(self):
         files = []
-        for answer in self.form_answer:
+        for answer in self.form_answer.get("script_args", {}):
             if answer.get("type") == "file" and answer.get("default"):
-                files.append(
-                    os.path.join(
-                        settings.PROJECT_DIR,
-                        "package_hub",
-                        answer.get("default").get("file_url")
-                    )
-                )
+                files.append(answer.get("default").get("file_url"))
         return files
 
 
@@ -282,6 +276,13 @@ class ToolExecuteDetailHistory(TimeStampMixin):
         # 自定义不支持
         interpret_dir = os.path.join(
             self.get_data_dir, "omp_salt_agent/env/bin/python3")
+        tool_dir = self.get_tools_dir
+        scripts_dir = os.path.join(
+            self.get_data_dir,
+            f"omp_packages/{tool_dir.get('tool_folder_path', '')}",
+            tool_dir.get("script_path")
+        )
+        interpret_dir = interpret_dir + " " + scripts_dir
         for key, value in self.execute_args.items():
             if value:
                 interpret_dir += " --{0} {1}".format(key, value)
@@ -293,21 +294,21 @@ class ToolExecuteDetailHistory(TimeStampMixin):
         :return: local_files：需要发送的文件，send_to：发送的位置
         """
         local_files = self.main_history.get_input_files()
-        tool_dir = self.get_tools_dir()
+        tool_dir = self.get_tools_dir
         tool_folder_path = tool_dir.get("tool_folder_path")
-        send_package = tool_dir.get("send_package")
-        local_files.append(os.path.join(
-            settings.PROJECT_DIR, tool_folder_path, tool_dir.get("script_path")))
-        if send_package:
-            local_files.append(os.path.join(
-                settings.PROJECT_DIR, tool_folder_path, send_package))
-        return {
-            "local_files": local_files,
-            "send_to": os.path.join(
-                self.get_data_dir,
-                f"omp_packages/{tool_folder_path}"
-            )
-        }
+        local_files.append(
+            os.path.join(tool_folder_path, tool_dir.get("script_path"))
+        )
+        for file in tool_dir.get("send_package", []):
+            local_files.append(os.path.join(tool_folder_path, file))
+        return [
+            {
+                "local_file": local_file,
+                "remote_file": os.path.join(
+                    self.get_data_dir, "omp_packages", local_file
+                )
+            } for local_file in local_files
+        ]
 
     def get_receive_files(self):
         """

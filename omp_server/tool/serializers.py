@@ -8,6 +8,7 @@ from rest_framework import serializers
 from db_models.models import ToolExecuteMainHistory, ToolInfo, Host, Service, \
     ToolExecuteDetailHistory, UploadFileHistory
 from tool.tasks import exec_tools_main
+from utils.common.exceptions import GeneralError
 
 
 class ToolInfoSerializer(serializers.ModelSerializer):
@@ -19,18 +20,17 @@ class ToolInfoSerializer(serializers.ModelSerializer):
 
 class ToolDetailSerializer(serializers.ModelSerializer):
     tool = ToolInfoSerializer()
-    duration = serializers.SerializerMethodField()
     tool_detail = serializers.SerializerMethodField()
     count = serializers.SerializerMethodField()
     tool_args = serializers.SerializerMethodField()
+    duration = serializers.SerializerMethodField()
+    run_user = serializers.SerializerMethodField()
+    time_out = serializers.SerializerMethodField()
 
     class Meta:
         """ 元数据 """
         model = ToolExecuteMainHistory
         fields = "__all__"
-
-    def get_duration(self, obj):
-        return obj.duration
 
     def tools_boj_ls(self, obj):
         if hasattr(self, "tools_obj"):
@@ -38,6 +38,17 @@ class ToolDetailSerializer(serializers.ModelSerializer):
         tools_obj = ToolExecuteDetailHistory.objects.filter(main_history=obj)
         setattr(self, "tools_obj", tools_obj)
         return tools_obj
+
+    def get_duration(self, obj):
+        return obj.duration
+
+    def get_run_user(self, obj):
+        user = self.tools_boj_ls(obj).first().run_user
+        user = user if user else "salt执行用户"
+        return user
+
+    def get_time_out(self, obj):
+        return self.tools_boj_ls(obj).first().time_out
 
     def get_count(self, obj):
         return self.tools_boj_ls(obj).count()
@@ -167,7 +178,7 @@ class ValidFormAnswer:
         file_union_id = question.get("default", {}).get("union_id")
         file = UploadFileHistory.objects.filter(union_id=file_union_id).last()
         if not file:
-            raise ValueError(f"表单{question.get('name')}提交的文件不存在！")
+            raise GeneralError(f"表单{question.get('name')}提交的文件不存在！")
         question["default"].update(
             file_name=file.file_name,
             file_url=file.file_url
@@ -178,7 +189,7 @@ class ValidFormAnswer:
         options = question.get("options")
         answer = question.get("default")
         if answer and answer not in options:
-            raise Exception(f"表单{question.get('name')}提交的选项不正确！")
+            raise GeneralError(f"表单{question.get('name')}提交的选项不正确！")
         return True
 
     def valid_input(self, question):
@@ -188,10 +199,10 @@ class ValidFormAnswer:
         for question in self.questions:
             form_type = question.get("type")
             if not hasattr(self, f"valid_{form_type}"):
-                raise Exception(f"暂不支持{form_type}类型")
+                raise GeneralError(f"暂不支持{form_type}类型")
             answer = self.answers.get(question.get("key"))
             if question.get("required") and not answer:
-                raise Exception(f"{question.get('name')}为必填！")
+                raise GeneralError(f"{question.get('name')}为必填！")
             question.update(default=answer)
             getattr(self, f"valid_{form_type}")(question)
         return self.questions
@@ -209,7 +220,7 @@ class ToolFormAnswerSerializer(serializers.Serializer):
 
     def verify_task_name(self, value):
         if not value:
-            raise ValueError("任务名称为必填字段")
+            raise GeneralError("任务名称为必填字段")
         return str(value)
 
     def verify_host_info(self, values):
@@ -217,7 +228,8 @@ class ToolFormAnswerSerializer(serializers.Serializer):
             id__in=[value.get("id") for value in values],
             host_agent=str(Host.AGENT_RUNNING)
         ).values("ip", "data_folder")
-        assert len(target_ips) == len(values), "主机数据异常，请重新选择执行对象！"
+        if len(target_ips) != len(values):
+            raise GeneralError("主机数据异常，请重新选择执行对象！")
         data_folders = {}
         for target_ip in target_ips:
             data_folders[target_ip["ip"]] = target_ip["data_folder"]
@@ -229,15 +241,16 @@ class ToolFormAnswerSerializer(serializers.Serializer):
             ids.append(value.get("id"))
             modifiable_kwargs = value.get("modifiable_kwargs", {})
             for _arg in tool.obj_connection_args:
-                assert _arg in modifiable_kwargs, \
-                    f"服务{value.get('instance_name')}的参数{_arg}必填！"
+                if _arg not in modifiable_kwargs:
+                    raise GeneralError(f"参数{_arg}必填！")
         target_ips = list(
             Service.objects.filter(
                 service__app_name=tool.target_name,
                 id__in=ids
             ).values_list("ip", flat=True)
         )
-        assert len(target_ips) == len(values), "服务数据异常，请重新选择执行对象！"
+        if len(target_ips) != len(values):
+            raise GeneralError("服务数据异常，请重新选择执行对象！")
         ips = set(target_ips)
         hosts = Host.objects.filter(ip__in=ips).values("ip", "data_folder")
         data_folders = {}
@@ -258,7 +271,7 @@ class ToolFormAnswerSerializer(serializers.Serializer):
 
     def verify_timeout(self, value):
         if not value:
-            raise ValueError("超时时间不可以等于0！")
+            raise GeneralError("超时时间不可以等于0！")
         return True
 
     def validate_default_form(self, value):
@@ -288,7 +301,7 @@ class ToolFormAnswerSerializer(serializers.Serializer):
         history = ToolExecuteMainHistory.objects.create(
             tool=tool,
             task_name=default_form.get("task_name"),
-            operator=request.user,
+            operator=request.user.username,
             form_answer=validated_data
         )
         common_args = {}
@@ -296,8 +309,11 @@ class ToolFormAnswerSerializer(serializers.Serializer):
         for script_arg in script_args:
             if script_arg.get("type") == "file":
                 file_name = script_arg.get("default", {}).get("file_name")
+                if not file_name:
+                    continue
                 file_args[script_arg.get("key")] = os.path.join(
-                    tool.tool_folder_path,
+                    "tool/upload_data",
+                    tool.tool_folder_path.rsplit("/", 1)[-1],
                     file_name
                 )
             else:
@@ -343,3 +359,12 @@ class ToolFormAnswerSerializer(serializers.Serializer):
         exec_tools_main.delay(history.id)
         validated_data.update(id=history.id)
         return validated_data
+
+
+class ToolExecuteHistoryListSerializer(serializers.ModelSerializer):
+    kind = serializers.CharField(source="tool.kind")
+
+    class Meta:
+        model = ToolExecuteMainHistory
+        fields = ("id", "tool_id", "task_name", "kind", "start_time",
+                  "status", "duration")

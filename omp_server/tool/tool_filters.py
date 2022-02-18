@@ -3,6 +3,8 @@
 # Create time: 2022/2/10 3:23 下午
 import django_filters
 from django_filters.rest_framework import FilterSet
+from rest_framework.filters import BaseFilterBackend
+
 from db_models.models import ToolInfo
 
 
@@ -18,3 +20,14 @@ class ToolFilter(FilterSet):
     class Meta:
         model = ToolInfo
         fields = ("name", "kind")
+
+
+class ToolInfoKindFilter(BaseFilterBackend):
+
+    def filter_queryset(self, request, queryset, view):
+        param = request.query_params.get("kind", "")
+        param = param.replace('\x00', '').replace('null', '')
+        if not param:
+            return queryset
+        queryset = queryset.filter(tool__kind=int(param))
+        return queryset

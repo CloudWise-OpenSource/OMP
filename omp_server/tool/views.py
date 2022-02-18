@@ -1,13 +1,15 @@
 # Create your views here.
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework.backends import DjangoFilterBackend
+from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.generics import ListAPIView, CreateAPIView
 from rest_framework.viewsets import GenericViewSet
-from rest_framework.mixins import RetrieveModelMixin
+from rest_framework.mixins import RetrieveModelMixin, ListModelMixin
 from db_models.models import (ToolExecuteMainHistory, ToolInfo, Host, Service)
-from tool.tool_filters import ToolFilter
+from tool.tool_filters import ToolFilter, ToolInfoKindFilter
 from tool.serializers import ToolListSerializer, ToolInfoDetailSerializer, \
-    ToolTargetObjectServiceSerializer, ToolFormAnswerSerializer
+    ToolTargetObjectServiceSerializer, ToolFormAnswerSerializer, \
+    ToolExecuteHistoryListSerializer
 from app_store.views import AppStoreListView
 from utils.common.paginations import PageNumberPager
 from tool.serializers import ToolDetailSerializer, ToolFormDetailSerializer, \
@@ -41,7 +43,7 @@ class ToolFormDetailAPIView(GenericViewSet, RetrieveModelMixin):
     serializer_class = ToolFormDetailSerializer
 
 
-class ToolListView(AppStoreListView):
+class ToolListView(GenericViewSet, ListModelMixin):
     """查询所有实用工具列表"""
     queryset = ToolInfo.objects.all().order_by("-created")
     serializer_class = ToolListSerializer
@@ -51,10 +53,6 @@ class ToolListView(AppStoreListView):
     filter_class = ToolFilter
     # 操作信息描述
     get_description = "查询所有实用工具列表"
-
-    def list(self, request, *args, **kwargs):
-        return super(ToolListView, self).list(
-            request, name_field="name", *args, **kwargs)
 
 
 class ToolDetailView(GenericViewSet, RetrieveModelMixin):
@@ -87,10 +85,20 @@ class ToolTargetObjectAPIView(ListAPIView, ToolRetrieveAPIMixin):
 
 
 class ToolFormAnswerAPIView(CreateAPIView, ToolRetrieveAPIMixin):
-    permission_classes = ()
     get_description = "小工具执行表单页"
     serializer_class = ToolFormAnswerSerializer
 
     def post(self, request, *args, **kwargs):
         self.load_tool_obj()
         return self.create(request, *args, **kwargs)
+
+
+class ToolExecuteHistoryListApiView(ListAPIView):
+    get_description = "小工具执行列表页"
+    pagination_class = PageNumberPager
+    serializer_class = ToolExecuteHistoryListSerializer
+    queryset = ToolExecuteMainHistory.objects.all().select_related("tool")
+    filter_backends = (SearchFilter, OrderingFilter, ToolInfoKindFilter)
+    search_fields = ("task_name", )
+    ordering_fields = ("start_time",)
+    ordering = ('-start_time',)

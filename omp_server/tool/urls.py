@@ -4,7 +4,8 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 from tool.views import ToolListView, ToolDetailView, GetToolDetailView, \
-    ToolFormDetailAPIView, ToolTargetObjectAPIView, ToolFormAnswerAPIView
+    ToolFormDetailAPIView, ToolTargetObjectAPIView, ToolFormAnswerAPIView, \
+    ToolExecuteHistoryListApiView
 
 router = DefaultRouter()
 router.register("toolList", ToolListView, basename="toolList")
@@ -22,6 +23,11 @@ urlpatterns = [
         'form/<int:pk>/answer',
         ToolFormAnswerAPIView.as_view(),
         name="answer"
+    ),
+    path(
+        'execute-history',
+        ToolExecuteHistoryListApiView.as_view(),
+        name="execute-history"
     ),
 ]
 

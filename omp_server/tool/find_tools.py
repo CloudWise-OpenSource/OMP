@@ -13,16 +13,13 @@ from utils.parse_config import THREAD_POOL_MAX_WORKERS
 from utils.plugin.public_utils import file_md5, local_cmd
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("server")
 
 
 base_tar_path = os.path.join(settings.PROJECT_DIR, "package_hub/tool")
 verify_tar_path = os.path.join(base_tar_path, "verify_tar")
 verified_folder_path = os.path.join(base_tar_path, "folder")
 verified_tar_path = os.path.join(base_tar_path, "tar")
-
-
-lock_key = "tool_package_verify"
 
 
 class ValidForm:
@@ -77,7 +74,9 @@ class ValidToolTar:
         "spec": {"target": "host"},
         "args": [],
         "output": "terminal",
+        "send_package": []
     }
+    key_required = {"name", "desc", "script_name", "script_type"}
 
     def __init__(self, tmp_package, tar_file):
         self.tmp_package = tmp_package
@@ -116,14 +115,14 @@ class ValidToolTar:
         if not isinstance(target_name, str):
             raise Exception("yaml中target参数类型错误！")
         self.tool_info["target_name"] = target_name
-        templates = spec.get("templates", [])
+        templates = spec.get("templates") or []
         if not isinstance(templates, list):
             raise Exception("templates参数类型不正确！")
         for template in templates:
             if not os.path.isfile(os.path.join(self.folder_path, template)):
                 raise Exception(f"模版文件{template}文件不存在！")
         self.tool_info["template_filepath"] = templates
-        connection_args = spec.get("connection_args", [])
+        connection_args = spec.get("connection_args") or []
         if not isinstance(connection_args, list):
             raise Exception("connection_args参数类型不正确！")
         for connection_arg in connection_args:
@@ -170,6 +169,9 @@ class ValidToolTar:
         yaml_path = os.path.join(self.folder_path, f"{package_name}.yaml")
         with open(yaml_path, "r", encoding="utf8") as fp:
             content = yaml.load(fp.read(), yaml.Loader)
+        for k in self.key_required:
+            if k not in content:
+                raise Exception(f"yaml中{k}参数为必填！")
         for k, default in self.key_default.items():
             if not content.get(k):
                 content[k] = default
@@ -258,9 +260,12 @@ def verify_tar_files(tmp_package, tar_files):
             future_obj = executor.submit(valid_obj)
             all_task.append(future_obj)
         wait(all_task, return_when=ALL_COMPLETED)
+        success = True
         for future in as_completed(all_task):
             if future.result():
                 logger.info(future.result())
+                success = False
+    return success
 
 
 def load_verify_tar(tar_name=None):
@@ -268,7 +273,7 @@ def load_verify_tar(tar_name=None):
         settings.PROJECT_DIR, "tmp", uuid.uuid4().hex)
     local_cmd(f'mkdir -p {tmp_package}')
     tar_files = []
-    with RedisDB().conn.lock(lock_key):
+    with RedisDB().conn.lock(settings.SCAN_TOOL_LOCK_KEY):
         if tar_name:
             file_path = os.path.join(verify_tar_path, tar_name)
             if os.path.exists(file_path):
@@ -288,4 +293,4 @@ def load_verify_tar(tar_name=None):
 
 def find_tools_package(tar_name=None):
     tmp_package, tar_files = load_verify_tar(tar_name)
-    verify_tar_files(tmp_package, tar_files)
+    return verify_tar_files(tmp_package, tar_files)
