@@ -305,7 +305,7 @@ class ToolExecuteDetailHistory(TimeStampMixin):
             {
                 "local_file": local_file,
                 "remote_file": os.path.join(
-                    self.get_data_dir, f"omp_packages/{local_file}"
+                    self.get_data_dir, "omp_packages", local_file
                 )
             } for local_file in local_files
         ]

@@ -312,7 +312,8 @@ class ToolFormAnswerSerializer(serializers.Serializer):
                 if not file_name:
                     continue
                 file_args[script_arg.get("key")] = os.path.join(
-                    tool.tool_folder_path,
+                    "tool/upload_data",
+                    tool.tool_folder_path.rsplit("/", 1)[-1],
                     file_name
                 )
             else:
