@@ -92,14 +92,15 @@ class ThreadUtils:
         ip = tool_detail_obj.target_ip
         self.send_message(tool_detail_obj, 0)
         send_dc = tool_detail_obj.get_send_files()
-        send_to = send_dc.get("send_to", "/tmp")
-        for file in send_dc.get("local_files", []):
-            status, message = self.salt.cp_file(target=ip,
-                                                source_path=file,
-                                                target_path=send_to)
+        for file in send_dc:
+            status, message = self.salt.cp_file(
+                target=ip,
+                source_path=file.get("local_file"),
+                target_path=file.get("remote_file")
+            )
             if not status:
                 tool_detail_obj.status = ToolExecuteDetailHistory.STATUS_FAILED
-                self.send_message(tool_detail_obj, message)
+                self.send_message(tool_detail_obj, message=message)
                 return status, message
         # 执行脚本
         self.send_message(tool_detail_obj, 1)
