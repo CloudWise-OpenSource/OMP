@@ -293,7 +293,7 @@ class ToolExecuteDetailHistory(TimeStampMixin):
         :return: local_files：需要发送的文件，send_to：发送的位置
         """
         local_files = self.main_history.get_input_files()
-        tool_dir = self.get_tools_dir()
+        tool_dir = self.get_tools_dir
         tool_folder_path = tool_dir.get("tool_folder_path")
         send_package = tool_dir.get("send_package")
         local_files.append(os.path.join(
