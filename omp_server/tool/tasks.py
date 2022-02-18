@@ -66,9 +66,10 @@ class ThreadUtils:
             status, message = self.salt.cp_push(
                 target=ip,
                 source_path=file,
-                upload_path=file.rsplit("/", 1))
+                upload_path=file.rsplit("/", 1)[1])
             upload_real_paths.append(
-                os.path.join(self.salt_data, f"var/cache/salt/master/minions/{ip}/files/*"))
+                os.path.join(self.salt_data,
+                             f"var/cache/salt/master/minions/{ip}/files/{file.rsplit('/', 1)[1]}"))
             if not status:
                 tool_detail_obj.status = ToolExecuteDetailHistory.STATUS_FAILED
                 self.send_message(tool_detail_obj, message)
