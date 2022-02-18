@@ -23,6 +23,9 @@ class ToolDetailSerializer(serializers.ModelSerializer):
     tool_detail = serializers.SerializerMethodField()
     count = serializers.SerializerMethodField()
     tool_args = serializers.SerializerMethodField()
+    duration = serializers.SerializerMethodField()
+    run_user = serializers.SerializerMethodField()
+    time_out = serializers.SerializerMethodField()
 
     class Meta:
         """ 元数据 """
@@ -35,6 +38,17 @@ class ToolDetailSerializer(serializers.ModelSerializer):
         tools_obj = ToolExecuteDetailHistory.objects.filter(main_history=obj)
         setattr(self, "tools_obj", tools_obj)
         return tools_obj
+
+    def get_duration(self, obj):
+        return obj.duration
+
+    def get_run_user(self, obj):
+        user = self.tools_boj_ls(obj).first().run_user
+        user = user if user else "salt执行用户"
+        return user
+
+    def get_time_out(self, obj):
+        return self.tools_boj_ls(obj).first().time_out
 
     def get_count(self, obj):
         return self.tools_boj_ls(obj).count()
