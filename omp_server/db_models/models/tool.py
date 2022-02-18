@@ -197,7 +197,7 @@ class ToolExecuteMainHistory(models.Model):
 
     def get_input_files(self):
         files = []
-        for answer in self.form_answer:
+        for answer in self.form_answer.get("script_args", {}):
             if answer.get("type") == "file" and answer.get("default"):
                 files.append(
                     os.path.join(
@@ -295,12 +295,13 @@ class ToolExecuteDetailHistory(TimeStampMixin):
         local_files = self.main_history.get_input_files()
         tool_dir = self.get_tools_dir
         tool_folder_path = tool_dir.get("tool_folder_path")
-        send_package = tool_dir.get("send_package")
-        local_files.append(os.path.join(
-            settings.PROJECT_DIR, tool_folder_path, tool_dir.get("script_path")))
-        if send_package:
-            local_files.append(os.path.join(
-                settings.PROJECT_DIR, tool_folder_path, send_package))
+        pre_path = os.path.join(
+            settings.PROJECT_DIR, "package_hub", tool_folder_path)
+        local_files.append(
+            os.path.join(pre_path, tool_dir.get("script_path"))
+        )
+        for file in tool_dir.get("send_package", []):
+            local_files.append(os.path.join(pre_path, file))
         return {
             "local_files": local_files,
             "send_to": os.path.join(

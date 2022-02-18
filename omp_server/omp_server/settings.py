@@ -50,7 +50,8 @@ INSTALLED_APPS = [
     'users',
     'tests',
     'inspection',
-    'service_upgrade'
+    'service_upgrade',
+    'tool',
 ]
 
 MIDDLEWARE = [
@@ -252,6 +253,8 @@ CUSTOM_THRESHOLD_SERVICES = {
 # 可备份的组件
 BACKUP_SERVICE = {"mysql", "arangodb"}
 BACKUP_DEFAULT_PATH = os.path.join(PROJECT_DIR, "data/backup/")
+
+SCAN_TOOL_LOCK_KEY = "tool_package_verify"
 
 INTERFACE_KINDS = {"/api/appStore/upload/": "修改",
                    "/api/appStore/remove/": "删除",
