@@ -30,7 +30,8 @@ class UpgradeHistoryListAPIView(ListAPIView):
         .prefetch_related("upgradedetail_set")
     filter_backends = (OrderingFilter, )
     serializer_class = UpgradeHistorySerializer
-    ordering_fields = ("-id", )
+    ordering_fields = ("id", )
+    ordering = ('-id',)
     get_description = "升级历史记录页"
 
 
@@ -269,7 +270,8 @@ class RollbackHistoryListAPIView(ListAPIView):
         .prefetch_related("rollbackdetail_set")
     filter_backends = (OrderingFilter, )
     serializer_class = RollbackHistorySerializer
-    ordering_fields = ("-id", )
+    ordering_fields = ("id", )
+    ordering = ('-id',)
     get_description = "回滚历史记录页"
 
 

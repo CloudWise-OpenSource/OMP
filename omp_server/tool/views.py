@@ -4,7 +4,7 @@ from django_filters.rest_framework.backends import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.generics import ListAPIView, CreateAPIView
 from rest_framework.viewsets import GenericViewSet
-from rest_framework.mixins import RetrieveModelMixin
+from rest_framework.mixins import RetrieveModelMixin, ListModelMixin
 from db_models.models import (ToolExecuteMainHistory, ToolInfo, Host, Service)
 from tool.tool_filters import ToolFilter, ToolInfoKindFilter
 from tool.serializers import ToolListSerializer, ToolInfoDetailSerializer, \
@@ -43,7 +43,7 @@ class ToolFormDetailAPIView(GenericViewSet, RetrieveModelMixin):
     serializer_class = ToolFormDetailSerializer
 
 
-class ToolListView(AppStoreListView):
+class ToolListView(GenericViewSet, ListModelMixin):
     """查询所有实用工具列表"""
     queryset = ToolInfo.objects.all().order_by("-created")
     serializer_class = ToolListSerializer
@@ -53,10 +53,6 @@ class ToolListView(AppStoreListView):
     filter_class = ToolFilter
     # 操作信息描述
     get_description = "查询所有实用工具列表"
-
-    def list(self, request, *args, **kwargs):
-        return super(ToolListView, self).list(
-            request, name_field="name", *args, **kwargs)
 
 
 class ToolDetailView(GenericViewSet, RetrieveModelMixin):
@@ -99,8 +95,10 @@ class ToolFormAnswerAPIView(CreateAPIView, ToolRetrieveAPIMixin):
 
 class ToolExecuteHistoryListApiView(ListAPIView):
     get_description = "小工具执行列表页"
+    pagination_class = PageNumberPager
     serializer_class = ToolExecuteHistoryListSerializer
     queryset = ToolExecuteMainHistory.objects.all().select_related("tool")
     filter_backends = (SearchFilter, OrderingFilter, ToolInfoKindFilter)
     search_fields = ("task_name", )
-    ordering_fields = ("-start_time",)
+    ordering_fields = ("start_time",)
+    ordering = ('-start_time',)
