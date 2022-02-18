@@ -256,5 +256,7 @@ export const apiRequest = {
   // 实用工具
   utilitie: {
     queryList: "/api/tool/toolList/",
+    queryFormConf: "/api/tool/form/",
+    uploadFile: "/api/common/upload_file/",
   }
 };
