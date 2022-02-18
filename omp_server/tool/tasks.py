@@ -96,7 +96,7 @@ class ThreadUtils:
         for file in send_dc.get("local_files", []):
             status, message = self.salt.cp_file(target=ip,
                                                 source_path=file,
-                                                target_path=send_to)
+                                                target_path=os.path.join(send_to, file.rsplit("/", 1)[1]))
             if not status:
                 tool_detail_obj.status = ToolExecuteDetailHistory.STATUS_FAILED
                 self.send_message(tool_detail_obj, message)
