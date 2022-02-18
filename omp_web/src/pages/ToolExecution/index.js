@@ -83,6 +83,7 @@ const ToolExecution = () => {
       align: "center",
       ellipsis: true,
       width: 150,
+      fixed: "left",
       render: (text, record) => {
         return (
           <Tooltip title={text}>
@@ -215,7 +216,7 @@ const ToolExecution = () => {
             setExecutionColumn([...initColumns, ...extendItems]);
           }
           setExecutionList(
-            res.data.results.map((m) => {
+            res.data.results.map((m, idx) => {
               return {
                 ...m,
                 ...m?.modifiable_kwargs,
@@ -280,7 +281,9 @@ const ToolExecution = () => {
             label={item.name}
             name={item.key}
             key={item.key}
-            rules={[{ required: item.required, message: `请将文件传入${item.name}` }]}
+            rules={[
+              { required: item.required, message: `请将文件传入${item.name}` },
+            ]}
           >
             <Upload
               name="file"
@@ -374,7 +377,11 @@ const ToolExecution = () => {
           if (res.data.code == 0) {
             message.success("执行命令下发成功");
             setTimeout(() => {
-              history.push(`/utilitie/tool-management/tool-execution-results/${locationArr[locationArr.length - 1]}`)
+              history.push(
+                `/utilitie/tool-management/tool-execution-results/${
+                  locationArr[locationArr.length - 1]
+                }`
+              );
             }, 300);
           }
         }
@@ -647,7 +654,7 @@ const ToolExecution = () => {
           <div style={{ border: "1px solid rgb(235, 238, 242)" }}>
             <OmpTable
               size="small"
-              noScroll
+              scroll={{ x: executionColumns.length * 150 }}
               loading={executionLoading}
               columns={executionColumns}
               onChange={(e, filters, sorter) => {

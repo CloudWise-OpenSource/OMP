@@ -29,10 +29,10 @@ export const apiRequest = {
     restartHostAgent: "/api/hosts/restartHostAgent/",
     // 重启监控agent
     restartMonitorAgent: "/api/promemonitor/restartMonitorAgent/",
-     // 重装主机agent
-     reInstallHostAgent: "/api/hosts/hostReinstall/",
-     // 重装监控agent
-     reInstallMonitorAgent: "/api/hosts/monitorReinstall/",
+    // 重装主机agent
+    reInstallHostAgent: "/api/hosts/hostReinstall/",
+    // 重装监控agent
+    reInstallMonitorAgent: "/api/hosts/monitorReinstall/",
     // 主机进入退出维护模式
     hostsMaintain: "/api/hosts/maintain/",
     // 主机初始化脚本下载地址
@@ -154,13 +154,13 @@ export const apiRequest = {
     // 服务升级页面列表进度查询
     queryUpgradeProcess: "/api/upgrade/history",
 
-     // 服务回退选择应用服务列表
-     canRollback: "/api/rollback/can-rollback",
+    // 服务回退选择应用服务列表
+    canRollback: "/api/rollback/can-rollback",
 
-     // 服务回退动作下发
-     doRollback: "/api/rollback/do-rollback",
-     // 服务回退页面列表进度查询
-     queryRollbackProcess: "/api/rollback/history",
+    // 服务回退动作下发
+    doRollback: "/api/rollback/do-rollback",
+    // 服务回退页面列表进度查询
+    queryRollbackProcess: "/api/rollback/history",
   },
   installHistoryPage: {
     queryInstallHistoryList: "/api/appStore/mainInstallHistory",
@@ -251,12 +251,13 @@ export const apiRequest = {
     // 自愈策略查询
     querySelfHealingStrategy: "/api/services/SelfHealingSetting/",
     // 自愈策略修改
-    setSelfHealingSetting: "/api/services/SelfHealingSetting/"
+    setSelfHealingSetting: "/api/services/SelfHealingSetting/",
   },
   // 实用工具
   utilitie: {
     queryList: "/api/tool/toolList/",
     queryFormConf: "/api/tool/form/",
     uploadFile: "/api/common/upload_file/",
-  }
+    queryResult: "/api/tool/result/",
+  },
 };
