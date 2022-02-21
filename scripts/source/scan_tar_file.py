@@ -87,15 +87,15 @@ class ScanFile:
                     operation_uuid=uuid,
                     package_parent__isnull=True,
                 ).exclude(
-                    package_status__in=[0, 1, 2, 5])
-                if valid_uuids.count() == 0:
+                    package_status__in=[2])
+                if len(exec_name) != valid_uuids.count():
                     log_print("后台扫描中")
                     time.sleep(5)
-                elif 4 in valid_uuids.values_list("package_status", flat=True):
-                    log_print("后台扫描校验失败")
-                    result = False
+                # elif 4 in valid_uuids.values_list("package_status", flat=True):
+                #    log_print("后台扫描校验失败")
+                #    result = False
                 else:
-                    log_print("应用商店发布成功")
+                    log_print("应用商店扫描成功")
                     result = False
         except Exception as e:
             log_print(f"后台扫描失败:{e}")
