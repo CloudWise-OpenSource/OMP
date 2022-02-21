@@ -30,8 +30,8 @@ class BaseDownLoadTemplateView(GenericViewSet, ListModelMixin):
             settings.BASE_DIR.parent,
             "package_hub", parent_path, template_file_name)
         try:
-            with open(template_path, 'rb') as file:
-                response = FileResponse(file)
+            file = open(template_path, 'rb')
+            response = FileResponse(file)
             response["Content-Type"] = "application/octet-stream"
             response["Content-Disposition"] = \
                 f"attachment;filename={template_file_name}"

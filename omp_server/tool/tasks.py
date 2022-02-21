@@ -132,6 +132,7 @@ class ThreadUtils:
             return False, "执行失败"
         self.send_message(tool_detail_obj, 3)
         tool_detail_obj.status = ToolExecuteDetailHistory.STATUS_SUCCESS
+        tool_detail_obj.save()
         return True, "执行成功"
 
 
