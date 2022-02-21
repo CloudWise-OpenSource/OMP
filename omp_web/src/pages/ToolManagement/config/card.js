@@ -7,8 +7,8 @@ const kindMap = ["管理工具", "检查工具", "安全工具", "其他工具"]
 
 const Card = ({ idx, history, info, tabKey }) => {
   const [isHover, setIsHover] = useState(false);
-  let href = window.location.href.split("#")[0];
-
+  // let href = window.location.href.split("#")[0];
+  // console.log(href)
   return (
     <div
       className={styles.cardContainer}
@@ -77,7 +77,7 @@ const Card = ({ idx, history, info, tabKey }) => {
                     position: "relative",
                     top: 1,
                   }}
-                  src={`${href}${info.logo}`}
+                  src={`${info.logo}`}
                 />
               </div>
             </div>
