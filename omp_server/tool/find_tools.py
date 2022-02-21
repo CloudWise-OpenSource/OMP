@@ -265,6 +265,7 @@ def verify_tar_files(tmp_package, tar_files):
             if future.result():
                 logger.info(future.result())
                 success = False
+    local_cmd(f"rm -rf {tmp_package}")
     return success
 
 

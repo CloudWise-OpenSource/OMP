@@ -62,6 +62,11 @@ function loki() {
   bash $PROJECT_FOLDER/component/loki/scripts/loki $1
 }
 
+function ntpd() {
+  test -d $PROJECT_FOLDER/component/ntpd || return 0
+  bash $PROJECT_FOLDER/component/ntpd/scripts/ntpd $1
+}
+
 function all() {
   mysql $1
   redis $1
@@ -74,12 +79,13 @@ function all() {
   grafana $1
   loki $1
   prometheus $1
+  ntpd $1
 }
 
 check_user
 
 if [[ $# -eq 0 ]]; then
-  echo "bash omp [all|mysql|redis|tengine|uwsgi|worker|cron|salt|prometheus|alertmanager|grafana|loki] [status|start|stop|restart]"
+  echo "bash omp [all|mysql|redis|tengine|uwsgi|worker|cron|salt|prometheus|alertmanager|grafana|loki|ntpd] [status|start|stop|restart]"
 else
   case $1 in
   all)
@@ -129,6 +135,10 @@ else
   loki)
     shift
     loki "$@"
+    ;;
+  ntpd)
+    shift
+    ntpd "$@"
     ;;
   esac
 fi

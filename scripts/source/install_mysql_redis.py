@@ -13,7 +13,6 @@ import time
 import shutil
 import subprocess
 
-
 CURRENT_FILE_PATH = os.path.dirname(os.path.abspath(__file__))
 PROJECT_FOLDER = os.path.dirname(os.path.dirname(CURRENT_FILE_PATH))
 
@@ -130,7 +129,8 @@ def install_mysql():
     cmd(f"{_mysql_cli} -e '{create}'")
     _u = _dic["CW_MYSQL_USERNAME"]
     _p = _dic["CW_MYSQL_PASSWORD"]
-    cmd(f""" {_mysql_cli} -e 'grant all privileges on `omp`.* to "{_u}"@"%" identified by "{_p}" with grant option;' """)
+    cmd(
+        f""" {_mysql_cli} -e 'grant all privileges on `omp`.* to "{_u}"@"%" identified by "{_p}" with grant option;' """)
     flush = "flush privileges;"
     cmd(f"{_mysql_cli} -e '{flush}'")
 
@@ -159,6 +159,32 @@ def install_redis():
     cmd(f"bash {_redis_path} start")
 
 
+def install_ntpd():
+    """安装ntpd"""
+    _local_ip = get_config_dic().get("local_ip")
+    _conf_dic = {
+        "${CW_NTPDATE_CLIENT}": "restrict {0} mask 255.255.255.0 nomodify notrap".format(
+            _local_ip[:_local_ip.rindex(".")] + ".0")
+    }
+
+    _scripts_dic = {
+        "${CW_INSTALL_APP_DIR}": os.path.join(PROJECT_FOLDER, "component"),
+        "${CW_INSTALL_LOGS_DIR}": PROJECT_LOG_PATH,
+        "${CW_INSTALL_DATA_DIR}": PROJECT_DATA_PATH,
+        "${CW_RUN_USER}": get_config_dic().get("global_user"),
+    }
+    _ntpd_log_path = os.path.join(PROJECT_LOG_PATH, "ntpd")
+    _ntpd_data_path = os.path.join(PROJECT_DATA_PATH, "ntpd")
+    cmd(f"mkdir -p {_ntpd_log_path}")
+    cmd(f"mkdir -p {_ntpd_data_path}")
+    _ntpd_scripts_path = os.path.join(_scripts_dic["${CW_INSTALL_APP_DIR}"], "ntpd/scripts/ntpd")
+    _ntpd_conf_path = os.path.join(_scripts_dic["${CW_INSTALL_APP_DIR}"], "ntpd/conf/ntp.conf")
+    replace_placeholder(_ntpd_conf_path, _conf_dic)
+    replace_placeholder(_ntpd_scripts_path, _scripts_dic)
+    cmd(f"bash {_ntpd_scripts_path} start")
+
+
 if __name__ == '__main__':
+    install_ntpd()
     install_mysql()
     install_redis()
