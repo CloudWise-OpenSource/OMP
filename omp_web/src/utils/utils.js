@@ -117,7 +117,7 @@ export function renderInformation(text, record, index) {
 }
 
 //小圆点
-const renderCircular = (borderColor, backgroundColor) => {
+export const renderCircular = (borderColor, backgroundColor) => {
   return (
     <span
       style={{

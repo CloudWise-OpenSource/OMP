@@ -9,14 +9,20 @@ import {
   nonEmptyProcessing,
   logout,
   isPassword,
+  renderDisc,
 } from "@/utils/utils";
 import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import moment from "moment";
 import { SearchOutlined, SettingFilled } from "@ant-design/icons";
+import { useHistory, useLocation } from "react-router-dom";
+
+const kindMap = ["管理工具", "检查工具", "安全工具", "其他工具"];
 
 const TaskRecord = () => {
   const [loading, setLoading] = useState(false);
+
+  const history = useHistory();
 
   //table表格数据
   const [dataSource, setDataSource] = useState([]);
@@ -33,75 +39,126 @@ const TaskRecord = () => {
   const columns = [
     {
       title: "任务标题",
-      width: 40,
-      key: "_idx",
-      dataIndex: "_idx",
+      width: 100,
+      key: "task_name",
+      dataIndex: "task_name",
       //sorter: (a, b) => a.username - b.username,
       // sortDirections: ["descend", "ascend"],
       align: "center",
-      render: nonEmptyProcessing,
       fixed: "left",
+      render:(text, record)=>{
+        if(!text){
+          return "-"
+        }
+        return <a onClick={()=>{
+          history.push(
+            `/utilitie/tool-management/tool-execution-results/${
+              record.id
+            }`
+          );
+        }}>{text}</a>
+      }
     },
     {
       title: "分类",
-      key: "username",
+      key: "kind",
       width: 100,
-      dataIndex: "username",
-      sorter: (a, b) => a.username - b.username,
-      sortDirections: ["descend", "ascend"],
+      dataIndex: "kind",
       align: "center",
-      render: nonEmptyProcessing,
+      usefilter: true,
+      queryRequest: (params) => {
+        fetchData(
+          { current: 1, pageSize: pagination.pageSize },
+          { ...pagination.searchParams, ...params },
+          pagination.ordering
+        );
+      },
+      filterMenuList: [
+        {
+          value: 0,
+          text: "管理工具",
+        },
+        {
+          value: 1,
+          text: "检查工具",
+        },
+        {
+          value: 2,
+          text: "安全工具",
+        },
+        {
+          value: 3,
+          text: "其他工具",
+        },
+      ],
+      render: (text) => {
+        return kindMap[text];
+      },
     },
     {
       title: "执行时间",
-      key: "ip",
-      dataIndex: "ip",
+      key: "start_time",
+      dataIndex: "start_time",
       width: 100,
-      sorter: (a, b) => a.ip - b.ip,
+      sorter: (a, b) => a.start_time - b.start_time,
       sortDirections: ["descend", "ascend"],
       align: "center",
-      render: nonEmptyProcessing,
+      render: (text)=>{
+        return text ? moment(text).format("YYYY-MM-DD HH:mm:ss") : "-";
+      },
     },
     {
       title: "状态",
-      key: "role",
-      dataIndex: "role",
+      key: "status",
+      dataIndex: "status",
       width: 100,
-      sorter: (a, b) => a.role - b.role,
-      sortDirections: ["descend", "ascend"],
       align: "center",
-      render: nonEmptyProcessing,
+      render: (text, record, index) => {
+        if (!text && text !== 0) {
+          return "-";
+        } else if (text === 0) {
+          return <div>{renderDisc("warning", 7, -1)}待执行</div>;
+        } else if (text === 1) {
+          return <div>{renderDisc("warning", 7, -1)}执行中</div>;
+        } else if (text === 2) {
+          return <div>{renderDisc("normal", 7, -1)}执行成功</div>;
+        } else if (text === 3) {
+          return <div>{renderDisc("critical", 7, -1)}执行失败</div>;
+        } else {
+          return text;
+        }
+      },
     },
-    // {
-    //   title: "用户状态",
-    //   key: "is_active",
-    //   dataIndex: "is_active",
-    //   align: "center",
-    //   width: 100,
-    //   render: (text) => {
-    //     if (text) {
-    //       return "正常";
-    //     } else {
-    //       return "停用";
-    //     }
-    //   },
-    // },
     {
       title: "执行用时",
-      key: "login_time",
-      dataIndex: "login_time",
+      key: "duration",
+      dataIndex: "duration",
       align: "center",
       width: 100,
-      sorter: (a, b) => a.login_time - b.login_time,
-      sortDirections: ["descend", "ascend"],
-      // render: (text) => {
-      //   if (text) {
-      //     return moment(text).format("YYYY-MM-DD HH:mm:ss");
-      //   } else {
-      //     return "-";
-      //   }
-      // },
       render: nonEmptyProcessing,
+    },
+    {
+      title: "操作",
+      width: 60,
+      key: "",
+      dataIndex: "",
+      align: "center",
+      fixed: "right",
+      render: function renderFunc(text, record, index) {
+        return (
+          <div style={{ display: "flex", justifyContent: "space-around" }}>
+            <div style={{ margin: "auto" }}>
+              <a onClick={() => {
+                 history.push(
+                  `/utilitie/tool-management/tool-execution-results/${
+                    record.id
+                  }`
+                );
+              }}>查看</a>
+            </div>
+          </div>
+        );
+      },
     },
   ];
 
@@ -111,7 +168,7 @@ const TaskRecord = () => {
     ordering
   ) {
     setLoading(true);
-    fetchGet(apiRequest.operationRecord.queryLoginLog, {
+    fetchGet(apiRequest.utilitie.queryHistory, {
       params: {
         page: pageParams.current,
         size: pageParams.pageSize,
@@ -153,11 +210,11 @@ const TaskRecord = () => {
     <OmpContentWrapper>
       <div style={{ display: "flex" }}>
         <div style={{ display: "flex", marginLeft: "auto" }}>
-          <span style={{ width: 60, display: "flex", alignItems: "center" }}>
-            用户名:
+          <span style={{ width: 50, display: "flex", alignItems: "center" }}>
+            名称:
           </span>
           <Input
-            placeholder="请输入用户名"
+            placeholder="搜索名称"
             style={{ width: 200 }}
             allowClear
             value={selectValue}
@@ -171,7 +228,7 @@ const TaskRecord = () => {
                   },
                   {
                     ...pagination.searchParams,
-                    username: null,
+                    search: null,
                   }
                 );
               }
@@ -184,7 +241,7 @@ const TaskRecord = () => {
                 },
                 {
                   ...pagination.searchParams,
-                  username: selectValue,
+                  search: selectValue,
                 }
               );
             }}
@@ -196,7 +253,7 @@ const TaskRecord = () => {
                 },
                 {
                   ...pagination.searchParams,
-                  username: selectValue,
+                  search: selectValue,
                 },
                 pagination.ordering
               );
@@ -212,7 +269,7 @@ const TaskRecord = () => {
             onClick={() => {
               fetchData(
                 { current: pagination.current, pageSize: pagination.pageSize },
-                { username: selectValue },
+                {  search: selectValue },
                 pagination.ordering
               );
             }}
