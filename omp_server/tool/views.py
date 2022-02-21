@@ -10,7 +10,6 @@ from tool.tool_filters import ToolFilter, ToolInfoKindFilter
 from tool.serializers import ToolListSerializer, ToolInfoDetailSerializer, \
     ToolTargetObjectServiceSerializer, ToolFormAnswerSerializer, \
     ToolExecuteHistoryListSerializer
-from app_store.views import AppStoreListView
 from utils.common.paginations import PageNumberPager
 from tool.serializers import ToolDetailSerializer, ToolFormDetailSerializer, \
     ToolTargetObjectHostSerializer

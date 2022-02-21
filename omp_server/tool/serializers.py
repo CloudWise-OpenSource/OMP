@@ -311,11 +311,8 @@ class ToolFormAnswerSerializer(serializers.Serializer):
                 file_name = script_arg.get("default", {}).get("file_name")
                 if not file_name:
                     continue
-                file_args[script_arg.get("key")] = os.path.join(
-                    "tool/upload_data",
-                    tool.tool_folder_path.rsplit("/", 1)[-1],
-                    file_name
-                )
+                file_args[script_arg.get("key")] = script_arg.get(
+                    "default", {}).get("file_url")
             else:
                 common_args[script_arg.get("key")] = script_arg.get("default")
         execute_details = []
