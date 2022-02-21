@@ -19,6 +19,7 @@ from concurrent.futures import (
 )
 from utils.parse_config import BASIC_ORDER
 import logging
+from utils.plugin.salt_client import SaltClient
 
 logger = logging.getLogger('server')
 
@@ -62,6 +63,25 @@ def order(service_obj, actions):
     return basic_lists
 
 
+def service_status(service_objs):
+    """
+    查询全局状态
+    """
+    salt_obj = SaltClient()
+    ips = {}
+    for obj in service_objs:
+        exec_cmd = obj.service_controllers.get(
+            "start", "").replace(" start", " status")
+        if not ips.get(obj.ip):
+            ips[obj.ip] = exec_cmd
+        else:
+            ips[obj.ip] = ips.get(obj.ip) + f" && {exec_cmd}"
+
+    for ip, exe_action in ips.items():
+        is_success, info = salt_obj.cmd(ip, exe_action, 600)
+        print(f"{ip}:{is_success}\n{info}")
+
+
 def service_actions(actions, ip=None):
     """
     执行服务启停，支持ip筛选
@@ -73,6 +93,7 @@ def service_actions(actions, ip=None):
         "restart": ["3", Service.SERVICE_STATUS_RESTARTING]
     }
     action = choice.get(actions)
+    actions = "start" if actions == "status" else actions
     service_obj = Service.objects.filter(service_controllers__has_key=actions).exclude(
         service_status__in=[Service.SERVICE_STATUS_INSTALLING,
                             Service.SERVICE_STATUS_UPGRADE,
@@ -80,6 +101,9 @@ def service_actions(actions, ip=None):
                             Service.SERVICE_STATUS_DELETING
                             ]
     ).select_related("service")
+    if not action:
+        service_status(service_obj)
+        return
     if ip:
         service_obj = service_obj.filter(ip=ip)
     service_obj.update(service_status=action[1])
@@ -106,9 +130,9 @@ def service_actions(actions, ip=None):
 if __name__ == '__main__':
     try:
         actions = sys.argv[1:]
-        if actions[0] not in ["start", "stop", "restart"]:
-            print("请输入正确的(start,stop,restart)参数")
+        if actions[0] not in ["start", "stop", "restart", "status"]:
+            print("请输入正确的(start,stop,restart,status)参数")
             sys.exit(1)
         service_actions(*actions)
     except Exception as err:
-        print(f"请输入参数(start,stop,restart):{err}")
+        print(f"请输入参数(start,stop,restart,status):{err}")
