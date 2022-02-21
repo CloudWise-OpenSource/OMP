@@ -30,7 +30,11 @@ class ToolDetailSerializer(serializers.ModelSerializer):
     class Meta:
         """ 元数据 """
         model = ToolExecuteMainHistory
-        fields = "__all__"
+        fields = (
+            "tool", "tool_detail", "count", "tool_args",
+            "duration", "run_user", "time_out", "task_name",
+            "operator", "status", "start_time", "end_time"
+        )
 
     def tools_boj_ls(self, obj):
         if hasattr(self, "tools_obj"):
