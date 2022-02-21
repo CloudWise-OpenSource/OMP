@@ -45,7 +45,7 @@ const Details = () => {
   const history = useHistory();
   const [loading, setLoading] = useState(false);
   // console.log([...location].pop())
-  let href = window.location.href.split("#")[0];
+  // let href = window.location.href.split("#")[0];
   const locationArr = useLocation().pathname.split("/");
 
   const [info, setInfo] = useState({});
@@ -115,7 +115,7 @@ const Details = () => {
                       position: "relative",
                       top: 1,
                     }}
-                    src={`${href}${info.logo}`}
+                    src={`${info.logo}`}
                   />
                 </div>
               </div>
