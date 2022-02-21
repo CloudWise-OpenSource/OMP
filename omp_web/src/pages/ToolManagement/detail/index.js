@@ -288,7 +288,7 @@ const Details = () => {
             <span style={{ color: "rgb(34, 34, 34)" }}>README.md</span>
           </div>
           <div className={styles.readmeContent}>
-            <Readme text={info.readmeInfo} />
+            <Readme text={info.readme_info} />
           </div>
         </div>
       </Spin>

@@ -379,7 +379,7 @@ const ToolExecution = () => {
             setTimeout(() => {
               history.push(
                 `/utilitie/tool-management/tool-execution-results/${
-                  locationArr[locationArr.length - 1]
+                  res.data.data.id
                 }`
               );
             }, 300);
