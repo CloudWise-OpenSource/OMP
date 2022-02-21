@@ -47,7 +47,7 @@ class ThreadUtils:
         """
         标准打印日志
         """
-        message_info = ["开始发送工具包", "开始执行工具包", "开始获取输出文件", "工具执行成功"]
+        message_info = ["占位", "开始执行工具包", "开始获取输出文件", "工具执行成功", "开始发送工具包"]
         if index:
             message = message_info[index]
         tool_detail_obj.execute_log += "{1} {0}\n".format(
@@ -90,7 +90,7 @@ class ThreadUtils:
         tool_detail_obj.status = ToolExecuteDetailHistory.STATUS_RUNNING
         # 发送文件
         ip = tool_detail_obj.target_ip
-        self.send_message(tool_detail_obj, 0)
+        self.send_message(tool_detail_obj, 4)
         send_dc = tool_detail_obj.get_send_files()
         for file in send_dc:
             status, message = self.salt.cp_file(
@@ -123,7 +123,7 @@ class ThreadUtils:
                 tool_detail_obj.status = ToolExecuteDetailHistory.STATUS_FAILED
             self.send_message(tool_detail_obj, message=message)
             return status, message
-        self.send_message(tool_detail_obj, message=message)
+        self.send_message(tool_detail_obj, message=f"脚本输出如下: {message}")
         # 获取目标输出文件
         receive_files = tool_detail_obj.get_receive_files()
         if receive_files:
@@ -131,6 +131,8 @@ class ThreadUtils:
         if not status:
             return False, "执行失败"
         self.send_message(tool_detail_obj, 3)
+        tool_detail_obj.status = ToolExecuteDetailHistory.STATUS_SUCCESS
+        tool_detail_obj.save()
         return True, "执行成功"
 
 
