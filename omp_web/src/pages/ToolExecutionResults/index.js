@@ -48,7 +48,7 @@ const ToolExecutionResults = () => {
   // 当前选中的状态
   const [currentStatus, setCurrentStatus] = useState(null);
 
-  const tiemr = useRef(null);
+  const timer = useRef(null);
 
   const queryData = (init) => {
     init && setLoading(true);
@@ -68,7 +68,7 @@ const ToolExecutionResults = () => {
 
           // 等待执行 和 执行中 要继续请求
           if (res.data.status == 0 || res.data.status == 1) {
-            tiemr.current = setTimeout(() => {
+            timer.current = setTimeout(() => {
               queryData();
             }, 5000);
           }
@@ -90,6 +90,9 @@ const ToolExecutionResults = () => {
 
   useEffect(() => {
     queryData("init");
+    return ()=>{
+      timer.current && clearTimeout(timer.current)
+    }
   }, []);
   return (
     <OmpContentWrapper

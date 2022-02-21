@@ -259,5 +259,6 @@ export const apiRequest = {
     queryFormConf: "/api/tool/form/",
     uploadFile: "/api/common/upload_file/",
     queryResult: "/api/tool/result/",
+    queryHistory:"/api/tool/execute-history"
   },
 };
