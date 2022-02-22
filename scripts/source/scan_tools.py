@@ -17,4 +17,9 @@ from tool.find_tools import find_tools_package
 
 
 if __name__ == '__main__':
-    find_tools_package()
+    result = find_tools_package()
+    if result:
+        print("扫描小工具完成！")
+        sys.exit(0)
+    print("扫描小工具完成,部分工具包校验失败，详细请查看logs/debug.log！")
+    sys.exit(1)
