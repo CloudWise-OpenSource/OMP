@@ -239,10 +239,6 @@ def self_healing_ssh_verification(host_self_healing_list,sudo_check_cmd):
     transport.close()
 
 def get_service_status_direct(service_obj_list):
-    """
-    直接从monitor_agent获取服务状态
-    param: [{"ip": "127.0.0.1", "service_name": "mysql"}, {"ip": "127.0.0.1", "service_name": "redis"}]
-    """
     service_obj_result = list()
     monitor_agent_port = MONITOR_PORT.get('monitorAgent', 19031)
     headers_type = {"Content-Type": "application/json"}
