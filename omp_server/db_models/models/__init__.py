@@ -87,5 +87,8 @@ __all__ = [
     Alert,
     AlertRule,
     # 自定义脚本
-    CustomScript
+    CustomScript,
+    Alert,
+    AlertRule
+
 ]
