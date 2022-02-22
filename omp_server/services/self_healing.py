@@ -18,6 +18,7 @@ from utils.parse_config import MONITOR_PORT
 from promemonitor.prometheus_utils import CW_TOKEN
 @shared_task
 def self_healing(alert_list):
+    """ 添加数据入库校验逻辑"""
     alert_list = Alert.objects.filter(id__in=alert_list)
     logger.info("传入id 信息{}".format(alert_list))
     user_healing = SelfHealingSetting.objects.all().values_list("used", "max_healing_count", "env_id")
@@ -33,7 +34,7 @@ def self_healing(alert_list):
     # 服务查看时间间隔
     self_healing_interval=30
     # 循环自愈服务间隔
-    loop_interval=10
+    loop_interval=5
     if len(alert_list) >= 1 and healing_mode == 1:
         time.sleep(loop_interval)
         for i in range(len(alert_list)):
@@ -43,7 +44,8 @@ def self_healing(alert_list):
                 alert_ser = SelfHealingHistory.objects.filter(
                     service_name=alert_list[i].alert_service_name,
                     host_ip=alert_list[i].alert_host_ip,
-                    alert_time=host_alert_time)
+                    state=2)
+                    # alert_time=host_alert_time)
                 logger.info("service_step_1 需要入库信息集合长度: {} ".format(alert_ser.count()))
                 instance_name_list.append(alert_list[i].alert_instance_name)
                 logger.info("service_step_2 需要入库信息集合列表: {} ".format(instance_name_list))
@@ -189,7 +191,6 @@ def self_healing(alert_list):
                             service_replace_list_0.remove(service_replace_list_0[k])
                             break
                     if cmd_flag == False:
-                        service_replace_list_0.remove(service_replace_list_0[k])
                         SelfHealingHistory.objects.filter(
                             id=service_replace_list_0[k].get("id")) \
                             .update(healing_count=count,state=0,
@@ -244,8 +245,9 @@ def get_service_status_direct(service_obj_list):
     """
     service_obj_result = list()
     monitor_agent_port = MONITOR_PORT.get('monitorAgent', 19031)
-    # headers = {"Content-Type": "application/json"}.update(CW_TOKEN)
-    headers = CW_TOKEN
+    headers_type = {"Content-Type": "application/json"}
+    headers_authentication = CW_TOKEN
+    headers = dict(headers_type, **headers_authentication)
     ip_item_list = list()
     ip_list = list()
     for ele in service_obj_list:
