@@ -29,7 +29,7 @@ PROJECT_DIR = os.path.dirname(BASE_DIR)
 SECRET_KEY = 'rofvdj3gbyg0(vb-ck=d(*1o=jx=l2_%c0*ox^rv%2s36(u3-@'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 # 允许所有
 ALLOWED_HOSTS = ["*"]

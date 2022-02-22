@@ -552,3 +552,28 @@ class Prometheus:
         service_list = self.get_service_cpu_usage(service_list)
         service_list = self.get_service_mem_usage(service_list)
         return service_list
+
+    def get_quota_res(self,quota):
+        """
+        获取指标结果
+        """
+        query_url = f"{self.prometheus_api_query_url}{quota}"
+        try:
+            response = requests.get(
+                    url=query_url, headers=self.headers, auth=self.basic_auth)
+            if response.status_code != 200:
+                logger.error(f"测试promsql错误: 状态码为{response.status_code} 错误{response.text}")
+                return False, response.text
+            print(query_url,response.json())
+            if response.json().get("status") == "success":
+                return True, response.json()["data"]["result"]
+            return False, response.text
+        except Exception as e:
+            logger.error(f"测试promsql错误：{e}")
+            return False, "访问prometheus错误"
+
+
+class UpdatePrometheusRule(object):
+    """
+    更新prometheus的配置文件
+    """

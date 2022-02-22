@@ -82,3 +82,53 @@ class ServiceCustomThreshold(models.Model):
     class Meta:
         db_table = 'omp_service_custom_threshold'
         verbose_name = verbose_name_plural = '服务定制指标阈值设置'
+
+
+class Rule(models.Model):
+    """
+    表达式存储
+    """
+    name = models.CharField("指标名称", max_length=255,null=False)
+    expr = models.TextField("监控指标表达式，报警语法", null=False, blank=False)
+    service = models.CharField("服务名称",max_length=255, null=False)
+    description = models.TextField("描述",null=True)
+
+    class Meta:
+        """
+        元数据
+        """
+        db_table = "omp_rule"
+        verbose_name = verbose_name_plural = "规则表达式"
+
+class AlertRule(models.Model):
+    """
+    告警规则
+    """
+    env_id = models.IntegerField("环境id", default=1)
+    expr = models.TextField("监控指标表达式，报警语法", null=False, blank=False)
+    threshold_value = models.FloatField("阈值的数值", null=False, blank=False)
+    compare_str = models.CharField("比较符", max_length=64)
+    for_time = models.CharField("持续一段时间获取不到信息就触发告警", max_length=64)
+    severity = models.CharField("告警级别", max_length=64)
+    alert = models.TextField("标题，自定义摘要")
+    service = models.CharField("指标所属服务名称", max_length=255)
+    status = models.IntegerField("启用状态", default=0)
+    TYPE = (
+        (0, "builtins"),
+        (1, "custom"),
+        (2, "log")
+    )
+    quota_type = models.IntegerField("指标的类型", choices=TYPE, default=0)
+    labels = models.JSONField("额外指定标签",null=True)
+    # builtins_not_enabled = models.IntegerField("内置未启用的规则", default=0)
+    summary = models.TextField("描述, 告警指标描述", null=True)
+    description = models.TextField("描述, 告警指标描述", null=True)
+    create_time = models.DateTimeField("告警规则入库时间", auto_now_add=True)
+    update_time = models.DateTimeField("告警规则更新时间", auto_now_add=True)
+
+    class Meta:
+        """
+        元数据
+        """
+        db_table = "omp_alert_ruler"
+        verbose_name = verbose_name_plural = "自定义告警规则"
