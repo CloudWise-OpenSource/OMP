@@ -58,6 +58,7 @@ const breadcrumbNameMap = {
   "tool-management-detail": "工具详情",
   "task-record":"任务记录",
   "tool-execution-results":"执行结果",
+  "indicator-rule": "指标规则"
 };
 
 // 基于面包屑组件的一层封装，用于匹配当前路由地址，动态展示页面路径

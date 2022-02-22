@@ -60,7 +60,7 @@ const ToolExecutionResults = () => {
       .then((res) => {
         handleResponse(res, (res) => {
           setInfo(res.data);
-          if (res.data.tool_detail && init) {
+          if (res.data.tool_detail) {
             currentIp == null && setCurrentIp(res.data.tool_detail[0].ip);
             currentStatus == null &&
               setCurrentStatus(res.data.tool_detail[0].status);
