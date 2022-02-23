@@ -193,6 +193,9 @@ server {
     location /tool/ {
         alias %s/package_hub/tool/;
     }
+    location /custom_scripts/ {
+        alias %s/package_hub/custom_scripts/;
+    }
     location /download/ {
         alias %s/tmp/;
     }
@@ -214,6 +217,7 @@ server {
     }
 }
 """ % (
+    PROJECT_FOLDER,
     PROJECT_FOLDER,
     PROJECT_FOLDER,
     PROJECT_FOLDER,
