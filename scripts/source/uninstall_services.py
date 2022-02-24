@@ -49,7 +49,8 @@ class UninstallServices(object):
             command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
         )
         stdout, stderr = p.communicate()
-        _out, _err, _code = stdout.decode("utf8"), stderr.decode("utf8"), p.returncode
+        _out, _err, _code = stdout.decode(
+            "utf8"), stderr.decode("utf8"), p.returncode
         return _out, _err, _code
 
     def delete_salt_key(self, key_list):
@@ -101,17 +102,23 @@ class UninstallServices(object):
         final_cmd = f"{_delete_cron_cmd} {_stop_agent}"
         salt_res_flag, salt_res_msg = _ssh_obj.cmd(final_cmd, timeout=60)
         logger.info(f"卸载{ip}上的omp_salt_agent的命令为: {final_cmd}")
-        logger.info(f"卸载{ip}上的omp_salt_agent的结果为: {salt_res_flag} {salt_res_msg}")
+        logger.info(
+            f"卸载{ip}上的omp_salt_agent的结果为: {salt_res_flag} {salt_res_msg}")
         # 卸载monitor agent
         monitor_agent_dir = os.path.join(agent_dir, "omp_monitor_agent")
+        _delete_monitor_cron_cmd = "crontab -l|grep -v omp_monitor_agent 2>/dev/null | crontab -;"
         _uninstall_monitor_agent_cmd = f"cd {monitor_agent_dir} &&" \
                                        f" ./manage stop_all &&" \
                                        f" bash monitor_agent.sh stop &&" \
                                        f" cd {agent_dir} &&" \
+                                       f" {_delete_monitor_cron_cmd} &&" \
                                        f" rm -rf omp_monitor_agent"
-        monitor_res_flag, monitor_res_msg = _ssh_obj.cmd(_uninstall_monitor_agent_cmd, timeout=120)
-        logger.info(f"卸载{ip}上的omp_monitor_agent的命令为: {_uninstall_monitor_agent_cmd}")
-        logger.info(f"卸载{ip}上的omp_monitor_agent的结果为: {monitor_res_flag} {monitor_res_msg}")
+        monitor_res_flag, monitor_res_msg = _ssh_obj.cmd(
+            _uninstall_monitor_agent_cmd, timeout=120)
+        logger.info(
+            f"卸载{ip}上的omp_monitor_agent的命令为: {_uninstall_monitor_agent_cmd}")
+        logger.info(
+            f"卸载{ip}上的omp_monitor_agent的结果为: {monitor_res_flag} {monitor_res_msg}")
         if not all([cmd_res, salt_res_flag, monitor_res_flag]):
             return False, f"({ip}上卸载文件清除：{cmd_res}-{msg};\n salt:{salt_res_flag}-{salt_res_msg};\n monitor:{monitor_res_flag}-{monitor_res_msg};\n)"
         return True, "success"
@@ -193,7 +200,8 @@ class UninstallServices(object):
         """调用卸载函数执行卸载"""
         ids_uninstall_list = [item.id for item in item_list]
         for id in ids_uninstall_list:
-            uninstall_exec_action.delay(action="4", instance=id, operation_user="command_line", del_file=True)
+            uninstall_exec_action.delay(
+                action="4", instance=id, operation_user="command_line", del_file=True)
 
     def uninstall_all_services(self, uninstall_list):
         """卸载所有的服务"""

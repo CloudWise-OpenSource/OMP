@@ -18,6 +18,7 @@ from utils.parse_config import MONITOR_PORT
 from promemonitor.prometheus_utils import CW_TOKEN
 @shared_task
 def self_healing(alert_list):
+    """ 添加数据入库校验逻辑 添加定时任务"""
     alert_list = Alert.objects.filter(id__in=alert_list)
     logger.info("传入id 信息{}".format(alert_list))
     user_healing = SelfHealingSetting.objects.all().values_list("used", "max_healing_count", "env_id")
@@ -30,8 +31,12 @@ def self_healing(alert_list):
     grafana_url_log = (grafana_url[0].get("instance_url"))
     # 监控服务集合
     instance_name_list = []
+    # 服务查看时间间隔
+    self_healing_interval=30
+    # 循环自愈服务间隔
+    loop_interval=5
     if len(alert_list) >= 1 and healing_mode == 1:
-        time.sleep(10)
+        time.sleep(loop_interval)
         for i in range(len(alert_list)):
             host_alert_time = alert_list[i].alert_time
             if alert_list[i].alert_type == 'service':
@@ -39,6 +44,7 @@ def self_healing(alert_list):
                 alert_ser = SelfHealingHistory.objects.filter(
                     service_name=alert_list[i].alert_service_name,
                     host_ip=alert_list[i].alert_host_ip,
+                    # state=2,
                     alert_time=host_alert_time)
                 logger.info("service_step_1 需要入库信息集合长度: {} ".format(alert_ser.count()))
                 instance_name_list.append(alert_list[i].alert_instance_name)
@@ -53,7 +59,6 @@ def self_healing(alert_list):
                             res_dist['ip'] = j[0]
                             res_dist['start'] = j[1].get('start')
                             res_dist['service_instance_name'] = j[2].split('-')[0]
-
                             logger.info("service_step_4 服务启动脚本入库信息".format(res_dist))
                             SelfHealingHistory.objects.create(
                                 is_read=0, host_ip=alert_list[i].alert_host_ip,
@@ -96,16 +101,16 @@ def self_healing(alert_list):
                     except Exception as e:
                         logger.info("monitor_agent_res_error 监控报错信息{}".format(e))
                     """ 服务状态查看"""
-                    if monitor_agent_res_batch[0].get("status") ==1:
+                    if monitor_agent_res_batch[0].get("status") ==0:
                         for w in service_queryset_1:
-                            logger.info("host_step_3 服务状态正常逻辑 ")
+                            logger.info("host_step_3 服务状态异常逻辑 ")
                             if w[1].get('start') is not None:
                                 try:
                                     logger.info("host_step_4 需要入库信息:{},host_ip:{},alert_time:{}"
                                                 "".format(w[2].split('-')[0],w[0],host_alert_time))
                                     alert_ser_0 = SelfHealingHistory.objects.filter(
                                         service_name=w[2].split('-')[0],
-                                        host_ip=w[0],state=2,
+                                        host_ip=w[0],
                                         alert_time=host_alert_time)
                                     logger.info("host_step_5 需要入库信息集合列表:{}".format(alert_ser_0))
                                     if alert_ser_0.count() == 0:
@@ -123,6 +128,7 @@ def self_healing(alert_list):
                                             instance_name=w[2],
                                             service_en_type=1,
                                             healing_log=res_dist,
+                                            alert_content=alert_list[i].alert_describe,
                                             monitor_log=grafana_url_log+"?var-app={}".format(w[2].split('-')[0]),
                                             start_time=host_alert_time)
                                 except Exception as e:
@@ -133,7 +139,7 @@ def self_healing(alert_list):
                     logger.info("host_step_2 主机ssh 校验失败退出")
                     break
                     # sys.exit()
-        history_queryset = SelfHealingHistory.objects.filter(state=2).values("id","healing_log")
+        history_queryset = SelfHealingHistory.objects.filter(state=2).values("id","healing_log").order_by("id")
         logger.info("self_healing_0 需要自愈对象集合 {}".format(history_queryset))
         if len(history_queryset) > 0:
             logger.info("self_healing_1 进入自愈逻辑 {}".format(len(history_queryset)))
@@ -150,7 +156,7 @@ def self_healing(alert_list):
             count = 0
             while (count < max_healing_count):  # 变量
                 logger.info("self_healing_3 进入循环自愈流程")
-                time.sleep(10)
+                time.sleep(self_healing_interval)
                 count = count + 1
                 logger.info("self_healing_4  第{}次自愈输出列表{},列表长度为:{}".format(
                     count, service_replace_list_0, len(service_replace_list_0)))
@@ -177,7 +183,7 @@ def self_healing(alert_list):
                             break
                         logger.info("monitor_agent_res 监控返回数据{},数据类型{}"
                                     "".format(monitor_agent_res, type(monitor_agent_res)))
-                        if monitor_agent_res[0].get("status")==0:
+                        if monitor_agent_res[0].get("status")==1:
                             logger.info("monitor_agent_res 服务状态查看正常更新服务状态")
                             SelfHealingHistory.objects.filter(
                                 id=service_replace_list_0[k].get("id")).update(
@@ -185,7 +191,6 @@ def self_healing(alert_list):
                             service_replace_list_0.remove(service_replace_list_0[k])
                             break
                     if cmd_flag == False:
-                        service_replace_list_0.remove(service_replace_list_0[k])
                         SelfHealingHistory.objects.filter(
                             id=service_replace_list_0[k].get("id")) \
                             .update(healing_count=count,state=0,
@@ -240,8 +245,9 @@ def get_service_status_direct(service_obj_list):
     """
     service_obj_result = list()
     monitor_agent_port = MONITOR_PORT.get('monitorAgent', 19031)
-    # headers = {"Content-Type": "application/json"}.update(CW_TOKEN)
-    headers = CW_TOKEN
+    headers_type = {"Content-Type": "application/json"}
+    headers_authentication = CW_TOKEN
+    headers = dict(headers_type, **headers_authentication)
     ip_item_list = list()
     ip_list = list()
     for ele in service_obj_list:

@@ -351,7 +351,7 @@ class InitHost(BaseInit):
     def set_hostname(self):
         """设置主机名"""
         _out, _err, _code = self.cmd("echo $(hostname)")
-        if _out.strip().lower() in TO_MODIFY_HOST_NAME:
+        if _out.strip().lower() in TO_MODIFY_HOST_NAME or _out.strip().isdigit():
             self.cmd('echo "{0}" >/etc/hostname'.format(self.hostname))
             self.cmd('echo "{0}" > /proc/sys/kernel/hostname'.format(self.hostname))
             self.cmd("hostname {0}".format(self.hostname))
@@ -439,7 +439,7 @@ class ValidInit(BaseInit):
     def valid_host_name(self):
         """校验host_name不含localhost"""
         _out, _err, _code = self.cmd("echo $(hostname)")
-        assert _out.strip().lower() not in TO_MODIFY_HOST_NAME, "校验主机名失败"
+        assert _out.strip().lower() not in TO_MODIFY_HOST_NAME and not _out.strip().isdigit(), "校验主机名失败"
 
 
 def usage(error=None):

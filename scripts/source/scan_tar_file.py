@@ -40,38 +40,38 @@ class ScanFile:
         self.count = 0
 
     def valid_package(self):
-        while self.move:
-            lock, redis_key = self.redis.get_lock(self._move_lock_key)
-            if not lock:
-                redis_key.lpush(self._move_lock_key, "moving")
-                redis_key.expire(self._move_lock_key, 1200)
-                self.move = False
-            log_print("有安装包正在上传至back_end_verified路径")
-            time.sleep(5)
-
-        back_verified = os.path.join(
-            PROJECT_DIR, "package_hub/back_end_verified"
-        )
-        tmp_verified = os.path.join(
-            PROJECT_DIR, "package_hub/tmp_end_verified"
-        )
-        service_name = os.listdir(tmp_verified)
-        exec_name = [
-            os.path.join(tmp_verified, p) for p in service_name
-            if os.path.isfile(os.path.join(tmp_verified, p)) and (p.endswith('.tar') or p.endswith('.tar.gz'))
-        ]
-        if not exec_name:
-            log_print("无需要扫描的安装包，或安装包已被上一个任务获取送出。")
-            sys.exit(2)
-        while self.redis.get_lock()[0]:
-            log_print(f"后台有扫描任务正在执行,等待次数{self.count}。")
-            log_print(f"等待扫描安装包列表：{' '.join(exec_name)}")
-            time.sleep(5)
-            self.count += 1
-            if self.count > 100:
-                log_print("扫描超时，或队列积压严重，请重试。")
-                sys.exit(1)
         try:
+            while self.move:
+                lock, redis_key = self.redis.get_lock(self._move_lock_key)
+                if not lock:
+                    redis_key.lpush(self._move_lock_key, "moving")
+                    redis_key.expire(self._move_lock_key, 1200)
+                    self.move = False
+                log_print("有安装包正在上传至back_end_verified路径")
+                time.sleep(5)
+
+            back_verified = os.path.join(
+                PROJECT_DIR, "package_hub/back_end_verified"
+            )
+            tmp_verified = os.path.join(
+                PROJECT_DIR, "package_hub/tmp_end_verified"
+            )
+            service_name = os.listdir(tmp_verified)
+            exec_name = [
+                os.path.join(tmp_verified, p) for p in service_name
+                if os.path.isfile(os.path.join(tmp_verified, p)) and (p.endswith('.tar') or p.endswith('.tar.gz'))
+            ]
+            if not exec_name:
+                log_print("无需要扫描的安装包，或安装包已被上一个任务获取送出。")
+                sys.exit(0)
+            while self.redis.get_lock()[0]:
+                log_print(f"后台有扫描任务正在执行,等待次数{self.count}。")
+                log_print(f"等待扫描安装包列表：{' '.join(exec_name)}")
+                time.sleep(5)
+                self.count += 1
+                if self.count > 100:
+                    log_print("扫描超时，或队列积压严重，请重试。")
+                    sys.exit(1)
             _cmd_str = f'mv {" ".join(exec_name)} {back_verified}'
             _out, _err, _code = local_cmd(_cmd_str)
             if _code:

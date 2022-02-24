@@ -2,6 +2,8 @@
 监控相关的路由
 """
 from rest_framework.routers import DefaultRouter
+
+from promemonitor.custom_script_views import CustomScriptViewSet
 from promemonitor.views import (
     MonitorUrlViewSet, ListAlertViewSet, UpdateAlertViewSet,
     MaintainViewSet, ReceiveAlertViewSet,
@@ -38,4 +40,5 @@ router.register(r'serviceThreshold', ServiceThresholdView,
                 basename='serviceThreshold')
 router.register(r'customThreshold', CustomThresholdView,
                 basename='customThreshold')
+router.register(r'customScript', CustomScriptViewSet, basename='customScript')
 urlpatterns = router.urls

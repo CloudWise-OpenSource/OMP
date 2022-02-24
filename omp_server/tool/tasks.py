@@ -3,20 +3,19 @@
 """
 
 import logging
+import os
+import time
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from django.utils import timezone
 
 from celery import shared_task
 from celery.utils.log import get_task_logger
-from db_models.models import (
-    ToolExecuteMainHistory,
-    ToolExecuteDetailHistory
-)
+from db_models.models import ToolExecuteMainHistory, ToolExecuteDetailHistory
+
 from utils.plugin.salt_client import SaltClient
-from django.utils import timezone
-import os
 from utils.plugin import public_utils
-from concurrent.futures import (
-    ThreadPoolExecutor, as_completed
-)
+
 
 THREAD_POOL_MAX_WORKERS = 20
 # 屏蔽celery任务日志中的paramiko日志
@@ -141,6 +140,8 @@ def exec_tools_main(tool_main_id):
     """
     工具执行类
     """
+    # 当磁盘写入较慢时需稍等
+    time.sleep(2)
     tool_main_obj = ToolExecuteMainHistory.objects.select_related().filter(id=tool_main_id)
     exec_ing_dc = {
         "status": ToolExecuteMainHistory.STATUS_RUNNING,
