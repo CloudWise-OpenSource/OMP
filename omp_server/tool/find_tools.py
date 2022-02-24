@@ -33,6 +33,8 @@ class ValidForm:
                 raise Exception(f"args中部分缺少{k}！")
             if not isinstance(form.get(k), str):
                 raise Exception(f"args中{k}参数格式不正确！")
+        if "key" == "output":
+            raise Exception(f"args中key不可为output！")
         if not form.get("required"):
             form["required"] = False
         else:
@@ -73,7 +75,7 @@ class ValidToolTar:
         "labels": "management",
         "spec": {"target": "host"},
         "args": [],
-        "output": "terminal",
+        "output": {"type": "terminal", "required": False},
         "send_package": []
     }
     key_required = {"name", "desc", "script_name", "script_type"}
@@ -133,13 +135,11 @@ class ValidToolTar:
     verify_spec._type = dict
 
     def verify_output(self, output):
-        if not hasattr(ToolInfo, f"OUTPUT_{output.upper()}"):
+        if not hasattr(ToolInfo, f"OUTPUT_{output.get('type').upper()}"):
             raise Exception("output参数只能是terminal或file！")
-        self.tool_info["output"] = getattr(
-            ToolInfo, f"OUTPUT_{output.upper()}"
-        )
+        self.tool_info["output"] = output
         return True
-    verify_output._type = str
+    verify_output._type = dict
 
     def verify_send_package(self, send_package):
         for package in send_package:
@@ -206,12 +206,18 @@ class ValidToolTar:
         self.tool_info["source_package_md5"] = md5
         self.tool_info["tool_folder_path"] = f"tool/folder/{package_name}-{md5}"
         self.tool_info["source_package_path"] = f"tool/tar/{tar_save_name}"
-        if self.tool_info["output"] == ToolInfo.OUTPUT_FILE:
+        output_dict = self.tool_info.pop("output")
+        output = getattr(ToolInfo, f"OUTPUT_{output_dict.get('type').upper()}")
+        if output == ToolInfo.OUTPUT_FILE:
             self.tool_info["script_args"].append(
-                {'key': 'output', 'name': 'output',
-                 'type': 'input', 'required': True}
+                {
+                    'key': 'output',
+                    'name': 'output',
+                    'type': 'input',
+                    'required': output_dict.get("required", False)
+                }
             )
-        ToolInfo(**self.tool_info).save()
+        ToolInfo(output=output, **self.tool_info).save()
         self.rm_tool_package()
 
     def rm_tool_package(self):
@@ -224,13 +230,13 @@ class ValidToolTar:
         file_path = os.path.join(self.tmp_package, self.tar_file)
         md5 = file_md5(file_path)
         if not md5:
-            local_cmd(f'rm -rf {file_path}')
+            local_cmd(f'/bin/rm -rf {file_path}')
             return f"获取{self.tar_file}的md5值失败！"
         if ToolInfo.objects.filter(source_package_md5=md5).exists():
             return f"{self.tar_file}已存在！"
         tar_folder = os.path.join(self.tmp_package, f"{package_name}_{md5}")
         _out, _err, _code = local_cmd(
-            f"mkdir -p {tar_folder} && tar -xf {file_path} -C {tar_folder}"
+            f"mkdir -p {tar_folder} && tar -mxf {file_path} -C {tar_folder}"
         )
         if _code:
             self.rm_tool_package()
@@ -265,7 +271,7 @@ def verify_tar_files(tmp_package, tar_files):
             if future.result():
                 logger.info(future.result())
                 success = False
-    local_cmd(f"rm -rf {tmp_package}")
+    local_cmd(f"/bin/rm -rf {tmp_package}")
     return success
 
 
@@ -285,7 +291,7 @@ def load_verify_tar(tar_name=None):
         for tar_package in tar_packages:
             file_path = os.path.join(verify_tar_path, tar_package)
             if not tar_package.endswith(".tar.gz"):
-                local_cmd(f'rm -rf {file_path}')
+                local_cmd(f'/bin/rm -rf {file_path}')
                 continue
             local_cmd(f'mv {file_path} {tmp_package}')
             tar_files.append(tar_package)

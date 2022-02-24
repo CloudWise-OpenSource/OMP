@@ -10,6 +10,10 @@ HELP_MSG="
 \t bash cmd_manager upgrade [服务安装包(如: mysql-xxxxx.tar.gz)] [服务所在ip(不填默认升级该服务所有实例)]\n
 4. 产品的回滚(仅回滚单个服务最近一次升级记录)\n
 \t bash cmd_manager rollback [服务名(如: mysql)] [服务所在ip(不填默认回滚该服务所有实例)]\n
+5. 产品的服务管理(仅支持非中间态服务（安装中，删除中，升级中，会滚中均为中间态）状态管理)\n
+\t bash cmd_manager service [执行动作如:（'start','stop','status'）]
+6. 产品上传安装包(需要将安装包上传至omp/package_hub/tmp_end_verified,建议并发数小于3)
+\t bash cmd_manager scan
 "
 
 CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"

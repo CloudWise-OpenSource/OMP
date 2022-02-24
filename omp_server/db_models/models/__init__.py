@@ -18,6 +18,7 @@ from .user import UserProfile, OperateLog, UserLoginLog
 from .upgrade import UpgradeHistory, UpgradeDetail, RollbackHistory, \
     RollbackDetail
 from .self_heal import SelfHealingSetting, SelfHealingHistory
+from .custom_metric import CustomScript
 
 __all__ = [
     # 邮箱设置
@@ -84,5 +85,7 @@ __all__ = [
     # 上传文件公共表
     UploadFileHistory,
     Alert,
-    AlertRule
+    AlertRule,
+    # 自定义脚本
+    CustomScript
 ]

@@ -236,11 +236,11 @@ class HostBatchValidateView(BaseDownLoadTemplateView, CreateModelMixin):
 
     def create(self, request, *args, **kwargs):
         ips = Host.objects.all().values_list("ip", flat=True)
-        request_data = []
+        request_data = {"host_list": []}
         repeat_data = []
         for host in request.data.get("host_list"):
             if not host.get("ip") in ips:
-                request_data.append(host)
+                request_data["host_list"].append(host)
             else:
                 host["init_host"] = True
                 repeat_data.append(host)

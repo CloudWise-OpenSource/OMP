@@ -338,15 +338,19 @@ class ToolFormAnswerSerializer(serializers.Serializer):
             )
             # output file
             if "output" in execute_args:
-                random_str = ''.join(
-                    random.sample(string.digits + string.ascii_lowercase, 6))
-                file_name = f"{random_str}-{execute_args.get('output')}"
-                execute_args["output"] = os.path.join(
-                    remote_folder,
-                    tool.tool_folder_path,
-                    f"{file_name}"
-                )
-                target_detail["output"] = {"file": [file_name]}
+                file_name = execute_args.get('output')
+                if file_name:
+                    random_str = ''.join(
+                        random.sample(string.digits+string.ascii_lowercase, 6))
+                    file_name = f"{random_str}-{file_name}"
+                    execute_args["output"] = os.path.join(
+                        remote_folder,
+                        tool.tool_folder_path,
+                        f"{file_name}"
+                    )
+                    target_detail["output"] = {"file": [file_name]}
+                if not file_name:
+                    execute_args.pop('output')
             # input file
             for k, file_url in file_args.items():
                 execute_args[k] = os.path.join(remote_folder, file_url)
