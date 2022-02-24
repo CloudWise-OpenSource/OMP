@@ -71,8 +71,12 @@ class CustomScriptViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, Upda
 
         script_content = file_obj.read()
         script_content = str(script_content, encoding="utf8")
-        metrics = json.dumps(["demo_metric"])  # TODO
-        metric_num = 1  # TODO
+        metrics = list()
+        for line in script_content.split("\n"):
+            if "def get_" in line and ":" in line:
+                metric = line.split("def get_")[1].split("(")[0].strip()
+                metrics.append(metric)
+        metric_num = len(metrics)
         description = script_content.split("\n")[0]
 
         try:
@@ -147,7 +151,7 @@ class CustomScriptViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, Upda
                         [{
                             "script_name": script_job_str,
                             "script_content": instance.script_content,
-                            "script_metrics": json.loads(instance.metrics)
+                            "script_metrics": instance.metrics
                         }]
                 }
                 payload = json.dumps(payload)
