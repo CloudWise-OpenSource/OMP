@@ -8,7 +8,6 @@ import sys
 import django
 import subprocess
 import time
-from concurrent.futures import ThreadPoolExecutor
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(os.path.dirname(CURRENT_DIR))
@@ -28,8 +27,7 @@ from db_models.models import (Service, ApplicationHub, Host, HostOperateLog, Pre
 from utils.parse_config import BASIC_ORDER
 from services.tasks import exec_action as uninstall_exec_action
 from utils.plugin.salt_client import SaltClient
-from utils.plugin.ssh import SSH
-from utils.plugin.crypto import AESCryptor
+from hosts.tasks import UninstallHosts
 
 logger = logging.getLogger("server")
 
@@ -53,111 +51,12 @@ class UninstallServices(object):
             "utf8"), stderr.decode("utf8"), p.returncode
         return _out, _err, _code
 
-    def delete_salt_key(self, key_list):
-        """删除所有的salt-key"""
-        for item in key_list:
-            _out, _err, _code = self.cmd(
-                f"{PYTHON_PATH} {SALT_KEY_PATH} -y -d '{item}' -c {SALT_CONFIG_PATH}"
-            )
-            if _code != 0:
-                print(f"删除{item}获取到stdout: {_out}; stderr: {_err}")
-                self.is_success = False
-            logger.info(f"删除{item}获取到哦的stdout: {_out}; stderr: {_err}")
-
     def get_all_services(self):
         """通过环境名找到所有的服务"""
         services = Service.objects.filter(env_id=self.env_id)
         if not services:
             return []
         return services
-
-    def del_singel_agent(self, obj):
-        """删除单个节点的agent（salt and monitor）"""
-        ip = obj.ip
-        agent_dir = obj.agent_dir
-        data_dir = obj.data_folder
-        _ssh_obj = SSH(
-            hostname=ip,
-            port=obj.port,
-            username=obj.username,
-            password=AESCryptor().decode(obj.password)
-        )
-        # 删除目录
-        if not data_dir:
-            raise Exception(f"主机{ip}无数据目录")
-        # TODO /app/bash_profile目前是指定目录
-        delete_cmd_str = f"rm -rf {data_dir}/omp_packages; rm -rf {data_dir}/app/bash_profile; rm -rf /tmp/upgrade_openssl; rm -rf /tmp/hadoop"
-        cmd_res, msg = _ssh_obj.cmd(
-            delete_cmd_str,
-            timeout=120
-        )
-        logger.info(f"执行{ip} [delete] package and tmp 操作 {cmd_res}, 原因: {msg}")
-
-        # 卸载salt agent
-        salt_agent_dir = os.path.join(agent_dir, "omp_salt_agent")
-        _delete_cron_cmd = "crontab -l|grep -v omp_salt_agent 2>/dev/null | crontab -;"
-        _stop_agent = (
-            f"bash {salt_agent_dir}/bin/omp_salt_agent stop; rm -rf {salt_agent_dir}"
-        )
-        final_cmd = f"{_delete_cron_cmd} {_stop_agent}"
-        salt_res_flag, salt_res_msg = _ssh_obj.cmd(final_cmd, timeout=60)
-        logger.info(f"卸载{ip}上的omp_salt_agent的命令为: {final_cmd}")
-        logger.info(
-            f"卸载{ip}上的omp_salt_agent的结果为: {salt_res_flag} {salt_res_msg}")
-        # 卸载monitor agent
-        monitor_agent_dir = os.path.join(agent_dir, "omp_monitor_agent")
-        _delete_monitor_cron_cmd = "crontab -l|grep -v omp_monitor_agent 2>/dev/null | crontab -;"
-        _uninstall_monitor_agent_cmd = f"cd {monitor_agent_dir} &&" \
-                                       f" ./manage stop_all &&" \
-                                       f" bash monitor_agent.sh stop &&" \
-                                       f" cd {agent_dir} &&" \
-                                       f" {_delete_monitor_cron_cmd} &&" \
-                                       f" rm -rf omp_monitor_agent"
-        monitor_res_flag, monitor_res_msg = _ssh_obj.cmd(
-            _uninstall_monitor_agent_cmd, timeout=120)
-        logger.info(
-            f"卸载{ip}上的omp_monitor_agent的命令为: {_uninstall_monitor_agent_cmd}")
-        logger.info(
-            f"卸载{ip}上的omp_monitor_agent的结果为: {monitor_res_flag} {monitor_res_msg}")
-        if not all([cmd_res, salt_res_flag, monitor_res_flag]):
-            return False, f"({ip}上卸载文件清除：{cmd_res}-{msg};\n salt:{salt_res_flag}-{salt_res_msg};\n monitor:{monitor_res_flag}-{monitor_res_msg};\n)"
-        return True, "success"
-
-    @staticmethod
-    def execute_uninstall(host_obj_list, thread_name_prefix, function):
-        """卸载执行函数"""
-        thread_p = ThreadPoolExecutor(
-            max_workers=MAX_NUM,
-            thread_name_prefix=thread_name_prefix
-        )
-        # future_list: [(ip, future),..]
-        future_list = list()
-        # result_list:[(ip, res_bool, res_msg), ...]
-        result_list = list()
-        for obj in host_obj_list:
-            future = thread_p.submit(function, obj)
-            future_list.append((obj.ip, future))
-        for f in future_list:
-            result_list.append((f[0], f[1].result()[0], f[1].result()[1]))
-        thread_p.shutdown(wait=True)
-        failed_msg = ""
-        for item in result_list:
-            if not item[1]:
-                failed_msg += f"{item[0]}: (execute_flag: {item[1]}; execute_msg: {item[2]})"
-        if failed_msg:
-            return False, failed_msg
-        return True, "success"
-
-    def delete_all_omp_agent(self):
-        """清理所有omp agent(salt and monitor)"""
-        _uninstall_flag, _uninstall_msg = self.execute_uninstall(host_obj_list=self.all_host,
-                                                                 thread_name_prefix="uninstall_agent_",
-                                                                 function=self.del_singel_agent)
-
-        if not _uninstall_flag:
-            print(_uninstall_msg)
-            self.is_success = False
-        self.delete_salt_key([item.ip for item in self.all_host])
 
     def get_uninstall_order(self, service_list):
         """卸载服务排序（与安装顺序相反）"""
@@ -227,7 +126,8 @@ class UninstallServices(object):
         uninstall_list = self.get_uninstall_order(service_list=service_list)
         self.uninstall_all_services(uninstall_list=uninstall_list)
         time.sleep(int(self.service_num))
-        self.delete_all_omp_agent()
+        uninstall_host_obj = UninstallHosts(self.all_host)
+        self.is_success = uninstall_host_obj.delete_all_omp_agent()
         self.clean_db()
         if not self.is_success:
             raise Exception("本次卸载失败，请按照上述打印信息手动进行卸载")

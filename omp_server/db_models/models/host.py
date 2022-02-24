@@ -12,12 +12,14 @@ class Host(TimeStampMixin, DeleteMixin):
     AGENT_START_ERROR = 2
     AGENT_DEPLOY_ING = 3
     AGENT_DEPLOY_ERROR = 4
+    AGENT_DEPLOY_DELETE = 5
     AGENT_STATUS_CHOICES = (
         (AGENT_RUNNING, "正常"),
         (AGENT_RESTART, "重启中"),
         (AGENT_START_ERROR, "启动失败"),
         (AGENT_DEPLOY_ING, "部署中"),
-        (AGENT_DEPLOY_ERROR, "部署失败")
+        (AGENT_DEPLOY_ERROR, "部署失败"),
+        (AGENT_DEPLOY_DELETE, "删除中"),
     )
 
     INIT_SUCCESS = 0
