@@ -18,7 +18,7 @@ from utils.parse_config import MONITOR_PORT
 from promemonitor.prometheus_utils import CW_TOKEN
 @shared_task
 def self_healing(alert_list):
-    """ 添加数据入库校验逻辑"""
+    """ 添加数据入库校验逻辑 添加定时任务"""
     alert_list = Alert.objects.filter(id__in=alert_list)
     logger.info("传入id 信息{}".format(alert_list))
     user_healing = SelfHealingSetting.objects.all().values_list("used", "max_healing_count", "env_id")
@@ -44,8 +44,8 @@ def self_healing(alert_list):
                 alert_ser = SelfHealingHistory.objects.filter(
                     service_name=alert_list[i].alert_service_name,
                     host_ip=alert_list[i].alert_host_ip,
-                    state=2)
-                    # alert_time=host_alert_time)
+                    # state=2,
+                    alert_time=host_alert_time)
                 logger.info("service_step_1 需要入库信息集合长度: {} ".format(alert_ser.count()))
                 instance_name_list.append(alert_list[i].alert_instance_name)
                 logger.info("service_step_2 需要入库信息集合列表: {} ".format(instance_name_list))
@@ -110,7 +110,7 @@ def self_healing(alert_list):
                                                 "".format(w[2].split('-')[0],w[0],host_alert_time))
                                     alert_ser_0 = SelfHealingHistory.objects.filter(
                                         service_name=w[2].split('-')[0],
-                                        host_ip=w[0],state=2,
+                                        host_ip=w[0],
                                         alert_time=host_alert_time)
                                     logger.info("host_step_5 需要入库信息集合列表:{}".format(alert_ser_0))
                                     if alert_ser_0.count() == 0:
@@ -239,6 +239,10 @@ def self_healing_ssh_verification(host_self_healing_list,sudo_check_cmd):
     transport.close()
 
 def get_service_status_direct(service_obj_list):
+    """
+    直接从monitor_agent获取服务状态
+    param: [{"ip": "127.0.0.1", "service_name": "mysql"}, {"ip": "127.0.0.1", "service_name": "redis"}]
+    """
     service_obj_result = list()
     monitor_agent_port = MONITOR_PORT.get('monitorAgent', 19031)
     headers_type = {"Content-Type": "application/json"}
