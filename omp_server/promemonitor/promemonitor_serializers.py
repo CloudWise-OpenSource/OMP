@@ -3,21 +3,23 @@ import logging
 
 from django.db.models import F
 from rest_framework import serializers
-from rest_framework.serializers import ModelSerializer, ListSerializer, Serializer
 from rest_framework.exceptions import ValidationError
+from rest_framework.serializers import ModelSerializer, ListSerializer, \
+    Serializer
 
-from db_models.models import Host, MonitorUrl, Alert, Maintain, Service
-from promemonitor.tasks import monitor_agent_restart
-from promemonitor.alertmanager import Alertmanager
+from db_models.models import Host, MonitorUrl, Alert, Maintain, Service, Rule,AlertRule
 from promemonitor.alert_util import AlertAnalysis
+from promemonitor.alertmanager import Alertmanager
+from promemonitor.tasks import monitor_agent_restart
 from utils.common.exceptions import OperateError
 from utils.common.serializers import HostIdsSerializer
 from utils.common.validators import (
     NoEmojiValidator, NoChineseValidator
 )
-import json
+
 logger = logging.getLogger('server')
 from services.self_healing import self_healing
+
 
 class MonitorUrlListSerializer(ListSerializer):
 
@@ -228,7 +230,8 @@ class ReceiveAlertSerializer(Serializer):
                 alert_receiver=alert_info.get('alert_receiver'),
                 alert_resolve='',  # TODO 待后续
                 alert_time=alert_info.get('alert_time'),
-                create_time=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                create_time=datetime.datetime.now().strftime(
+                    "%Y-%m-%d %H:%M:%S"),
                 monitor_path=alert_info.get('monitor'),
                 monitor_log=alert_info.get('monitor_log'),
                 fingerprint=alert_info.get('fingerprint'),
@@ -240,13 +243,16 @@ class ReceiveAlertSerializer(Serializer):
                 Host.objects.filter(ip=alert_info.get('alert_host_ip')).update(
                     alert_num=F("alert_num") + 1)
             if alert_info.get('alert_type') == 'service':
-                Service.objects.filter(service_instance_name=alert_info.get('alert_instance_name')).filter(
+                Service.objects.filter(service_instance_name=alert_info.get(
+                    'alert_instance_name')).filter(
                     ip=alert_info.get('alert_host_ip')).update(
-                    service_status=Service.SERVICE_STATUS_STOP, alert_count=F("alert_count") + 1)  # TODO 后续在模型中增加异常字段
+                    service_status=Service.SERVICE_STATUS_STOP,
+                    alert_count=F("alert_count") + 1)  # TODO 后续在模型中增加异常字段
         logger.info("监控接收文件的长度开始{}".format(len(alert_obj_list)))
         self_healing.delay(alert_obj_list)
         logger.info("监控接收文件的信息{}".format((alert_obj_list)))
         return validated_data
+
 
 class MonitorAgentRestartSerializer(HostIdsSerializer):
     """ 监控Agent重启序列化类 """
@@ -274,3 +280,30 @@ class MonitorAgentRestartSerializer(HostIdsSerializer):
             id__in=filter_host_ids
         ).update(monitor_agent=Host.AGENT_RESTART)
         return validated_data
+
+
+class RuleSerializer(ModelSerializer):
+    """
+    内置规则序列化类
+    """
+
+    class Meta:
+        """
+        元数据
+        """
+        model = Rule
+        fields = '__all__'
+
+
+class QuotaSerializer(ModelSerializer):
+    """
+    告警规则序列化类
+    """
+    class Meta:
+        """
+        元数据
+        """
+        model = AlertRule
+        fields = '__all__'
+
+

@@ -6,7 +6,7 @@ import time
 import django_filters
 from django_filters.rest_framework import FilterSet
 
-from db_models.models import (Alert)
+from db_models.models import (Alert,AlertRule)
 from rest_framework.filters import BaseFilterBackend
 
 
@@ -26,6 +26,20 @@ class AlertFilter(FilterSet):
         fields = (
             "alert_host_ip", "alert_instance_name", "alert_instance_name",
             "alert_level", "alert_type"
+        )
+
+class QuotaFilter(FilterSet):
+    """
+    指标规则过滤类
+    """
+    alert = django_filters.CharFilter(
+        help_text="alert，规则名称模糊匹配", field_name="alert",
+        lookup_expr="icontains"
+    )
+    class Meta:
+        model = AlertRule
+        fields = (
+            "alert",
         )
 
 
