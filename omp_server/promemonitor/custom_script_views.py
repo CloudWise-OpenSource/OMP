@@ -20,6 +20,7 @@ from promemonitor.custom_script_serializers import CustomScriptSerializer
 from utils.common.paginations import PageNumberPager
 from promemonitor.prometheus_utils import PrometheusUtils
 from utils.parse_config import MONITOR_PORT
+from promemonitor.prometheus_utils import CW_TOKEN
 
 logger = logging.getLogger('server')
 
@@ -39,6 +40,7 @@ class CustomScriptViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, Upda
     post_description = "更新自定义脚本记录"
     serializer_class = CustomScriptSerializer
     pagination_class = PageNumberPager
+    queryset = CustomScript.objects.all()
 
     prometheus_util = PrometheusUtils()
 
@@ -69,7 +71,7 @@ class CustomScriptViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, Upda
 
         script_content = file_obj.read()
         script_content = str(script_content, encoding="utf8")
-        metrics = json.dumps(["get_demo_metric"])  # TODO
+        metrics = json.dumps(["demo_metric"])  # TODO
         metric_num = 1  # TODO
         description = script_content.split("\n")[0]
 
@@ -125,13 +127,14 @@ class CustomScriptViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, Upda
         instance = self.get_object()
         new_scrape_interval = request.data.get("scrape_interval")
         new_enabled = request.data.get("enabled")
-        new_bound_host_list = json.loads(request.data.get("bound_hosts"))
+        new_bound_host_list = request.data.get("bound_hosts")
 
         instance.scrape_interval = new_scrape_interval
         instance.enabled = new_enabled
-        instance.bound_hosts = json.dumps(json.loads(
-            instance.bound_hosts).extend(new_bound_host_list))
+        instance.bound_hosts = new_bound_host_list
         instance.save()
+        headers = {"Content-Type": "application/json"}
+        headers.update(CW_TOKEN)
 
         try:
             script_job_str = instance.script_name.split('.', 1)[0]
@@ -149,7 +152,7 @@ class CustomScriptViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, Upda
                 }
                 payload = json.dumps(payload)
                 res = requests.post(
-                    url=agent_add_custom_script_url, data=payload)
+                    url=agent_add_custom_script_url, headers=headers, data=payload)
                 if res.status_code != 200:
                     logger.error(f"向主机{host}agent发送添加自定义脚本信息失败！")
                     return Response(data={"code": 1, "message": f"向主机{host}agent发送添加自定义脚本信息失败！"})
@@ -167,10 +170,11 @@ class CustomScriptViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, Upda
             job_target_json = os.path.join(self.prometheus_util.prometheus_targets_path,
                                            f"{script_job_str}Exporter_all.json")
             with open(job_target_json, "w") as jtj_fw:
-                json.dump(prom_target_list, jtj_fw)
+                json.dump(prom_target_list, jtj_fw, indent=4)
         except Exception as e:
-            logger.error(e)
+            logger.error(traceback.format_exc(e))
             logger.error("向agent发送添加自定义脚本信息失败！")
+            return Response(data={"code": 1, "message": "添加自定义脚本信息失败！"})
 
         return Response()
 
@@ -182,19 +186,9 @@ class CustomScriptViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, Upda
         script_job_str = instance.script_name.split('.', 1)[0]
         with open(self.prometheus_util.prometheus_conf_path, "r") as fr:
             content = yaml.load(fr.read(), yaml.Loader)
-        prom_job_dict = {
-            "job_name": f"{script_job_str}Exporter",
-            "metrics_path": f"/metrics/monitor/{script_job_str}",
-            "file_sd_configs": [
-                {
-                    "refresh_interval": f"{instance.scrape_interval}s",
-                    "files": [
-                        f"targets/{script_job_str}Exporter_all.json"
-                    ]
-                }
-            ]
-        }
-        content.get("scrape_configs").remove(prom_job_dict)
+        for i in content.get("scrape_configs"):
+            if i.get("job_name") == f"{script_job_str}Exporter":
+                content.get("scrape_configs").remove(i)
         with open(self.prometheus_util.prometheus_conf_path, "w", encoding="utf8") as fw:
             yaml.dump(data=content, stream=fw,
                       allow_unicode=True, sort_keys=False)
@@ -204,18 +198,18 @@ class CustomScriptViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, Upda
         if os.path.exists(job_target_json):
             os.remove(job_target_json)
         # TODO 向agent发送删除自定义脚本的信息
-        for host in json.loads(instance.bound_hosts):
-            agent_delete_custom_script_url = f"http://{host}:{monitor_agent_port}/update/custom_scripts/delete"  # NOQA
-            payload = {
-                "custom_scripts":
-                    [{
-                        "script_name": script_job_str,
-                    }]
-            }
-            res = requests.post(
-                url=agent_delete_custom_script_url, data=payload)
-            if res.status_code != 200:
-                logger.error(f"向主机{host}agent发送删除自定义脚本信息失败！")
-                return Response(data={"code": 1, "message": f"向主机{host}agent发送删除自定义脚本信息失败！"})
+        # for host in json.loads(instance.bound_hosts):
+        #     agent_delete_custom_script_url = f"http://{host}:{monitor_agent_port}/update/custom_scripts/delete"  # NOQA
+        #     payload = {
+        #         "custom_scripts":
+        #             [{
+        #                 "script_name": script_job_str,
+        #             }]
+        #     }
+        #     res = requests.post(
+        #         url=agent_delete_custom_script_url, data=payload)
+        #     if res.status_code != 200:
+        #         logger.error(f"向主机{host}agent发送删除自定义脚本信息失败！")
+        #         return Response(data={"code": 1, "message": f"向主机{host}agent发送删除自定义脚本信息失败！"})
         instance.delete()
         return Response({})
