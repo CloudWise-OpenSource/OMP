@@ -113,6 +113,7 @@ class AlertRule(models.Model):
     alert = models.TextField("标题，自定义摘要")
     service = models.CharField("指标所属服务名称", max_length=255)
     status = models.IntegerField("启用状态", default=0)
+    name = models.CharField("内置指标名称", max_length=255,null=True)
     TYPE = (
         (0, "builtins"),
         (1, "custom"),
