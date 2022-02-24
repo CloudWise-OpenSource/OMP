@@ -205,6 +205,23 @@ export const apiRequest = {
     serviceThreshold: "/api/promemonitor/serviceThreshold/",
     // 定制化指标
     queryCustomThreshold: "/api/promemonitor/customThreshold/",
+
+    // 请求指标规则列表
+    queryPromemonitor: "/api/promemonitor/quota/",
+    // 内置指标
+    queryBuiltinsQuota: "/api/promemonitor/builtinRule/",
+
+    // 添加，修改规则
+    addQuota: "/api/promemonitor/quota/",
+
+    // 测试
+    testPromSql: "/api/promemonitor/testPromSql/",
+
+    // 删除
+    deleteQuota: "/api/promemonitor/quota/",
+
+    // 启动，停用
+    batchUpdateRule: "/api/promemonitor/batchUpdateRule/"
   },
   // 部署计划
   deloymentPlan: {
@@ -259,6 +276,7 @@ export const apiRequest = {
     queryFormConf: "/api/tool/form/",
     uploadFile: "/api/common/upload_file/",
     queryResult: "/api/tool/result/",
-    queryHistory:"/api/tool/execute-history"
+    queryHistory: "/api/tool/execute-history",
+    queryBuiltinsQuota: "/api/promemonitor/builtinRule/",
   },
 };
