@@ -515,8 +515,7 @@ def delete_hosts(host_ids):
     """
     执行删除异步任务
     """
-    host_objs = Host.objects.filter(id__in=host_ids)
+    host_objs = Host.objects.filter(ip__in=host_ids)
     uninstall_objs = UninstallHosts(host_objs)
     uninstall_objs.delete_all_omp_agent()
     host_objs.delete()
-    host_objs.save()

@@ -135,7 +135,6 @@ class HostUninstallView(GenericViewSet, CreateModelMixin):
     serializer_class = HostUninstallSerializer
     # 操作信息描述
     post_description = "卸载主机agent"
-    # get_description = "校验当前主机状态"
 
 
 class HostDetailView(GenericViewSet, RetrieveModelMixin):

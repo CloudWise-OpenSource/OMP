@@ -36,12 +36,18 @@ logger = logging.getLogger("server")
 
 
 class HostUninstallSerializer(ModelSerializer):
+    class Meta:
+        """ 元数据 """
+        model = Host
+        fields = ('id',)
+
     def validate(self, attrs):
         """ 校验主机是否存在服务 """
 
-        host_list = attrs.get("host_list", [])
-        host_ls = Host.objects.filter(
-            id__in=host_list).values_list('ip', flat=True)
+        request_data = self.context.get('request').data
+        host_list = request_data.get("host_list", [])
+        host_ls = list(Host.objects.filter(
+            id__in=host_list).values_list('ip', flat=True))
         service_obj = Service.objects.filter(ip__in=host_ls).exclude(
             service__is_base_env=True
         )
