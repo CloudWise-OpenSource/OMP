@@ -12,36 +12,36 @@ from django.db import transaction
 from django.db.models import F
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-
-from rest_framework.filters import OrderingFilter
-from rest_framework.response import Response
 from rest_framework.decorators import action
+from rest_framework.filters import OrderingFilter
+from rest_framework.mixins import (
+    ListModelMixin, CreateModelMixin,DestroyModelMixin,UpdateModelMixin
+)
+from rest_framework.response import Response
 from rest_framework.serializers import Serializer
 from rest_framework.viewsets import GenericViewSet
-from rest_framework.mixins import (
-    ListModelMixin, CreateModelMixin
-)
-
-from promemonitor.alert_util import utc_to_local, get_monitor_url, get_log_url
-from utils.common.paginations import PageNumberPager
 
 from db_models.models import (
     Host, MonitorUrl,
-    Alert, Maintain, ApplicationHub, Service, EmailSMTPSetting, AlertSendWaySetting, HostThreshold, ServiceThreshold,
-    ServiceCustomThreshold
+    Alert, Maintain, ApplicationHub, Service, EmailSMTPSetting,
+    AlertSendWaySetting, HostThreshold, ServiceThreshold,
+    ServiceCustomThreshold, Rule, AlertRule,Env
 )
-
+from omp_server.settings import CUSTOM_THRESHOLD_SERVICES
 from promemonitor import grafana_url
-from promemonitor.promemonitor_filters import AlertFilter, MyTimeFilter
+from promemonitor.alert_util import utc_to_local, get_monitor_url, get_log_url
+from promemonitor.promemonitor_filters import AlertFilter, MyTimeFilter, \
+    QuotaFilter
 from promemonitor.promemonitor_serializers import (
     MonitorUrlSerializer, ListAlertSerializer, UpdateAlertSerializer,
     MaintainSerializer, MonitorAgentRestartSerializer,
-    ReceiveAlertSerializer
+    ReceiveAlertSerializer, RuleSerializer, QuotaSerializer
 )
-from utils.common.exceptions import OperateError
 from promemonitor.prometheus import Prometheus
-from omp_server.settings import CUSTOM_THRESHOLD_SERVICES
+from utils.common.exceptions import OperateError
+from utils.common.paginations import PageNumberPager
 from utils.parse_config import PROMETHEUS_AUTH
+from promemonitor.prometheus_utils import PrometheusUtils
 
 logger = logging.getLogger('server')
 
@@ -78,7 +78,8 @@ class MonitorUrlViewSet(ListModelMixin, CreateModelMixin, GenericViewSet):
         instances = []
         for item in request.data.get('data'):
             instance = get_object_or_404(MonitorUrl, id=int(item['id']))
-            serializer = super().get_serializer(instance, data=item, partial=partial)
+            serializer = super().get_serializer(instance, data=item,
+                                                partial=partial)
             serializer.is_valid(raise_exception=True)
             serializer.save()
             instances.append(serializer.data)
@@ -201,7 +202,8 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
         prometheus_auth = (PROMETHEUS_AUTH.get(
             "username", "omp"), PROMETHEUS_AUTH.get("plaintext_password", ""))
         try:
-            prometheus_alerts_url = f"http://{prometheus_url}/api/v1/alerts"  # NOQA
+            prometheus_alerts_url = f"http://{prometheus_url}/api/v1/alerts"
+            # NOQA
             response = requests.get(prometheus_alerts_url, headers={
             }, data="", auth=prometheus_auth)
             return True, json.loads(response.text)
@@ -223,17 +225,24 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
         third_info_list = []
 
         host_list = Host.objects.all()
-        ignore_status_list = [Service.SERVICE_STATUS_NORMAL, Service.SERVICE_STATUS_STARTING,
-                              Service.SERVICE_STATUS_STOPPING, Service.SERVICE_STATUS_RESTARTING,
+        ignore_status_list = [Service.SERVICE_STATUS_NORMAL,
+                              Service.SERVICE_STATUS_STARTING,
+                              Service.SERVICE_STATUS_STOPPING,
+                              Service.SERVICE_STATUS_RESTARTING,
                               Service.SERVICE_STATUS_STOP]
-        database_list = Service.objects.filter(service__app_type=ApplicationHub.APP_TYPE_COMPONENT).filter(
-            service__app_labels__label_name__contains="数据库").filter(service_status__in=ignore_status_list).filter(
+        database_list = Service.objects.filter(
+            service__app_type=ApplicationHub.APP_TYPE_COMPONENT).filter(
+            service__app_labels__label_name__contains="数据库").filter(
+            service_status__in=ignore_status_list).filter(
             service__is_base_env=False)
         service_list = Service.objects.filter(
-            service__app_type=ApplicationHub.APP_TYPE_SERVICE).filter(service_status__in=ignore_status_list).filter(
-            service__is_base_env=False).filter(service_controllers__start__isnull=False)
+            service__app_type=ApplicationHub.APP_TYPE_SERVICE).filter(
+            service_status__in=ignore_status_list).filter(
+            service__is_base_env=False).filter(
+            service_controllers__start__isnull=False)
         component_list = Service.objects.filter(
-            service__app_type=ApplicationHub.APP_TYPE_COMPONENT).filter(service_status__in=ignore_status_list).filter(
+            service__app_type=ApplicationHub.APP_TYPE_COMPONENT).filter(
+            service_status__in=ignore_status_list).filter(
             service__is_base_env=False)
         # third_info_all = None  # TODO 暂为空
 
@@ -263,7 +272,8 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
             for ele in alerts:
                 if not isinstance(ele, dict):
                     continue
-                if ele.get("status") == "resolved" or ele.get("state") == "resolved":
+                if ele.get("status") == "resolved" or ele.get(
+                        "state") == "resolved":
                     continue
                 ele_dict = {
                     "ip": ele.get("labels").get("instance"),
@@ -300,17 +310,25 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
                 service_name_str = ele.get("labels").get("app")
                 if not service_name_str:
                     continue
-                if list(filter(lambda x: x.service.app_name == service_name_str, list(database_list))):
+                if list(filter(
+                        lambda x: x.service.app_name == service_name_str,
+                        list(database_list))):
                     database_info_exc_count = database_info_exc_count + 1
                     database_info_list.append(ele_dict)
                     error_instance_list.append(
                         ele.get("labels").get("instance_name"))
-                elif list(filter(lambda x: x.service.app_name == service_name_str, list(service_list))):
+                elif list(
+                        filter(lambda x: x.service.app_name ==
+                                         service_name_str,
+                               list(service_list))):
                     service_info_exc_count = service_info_exc_count + 1
                     service_info_list.append(ele_dict)
                     error_instance_list.append(
                         ele.get("labels").get("instance_name"))
-                elif list(filter(lambda x: x.service.app_name == service_name_str, list(component_list))):
+                elif list(
+                        filter(lambda x: x.service.app_name ==
+                                         service_name_str,
+                               list(component_list))):
                     component_info_exc_count = component_info_exc_count + 1
                     component_info_list.append(ele_dict)
                     error_instance_list.append(
@@ -323,16 +341,18 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
                 for i, h in enumerate(host_info_list):
                     if index == i:
                         continue
-                    if hil.get("ip") == h.get("ip") and hil.get("alertname") == h.get("alertname") and h.get(
-                            "severity") == "critical":
+                    if hil.get("ip") == h.get("ip") and hil.get(
+                            "alertname") == h.get("alertname") and h.get(
+                        "severity") == "critical":
                         host_info_list.pop(index)
                         break
             elif hil.get("severity") == "critical":
                 for i, h in enumerate(host_info_list):
                     if index == i:
                         continue
-                    if hil.get("ip") == h.get("ip") and hil.get("alertname") == h.get("alertname") and h.get(
-                            "severity") == "warning":
+                    if hil.get("ip") == h.get("ip") and hil.get(
+                            "alertname") == h.get("alertname") and h.get(
+                        "severity") == "warning":
                         host_info_list.pop(i)
                         break
 
@@ -341,42 +361,61 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
             if host.ip in error_host_list:
                 continue
             host_dict = {
-                "ip": host.ip, "instance_name": host.instance_name, "severity": "normal"}
+                "ip": host.ip, "instance_name": host.instance_name,
+                "severity": "normal"}
             if host.ip not in host_targets:
                 host_dict = {
-                    "ip": host.ip, "instance_name": host.instance_name, "severity": "unmonitored"}
+                    "ip": host.ip, "instance_name": host.instance_name,
+                    "severity": "unmonitored"}
             host_info_list.append(host_dict)
 
         _, service_targets = Prometheus().get_all_service_targets()
         for database in database_list:
             if database.service_instance_name in error_instance_list:
                 continue
-            database_dict = {"ip": database.ip, "instance_name": database.service_instance_name,
-                             "app_name": database.service.app_name, "severity": "normal"}
-            database_ip_instance_name_str = f"{database.ip}_{database.service_instance_name}"
+            database_dict = {"ip": database.ip,
+                             "instance_name": database.service_instance_name,
+                             "app_name": database.service.app_name,
+                             "severity": "normal"}
+            database_ip_instance_name_str = \
+                f"{database.ip}_{database.service_instance_name}"
             if database_ip_instance_name_str not in service_targets:
-                database_dict = {"ip": database.ip, "instance_name": database.service_instance_name,
-                                 "app_name": database.service.app_name, "severity": "unmonitored"}
+                database_dict = {"ip": database.ip,
+                                 "instance_name":
+                                     database.service_instance_name,
+                                 "app_name": database.service.app_name,
+                                 "severity": "unmonitored"}
             database_info_list.append(database_dict)
         for service in service_list:
             if service.service_instance_name in error_instance_list:
                 continue
-            service_dict = {"ip": service.ip, "instance_name": service.service_instance_name,
-                            "app_name": service.service.app_name, "severity": "normal"}
-            service_ip_instance_name_str = f"{service.ip}_{service.service_instance_name}"
+            service_dict = {"ip": service.ip,
+                            "instance_name": service.service_instance_name,
+                            "app_name": service.service.app_name,
+                            "severity": "normal"}
+            service_ip_instance_name_str = f"{service.ip}_" \
+                                           f"{service.service_instance_name}"
             if service_ip_instance_name_str not in service_targets:
-                service_dict = {"ip": service.ip, "instance_name": service.service_instance_name,
-                                "app_name": service.service.app_name, "severity": "unmonitored"}
+                service_dict = {"ip": service.ip,
+                                "instance_name": service.service_instance_name,
+                                "app_name": service.service.app_name,
+                                "severity": "unmonitored"}
             service_info_list.append(service_dict)
         for component in component_list:
             if component.service_instance_name in error_instance_list:
                 continue
-            component_dict = {"ip": component.ip, "instance_name": component.service_instance_name,
-                              "app_name": component.service.app_name, "severity": "normal"}
-            component_ip_instance_name_str = f"{component.ip}_{component.service_instance_name}"
+            component_dict = {"ip": component.ip,
+                              "instance_name": component.service_instance_name,
+                              "app_name": component.service.app_name,
+                              "severity": "normal"}
+            component_ip_instance_name_str = f"{component.ip}_" \
+                                             f"{component.service_instance_name}"
             if component_ip_instance_name_str not in service_targets:
-                component_dict = {"ip": component.ip, "instance_name": component.service_instance_name,
-                                  "app_name": component.service.app_name, "severity": "unmonitored"}
+                component_dict = {"ip": component.ip,
+                                  "instance_name":
+                                      component.service_instance_name,
+                                  "app_name": component.service.app_name,
+                                  "severity": "unmonitored"}
             component_info_list.append(component_dict)
 
         host_info_exc_count = len(set(error_host_list))
@@ -452,7 +491,8 @@ class UpdateSendEmailConfig(GenericViewSet, CreateModelMixin):
             return Response(data={"code": 1, "message": "请填写SMTP邮件服务器地址！"})
         email_port = request.data.get("port")
         if not email_port or not isinstance(email_port, int):
-            return Response(data={"code": 1, "message": "请检查所填的SMTP邮件服务器端口是否正确！"})
+            return Response(
+                data={"code": 1, "message": "请检查所填的SMTP邮件服务器端口是否正确！"})
         email_host_user = request.data.get("username")
         if not email_host_user:
             return Response(data={"code": 1, "message": "请填写SMTP邮件服务器发件箱！"})
@@ -528,10 +568,13 @@ class UpdateSendAlertSettingView(GenericViewSet, CreateModelMixin):
         AlertSendWaySetting.update_email_config(bool(used), emails)
         email_setting = EmailSMTPSetting.objects.first()
         if not email_setting:
-            return Response(data={"code": 1, "message": "邮箱SMTP服务器未配置，配置后才可发送告警邮件！"})
+            return Response(
+                data={"code": 1, "message": "邮箱SMTP服务器未配置，配置后才可发送告警邮件！"})
         state, email_url = email_setting.update_setting_config()
         if not state:
-            return Response(data={"code": 1, "message": "同步到Alert Manage失败！请确保Alert Manage可用"})
+            return Response(data={"code": 1,
+                                  "message": "同步到Alert Manage失败！请确保Alert "
+                                             "Manage可用"})
         return Response({})
 
 
@@ -583,7 +626,8 @@ class HostThresholdView(GenericViewSet, ListModelMixin, CreateModelMixin):
             if not update_data:
                 return Response(data={"code": 1, "message": "无法正确解析到要更新的数据!"})
             if env_id is None:
-                return Response(data={"code": 1, "message": "请确认请求参数中包含env_id"})
+                return Response(
+                    data={"code": 1, "message": "请确认请求参数中包含env_id"})
             # 同步阈值至prometheus主机告警规则文件中，并做配置检查
             # if not check_prometheus():
             #     return Response(1, "无法连接到prometheus，更改阈值失败！")
@@ -591,7 +635,8 @@ class HostThresholdView(GenericViewSet, ListModelMixin, CreateModelMixin):
             hosts_list = list()
             for key, value in update_data.items():
                 for item in value:
-                    if not item["condition"] or not item["value"] or not item["level"]:
+                    if not item["condition"] or not item["value"] or not item[
+                        "level"]:
                         continue
                     _obj = HostThreshold()
                     _obj.index_type = key
@@ -621,7 +666,8 @@ class HostThresholdView(GenericViewSet, ListModelMixin, CreateModelMixin):
             return Response({})
         except Exception as e:
             logger.error(f"更新主机相关阈值过程中出错: {traceback.format_exc()}")
-            return Response(data={"code": 1, "message": f"更新主机相关阈值过程中出错: {str(e)}!"})
+            return Response(
+                data={"code": 1, "message": f"更新主机相关阈值过程中出错: {str(e)}!"})
 
 
 class ServiceThresholdView(GenericViewSet, ListModelMixin, CreateModelMixin):
@@ -671,12 +717,14 @@ class ServiceThresholdView(GenericViewSet, ListModelMixin, CreateModelMixin):
             if not update_data:
                 return Response(data={"code": 1, "message": "无法正确解析到要更新的数据!"})
             if env_id is None:
-                return Response(data={"code": 1, "message": "请确认请求参数中包含env_id"})
+                return Response(
+                    data={"code": 1, "message": "请确认请求参数中包含env_id"})
             _obj_lst = list()
             services_list = list()
             for key, value in update_data.items():
                 for item in value:
-                    if not item["condition"] or not item["value"] or not item["level"]:
+                    if not item["condition"] or not item["value"] or not item[
+                        "level"]:
                         continue
                     _obj = ServiceThreshold()
                     _obj.index_type = key
@@ -697,7 +745,8 @@ class ServiceThresholdView(GenericViewSet, ListModelMixin, CreateModelMixin):
             return Response({})
         except Exception as e:
             logger.error(f"更新服务相关阈值过程中出错: {traceback.format_exc()}")
-            return Response(data={"code": 1, "message": f"更新服务相关阈值过程中出错: {str(e)}!"})
+            return Response(
+                data={"code": 1, "message": f"更新服务相关阈值过程中出错: {str(e)}!"})
 
 
 class CustomThresholdView(GenericViewSet, ListModelMixin, CreateModelMixin):
@@ -770,8 +819,10 @@ class CustomThresholdView(GenericViewSet, ListModelMixin, CreateModelMixin):
             if not index_type_info:
                 return Response(data={"code": 1, "message": "无法正确解析到要更新的数据!"})
             env_id = request.data.get("env_id")
-            if not ServiceCustomThreshold.objects.filter(env_id=env_id).exists():
-                return Response(data={"code": 1, "message": f"env {env_id}不存在"})
+            if not ServiceCustomThreshold.objects.filter(
+                    env_id=env_id).exists():
+                return Response(
+                    data={"code": 1, "message": f"env {env_id}不存在"})
             # 后续需要增加对环境是否存在的判断
 
             # 后续可能需要同步阈值至prometheus的rules文件中
@@ -787,7 +838,8 @@ class CustomThresholdView(GenericViewSet, ListModelMixin, CreateModelMixin):
                     self, f"valid_{service_name}_{index_type}"
                 )(value)
                 if not valid:
-                    return Response(data={"code": 1, "message": "阈值更新的值不符合要求！"})
+                    return Response(
+                        data={"code": 1, "message": "阈值更新的值不符合要求！"})
                 _obj = ServiceCustomThreshold(
                     env_id=env_id,
                     service_name=service_name,
@@ -807,4 +859,201 @@ class CustomThresholdView(GenericViewSet, ListModelMixin, CreateModelMixin):
             return Response({})
         except Exception as e:
             logger.error(f"更新服务相关阈值过程中出错: {traceback.format_exc()}")
-            return Response(data={"code": 1, "message": f"更新服务相关阈值过程中出错: {str(e)}!"})
+            return Response(
+                data={"code": 1, "message": f"更新服务相关阈值过程中出错: {str(e)}!"})
+
+
+class QuotaView(ListModelMixin, GenericViewSet, CreateModelMixin,DestroyModelMixin):
+    """
+    读写自定义服务指标阈值
+    """
+
+    get_description = "读取指标规则"
+    post_description = "更新指标规则"
+    delete_description = "删除指标规则"
+    serializer_class = QuotaSerializer
+    queryset = AlertRule.objects.all().order_by("-create_time")
+    pagination_class = PageNumberPager
+    filter_backends = (
+        DjangoFilterBackend,
+        OrderingFilter,
+    )
+    filter_class = QuotaFilter
+
+    def create(self, request, *args, **kwargs):
+        """
+        添加监控指标项
+        env_id = models.IntegerField("环境id", default=1)
+        expr = models.TextField("监控指标表达式，报警语法", null=False, blank=False)
+        threshold_value = models.FloatField("阈值的数值", null=False, blank=False)
+        compare_str = models.CharField("比较符", max_length=64)
+        for_time = models.CharField("持续一段时间获取不到信息就触发告警", max_length=64)
+        severity = models.CharField("告警级别", max_length=64)
+        alert = models.TextField("标题，自定义摘要")
+        service = models.CharField("指标所属服务名称", max_length=255)
+        status = models.IntegerField("启用状态", default=0)
+        quota_type = models.IntegerField("指标的类型", choices=TYPE, default=0)
+        labels = models.JSONField("额外指定标签")
+        description = models.TextField("描述, 告警指标描述", null=True)
+        """
+        p = PrometheusUtils()
+        compare_str_dict = {
+            ">=": "大于或等于",
+            ">": "大于",
+            "==": "等于",
+            "!=": "不等于",
+            "<=": "小于或等于",
+            "<": "小于"
+        }
+        try:
+            env_id = request.data.get("env_id")
+            if not env_id:
+                return Response(
+                    data={"code": 1, "message": "请确认请求参数中包含env_id"})
+            env_name = Env.objects.filter(id=env_id).first().name
+            logger.info(f"创建指标规则接口获取到的参数为: {request.data}")
+            quota_type = request.data.get("quota_type")
+            compare_str = request.data.get("compare_str")
+            severity = request.data.get("severity")
+            threshold_value = request.data.get("threshold_value")
+            id = request.data.pop("id", 0)
+            expr = request.data.get("expr")
+            if quota_type == 0:
+                """
+                内置指标
+                """
+                builtins_quota = request.data.pop("builtins_quota", None)
+                name = builtins_quota.get("name")
+                expr = builtins_quota.get("expr")
+                description = builtins_quota.get("description")
+                cn_compare = compare_str_dict.get(compare_str)
+                request.data["name"] = name
+                request.data["service"] = builtins_quota.get("service")
+                request.data["description"] = description.replace("$compare_str$", cn_compare).replace(
+                    "$threshold_value$", str(threshold_value))
+                request.data["expr"] = expr.replace("$env$", env_name)
+                severity = request.data.get("severity")
+            elif quota_type == 1:
+                """
+                自定义promsql
+                """
+                pass
+            elif quota_type == 2:
+                """
+                日志监控
+                """
+                pass
+            else:
+                return Response(
+                    data={"code": 1, "message": f"创建指标规则过程中出错: 未识别的规则类型"})
+            request.data["labels"] = {
+                "job": '{}Exporter'.format(request.data["service"]),
+                "severity": severity
+            }
+            if id != 0:
+                if AlertRule.objects.filter(expr=expr,
+                                            severity=severity).exclude(id=id).exists():
+                    return Response(data={"code": 1,
+                                          "message": f"更新指标规则过程中出错: "
+                                                     f"同一指标规则级别重复添加"})
+                if not p.update_rule_file(add_data=request.data,update=True, rule_id=id):
+                    return Response(data={"code": 1,
+                                          "message": f"更新指标规则错误"})
+                AlertRule.objects.filter(id=id).update(**request.data)
+                ok = p.reload_prometheus()
+                if not ok:
+                    return Response(data={"code":1,"message":"prometheus 重载规则失败，请手动重启prometheus进行重载"})
+                return Response()
+            if AlertRule.objects.filter(expr=expr, severity=severity).exists():
+                return Response(data={"code": 1,
+                                      "message": f"创建指标规则过程中出错: "
+                                                 f"同一指标规则级别重复添加"})
+            if not p.update_rule_file(add_data=request.data,add=True):
+                return Response(data={"code": 1,
+                                      "message": f"创建指标规则错误"})
+            AlertRule(**request.data).save()
+            ok = p.reload_prometheus()
+            if not ok:
+                return Response(data={"code": 1,
+                                      "message": "prometheus 重载规则失败，请手动重启prometheus进行重载"})
+            return Response()
+        except Exception as e:
+            logger.error(f"创建指标规则过程中出错: {traceback.format_exc()}")
+            return Response(
+                data={"code": 1, "message": f"创建指标规则过程中出错: {str(e)}!"})
+
+    def delete(self,request, *args, **kwargs):
+        """
+        删除规则
+        """
+        id = request.query_params.get("id")
+        p = PrometheusUtils()
+        if not p.update_rule_file(delete=True, rule_id=id):
+            return Response(data={"code": 1,
+                                  "message": f"删除指标规则时，更新配置文件失败"})
+        num, _ = AlertRule.objects.filter(id=id).delete()
+        if num == 0:
+            return Response(data={"code": 1, "message": "删除失败"})
+        ok = p.reload_prometheus()
+        if not ok:
+            return Response(data={"code": 1,
+                                  "message": "prometheus "
+                                             "重载规则失败，请手动重启prometheus进行重载"})
+        return Response()
+
+class BuiltinsRuleView(GenericViewSet, ListModelMixin):
+    post_description = "获取内置指标列表"
+    serializer_class = RuleSerializer
+    queryset = Rule.objects.all()
+
+    def list(self, request, *args, **kwargs):
+        data = self.get_serializer(self.queryset, many=True).data
+        services = set([i.get("service") for i in data])
+        r_data = {}
+        for service in services:
+            r_data[service] = []
+            for i in data:
+                if service == i.get("service"):
+                    r_data[service].append(i)
+        return Response(data=r_data)
+
+
+class PromSqlTestView(GenericViewSet,CreateModelMixin):
+    post_description = "测试指标"
+    serializer_class = Serializer
+
+    def create(self,request, *args, **kwargs):
+        expr = request.data.get("expr")
+        ok, res = Prometheus().get_quota_res(quota=expr)
+        if ok:
+            return Response(data=res)
+        return Response(data={"code": 1, "message": res})
+
+class BatchUpdateRuleView(GenericViewSet,CreateModelMixin):
+    """
+    批量修改
+    """
+    post_description = "批量修改启用停用状态"
+    serializer_class = QuotaSerializer
+    queryset = AlertRule.objects.all()
+
+
+    def create(self, request, *args, **kwargs):
+        """
+        id list
+        批量修改接口
+        """
+        p = PrometheusUtils()
+        ids = request.data.get("ids")
+        status = request.data.get("status")
+        for id in ids:
+            AlertRule.objects.filter(id=id).update(status=status)
+        if not p.update_rule_file():
+            return Response(data={"code": 1,
+                                  "message": f"删除指标规则时，更新配置文件失败"})
+        ok = p.reload_prometheus()
+        if not ok:
+            return Response(data={"code": 1,
+                                  "message": "prometheus 重载规则失败，请手动重启prometheus进行重载"})
+
+        return Response()

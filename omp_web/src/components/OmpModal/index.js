@@ -22,21 +22,24 @@ const OmpModal = ({
   visibleHandle,
   children,
   title,
-  onFinish=()=>{},
+  onFinish = () => {},
   footer,
   loading = false,
   afterClose = () => {},
   form,
-  initialValues={},
+  initialValues = {},
   setLoading,
   okBtnText,
-  beForeOk=()=>{}
+  beForeOk = () => {},
+  formLabelCol = { span: 7 },
+  formWrapperCol = { span: 14 },
+  ...residualParam
 }) => {
   const [modalForm] = Form.useForm();
   // 扩展formItem功能,为了能够在formitem的validator校验时获得当前form的实例进行操作
   // 在这里重写formitem的validator函数，在新函数中注入form实例
   // console.log(children)
-  let dealChild = Array.isArray(children)?children:[children]
+  let dealChild = Array.isArray(children) ? children : [children];
   let processedChildren = dealChild?.map((item) => {
     if (item.props?.useforminstanceinvalidator === "true") {
       // 当前就是需要扩展validator的formItem
@@ -54,14 +57,12 @@ const OmpModal = ({
         }
       });
       return React.cloneElement(item, { rules: newRules });
-    }
-    else if(item.props?.useforminstanceinonchange === "true"){
-      let newOnChange = (e)=>{
-        item.props.onChange(e,modalForm)
-      }
+    } else if (item.props?.useforminstanceinonchange === "true") {
+      let newOnChange = (e) => {
+        item.props.onChange(e, modalForm);
+      };
       return React.cloneElement(item, { onChange: newOnChange });
-    } 
-    else {
+    } else {
       return item;
     }
   });
@@ -76,21 +77,20 @@ const OmpModal = ({
       footer={footer}
       destroyOnClose
       loading={loading}
-      afterClose={()=>{
+      afterClose={() => {
         // 重置表单数据
-        form?form.resetFields():modalForm.resetFields()
+        form ? form.resetFields() : modalForm.resetFields();
         //传入的afterClose
-        afterClose()
+        afterClose();
       }}
       footer={null}
-      // getContainer={false}
-      // forceRender={true}
+      {...residualParam}
     >
       <Form
         //style={{ paddingLeft: 50, paddingRight: 50 }}
         form={form ? form : modalForm}
-        labelCol={{ span: 7 }}
-        wrapperCol={{ span: 14 }}
+        labelCol={formLabelCol}
+        wrapperCol={formWrapperCol}
         onFinish={onFinish}
         initialValues={initialValues}
       >
@@ -105,16 +105,14 @@ const OmpModal = ({
           >
             取消
           </Button>
-          <span onClick={()=>{
-             beForeOk()
-          }}>
-          <Button
-            loading={loading}
-            type="primary"
-            htmlType="submit"
+          <span
+            onClick={() => {
+              beForeOk();
+            }}
           >
-            {okBtnText || "确定"}
-          </Button>
+            <Button loading={loading} type="primary" htmlType="submit">
+              {okBtnText || "确定"}
+            </Button>
           </span>
         </Form.Item>
       </Form>

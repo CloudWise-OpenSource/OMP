@@ -185,7 +185,7 @@ const SelfHealingStrategy = () => {
                         style={{
                           color: "rgba(0,0,0,.45)",
                           position: "relative",
-                          top: 8,
+                          top: 9,
                           left: 15,
                           fontSize: 15,
                         }}

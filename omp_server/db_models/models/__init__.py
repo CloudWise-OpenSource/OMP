@@ -11,13 +11,14 @@ from .monitor import MonitorUrl, Alert, Maintain, GrafanaMainPage, \
 from .product import Labels, UploadPackageHistory, ProductHub, \
     ApplicationHub, Product
 from .service import ServiceConnectInfo, ClusterInfo, Service, ServiceHistory
-from .threshold import HostThreshold, ServiceThreshold, ServiceCustomThreshold
+from .threshold import HostThreshold, ServiceThreshold, ServiceCustomThreshold,AlertRule,Rule
 from .tool import ToolInfo, ToolExecuteMainHistory, ToolExecuteDetailHistory
 from .upload import UploadFileHistory
 from .user import UserProfile, OperateLog, UserLoginLog
 from .upgrade import UpgradeHistory, UpgradeDetail, RollbackHistory, \
     RollbackDetail
 from .self_heal import SelfHealingSetting, SelfHealingHistory
+from .custom_metric import CustomScript
 
 __all__ = [
     # 邮箱设置
@@ -82,5 +83,12 @@ __all__ = [
     ToolExecuteMainHistory,
     ToolExecuteDetailHistory,
     # 上传文件公共表
-    UploadFileHistory
+    UploadFileHistory,
+    Alert,
+    AlertRule,
+    # 自定义脚本
+    CustomScript,
+    Alert,
+    AlertRule
+
 ]
