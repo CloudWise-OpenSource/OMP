@@ -13,7 +13,8 @@ from hosts.views import (
     HostFieldCheckView, IpListView, HostMaintenanceView,
     HostAgentRestartView, HostOperateLogView, HostBatchValidateView,
     HostBatchImportView, HostInitView, HostsAgentStatusView,
-    HostReinstallView, MonitorReinstallView
+    HostReinstallView, MonitorReinstallView,
+    HostUninstallView
 )
 
 router = DefaultRouter()
@@ -37,3 +38,5 @@ router.register("hostReinstall",
                 HostReinstallView, basename="hostReinstall")
 router.register("monitorReinstall",
                 MonitorReinstallView, basename="monitorReinstall")
+router.register("hostUninstall",
+                HostUninstallView, basename="hostUninstall")

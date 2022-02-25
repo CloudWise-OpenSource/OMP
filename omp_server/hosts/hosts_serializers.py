@@ -18,7 +18,8 @@ from db_models.models import (
 from hosts.tasks import (
     host_agent_restart, init_host,
     insert_host_celery_task, deploy_agent,
-    reinstall_monitor_celery_task
+    reinstall_monitor_celery_task,
+    delete_hosts
 )
 
 from utils.plugin.ssh import SSH
@@ -32,6 +33,38 @@ from utils.parse_config import THREAD_POOL_MAX_WORKERS
 from promemonitor.alertmanager import Alertmanager
 
 logger = logging.getLogger("server")
+
+
+class HostUninstallSerializer(ModelSerializer):
+    class Meta:
+        """ 元数据 """
+        model = Host
+        fields = ('id',)
+
+    def validate(self, attrs):
+        """ 校验主机是否存在服务 """
+
+        request_data = self.context.get('request').data
+        host_list = request_data.get("host_list", [])
+        host_ls = list(Host.objects.filter(
+            id__in=host_list).values_list('ip', flat=True))
+        service_obj = Service.objects.filter(ip__in=host_ls).exclude(
+            service__is_base_env=True
+        )
+        if service_obj.count() != 0:
+            ip_str = ",".join(set(service_obj.values_list('ip', flat=True)))
+            raise ValidationError(f"IP存在相关的服务:{ip_str}")
+        attrs['host_ls'] = host_ls
+        return attrs
+
+    def create(self, validated_data):
+        """ 删除主机 """
+        host_ls = validated_data.get("host_ls")
+        agent_status = {"host_agent": Host.AGENT_DEPLOY_DELETE,
+                        "monitor_agent": Host.AGENT_DEPLOY_DELETE}
+        Host.objects.filter(ip__in=host_ls).update(**agent_status)
+        delete_hosts.delay(host_ls)
+        return "任务下发成功"
 
 
 class HostSerializer(ModelSerializer):
