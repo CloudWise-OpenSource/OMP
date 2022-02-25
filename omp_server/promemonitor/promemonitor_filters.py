@@ -6,7 +6,7 @@ import time
 import django_filters
 from django_filters.rest_framework import FilterSet
 
-from db_models.models import (Alert,AlertRule)
+from db_models.models import (Alert, CustomScript, AlertRule)
 from rest_framework.filters import BaseFilterBackend
 
 
@@ -28,6 +28,7 @@ class AlertFilter(FilterSet):
             "alert_level", "alert_type"
         )
 
+
 class QuotaFilter(FilterSet):
     """
     指标规则过滤类
@@ -36,6 +37,7 @@ class QuotaFilter(FilterSet):
         help_text="alert，规则名称模糊匹配", field_name="alert",
         lookup_expr="icontains"
     )
+
     class Meta:
         model = AlertRule
         fields = (
@@ -56,3 +58,13 @@ class MyTimeFilter(BaseFilterBackend):
         except ValueError:
             return queryset.all()
         return queryset.filter(alert_time__range=(start_alert_time, end_alert_time))
+
+
+class CustomScriptFilter(FilterSet):
+    """ 自定义脚本过滤类 """
+    description = django_filters.CharFilter(
+        help_text="自定义脚本描述，模糊匹配", field_name="description", lookup_expr="icontains")
+
+    class Meta:
+        model = CustomScript
+        fields = ("description",)
