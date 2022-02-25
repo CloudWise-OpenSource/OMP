@@ -10,7 +10,7 @@ from promemonitor.views import (
     MonitorAgentRestartView, GrafanaUrlViewSet, InstanceNameListView,
     InstrumentPanelView, GetSendEmailConfig, UpdateSendEmailConfig,
     GetSendAlertSettingView, UpdateSendAlertSettingView, HostThresholdView,
-    ServiceThresholdView, CustomThresholdView
+    ServiceThresholdView, CustomThresholdView,BuiltinsRuleView,QuotaView,PromSqlTestView,BatchUpdateRuleView
 )
 
 router = DefaultRouter()
@@ -40,5 +40,12 @@ router.register(r'serviceThreshold', ServiceThresholdView,
                 basename='serviceThreshold')
 router.register(r'customThreshold', CustomThresholdView,
                 basename='customThreshold')
+router.register(r'builtinRule',BuiltinsRuleView,basename="builtinRule")
+router.register(r'quota',QuotaView,basename="quota")
+router.register(r'testPromSql',PromSqlTestView,basename="testPromSql")
 router.register(r'customScript', CustomScriptViewSet, basename='customScript')
+router.register(r'builtinRule',BuiltinsRuleView,basename="builtinRule")
+router.register(r'quota',QuotaView,basename="quota")
+router.register(r'testPromSql',PromSqlTestView,basename="testPromSql")
+router.register(r'batchUpdateRule',BatchUpdateRuleView,basename="batchUpdateRule")
 urlpatterns = router.urls

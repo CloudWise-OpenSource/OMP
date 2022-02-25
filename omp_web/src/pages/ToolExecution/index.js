@@ -265,7 +265,7 @@ const ToolExecution = () => {
             key={item.key}
             rules={[{ required: item.required, message: `请输入${item.name}` }]}
           >
-            <Select placeholder={`请选择${item.name}`} style={{ width: 150 }}>
+            <Select placeholder={`请选择${item.name}`} style={{ width: 150 }} allowClear>
               {item.options.map((i) => (
                 <Select.Option value={i} key={i}>
                   {i}

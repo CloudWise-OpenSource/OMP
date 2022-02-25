@@ -14,6 +14,7 @@ import os
 import time
 import logging
 import traceback
+import subprocess
 
 from django.conf import settings
 from celery import shared_task
@@ -31,6 +32,8 @@ from utils.plugin.agent_util import Agent
 from app_store.tasks import add_prometheus
 from utils.parse_config import HOSTNAME_PREFIX
 from utils.plugin.install_ntpdate import InstallNtpdate
+from omp_server.settings import PROJECT_DIR
+from concurrent.futures import ThreadPoolExecutor
 
 # 屏蔽celery任务日志中的paramiko日志
 logging.getLogger("paramiko").setLevel(logging.WARNING)
@@ -223,7 +226,8 @@ def real_init_host(host_obj):
                      f"detail: {script_push_msg}")
         raise Exception("send script failed")
 
-    modified_host_name = str(HOSTNAME_PREFIX) + "-" + "-".join(host_obj.ip.split(".")[-2:])
+    modified_host_name = str(HOSTNAME_PREFIX) + "-" + \
+        "-".join(host_obj.ip.split(".")[-2:])
     # 执行初始化
     is_success, script_msg = _ssh.cmd(
         f"python /tmp/{init_script_name} init_valid {modified_host_name} {host_obj.ip}")
@@ -394,3 +398,138 @@ def reinstall_monitor_celery_task(host_id, username):
     if len(detail_obj_list) != 0:
         add_prometheus(9999, detail_obj_list)
     maintenance(host_obj, False, username)
+
+
+class UninstallHosts(object):
+    def __init__(self, all_host):
+        self.is_success = True
+        self.all_host = all_host
+
+    @staticmethod
+    def cmd(command):
+        """执行本地shell命令"""
+        p = subprocess.Popen(
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+        )
+        stdout, stderr = p.communicate()
+        _out, _err, _code = stdout.decode(
+            "utf8"), stderr.decode("utf8"), p.returncode
+        return _out, _err, _code
+
+    def delete_salt_key(self, key_list):
+        """删除所有的salt-key"""
+        python_path = os.path.join(PROJECT_DIR, 'component/env/bin/python3')
+        salt_key_path = os.path.join(PROJECT_DIR, "component/env/bin/salt-key")
+        salt_config_path = os.path.join(PROJECT_DIR, "config/salt")
+        for item in key_list:
+            _out, _err, _code = self.cmd(
+                f"{python_path} {salt_key_path} -y -d '{item}' -c {salt_config_path}"
+            )
+            if _code != 0:
+                print(f"删除{item}获取到stdout: {_out}; stderr: {_err}")
+                self.is_success = False
+            logger.info(f"删除{item}获取到哦的stdout: {_out}; stderr: {_err}")
+
+    @staticmethod
+    def del_single_agent(obj):
+        """
+        删除单个节点的agent（salt and monitor）
+        """
+        ip = obj.ip
+        agent_dir = obj.agent_dir
+        data_dir = obj.data_folder
+        _ssh_obj = SSH(
+            hostname=ip,
+            port=obj.port,
+            username=obj.username,
+            password=AESCryptor().decode(obj.password)
+        )
+        # 删除目录
+        if not data_dir:
+            raise Exception(f"主机{ip}无数据目录")
+        # TODO /app/bash_profile目前是指定目录
+        delete_cmd_str = f"rm -rf {data_dir}/omp_packages; rm -rf {data_dir}/app/bash_profile; rm -rf /tmp/upgrade_openssl; rm -rf /tmp/hadoop"
+        cmd_res, msg = _ssh_obj.cmd(
+            delete_cmd_str,
+            timeout=120
+        )
+        logger.info(f"执行{ip} [delete] package and tmp 操作 {cmd_res}, 原因: {msg}")
+
+        # 卸载salt agent
+        salt_agent_dir = os.path.join(agent_dir, "omp_salt_agent")
+        _delete_cron_cmd = "crontab -l|grep -v omp_salt_agent 2>/dev/null | crontab -;"
+        _stop_agent = (
+            f"bash {salt_agent_dir}/bin/omp_salt_agent stop; rm -rf {salt_agent_dir}"
+        )
+        final_cmd = f"{_delete_cron_cmd} {_stop_agent}"
+        salt_res_flag, salt_res_msg = _ssh_obj.cmd(final_cmd, timeout=60)
+        logger.info(f"卸载{ip}上的omp_salt_agent的命令为: {final_cmd}")
+        logger.info(
+            f"卸载{ip}上的omp_salt_agent的结果为: {salt_res_flag} {salt_res_msg}")
+        # 卸载monitor agent
+        monitor_agent_dir = os.path.join(agent_dir, "omp_monitor_agent")
+        _delete_monitor_cron_cmd = "crontab -l|grep -v omp_monitor_agent 2>/dev/null | crontab -;"
+        _uninstall_monitor_agent_cmd = f"cd {monitor_agent_dir} &&" \
+                                       f" ./manage stop_all &&" \
+                                       f" bash monitor_agent.sh stop &&" \
+                                       f" cd {agent_dir} &&" \
+                                       f" rm -rf omp_monitor_agent"
+        monitor_res_flag, monitor_res_msg = _ssh_obj.cmd(
+            _uninstall_monitor_agent_cmd, timeout=120)
+        res, msg = _ssh_obj.cmd(
+            _delete_monitor_cron_cmd, timeout=120)
+        logger.info(
+            f"卸载{ip}上的omp_monitor_agent的命令为: {_uninstall_monitor_agent_cmd}")
+        logger.info(
+            f"卸载{ip}上的omp_monitor_agent的结果为: {monitor_res_flag} {monitor_res_msg}")
+        if not all([cmd_res, salt_res_flag, monitor_res_flag]):
+            return False, f"({ip}上卸载文件清除：{cmd_res}-{msg};\n salt:{salt_res_flag}-{salt_res_msg};\n monitor:{monitor_res_flag}-{monitor_res_msg};\n)"
+        return True, "success"
+
+    @staticmethod
+    def execute_uninstall(host_obj_list, thread_name_prefix, function, max_num=8):
+        """卸载执行函数"""
+        thread_p = ThreadPoolExecutor(
+            max_workers=max_num,
+            thread_name_prefix=thread_name_prefix
+        )
+        # future_list: [(ip, future),..]
+        future_list = list()
+        # result_list:[(ip, res_bool, res_msg), ...]
+        result_list = list()
+        for obj in host_obj_list:
+            future = thread_p.submit(function, obj)
+            future_list.append((obj.ip, future))
+        for f in future_list:
+            result_list.append((f[0], f[1].result()[0], f[1].result()[1]))
+        thread_p.shutdown(wait=True)
+        failed_msg = ""
+        for item in result_list:
+            if not item[1]:
+                failed_msg += f"{item[0]}: (execute_flag: {item[1]}; execute_msg: {item[2]})"
+        if failed_msg:
+            return False, failed_msg
+        return True, "success"
+
+    def delete_all_omp_agent(self):
+        """清理所有omp agent(salt and monitor)"""
+        _uninstall_flag, _uninstall_msg = self.execute_uninstall(host_obj_list=self.all_host,
+                                                                 thread_name_prefix="uninstall_agent_",
+                                                                 function=self.del_single_agent)
+
+        if not _uninstall_flag:
+            print(_uninstall_msg)
+            self.is_success = False
+        self.delete_salt_key([item.ip for item in self.all_host])
+        return self.is_success
+
+
+@shared_task()
+def delete_hosts(host_ids):
+    """
+    执行删除异步任务
+    """
+    host_objs = Host.objects.filter(ip__in=host_ids)
+    uninstall_objs = UninstallHosts(host_objs)
+    uninstall_objs.delete_all_omp_agent()
+    host_objs.delete()

@@ -473,9 +473,16 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
           case "运行用户":
             result.run_user = item[key];
             break;
+          case "时间同步服务器":
+            result.use_ntpd = true;
+            result.ntpd_server = item[key];
+            break;
           default:
             break;
         }
+      }
+      if (!result.use_ntpd) {
+        result.use_ntpd = false;
       }
       return {
         ...result,
