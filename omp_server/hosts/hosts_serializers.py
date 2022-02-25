@@ -2,6 +2,8 @@
 主机序列化器
 """
 import logging
+import socket
+import struct
 from concurrent.futures import (
     ThreadPoolExecutor, as_completed
 )
@@ -18,7 +20,8 @@ from db_models.models import (
 from hosts.tasks import (
     host_agent_restart, init_host,
     insert_host_celery_task, deploy_agent,
-    reinstall_monitor_celery_task
+    reinstall_monitor_celery_task,
+    delete_hosts
 )
 
 from utils.plugin.ssh import SSH
@@ -32,6 +35,38 @@ from utils.parse_config import THREAD_POOL_MAX_WORKERS
 from promemonitor.alertmanager import Alertmanager
 
 logger = logging.getLogger("server")
+
+
+class HostUninstallSerializer(ModelSerializer):
+    class Meta:
+        """ 元数据 """
+        model = Host
+        fields = ('id',)
+
+    def validate(self, attrs):
+        """ 校验主机是否存在服务 """
+
+        request_data = self.context.get('request').data
+        host_list = request_data.get("host_list", [])
+        host_ls = list(Host.objects.filter(
+            id__in=host_list).values_list('ip', flat=True))
+        service_obj = Service.objects.filter(ip__in=host_ls).exclude(
+            service__is_base_env=True
+        )
+        if service_obj.count() != 0:
+            ip_str = ",".join(set(service_obj.values_list('ip', flat=True)))
+            raise ValidationError(f"IP存在相关的服务:{ip_str}")
+        attrs['host_ls'] = host_ls
+        return attrs
+
+    def create(self, validated_data):
+        """ 删除主机 """
+        host_ls = validated_data.get("host_ls")
+        agent_status = {"host_agent": Host.AGENT_DEPLOY_DELETE,
+                        "monitor_agent": Host.AGENT_DEPLOY_DELETE}
+        Host.objects.filter(ip__in=host_ls).update(**agent_status)
+        delete_hosts.delay(host_ls)
+        return "任务下发成功"
 
 
 class HostSerializer(ModelSerializer):
@@ -111,6 +146,19 @@ class HostSerializer(ModelSerializer):
         validators=[
             ReValidator(regex=r"^[_a-zA-Z0-9][-_a-zA-Z0-9]+$"),
         ])
+    use_ntpd = serializers.BooleanField(
+        help_text="是否开启时钟同步",
+        required=True,
+        error_messages={"required": "必须包含[use_ntpd]字段"}
+
+    )
+    ntpd_server = serializers.IPAddressField(
+        help_text="时间同步服务器IP地址",
+        required=False,
+        error_messages={
+            "invalid": "ntpd_server格式不合法"
+        }
+    )
 
     class Meta:
         """ 元数据 """
@@ -174,6 +222,7 @@ class HostSerializer(ModelSerializer):
         password = attrs.get("password")
         data_folder = attrs.get("data_folder")
         run_user = attrs.get("run_user")
+        use_ntpd = attrs.get("use_ntpd")
         # 默认主机初始化标记为 False
         attrs["init_host"] = False
 
@@ -209,6 +258,26 @@ class HostSerializer(ModelSerializer):
         # 主机密码加密处理
         if attrs.get("password"):
             attrs["password"] = AESCryptor().encode(attrs.get("password"))
+        # 启用ntpd，验证ntpd服务器是否可用
+        if use_ntpd:
+            ntpd_server = attrs.get("ntpd_server")
+            # udp 检测ip:port是否可用
+            REF_TIME_1970 = 2208988800
+            client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            data = b'\x1b' + 47 * b'\0'
+            ip_port = (ntpd_server, 123)
+            client.sendto(data, ip_port)
+            client.settimeout(20)
+            try:
+                data, address = client.recvfrom(1024)
+            except socket.timeout as e:
+                data = bytes('', encoding='utf-8')
+            t = 0
+            if data:
+                t = struct.unpack('!12I', data)[10]
+                t -= REF_TIME_1970
+            if t == 0:
+                raise ValidationError(f"{ntpd_server}上的ntpd服务端不可用")
         return attrs
 
     def create(self, validated_data):

@@ -56,6 +56,8 @@ export const AddMachineModal = ({
 }) => {
   const [modalForm] = Form.useForm();
   const [modalLoading, setmodalLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
+
   const timer = useRef(null);
   const timer2 = useRef(null);
   return (
@@ -82,6 +84,7 @@ export const AddMachineModal = ({
         port: 22,
         operate_system: "CentOS",
         username: "root",
+        use_ntpd: true,
       }}
     >
       <MessageTip
@@ -435,6 +438,50 @@ export const AddMachineModal = ({
         >
           <Input.Password maxLength={64} placeholder={"请输入密码"} />
         </Form.Item>
+        <Form.Item
+          label="安装时间同步服务"
+          name="use_ntpd"
+          key="use_ntpd"
+          valuePropName="checked"
+          extra={
+            <span style={{ fontSize: 10 }}>
+              开启后，将对纳管主机安装ntpdate服务
+            </span>
+          }
+        >
+          <Switch
+            style={{ borderRadius: "10px" }}
+            onChange={(e) => setIsOpen(e)}
+          />
+        </Form.Item>
+        {isOpen && (
+          <Form.Item
+            label="时间同步服务器"
+            name="ntpd_server"
+            key="ntpd_server"
+            rules={[
+              {
+                required: true,
+                message: "请输入时间同步服务器",
+              },
+              {
+                validator: (rule, value, callback) => {
+                  if (value) {
+                    if (isValidIpChar(value)) {
+                      return Promise.resolve("success");
+                    } else {
+                      return Promise.reject("请输入正确格式的IP地址");
+                    }
+                  } else {
+                    return Promise.resolve("success");
+                  }
+                },
+              },
+            ]}
+          >
+            <Input placeholder={"例如: 192.168.10.10"} />
+          </Form.Item>
+        )}
       </div>
     </OmpModal>
   );
@@ -1028,6 +1075,34 @@ export const BatchImportMachineModal = ({
       ellipsis: true,
     },
     {
+      title: "是否安装时间同步",
+      key: "use_ntpd",
+      dataIndex: "use_ntpd",
+      align: "center",
+      width: 120,
+      render: (text) => {
+        return (
+          <span>{text === false ? "否" : text === true ? "是" : "-"}</span>
+        );
+      },
+      ellipsis: true,
+    },
+    {
+      title: "时间同步服务器",
+      key: "ntpd_server",
+      dataIndex: "ntpd_server",
+      align: "center",
+      width: 120,
+      render: (text) => {
+        return (
+          <Tooltip title={text}>
+            <span>{text ? text : "-"}</span>
+          </Tooltip>
+        );
+      },
+      ellipsis: true,
+    },
+    {
       title: "失败原因",
       key: "validate_error",
       dataIndex: "validate_error",
@@ -1141,14 +1216,29 @@ export const BatchImportMachineModal = ({
       ellipsis: true,
     },
     {
-      title: "是否执行初始化",
-      key: "init_host",
-      dataIndex: "init_host",
+      title: "是否安装时间同步",
+      key: "use_ntpd",
+      dataIndex: "use_ntpd",
       align: "center",
       width: 120,
       render: (text) => {
         return (
           <span>{text === false ? "否" : text === true ? "是" : "-"}</span>
+        );
+      },
+      ellipsis: true,
+    },
+    {
+      title: "时间同步服务器",
+      key: "ntpd_server",
+      dataIndex: "ntpd_server",
+      align: "center",
+      width: 120,
+      render: (text) => {
+        return (
+          <Tooltip title={text}>
+            <span>{text ? text : "-"}</span>
+          </Tooltip>
         );
       },
       ellipsis: true,
@@ -1207,9 +1297,16 @@ export const BatchImportMachineModal = ({
           case "端口[必填]":
             result.port = item[key];
             break;
+          case "时间同步服务器":
+            result.use_ntpd = true;
+            result.ntpd_server = item[key];
+            break;
           default:
             break;
         }
+      }
+      if (!result.use_ntpd) {
+        result.use_ntpd = false;
       }
       return {
         ...result,

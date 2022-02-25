@@ -26,7 +26,8 @@ from hosts.hosts_serializers import (
     HostOperateLogSerializer, HostBatchValidateSerializer,
     HostBatchImportSerializer, HostDetailSerializer,
     HostInitSerializer, HostsAgentStatusSerializer,
-    HostReinstallSerializer, MonitorReinstallSerializer
+    MonitorReinstallSerializer, HostUninstallSerializer,
+    HostReinstallSerializer
 )
 from promemonitor.prometheus import Prometheus
 from promemonitor.grafana_url import explain_url
@@ -123,6 +124,17 @@ class MonitorReinstallView(GenericViewSet, CreateModelMixin):
     serializer_class = MonitorReinstallSerializer
     # 操作信息描述
     post_description = "重装监控Agent"
+
+
+class HostUninstallView(GenericViewSet, CreateModelMixin):
+    """
+        create:
+        卸载Agent接口
+    """
+    queryset = Host.objects.filter(is_deleted=False)
+    serializer_class = HostUninstallSerializer
+    # 操作信息描述
+    post_description = "卸载主机agent"
 
 
 class HostDetailView(GenericViewSet, RetrieveModelMixin):
@@ -244,7 +256,7 @@ class HostBatchValidateView(BaseDownLoadTemplateView, CreateModelMixin):
             else:
                 host["init_host"] = True
                 repeat_data.append(host)
-        if len(request_data) == 0:
+        if len(request_data["host_list"]) == 0:
             return Response({"correct": repeat_data, "error": []})
         serializer = self.get_serializer(data=request_data)
         if not serializer.is_valid():

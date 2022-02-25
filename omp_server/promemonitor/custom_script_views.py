@@ -9,14 +9,18 @@ import traceback
 
 import requests
 import yaml
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import OrderingFilter
 
 from rest_framework.mixins import ListModelMixin, CreateModelMixin, UpdateModelMixin, DestroyModelMixin
+from rest_framework.serializers import Serializer
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.response import Response
 
 # from db_models.models import UploadFileHistory
 from db_models.models.custom_metric import CustomScript
 from promemonitor.custom_script_serializers import CustomScriptSerializer
+from promemonitor.promemonitor_filters import CustomScriptFilter
 from utils.common.paginations import PageNumberPager
 from promemonitor.prometheus_utils import PrometheusUtils
 from utils.parse_config import MONITOR_PORT
@@ -35,12 +39,18 @@ class CustomScriptViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, Upda
 
     update:
     更新自定义脚本模型字段
+
+    delete:
+    删除指定自定义脚本
     """
     get_description = "读取自定义脚本记录"
     post_description = "更新自定义脚本记录"
     serializer_class = CustomScriptSerializer
     pagination_class = PageNumberPager
-    queryset = CustomScript.objects.all()
+    # 过滤，排序字段
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    queryset = CustomScript.objects.all().order_by("-created")
+    filter_class = CustomScriptFilter
 
     prometheus_util = PrometheusUtils()
 
@@ -48,7 +58,7 @@ class CustomScriptViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, Upda
         """
         获取自定义脚本列表信息
         """
-        queryset = CustomScript.objects.all().order_by("-created")  # 分页，过滤，排序
+        queryset = self.filter_queryset(self.get_queryset())  # 分页，过滤，排序
 
         page = self.paginate_queryset(queryset)
         if page is not None:
@@ -66,8 +76,10 @@ class CustomScriptViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, Upda
         file_obj = request.FILES.get('file')
 
         script_name = file_obj.name
-        scrape_interval = request.data.get("scrape_interval")
-        enabled = request.data.get("enabled")
+        if CustomScript.objects.filter(script_name=script_name).exists():
+            return Response(data={"code": 1, "message": "该脚本已存在，请重新上传！"})
+        scrape_interval = request.data.get("scrape_interval", 60)
+        enabled = request.data.get("enabled", 1)
 
         script_content = file_obj.read()
         script_content = str(script_content, encoding="utf8")
@@ -88,7 +100,7 @@ class CustomScriptViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, Upda
                 scrape_interval=scrape_interval,
                 enabled=enabled,
                 description=description,
-                bound_hosts=""
+                bound_hosts=json.dumps([])
             )
             custom_script.save()
             # UploadFileHistory.location(file=file_obj, module_obj=custom_script, user=request.user)
@@ -132,10 +144,12 @@ class CustomScriptViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, Upda
         new_scrape_interval = request.data.get("scrape_interval")
         new_enabled = request.data.get("enabled")
         new_bound_host_list = request.data.get("bound_hosts")
+        new_description = request.data.get("description", instance.description)
 
         instance.scrape_interval = new_scrape_interval
         instance.enabled = new_enabled
         instance.bound_hosts = new_bound_host_list
+        instance.description = new_description
         instance.save()
         headers = {"Content-Type": "application/json"}
         headers.update(CW_TOKEN)
@@ -217,3 +231,43 @@ class CustomScriptViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, Upda
         #         return Response(data={"code": 1, "message": f"向主机{host}agent发送删除自定义脚本信息失败！"})
         instance.delete()
         return Response({})
+
+
+class CustomScriptJobInfoView(GenericViewSet, ListModelMixin):
+    get_description = "读取自定义脚本任务信息"
+    # queryset = CustomScript.objects.all().order_by("-created")
+    serializer_class = Serializer
+
+    prometheus_util = PrometheusUtils()
+
+    def list(self, request, *args, **kwargs):
+        """
+        读取自定义脚本任务信息
+        """
+        cs_id = request.query_params.get("id")
+        logger.error(cs_id)
+        instance = CustomScript.objects.get(id=cs_id)
+        script_job_str = instance.script_name.split('.', 1)[0]
+        job_str = f"{script_job_str}Exporter"
+        prometheus_targets_url = f"http://127.0.0.1:{MONITOR_PORT.get('prometheus', '19011')}/api/v1/targets"
+        try:
+            res = requests.get(url=prometheus_targets_url,
+                               headers=self.prometheus_util.basic_auth)
+            if res.status_code != 200:
+                return Response(data={"code": 1, "message": "获取自定义脚本任务信息失败！"})
+            active_targets_list = res.json().get("data").get("activeTargets")
+            custom_script_job_list = list()
+            for active_target in active_targets_list:
+                if active_target.get("scrapePool") == job_str:
+                    custom_script_job_info = {
+                        "scrape_url": active_target.get("scrapeUrl"),
+                        "status": active_target.get("health"),
+                        "last_scrape_duration": active_target.get("lastScrapeDuration"),
+                        "last_error": active_target.get("lastError")
+                    }
+                    custom_script_job_list.append(custom_script_job_info)
+            return Response(custom_script_job_list)
+            # return Response(data={"code": 1, "message": "获取自定义脚本任务信息失败！"})
+        except Exception as e:
+            logger.error(traceback.format_exc(e))
+            return Response(data={"code": 1, "message": "获取自定义脚本任务信息失败！"})
