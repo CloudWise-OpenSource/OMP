@@ -460,10 +460,11 @@ class UninstallHosts(object):
                                        f" ./manage stop_all &&" \
                                        f" bash monitor_agent.sh stop &&" \
                                        f" cd {agent_dir} &&" \
-                                       f" {_delete_monitor_cron_cmd} &&" \
                                        f" rm -rf omp_monitor_agent"
         monitor_res_flag, monitor_res_msg = _ssh_obj.cmd(
             _uninstall_monitor_agent_cmd, timeout=120)
+        res, msg = _ssh_obj.cmd(
+            _delete_monitor_cron_cmd, timeout=120)
         logger.info(
             f"卸载{ip}上的omp_monitor_agent的命令为: {_uninstall_monitor_agent_cmd}")
         logger.info(
