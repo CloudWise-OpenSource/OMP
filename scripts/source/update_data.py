@@ -106,6 +106,7 @@ def create_threshold():
                 "job": "nodeExporter",
                 "severity": "critical"
             },
+            "name":"实例宕机",
             "quota_type": 0,
             "status": 1,
             "service": "node",
@@ -127,6 +128,7 @@ def create_threshold():
                 "job": "nodeExporter",
                 "severity": "critical"
             },
+            "name":"CPU使用率",
             "quota_type": 0,
             "status": 1,
             "service": "node",
@@ -148,6 +150,7 @@ def create_threshold():
                 "job": "nodeExporter",
                 "severity": "warning"
             },
+            "name": "CPU使用率",
             "quota_type": 0,
             "status": 1,
             "service": "node",
@@ -166,6 +169,7 @@ def create_threshold():
                 "job": "nodeExporter",
                 "severity": "critical"
             },
+            "name": "内存使用率",
             "quota_type": 0,
             "status": 1,
             "service": "node",
@@ -184,6 +188,7 @@ def create_threshold():
                 "job": "nodeExporter",
                 "severity": "warning"
             },
+            "name": "内存使用率",
             "quota_type": 0,
             "status": 1,
             "service": "node",
@@ -209,6 +214,7 @@ def create_threshold():
                 "job": "nodeExporter",
                 "severity": "critical"
             },
+            "name": "根分区使用率",
             "quota_type": 0,
             "status": 1,
             "service": "node",
@@ -234,6 +240,7 @@ def create_threshold():
                 "job": "nodeExporter",
                 "severity": "warning"
             },
+            "name": "根分区使用率",
             "quota_type": 0,
             "status": 1,
             "service": "node",
@@ -253,6 +260,7 @@ def create_threshold():
                 "job": "kafkaExporter",
                 "severity": "warning"
             },
+            "name": "消费组堆积消息",
             "quota_type": 0,
             "status": 1,
             "service": "kafka",
@@ -272,6 +280,7 @@ def create_threshold():
                 "job": "kafkaExporter",
                 "severity": "critical"
             },
+            "name": "消费组堆积消息",
             "quota_type": 0,
             "status": 1,
             "service": "kafka",
@@ -289,6 +298,7 @@ def create_threshold():
                 "job": "nodeExporter",
                 "severity": "critical"
             },
+            "name": "exporter异常",
             "quota_type": 0,
             "status": 1,
             "service": "node",
@@ -306,6 +316,7 @@ def create_threshold():
                 "job": "nodeExporter",
                 "severity": "critical"
             },
+            "name":"服务状态",
             "quota_type": 0,
             "status": 1,
             "service": "node",
@@ -313,6 +324,25 @@ def create_threshold():
 
     ]
     rule = [
+        {
+            "name": "实例宕机",
+            "description": '实例 {{ $labels.instance }} '
+                           'monitor_agent进程丢失或主机发生宕机已超过1分钟',
+            "expr": 'sum(up{job="nodeExporter", env="$env$"}) by (instance)',
+            "service": "node",
+        },
+        {
+            "name": "exporter异常",
+            "description": '主机 {{ $labels.instance }} 中的 {{ $labels.app }}_exporter 已经down掉超过一分钟',
+            "expr": 'exporter_status{env="$env$"}',
+            "service": "node",
+        },
+        {
+            "name": "服务状态",
+            "description": '主机 {{ $labels.instance }} 中的 服务 {{ $labels.app }} 已经down掉超过一分钟.',
+            "expr": 'probe_success{env="$env$"}',
+            "service": "node",
+        },
         {
             "name": "CPU使用率",
             "description": '主机 {{ $labels.instance }} CPU 使用率为 {{ $value | '

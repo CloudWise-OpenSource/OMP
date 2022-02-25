@@ -895,8 +895,6 @@ class QuotaView(ListModelMixin, GenericViewSet, CreateModelMixin,DestroyModelMix
         quota_type = models.IntegerField("指标的类型", choices=TYPE, default=0)
         labels = models.JSONField("额外指定标签")
         description = models.TextField("描述, 告警指标描述", null=True)
-        create_time = models.DateTimeField("告警规则入库时间", auto_now_add=True)
-        update_time = models.DateTimeField("告警规则更新时间", auto_now_add=True)
         """
         p = PrometheusUtils()
         compare_str_dict = {
@@ -929,10 +927,11 @@ class QuotaView(ListModelMixin, GenericViewSet, CreateModelMixin,DestroyModelMix
                 expr = builtins_quota.get("expr")
                 description = builtins_quota.get("description")
                 cn_compare = compare_str_dict.get(compare_str)
+                request.data["name"] = name
                 request.data["service"] = builtins_quota.get("service")
                 request.data["description"] = description.replace("$compare_str$", cn_compare).replace(
-                    "$threshold_value$", str(threshold_value)).replace("$env$", env_name)
-                request.data["expr"] = expr
+                    "$threshold_value$", str(threshold_value))
+                request.data["expr"] = expr.replace("$env$", env_name)
                 severity = request.data.get("severity")
             elif quota_type == 1:
                 """
@@ -948,8 +947,8 @@ class QuotaView(ListModelMixin, GenericViewSet, CreateModelMixin,DestroyModelMix
                 return Response(
                     data={"code": 1, "message": f"创建指标规则过程中出错: 未识别的规则类型"})
             request.data["labels"] = {
-                "job":'{}Exporter'.format(request.data["service"]),
-                "severity":severity
+                "job": '{}Exporter'.format(request.data["service"]),
+                "severity": severity
             }
             if id != 0:
                 if AlertRule.objects.filter(expr=expr,
@@ -987,7 +986,7 @@ class QuotaView(ListModelMixin, GenericViewSet, CreateModelMixin,DestroyModelMix
         """
         删除规则
         """
-        id = request.data.get("id")
+        id = request.query_params.get("id")
         p = PrometheusUtils()
         if not p.update_rule_file(delete=True, rule_id=id):
             return Response(data={"code": 1,
@@ -995,6 +994,11 @@ class QuotaView(ListModelMixin, GenericViewSet, CreateModelMixin,DestroyModelMix
         num, _ = AlertRule.objects.filter(id=id).delete()
         if num == 0:
             return Response(data={"code": 1, "message": "删除失败"})
+        ok = p.reload_prometheus()
+        if not ok:
+            return Response(data={"code": 1,
+                                  "message": "prometheus "
+                                             "重载规则失败，请手动重启prometheus进行重载"})
         return Response()
 
 class BuiltinsRuleView(GenericViewSet, ListModelMixin):
@@ -1024,3 +1028,32 @@ class PromSqlTestView(GenericViewSet,CreateModelMixin):
         if ok:
             return Response(data=res)
         return Response(data={"code": 1, "message": res})
+
+class BatchUpdateRuleView(GenericViewSet,CreateModelMixin):
+    """
+    批量修改
+    """
+    post_description = "批量修改启用停用状态"
+    serializer_class = QuotaSerializer
+    queryset = AlertRule.objects.all()
+
+
+    def create(self, request, *args, **kwargs):
+        """
+        id list
+        批量修改接口
+        """
+        p = PrometheusUtils()
+        ids = request.data.get("ids")
+        status = request.data.get("status")
+        for id in ids:
+            AlertRule.objects.filter(id=id).update(status=status)
+        if not p.update_rule_file():
+            return Response(data={"code": 1,
+                                  "message": f"删除指标规则时，更新配置文件失败"})
+        ok = p.reload_prometheus()
+        if not ok:
+            return Response(data={"code": 1,
+                                  "message": "prometheus 重载规则失败，请手动重启prometheus进行重载"})
+
+        return Response()
