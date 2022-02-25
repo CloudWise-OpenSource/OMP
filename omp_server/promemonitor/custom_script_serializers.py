@@ -2,6 +2,7 @@
 # -*-coding:utf-8-*-
 # Author:' Lingyang.guo'
 # CreateDate: 14:26
+import json
 
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
@@ -19,5 +20,5 @@ class CustomScriptSerializer(ModelSerializer):
 
     def get_bound_hosts_num(self, obj):  # NOQA
         bound_hosts = obj.bound_hosts
-        bound_hosts_num = len(bound_hosts)
+        bound_hosts_num = len(json.loads(bound_hosts))
         return bound_hosts_num
