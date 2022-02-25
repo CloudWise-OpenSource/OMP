@@ -31,6 +31,7 @@ from utils.plugin.crypto import AESCryptor
 from utils.plugin.agent_util import Agent
 from app_store.tasks import add_prometheus
 from utils.parse_config import HOSTNAME_PREFIX
+from utils.plugin.install_ntpdate import InstallNtpdate
 from omp_server.settings import PROJECT_DIR
 from concurrent.futures import ThreadPoolExecutor
 
@@ -304,6 +305,18 @@ def insert_host_celery_task(host_id, init=False):
         Host.objects.filter(id=host_id).update(
             host_agent=Host.AGENT_DEPLOY_ERROR,
             host_agent_error=str(e))
+    # 部署ntpdate
+    try:
+        host_obj = Host.objects.filter(id=host_id).first()
+        host_id = host_obj.id
+        if host_obj.use_ntpd:
+            InstallNtpdate(host_obj_list=[host_obj]).install()
+    except Exception as e:
+        logger.error(
+            f"Deplot ntpdate for {id} Failed with error: {str(e)};\n"
+            f"detail: {traceback.format_exc()}"
+        )
+        Host.objects.filter(id=host_id).update(ntpdate_install_status=Host.NTPDATE_INSTALL_FAILED)
 
 
 def write_host_log(host_queryset, status, result, username):

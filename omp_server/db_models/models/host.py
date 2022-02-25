@@ -32,6 +32,16 @@ class Host(TimeStampMixin, DeleteMixin):
         (INIT_EXECUTING, "执行中"),
         (INIT_FAILED, "失败")
     )
+    NTPDATE_INSTALL_SUCCESS = 0
+    NTPDATE_NOT_INSTALL = 1
+    NTPDATE_INSTALLING = 2
+    NTPDATE_INSTALL_FAILED = 3
+    NTPDATE_STATUS_CHOICES = (
+        (NTPDATE_INSTALL_SUCCESS, "执行成功"),
+        (NTPDATE_NOT_INSTALL, "未执行"),
+        (NTPDATE_INSTALLING, "执行中"),
+        (NTPDATE_INSTALL_FAILED, "执行失败")
+    )
 
     objects = None
     instance_name = models.CharField(
@@ -83,6 +93,11 @@ class Host(TimeStampMixin, DeleteMixin):
     init_status = models.CharField(
         "主机初始化状态", max_length=16, help_text="主机初始化状态",
         choices=INIT_STATUS_CHOICES, default=INIT_NOT_EXECUTED)
+    use_ntpd = models.BooleanField("是否开启时间同步服务", default=False)
+    ntpd_server = models.GenericIPAddressField("时间同步服务器地址", default="127.0.0.1")
+    ntpdate_install_status = models.CharField(
+        "安装ntpdate状态", max_length=16, choices=NTPDATE_STATUS_CHOICES, default=NTPDATE_NOT_INSTALL
+    )
 
     class Meta:
         """ 元数据 """
