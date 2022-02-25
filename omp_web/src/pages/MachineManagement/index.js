@@ -84,10 +84,11 @@ const MachineManagement = () => {
   const [restartMonterAgentModal, setRestartMonterAgentModal] = useState(false);
 
   // 重装主机agent
-  const [reInstallHostAgentModal, setReInstallHostAgentModal] = useState(false)
+  const [reInstallHostAgentModal, setReInstallHostAgentModal] = useState(false);
 
   // 重装监控agent
-  const [reInstallMonterAgentModal, setReInstallMonterAgentModal] = useState(false)
+  const [reInstallMonterAgentModal, setReInstallMonterAgentModal] =
+    useState(false);
 
   // 开启维护
   const [openMaintainModal, setOpenMaintainModal] = useState(false);
@@ -321,7 +322,7 @@ const MachineManagement = () => {
   };
 
   // 重装主机agent
-  const fetchInstallHostAgent = ()=>{
+  const fetchInstallHostAgent = () => {
     setLoading(true);
     fetchPost(apiRequest.machineManagement.reInstallHostAgent, {
       body: {
@@ -349,10 +350,10 @@ const MachineManagement = () => {
           pagination.ordering
         );
       });
-  }
+  };
 
   // 重装监控agent
-  const fetchInstallMonitorAgent = ()=>{
+  const fetchInstallMonitorAgent = () => {
     setLoading(true);
     fetchPost(apiRequest.machineManagement.reInstallMonitorAgent, {
       body: {
@@ -380,7 +381,7 @@ const MachineManagement = () => {
           pagination.ordering
         );
       });
-  }
+  };
 
   // 初始化主机
   const fetchInitHostAgent = () => {
@@ -592,7 +593,7 @@ const MachineManagement = () => {
           }
           placement="bottomCenter"
         >
-          <Button style={{ marginLeft: 10, paddingRight:10, paddingLeft:15 }}>
+          <Button style={{ marginLeft: 10, paddingRight: 10, paddingLeft: 15 }}>
             更多
             <DownOutlined />
           </Button>
@@ -817,7 +818,10 @@ const MachineManagement = () => {
       </OmpMessageModal>
 
       <OmpMessageModal
-        visibleHandle={[reInstallMonterAgentModal, setReInstallMonterAgentModal]}
+        visibleHandle={[
+          reInstallMonterAgentModal,
+          setReInstallMonterAgentModal,
+        ]}
         title={
           <span>
             <ExclamationCircleOutlined
@@ -834,7 +838,7 @@ const MachineManagement = () => {
         }
         loading={loading}
         onFinish={() => {
-          fetchInstallMonitorAgent()
+          fetchInstallMonitorAgent();
         }}
       >
         <div style={{ padding: "20px" }}>
