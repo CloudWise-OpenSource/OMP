@@ -221,7 +221,13 @@ export const apiRequest = {
     deleteQuota: "/api/promemonitor/quota/",
 
     // 启动，停用
-    batchUpdateRule: "/api/promemonitor/batchUpdateRule/"
+    batchUpdateRule: "/api/promemonitor/batchUpdateRule/",
+
+    // 扩展指标列表查询
+    queryExtendRuleList: "/api/promemonitor/customScript/",
+
+    // 扩展指标详情查询
+    queryDetail: "/api/promemonitor/customScriptJobInfo/"
   },
   // 部署计划
   deloymentPlan: {
