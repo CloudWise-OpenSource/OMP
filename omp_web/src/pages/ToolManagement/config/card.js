@@ -40,7 +40,7 @@ const Card = ({ idx, history, info, tabKey }) => {
     >
       <div className={styles.cardContent}>
         <div style={{ width: "100%", paddingTop: 5, display: "flex" }}>
-          {info.logo == "logo.svg" ? (
+          {(!info.logo)? (
             <InitLogo name={info.name} />
           ) : (
             <div
