@@ -20,5 +20,8 @@ class CustomScriptSerializer(ModelSerializer):
 
     def get_bound_hosts_num(self, obj):  # NOQA
         bound_hosts = obj.bound_hosts
-        bound_hosts_num = len(json.loads(bound_hosts))
+        if isinstance(bound_hosts, str):
+            bound_hosts_num = len(json.loads(bound_hosts))
+        else:
+            bound_hosts_num = len(bound_hosts)
         return bound_hosts_num
