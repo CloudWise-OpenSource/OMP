@@ -101,6 +101,7 @@ basic_order:
     - safeRM
     - tengine
     - mysql
+    - comLib
     - redis
     - arangodb
     - minio
