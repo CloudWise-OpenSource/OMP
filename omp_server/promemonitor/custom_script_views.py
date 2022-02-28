@@ -224,6 +224,7 @@ class CustomScriptViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, Upda
                         "script_name": script_job_str,
                     }]
             }
+            payload = json.dumps(payload)
             res = requests.post(
                 url=agent_delete_custom_script_url, data=payload)
             if res.status_code != 200:
