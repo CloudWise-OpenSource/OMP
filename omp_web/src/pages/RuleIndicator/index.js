@@ -919,15 +919,15 @@ const RuleIndicator = () => {
                     required: true,
                     message: "请选择触发阈值",
                   },
-                  {
-                    validator: (rule, value, callback) => {
-                      if (value == 0) {
-                        return Promise.reject(`只支持大于等于0的数字`);
-                      } else {
-                        return Promise.resolve("success");
-                      }
-                    },
-                  },
+                  // {
+                  //   validator: (rule, value, callback) => {
+                  //     if (value == 0) {
+                  //       return Promise.reject(`只支持大于等于0的数字`);
+                  //     } else {
+                  //       return Promise.resolve("success");
+                  //     }
+                  //   },
+                  // },
                 ]}
               >
                 <Form.Item noStyle name="threshold_value">
@@ -959,7 +959,7 @@ const RuleIndicator = () => {
                   {
                     validator: (rule, value, callback) => {
                       if (value == 0) {
-                        return Promise.reject(`只支持大于等于0的数字`);
+                        return Promise.reject(`只支持大于0的数字`);
                       } else {
                         return Promise.resolve("success");
                       }
@@ -1099,15 +1099,15 @@ const RuleIndicator = () => {
                     required: true,
                     message: "请选择触发阈值",
                   },
-                  {
-                    validator: (rule, value, callback) => {
-                      if (value == 0) {
-                        return Promise.reject(`只支持大于等于0的数字`);
-                      } else {
-                        return Promise.resolve("success");
-                      }
-                    },
-                  },
+                  // {
+                  //   validator: (rule, value, callback) => {
+                  //     if (value == 0) {
+                  //       return Promise.reject(`只支持大于等于0的数字`);
+                  //     } else {
+                  //       return Promise.resolve("success");
+                  //     }
+                  //   },
+                  // },
                 ]}
               >
                 <Form.Item noStyle name="threshold_value">
@@ -1139,7 +1139,7 @@ const RuleIndicator = () => {
                   {
                     validator: (rule, value, callback) => {
                       if (value == 0) {
-                        return Promise.reject(`只支持大于等于0的数字`);
+                        return Promise.reject(`只支持大于0的数字`);
                       } else {
                         return Promise.resolve("success");
                       }
@@ -1195,7 +1195,7 @@ const RuleIndicator = () => {
                   }}
                 >
                   {" "}
-                  <Tooltip title="输入关联服务后，该指标的告警会归类于该服务名，请确该保服务存在">
+                  <Tooltip title="输入关联服务后，该指标的告警会归类于该服务名，如“mysql”，如需关联到主机，请填写“node”">
                     <QuestionCircleOutlined />
                   </Tooltip>
                 </span>
@@ -1526,15 +1526,15 @@ const RuleIndicator = () => {
                     required: true,
                     message: "请选择触发阈值",
                   },
-                  {
-                    validator: (rule, value, callback) => {
-                      if (value == 0) {
-                        return Promise.reject(`只支持大于等于0的数字`);
-                      } else {
-                        return Promise.resolve("success");
-                      }
-                    },
-                  },
+                  // {
+                  //   validator: (rule, value, callback) => {
+                  //     if (value == 0) {
+                  //       return Promise.reject(`只支持大于等于0的数字`);
+                  //     } else {
+                  //       return Promise.resolve("success");
+                  //     }
+                  //   },
+                  // },
                 ]}
               >
                 <Form.Item noStyle name="threshold_value">
@@ -1566,7 +1566,7 @@ const RuleIndicator = () => {
                   {
                     validator: (rule, value, callback) => {
                       if (value == 0) {
-                        return Promise.reject(`只支持大于等于0的数字`);
+                        return Promise.reject(`只支持大于0的数字`);
                       } else {
                         return Promise.resolve("success");
                       }
@@ -1706,15 +1706,15 @@ const RuleIndicator = () => {
                     required: true,
                     message: "请选择触发阈值",
                   },
-                  {
-                    validator: (rule, value, callback) => {
-                      if (value == 0) {
-                        return Promise.reject(`只支持大于等于0的数字`);
-                      } else {
-                        return Promise.resolve("success");
-                      }
-                    },
-                  },
+                  // {
+                  //   validator: (rule, value, callback) => {
+                  //     if (value == 0) {
+                  //       return Promise.reject(`只支持大于等于0的数字`);
+                  //     } else {
+                  //       return Promise.resolve("success");
+                  //     }
+                  //   },
+                  // },
                 ]}
               >
                 <Form.Item noStyle name="threshold_value">
@@ -1746,7 +1746,7 @@ const RuleIndicator = () => {
                   {
                     validator: (rule, value, callback) => {
                       if (value == 0) {
-                        return Promise.reject(`只支持大于等于0的数字`);
+                        return Promise.reject(`只支持大于0的数字`);
                       } else {
                         return Promise.resolve("success");
                       }
@@ -1802,7 +1802,7 @@ const RuleIndicator = () => {
                   }}
                 >
                   {" "}
-                  <Tooltip title="输入关联服务后，该指标的告警会归类于该服务名，请确该保服务存在">
+                  <Tooltip title="输入关联服务后，该指标的告警会归类于该服务名，如“mysql”，如需关联到主机，请填写“node”">
                     <QuestionCircleOutlined />
                   </Tooltip>
                 </span>
@@ -1925,8 +1925,11 @@ const RuleIndicator = () => {
         loading={loading}
         onFinish={() => {
           // deleteQuota(row);
-          statusUpdate(checkedList.map(i=>i.id), 0)
-          setCheckedList([])
+          statusUpdate(
+            checkedList.map((i) => i.id),
+            0
+          );
+          setCheckedList([]);
         }}
       >
         <div style={{ padding: "20px" }}>
@@ -1954,7 +1957,7 @@ const RuleIndicator = () => {
         }
         loading={loading}
         onFinish={() => {
-          statusUpdate([row.id], 0)
+          statusUpdate([row.id], 0);
         }}
       >
         <div style={{ padding: "20px" }}>
@@ -1982,8 +1985,11 @@ const RuleIndicator = () => {
         }
         loading={loading}
         onFinish={() => {
-          statusUpdate(checkedList.map(i=>i.id), 1)
-          setCheckedList([])
+          statusUpdate(
+            checkedList.map((i) => i.id),
+            1
+          );
+          setCheckedList([]);
           // deleteQuota(row);
         }}
       >
@@ -2012,7 +2018,7 @@ const RuleIndicator = () => {
         }
         loading={loading}
         onFinish={() => {
-          statusUpdate([row.id], 1)
+          statusUpdate([row.id], 1);
           // deleteQuota(row);
         }}
       >
