@@ -100,7 +100,7 @@ class CustomScriptViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, Upda
                 scrape_interval=scrape_interval,
                 enabled=enabled,
                 description=description,
-                bound_hosts=json.dumps([])
+                bound_hosts=[]
             )
             custom_script.save()
             # UploadFileHistory.location(file=file_obj, module_obj=custom_script, user=request.user)
