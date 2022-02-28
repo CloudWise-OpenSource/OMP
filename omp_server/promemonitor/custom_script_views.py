@@ -216,17 +216,19 @@ class CustomScriptViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, Upda
         if os.path.exists(job_target_json):
             os.remove(job_target_json)
         monitor_agent_port = MONITOR_PORT.get('monitorAgent', 19031)
+        headers = {"Content-Type": "application/json"}
+        headers.update(CW_TOKEN)
         for host in instance.bound_hosts:
             agent_delete_custom_script_url = f"http://{host}:{monitor_agent_port}/update/custom_scripts/delete"  # NOQA
             payload = {
                 "custom_scripts":
                     [{
-                        "script_name": script_job_str,
+                        "script_name": script_job_str
                     }]
             }
             payload = json.dumps(payload)
             res = requests.post(
-                url=agent_delete_custom_script_url, data=payload)
+                url=agent_delete_custom_script_url, headers=headers, data=payload)
             if res.status_code != 200:
                 logger.error(f"向主机{host}agent发送删除自定义脚本信息失败！")
                 return Response(data={"code": 1, "message": f"向主机{host}agent发送删除自定义脚本信息失败！"})
