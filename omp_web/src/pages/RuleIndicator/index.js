@@ -1701,7 +1701,7 @@ const RuleIndicator = () => {
                   <Button
                     type="primary"
                     onClick={() => {
-                      fetchTestData(modalForm.getFieldValue("expr"));
+                      fetchTestData(upDateForm.getFieldValue("expr"));
                       setTestVisible(true);
                     }}
                   >
