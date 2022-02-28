@@ -32,6 +32,7 @@ import ToolDetails from "@/pages/ToolManagement/detail";
 import ToolExecution from "@/pages/ToolExecution";
 import ToolExecutionResults from "@/pages/ToolExecutionResults";
 import RuleIndicator from "@/pages/RuleIndicator";
+import RuleExtend from "@/pages/RuleExtend"
 
 import {
   DesktopOutlined,
@@ -203,15 +204,20 @@ export default [
     menuIcon: <UnorderedListOutlined />,
     menuKey: "/rule-center",
     children: [
-      {
-        title: "默认指标",
-        path: "/rule-center/default-rule",
-        component: RuleCenter,
-      },
+      // {
+      //   title: "默认指标",
+      //   path: "/rule-center/default-rule",
+      //   component: RuleCenter,
+      // },
       {
         title: "指标规则",
         path: "/rule-center/indicator-rule",
         component: RuleIndicator,
+      },
+      {
+        title: "扩展指标",
+        path: "/rule-center/extend-rule",
+        component: RuleExtend,
       },
     ],
   },

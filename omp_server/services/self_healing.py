@@ -32,7 +32,7 @@ def self_healing(alert_list):
     # 监控服务集合
     instance_name_list = []
     # 服务查看时间间隔
-    self_healing_interval=30
+    self_healing_interval=50
     # 循环自愈服务间隔
     loop_interval=5
     if len(alert_list) >= 1 and healing_mode == 1:
@@ -119,6 +119,7 @@ def self_healing(alert_list):
                                         res_dist['start'] = w[1].get('start')
                                         res_dist['service_instance_name'] =w[2].split('-')[0]
                                         logger.info("host_step_5 服务启动脚本入库信息".format(res_dist))
+                                        instance_name_list.append(w[2])
                                         SelfHealingHistory.objects.create(
                                             is_read=0, host_ip=w[0],
                                             service_name=w[2].split('-')[0],
@@ -139,7 +140,8 @@ def self_healing(alert_list):
                     logger.info("host_step_2 主机ssh 校验失败退出")
                     break
                     # sys.exit()
-        history_queryset = SelfHealingHistory.objects.filter(state=2).values("id","healing_log").order_by("id")
+        # history_queryset = SelfHealingHistory.objects.filter(state=2).values("id","healing_log").order_by("id")
+        history_queryset = SelfHealingHistory.objects.filter(instance_name__in=instance_name_list, state=2).values("id","healing_log").order_by( "id")
         logger.info("self_healing_0 需要自愈对象集合 {}".format(history_queryset))
         if len(history_queryset) > 0:
             logger.info("self_healing_1 进入自愈逻辑 {}".format(len(history_queryset)))
@@ -156,7 +158,6 @@ def self_healing(alert_list):
             count = 0
             while (count < max_healing_count):  # 变量
                 logger.info("self_healing_3 进入循环自愈流程")
-                time.sleep(self_healing_interval)
                 count = count + 1
                 logger.info("self_healing_4  第{}次自愈输出列表{},列表长度为:{}".format(
                     count, service_replace_list_0, len(service_replace_list_0)))
@@ -164,11 +165,20 @@ def self_healing(alert_list):
                 for k in range(len(service_replace_list_0)):
                     cmd_flag, cmd_msg = salt_client.cmd(
                         target=service_replace_list_0[k].get("ip"),
-                        command=service_replace_list_0[k].get("start"),
+                        command=service_replace_list_0[k].get("start").replace("start","restart"),
                         timeout=60)
+                    logger.info("self_healing_5 循环自愈服务IP: {}".format(service_replace_list_0[k].get("ip")))
+                    logger.info("self_healing_5 循环自愈服务start :{}".format(service_replace_list_0[k].get("start")))
+                    logger.info("self_healing_5 自愈执行返回状态码:{}".format(cmd_flag))
+                    logger.info("self_healing_5 自愈执行返回结果:{}".format(cmd_msg))
                     if cmd_flag == True:  # 重试逻辑
                         """ 查看服务状态   """
-                        time.sleep(30)
+                        cmd_str="mkdir -p /soft/demo/{}".format(service_replace_list_0[k].get("service_name"))
+                        cmd_flag, cmd_msg = salt_client.cmd(
+                            target=service_replace_list_0[k].get("ip"),
+                            command=cmd_str,
+                            timeout=60)
+                        time.sleep(self_healing_interval)
                         loop_request_monitor_agent = []
                         req_dist = {}
                         req_dist['ip'] = service_replace_list_0[k].get("ip")
@@ -200,7 +210,7 @@ def self_healing(alert_list):
                     if len(service_replace_list_0)==0:
                         break
                         logger.info("loop_0 服务自愈过程-自愈成功之后,仍需要自愈的列表: {}".format(service_replace_list_0))
-            logger.info("self_healing_4 到达循环条件之后进入结束之前 : {}".format(service_replace_list_0))
+            logger.info("self_healing_4 到达循环条件之后仍未自愈服务 : {}".format(service_replace_list_0))
             SelfHealingHistory.objects.filter(state=2).update(state=0, healing_count=max_healing_count,
                         end_time=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
     return True
@@ -214,7 +224,7 @@ def self_healing_ssh_verification(host_self_healing_list,sudo_check_cmd):
             if len(host_list[i][2])!=0 and  len(host_list[i][3])!=0:
                 client = paramiko.SSHClient()
                 client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-                client.connect(hostname=host_list[i][0], port=host_list[i][1], username=host_list[i][2], password=aes_crypto.decode(host_list[i][3]), timeout=3)
+                client.connect(hostname=host_list[i][0], port=host_list[i][1], username=host_list[i][2], password=aes_crypto.decode(host_list[i][3]), timeout=60)
                 """ 监控启动脚本 是否需要重启多次？"""
                 sudo_check_cmd = sudo_check_cmd
                 stdin, stdout, stderr = client.exec_command(sudo_check_cmd)
@@ -223,6 +233,7 @@ def self_healing_ssh_verification(host_self_healing_list,sudo_check_cmd):
                 """ 输出信息需要修改"""
                 if "dead" in stdout:
                     """ 监控未 启动 """
+                    logger.info("monitor_agent 启动失败,输出信息:{} ".format(stdout))
                     return True, 0
                 if "running" in stdout:
                     """ 监控启动"""

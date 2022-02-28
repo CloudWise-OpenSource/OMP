@@ -256,7 +256,7 @@ class HostBatchValidateView(BaseDownLoadTemplateView, CreateModelMixin):
             else:
                 host["init_host"] = True
                 repeat_data.append(host)
-        if len(request_data) == 0:
+        if len(request_data["host_list"]) == 0:
             return Response({"correct": repeat_data, "error": []})
         serializer = self.get_serializer(data=request_data)
         if not serializer.is_valid():

@@ -74,7 +74,7 @@ const Details = () => {
     <OmpContentWrapper wrapperStyle={{ padding: "20px 30px" }}>
       <Spin spinning={loading}>
         <div className={styles.header}>
-          {info.logo == "logo.svg" ? (
+          {(!info.logo) ? (
             <div className={styles.icon}>
               {" "}
               <InitLogo name={info.name} />

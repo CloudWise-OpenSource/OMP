@@ -4,6 +4,7 @@ import os
 from django.db import models
 
 from db_models.mixins import TimeStampMixin, DeleteMixin
+from utils.common.exceptions import GeneralError
 from .env import Env
 from .product import ApplicationHub
 
@@ -164,15 +165,17 @@ class Service(TimeStampMixin):
         verbose_name = verbose_name_plural = "服务实例表"
         ordering = ("-created",)
 
-    def update_port(self, service_ports, app_ports):
+    def update_port(self, app_ports):
         """
         比较服务端口，取并集
-        :param service_ports: 当前服务端口
         :param app_ports: 目标app服务端口
         :return: new service_ports
         """
         # 存储数据格式为[{"default": 18080, "key": "http_port", "name": "服务端口"}]
+        if not app_ports:
+            return []
         port_dict = {}
+        service_ports = json.loads(self.service_port or [])
         for service_port in service_ports:
             port_dict[service_port.get("key")] = service_port.get("default")
         for app_port in app_ports:
@@ -239,6 +242,35 @@ class Service(TimeStampMixin):
         )
         self.service_connect_info = conn_obj
 
+    @classmethod
+    def update_dependence(cls, service_dependence, app_dependence):
+        # 暂不考虑服务依赖减少
+        if not app_dependence:
+            return []
+        dependence_dict = {}
+        dependents = json.loads(service_dependence or '[]')
+        for dependence in dependents:
+            dependence_dict[dependence.get("name")] = dependence
+        for _dependence in app_dependence:
+            service_name = _dependence.get("name")
+            if service_name not in dependence_dict:
+                service = Service.objects.filter(
+                    service__app_name=service_name
+                ).first()
+                if not service:
+                    raise GeneralError(f"缺少依赖服务{service_name}！")
+                _dict = {
+                    "name": service_name,
+                    "cluster_name": None,
+                    "instance_name": None
+                }
+                if service.cluster:
+                    _dict["cluster_name"] = service.cluster.cluster_name
+                else:
+                    _dict["instance_name"] = service.service_instance_name
+                dependents.append(_dict)
+        return dependents
+
     def update_application(self, application, success, install_folder):
         """
         更新服务信息
@@ -249,9 +281,12 @@ class Service(TimeStampMixin):
         """
         self.service = application
         self.service_port = json.dumps(
-            self.update_port(
-                json.loads(self.service_port),
-                json.loads(application.app_port)
+            self.update_port(json.loads(application.app_port or '[]'))
+        )
+        self.service_dependence = json.dumps(
+            self.update_dependence(
+                self.service_dependence,
+                json.loads(application.app_dependence or '[]')
             )
         )
         self.service_controllers = self.update_controllers(
