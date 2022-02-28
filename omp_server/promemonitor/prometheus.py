@@ -36,7 +36,7 @@ class Prometheus:
         return f'127.0.0.1:{MONITOR_PORT.get("prometheus", 19011)}'  # 默认值
 
     @staticmethod
-    def get_host_threshold(env_id=1):
+    def get_host_threshold(env_id=1,**kwargs):
         host_threshold = {
             'cpu': (80, 90),
             'mem': (80, 90),
@@ -44,49 +44,84 @@ class Prometheus:
             'data_disk': (80, 90),
         }
         try:
-            from db_models.models import HostThreshold
-            cpu_warning_ht = HostThreshold.objects.filter(env_id=env_id, index_type="cpu_used",
-                                                          alert_level="warning").first()
-            cpu_critical_ht = HostThreshold.objects.filter(env_id=env_id, index_type="cpu_used",
-                                                           alert_level="critical").first()
-            mem_warning_ht = HostThreshold.objects.filter(env_id=env_id, index_type="memory_used",
-                                                          alert_level="warning").first()
-            mem_critical_ht = HostThreshold.objects.filter(env_id=env_id, index_type="memory_used",
-                                                           alert_level="critical").first()
-            root_disk_warning_ht = HostThreshold.objects.filter(env_id=env_id, index_type="disk_root_used",
-                                                                alert_level="warning").first()
-            root_disk_critical_ht = HostThreshold.objects.filter(env_id=env_id, index_type="disk_root_used",
-                                                                 alert_level="critical").first()
-            data_disk_warning_ht = HostThreshold.objects.filter(env_id=env_id, index_type="disk_data_used",
-                                                                alert_level="warning").first()
-            data_disk_critical_ht = HostThreshold.objects.filter(env_id=env_id, index_type="disk_data_used",
-                                                                 alert_level="critical").first()
+
+            from db_models.models import AlertRule
+            cpu_warning_ht = AlertRule.objects.filter(env_id=env_id,
+                                                          name="CPU使用率",
+                                                          severity="warning").first()
+            cpu_critical_ht = AlertRule.objects.filter(env_id=env_id,
+                                                           name="CPU使用率",
+                                                           severity="critical").first()
+            mem_warning_ht = AlertRule.objects.filter(env_id=env_id,
+                                                          name="内存使用率",
+                                                          severity="warning").first()
+            mem_critical_ht = AlertRule.objects.filter(env_id=env_id,
+                                                           name="内存使用率",
+                                                           severity="critical").first()
+            root_disk_warning_ht = AlertRule.objects.filter(env_id=env_id,
+                                                                name="根分区使用率",
+                                                                severity="warning").first()
+            root_disk_critical_ht = AlertRule.objects.filter(env_id=env_id,
+                                                                 name="根分区使用率",
+                                                                 severity="critical").first()
+            data_disk_warning_ht = None
+            data_disk_critical_ht = None
+            if kwargs.get("data_dir"):
+                """
+                从指标规则中获取指定路径的数据分区
+                """
+                data_disk_warning_ht = AlertRule.objects.filter(env_id=env_id,
+                                                                    name="数据分区使用率",
+                                                                    severity="warning").first()
+                data_disk_critical_ht = AlertRule.objects.filter(env_id=env_id,
+                                                                     name="数据分区使用率",
+                                                                     severity="critical").first()
+
+
+            #
+            # from db_models.models import HostThreshold
+            # cpu_warning_ht = HostThreshold.objects.filter(env_id=env_id, index_type="cpu_used",
+            #                                               alert_level="warning").first()
+            # cpu_critical_ht = HostThreshold.objects.filter(env_id=env_id, index_type="cpu_used",
+            #                                                alert_level="critical").first()
+            # mem_warning_ht = HostThreshold.objects.filter(env_id=env_id, index_type="memory_used",
+            #                                               alert_level="warning").first()
+            # mem_critical_ht = HostThreshold.objects.filter(env_id=env_id, index_type="memory_used",
+            #                                                alert_level="critical").first()
+            # root_disk_warning_ht = HostThreshold.objects.filter(env_id=env_id, index_type="disk_root_used",
+            #                                                     alert_level="warning").first()
+            # root_disk_critical_ht = HostThreshold.objects.filter(env_id=env_id, index_type="disk_root_used",
+            #                                                      alert_level="critical").first()
+            # data_disk_warning_ht = HostThreshold.objects.filter(env_id=env_id, index_type="disk_data_used",
+            #                                                     alert_level="warning").first()
+            # data_disk_critical_ht = HostThreshold.objects.filter(env_id=env_id, index_type="disk_data_used",
+            #                                                      alert_level="critical").first()
             host_threshold.update(
                 cpu=(
-                    int(cpu_warning_ht.condition_value) if cpu_warning_ht else 0,
-                    int(cpu_critical_ht.condition_value) if cpu_critical_ht else 100,
+                    int(cpu_warning_ht.threshold_value) if cpu_warning_ht else 0,
+                    int(cpu_critical_ht.threshold_value) if cpu_critical_ht else 100,
                 ),
                 mem=(
-                    int(mem_warning_ht.condition_value) if mem_warning_ht else 0,
-                    int(mem_critical_ht.condition_value) if mem_critical_ht else 100,
+                    int(mem_warning_ht.threshold_value) if mem_warning_ht else 0,
+                    int(mem_critical_ht.threshold_value) if mem_critical_ht else 100,
                 ),
                 root_disk=(
-                    int(root_disk_warning_ht.condition_value) if root_disk_warning_ht else 0,
-                    int(root_disk_critical_ht.condition_value) if root_disk_critical_ht else 100,
+                    int(root_disk_warning_ht.threshold_value) if root_disk_warning_ht else 0,
+                    int(root_disk_critical_ht.threshold_value) if root_disk_critical_ht else 100,
                 ),
                 data_disk=(
-                    int(data_disk_warning_ht.condition_value) if data_disk_warning_ht else 0,
-                    int(data_disk_critical_ht.condition_value) if data_disk_critical_ht else 100,
+                    int(data_disk_warning_ht.threshold_value) if data_disk_warning_ht else 0,
+                    int(data_disk_critical_ht.threshold_value) if data_disk_critical_ht else 100,
                 )
             )
         except Exception as e:
             logger.error(f"获取主机阈值失败，详情为：{e}")
         return host_threshold
 
-    def get_host_metric_status(self, metric, metric_value):
+    def get_host_metric_status(self, metric, metric_value, **kwargs):
         if metric_value is None:
             return None
-        host_threshold = self.get_host_threshold()
+        host_threshold = self.get_host_threshold(**kwargs)
         if metric_value > max(host_threshold.get(metric)):
             status = 'critical'
         elif metric_value < min(host_threshold.get(metric)):
@@ -250,7 +285,7 @@ class Prometheus:
                             host_list[index]['data_disk_usage'] = math.ceil(
                                 float(item.get('value')[1]))
                             host_list[index]['data_disk_status'] = self.get_host_metric_status('data_disk', math.ceil(
-                                float(item.get('value')[1])))
+                                float(item.get('value')[1])),data_dir=host_data_disk)
                             break
                         host_list[index]['data_disk_usage'] = None
                         host_list[index]['data_disk_status'] = None
