@@ -31,6 +31,7 @@ import {
   logout,
   isPassword,
   renderDisc,
+  downloadFile,
 } from "@/utils/utils";
 import { fetchGet, fetchPost, fetchDelete, fetchPut } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
@@ -46,6 +47,7 @@ import {
   UploadOutlined,
   FormOutlined,
   CloseOutlined,
+  DownloadOutlined,
 } from "@ant-design/icons";
 import { useHistory, useLocation } from "react-router-dom";
 import axios from "axios";
@@ -195,7 +197,14 @@ const RuleExtend = () => {
                   upDateForm.setFieldsValue({
                     description: record.description,
                     scrape_interval: record.scrape_interval,
+                    bound_hosts: record.bound_hosts,
                   });
+                  setExecutionData(
+                    record.bound_hosts.map((item, idx) => ({
+                      id: idx,
+                      ip: item,
+                    }))
+                  );
                   setUpDateVisible(true);
                 }}
               >
@@ -335,16 +344,16 @@ const RuleExtend = () => {
       .catch((e) => console.log(e))
       .finally(() => {
         setLoading(false);
-        setDeleteRowVisible(false)
+        setDeleteRowVisible(false);
         fetchData(
-            {
-              current: 1,
-              pageSize: pagination.pageSize,
-            },
-            {
-              ...pagination.searchParams,
-            }
-          );
+          {
+            current: 1,
+            pageSize: pagination.pageSize,
+          },
+          {
+            ...pagination.searchParams,
+          }
+        );
       });
   }
 
@@ -378,6 +387,15 @@ const RuleExtend = () => {
     })
       .then((res) => {
         handleResponse(res, (res) => {
+          // 设置表格的默认选中
+          // setCheckedList(executionData);
+          setCheckedList(
+            res.data.results.filter((item) => {
+              let result = executionData.filter((i) => i.ip == item.ip);
+              return result.length !== 0;
+            })
+          );
+
           setHostList(res.data.results);
           setHostPagination({
             ...hostPagination,
@@ -683,6 +701,16 @@ const RuleExtend = () => {
             left: -10,
           }}
         >
+          <Form.Item label="下载模版" name="down" key="down">
+            <Button
+              onClick={() => {
+                downloadFile("/custom_scripts/template.py");
+              }}
+              icon={<DownloadOutlined />}
+            >
+              点击下载
+            </Button>
+          </Form.Item>
           <Form.Item
             label="上传采集脚本"
             name="collectionScript"
@@ -1006,7 +1034,6 @@ const RuleExtend = () => {
                   onClick={() => {
                     setIsShowErrMsg(false);
                     queryHostList();
-                    setCheckedList(executionData);
                     setHostListVisible(true);
                   }}
                 >
@@ -1175,7 +1202,7 @@ const ExecutionTargetItem = ({ info, executionData, setIsShowErrMsg }) => {
         position: "relative",
       }}
     >
-      {info.instance_name}
+      {info.ip}
       <CloseOutlined
         style={{ paddingLeft: 15, paddingRight: 10, cursor: "pointer" }}
         onClick={() => {
