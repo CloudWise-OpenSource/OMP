@@ -215,6 +215,9 @@ class CustomScriptViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, Upda
 
         if os.path.exists(job_target_json):
             os.remove(job_target_json)
+        if len(instance.bound_hosts) == 0:
+            instance.delete()
+            return Response({})
         monitor_agent_port = MONITOR_PORT.get('monitorAgent', 19031)
         headers = {"Content-Type": "application/json"}
         headers.update(CW_TOKEN)

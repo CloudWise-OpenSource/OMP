@@ -40,9 +40,6 @@ router.register(r'serviceThreshold', ServiceThresholdView,
                 basename='serviceThreshold')
 router.register(r'customThreshold', CustomThresholdView,
                 basename='customThreshold')
-router.register(r'builtinRule', BuiltinsRuleView, basename="builtinRule")
-router.register(r'quota', QuotaView, basename="quota")
-router.register(r'testPromSql', PromSqlTestView, basename="testPromSql")
 router.register(r'customScript', CustomScriptViewSet, basename='customScript')
 router.register(r'customScriptJobInfo', CustomScriptJobInfoView,
                 basename='customScriptJobInfo')
