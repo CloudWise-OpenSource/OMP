@@ -82,6 +82,7 @@ class InstallNtpdate(object):
         host_obj.save()
         agent_dir = host_obj.agent_dir
         app_dir = os.path.join(agent_dir, "app")
+        target_package_path = os.path.join(app_dir, self.ntpdate_package_name)
         data_dir = os.path.join(agent_dir, "appData")
         log_dir = os.path.join(agent_dir, "logs")
         ntpdate_cron_path = os.path.join(app_dir, f"{self.name}/scripts/{self.name}_cron.sh")
@@ -90,7 +91,7 @@ class InstallNtpdate(object):
         send_flag, send_msg = self.salt_client.cp_file(
             target=host_obj.ip,
             source_path=self.ntpdate_package_name,
-            target_path=app_dir,
+            target_path=target_package_path,
             makedirs=True
         )
         logger.info(
@@ -101,12 +102,12 @@ class InstallNtpdate(object):
         # 2.解压缩与安装、启动
         cmd_flag, cmd_msg = self.salt_client.cmd(
             target=host_obj.ip,
-            command=f"cd {app_dir} &&"
-                    f" tar -xf {self.ntpdate_package_name} &&"
-                    f" rm -rf {self.ntpdate_package_name} &&"
-                    f"(test -d {app_dir}|| mkdir -p {app_dir})&&"
+            command=f"(test -d {app_dir}|| mkdir -p {app_dir})&&"
                     f"(test -d {data_dir}|| mkdir -p {data_dir})&&"
                     f"(test -d {log_dir}|| mkdir -p {log_dir})&&"
+                    f"cd {app_dir} &&"
+                    f" tar -xf {self.ntpdate_package_name} &&"
+                    f" rm -rf {self.ntpdate_package_name} &&"
                     f"sed -i -e \"s#\${{CW_INSTALL_APP_DIR}}#{app_dir}#g\" -e 's#\${{CW_NTP_ADDRESS}}#{host_obj.ntpd_server}#g' {ntpdate_cron_path} &&"
                     f"sed -i -e 's#\${{CW_INSTALL_APP_DIR}}#{app_dir}#g' -e 's#\${{CW_INSTALL_LOGS_DIR}}#{log_dir}#g' -e 's#\${{CW_INSTALL_DATA_DIR}}#{data_dir}#g' -e's#\${{CW_RUN_USER}}#{self.get_run_user()}#g' {scripts_path};"
                     f"bash {scripts_path} start",
