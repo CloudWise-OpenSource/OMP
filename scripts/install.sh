@@ -122,13 +122,14 @@ function install_monitor_server() {
 
 # 添加omp server端保活定时任务
 function omp_keep_alive() {
+  crontab -l 2>/dev/null > $TMP_CRONTAB_TXT_PATH
   echo "*/5 * * * * bash $OMP_SCRIPT all start &>/dev/null" >> $TMP_CRONTAB_TXT_PATH
   oka_crontab=$(crontab -l | grep "omp all start")
   if test -z "$oka_crontab"
   then
+    crontab < $TMP_CRONTAB_TXT_PATH
     echo "omp server端保活任务添加成功"
   else
-    crontab < $TMP_CRONTAB_TXT_PATH
     echo "omp server端保活任务添加成功"
   fi
 }
