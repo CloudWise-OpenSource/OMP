@@ -48,12 +48,14 @@ def order(service_obj, actions):
             item for item in service_obj
             if item.service.app_name in BASIC_ORDER[m]
         ]
-        basic_lists.append(basic_list)
+        if len(basic_list) != 0:
+            basic_lists.append(basic_list)
     self_service = [
         item for item in service_obj
         if item.service.app_type == ApplicationHub.APP_TYPE_SERVICE
     ]
-    basic_lists.append(self_service)
+    if len(self_service) != 0:
+        basic_lists.append(self_service)
     if actions == "stop":
         basic_lists.reverse()
     if actions == "restart":
@@ -82,7 +84,7 @@ def service_status(service_objs):
         print(f"{ip}:{is_success}\n{info}")
 
 
-def service_actions(actions, ip=None):
+def service_actions(actions, ip=None, service_name=None):
     """
     执行服务启停，支持ip筛选
     状态为删除中，安装中，升级中，会滚中状态不被允许执行服务起停操作
@@ -106,6 +108,8 @@ def service_actions(actions, ip=None):
         return
     if ip:
         service_obj = service_obj.filter(ip=ip)
+    if service_name:
+        service_obj = service_obj.filter(service__app_name=service_name)
     service_obj.update(service_status=action[1])
     service_ls = order(service_obj, actions)
     for index, service_ids in enumerate(service_ls):
