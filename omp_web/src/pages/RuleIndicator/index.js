@@ -459,9 +459,13 @@ const RuleIndicator = () => {
     let queryData = {};
     if (data.quota_type === "0") {
       let builtins_quota = data.builtins_quota;
-      // let result = dictionaries.current[builtins_quota[0]].filter(
-      //   (f) => f.name == builtins_quota[1]
-      // )[0];
+      let result = dictionaries.current[builtins_quota[0]].filter(
+        (f) => f.name == builtins_quota[1]
+      )[0];
+
+      if(row.name == "数据分区使用率"){
+        result.expr = row.expr
+      }
 
       queryData = {
         threshold_value: data.threshold_value,
@@ -473,10 +477,10 @@ const RuleIndicator = () => {
         status: row.status,
         quota_type: Number(data.quota_type),
         builtins_quota: {
-          description: row?.description,
-          name: row?.name,
-          expr: row?.expr,
-          service: row?.service,
+          description: result?.description,
+          name: result?.name,
+          expr: result?.expr,
+          service: result?.service,
         },
       };
     } else if (data.quota_type === "1") {
