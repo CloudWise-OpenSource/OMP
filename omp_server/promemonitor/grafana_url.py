@@ -73,7 +73,7 @@ def explain_prometheus(params):
             tmp_dict = {}
             label = lab.get('labels')
             tmp_list = [label.get('alertname'), label.get(
-                'instance'), label.get('job')]
+                'instance_name'), label.get('job')]
             if tmp_list in compare_list:
                 continue
             compare_list.append(tmp_list)
