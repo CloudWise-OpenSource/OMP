@@ -2,12 +2,6 @@
 
 from django.db import migrations
 
-from tool.find_tools import find_tools_package
-
-
-def init_tools(apps, schema_editor):
-    find_tools_package()
-
 
 class Migration(migrations.Migration):
 
@@ -16,5 +10,4 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(init_tools),
     ]
