@@ -110,6 +110,7 @@ def create_threshold():
             "quota_type": 0,
             "status": 1,
             "service": "node",
+            "forbidden": 2
 
         },
         {
@@ -128,10 +129,11 @@ def create_threshold():
                 "job": "nodeExporter",
                 "severity": "critical"
             },
-            "name":"CPU使用率",
+            "name": "CPU使用率",
             "quota_type": 0,
             "status": 1,
             "service": "node",
+            "forbidden": 2
 
         },
         {
@@ -154,6 +156,7 @@ def create_threshold():
             "quota_type": 0,
             "status": 1,
             "service": "node",
+            "forbidden": 2
         },
         {
             "alert": "主机 内存 使用率过高",
@@ -173,6 +176,7 @@ def create_threshold():
             "quota_type": 0,
             "status": 1,
             "service": "node",
+            "forbidden": 2
         },
         {
             "alert": "主机 内存 使用率过高",
@@ -192,6 +196,7 @@ def create_threshold():
             "quota_type": 0,
             "status": 1,
             "service": "node",
+            "forbidden": 2
         },
         {
             "alert": "主机 根分区磁盘 使用率过高",
@@ -218,6 +223,7 @@ def create_threshold():
             "quota_type": 0,
             "status": 1,
             "service": "node",
+            "forbidden": 2
         },
         {
             "alert": "主机 根分区磁盘 使用率过高",
@@ -244,6 +250,7 @@ def create_threshold():
             "quota_type": 0,
             "status": 1,
             "service": "node",
+            "forbidden": 2
         },
         {
             "alert": "kafka消费组堆积数过多",
@@ -264,6 +271,7 @@ def create_threshold():
             "quota_type": 0,
             "status": 1,
             "service": "kafka",
+            "forbidden": 1
         },
         {
             "alert": "kafka消费组堆积数过多",
@@ -284,6 +292,7 @@ def create_threshold():
             "quota_type": 0,
             "status": 1,
             "service": "kafka",
+            "forbidden": 1
         },
         {
             "alert": "exporter 异常",
@@ -302,9 +311,10 @@ def create_threshold():
             "quota_type": 0,
             "status": 1,
             "service": "node",
+            "forbidden": 2
         },
         {
-            "alert": "app state",
+            "alert": "服务存活状态",
             "description": '主机 {{ $labels.instance }} 中的 服务 {{ $labels.app }} 已经down掉超过一分钟.',
             "expr": 'probe_success{env="default"}',
             "summary": "-",
@@ -320,6 +330,7 @@ def create_threshold():
             "quota_type": 0,
             "status": 1,
             "service": "node",
+            "forbidden": 2
         },
 
     ]
@@ -381,6 +392,13 @@ def create_threshold():
                     'consumergroup,instance,job,env)',
             "service": "kafka",
         },
+        {
+            "name": "数据分区使用率",
+            "description": '主机 {{ $labels.instance }} 数据分区使用率为 {{ $value | humanize }}%, $compare_str$阈值 $threshold_value$%',
+            "expr": 'max((node_filesystem_size_bytes{env="$env$",mountpoint="$data_dir$"}-node_filesystem_free_bytes{env="$env$",mountpoint="$data_dir$"})*100/(node_filesystem_avail_bytes{env="$env$",mountpoint="$data_dir$"}+(node_filesystem_size_bytes{env="$env$",mountpoint="$data_dir$"}-node_filesystem_free_bytes{env="$env$",mountpoint="$data_dir$"}))) by (instance,env)',
+            "service": "node",
+        },
+
 
     ]
     for info in builtins_rules:

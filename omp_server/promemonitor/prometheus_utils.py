@@ -731,9 +731,9 @@ class PrometheusUtils(object):
             'env="ENV",mountpoint="DATA_PATH"}))) by (instance,env)'.replace(
                 "ENV", env).replace("DATA_PATH", data_path)
             data = {
-                "alert": "主机数据分区磁盘使用率过高",
+                "alert": f"主机数据分区{data_path}磁盘使用率",
                 "description": '主机 {{ $labels.instance }} 数据分区使用率为 {{ $value | humanize }}%, 大于阈值 $threshold$%'.replace(
-                  "$threshold$",threshold),
+                  "$threshold$", threshold),
                 "expr": expr,
                 "compare_str": ">=",
                 "threshold_value": threshold,
@@ -743,9 +743,12 @@ class PrometheusUtils(object):
                     "job": "nodeExporter",
                     "severity": level
                 },
+                "name": "数据分区使用率",
                 "quota_type": 0,
                 "status": 1,
                 "service": "node",
+                "forbidden": 2,
+
             }
             if AlertRule.objects.filter(expr=expr,severity=level).exists():
                 continue
