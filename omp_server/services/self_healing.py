@@ -209,11 +209,11 @@ def self_healing(alert_list):
                         break
                     if len(service_replace_list_0)==0:
                         break
-                        logger.info("loop_0 服务自愈过程-自愈成功之后,仍需要自愈的列表: {}".format(service_replace_list_0))
             logger.info("self_healing_4 到达循环条件之后仍未自愈服务 : {}".format(service_replace_list_0))
-            SelfHealingHistory.objects.filter(state=2).update(state=0, healing_count=max_healing_count,
-                        end_time=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-    return True
+            if len(service_replace_list_0)!=0:
+                for k1 in range(len(service_replace_list_0)):
+                    SelfHealingHistory.objects.filter(id=service_replace_list_0[k].get("id")).update(state=0, healing_count=max_healing_count,
+                                end_time=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
 def self_healing_ssh_verification(host_self_healing_list,sudo_check_cmd):
     host_self_healing_list=host_self_healing_list

@@ -253,9 +253,19 @@ const RuleIndicator = () => {
               <a
                 style={{
                   marginLeft: 10,
+                  color:
+                    record.forbidden && record.forbidden == 1
+                      ? null
+                      : "rgba(0, 0, 0, 0.25)",
+                  cursor:
+                    record.forbidden && record.forbidden == 1
+                      ? "pointer"
+                      : "not-allowed",
                 }}
                 onClick={() => {
-                  setDeleteMoadlVisible(true);
+                  if (record.forbidden && record.forbidden == 1) {
+                    setDeleteMoadlVisible(true);
+                  }
                 }}
               >
                 删除
@@ -324,6 +334,7 @@ const RuleIndicator = () => {
                   return {
                     label: item.name,
                     value: item.name,
+                    disabled:item.name == "数据分区使用率" ? true :false
                     // JSON.stringify({
                     //   description: item.description,
                     //   name: item.name,
@@ -448,9 +459,9 @@ const RuleIndicator = () => {
     let queryData = {};
     if (data.quota_type === "0") {
       let builtins_quota = data.builtins_quota;
-      let result = dictionaries.current[builtins_quota[0]].filter(
-        (f) => f.name == builtins_quota[1]
-      )[0];
+      // let result = dictionaries.current[builtins_quota[0]].filter(
+      //   (f) => f.name == builtins_quota[1]
+      // )[0];
 
       queryData = {
         threshold_value: data.threshold_value,
@@ -458,13 +469,14 @@ const RuleIndicator = () => {
         for_time: `${data.for_time}${forTimeCompany}`,
         severity: data.severity,
         alert: data.alert,
-        status: data.status ? 1 : 0,
+        // status: data.status ? 1 : 0,
+        status: row.status,
         quota_type: Number(data.quota_type),
         builtins_quota: {
-          description: result.description,
-          name: result.name,
-          expr: result.expr,
-          service: result.service,
+          description: row?.description,
+          name: row?.name,
+          expr: row?.expr,
+          service: row?.service,
         },
       };
     } else if (data.quota_type === "1") {
@@ -919,15 +931,15 @@ const RuleIndicator = () => {
                     required: true,
                     message: "请选择触发阈值",
                   },
-                  {
-                    validator: (rule, value, callback) => {
-                      if (value == 0) {
-                        return Promise.reject(`只支持大于等于0的数字`);
-                      } else {
-                        return Promise.resolve("success");
-                      }
-                    },
-                  },
+                  // {
+                  //   validator: (rule, value, callback) => {
+                  //     if (value == 0) {
+                  //       return Promise.reject(`只支持大于等于0的数字`);
+                  //     } else {
+                  //       return Promise.resolve("success");
+                  //     }
+                  //   },
+                  // },
                 ]}
               >
                 <Form.Item noStyle name="threshold_value">
@@ -959,7 +971,7 @@ const RuleIndicator = () => {
                   {
                     validator: (rule, value, callback) => {
                       if (value == 0) {
-                        return Promise.reject(`只支持大于等于0的数字`);
+                        return Promise.reject(`只支持大于0的数字`);
                       } else {
                         return Promise.resolve("success");
                       }
@@ -1099,15 +1111,15 @@ const RuleIndicator = () => {
                     required: true,
                     message: "请选择触发阈值",
                   },
-                  {
-                    validator: (rule, value, callback) => {
-                      if (value == 0) {
-                        return Promise.reject(`只支持大于等于0的数字`);
-                      } else {
-                        return Promise.resolve("success");
-                      }
-                    },
-                  },
+                  // {
+                  //   validator: (rule, value, callback) => {
+                  //     if (value == 0) {
+                  //       return Promise.reject(`只支持大于等于0的数字`);
+                  //     } else {
+                  //       return Promise.resolve("success");
+                  //     }
+                  //   },
+                  // },
                 ]}
               >
                 <Form.Item noStyle name="threshold_value">
@@ -1139,7 +1151,7 @@ const RuleIndicator = () => {
                   {
                     validator: (rule, value, callback) => {
                       if (value == 0) {
-                        return Promise.reject(`只支持大于等于0的数字`);
+                        return Promise.reject(`只支持大于0的数字`);
                       } else {
                         return Promise.resolve("success");
                       }
@@ -1195,7 +1207,7 @@ const RuleIndicator = () => {
                   }}
                 >
                   {" "}
-                  <Tooltip title="输入关联服务后，该指标的告警会归类于该服务名，请确该保服务存在">
+                  <Tooltip title="输入关联服务后，该指标的告警会归类于该服务名，如“mysql”，如需关联到主机，请填写“node”">
                     <QuestionCircleOutlined />
                   </Tooltip>
                 </span>
@@ -1439,6 +1451,7 @@ const RuleIndicator = () => {
           >
             <Form.Item noStyle name="quota_type">
               <Radio.Group
+                disabled={true}
                 value={ruleType}
                 onChange={(e) => {
                   setRuleType(e.target.value);
@@ -1478,6 +1491,7 @@ const RuleIndicator = () => {
               >
                 <Form.Item noStyle name="builtins_quota">
                   <Cascader
+                    disabled={true}
                     style={{ width: 520 }}
                     options={cascaderOption}
                     placeholder="请选择指标"
@@ -1526,15 +1540,15 @@ const RuleIndicator = () => {
                     required: true,
                     message: "请选择触发阈值",
                   },
-                  {
-                    validator: (rule, value, callback) => {
-                      if (value == 0) {
-                        return Promise.reject(`只支持大于等于0的数字`);
-                      } else {
-                        return Promise.resolve("success");
-                      }
-                    },
-                  },
+                  // {
+                  //   validator: (rule, value, callback) => {
+                  //     if (value == 0) {
+                  //       return Promise.reject(`只支持大于等于0的数字`);
+                  //     } else {
+                  //       return Promise.resolve("success");
+                  //     }
+                  //   },
+                  // },
                 ]}
               >
                 <Form.Item noStyle name="threshold_value">
@@ -1566,7 +1580,7 @@ const RuleIndicator = () => {
                   {
                     validator: (rule, value, callback) => {
                       if (value == 0) {
-                        return Promise.reject(`只支持大于等于0的数字`);
+                        return Promise.reject(`只支持大于0的数字`);
                       } else {
                         return Promise.resolve("success");
                       }
@@ -1624,7 +1638,7 @@ const RuleIndicator = () => {
                 </Radio.Group>
               </Form.Item>
 
-              <Form.Item
+              {/* <Form.Item
                 label="启用状态"
                 name="status"
                 key="status"
@@ -1636,8 +1650,8 @@ const RuleIndicator = () => {
                 ]}
                 valuePropName="checked"
               >
-                <Switch />
-              </Form.Item>
+                <Switch disabled={true} />
+              </Form.Item> */}
             </>
           )}
 
@@ -1706,15 +1720,15 @@ const RuleIndicator = () => {
                     required: true,
                     message: "请选择触发阈值",
                   },
-                  {
-                    validator: (rule, value, callback) => {
-                      if (value == 0) {
-                        return Promise.reject(`只支持大于等于0的数字`);
-                      } else {
-                        return Promise.resolve("success");
-                      }
-                    },
-                  },
+                  // {
+                  //   validator: (rule, value, callback) => {
+                  //     if (value == 0) {
+                  //       return Promise.reject(`只支持大于等于0的数字`);
+                  //     } else {
+                  //       return Promise.resolve("success");
+                  //     }
+                  //   },
+                  // },
                 ]}
               >
                 <Form.Item noStyle name="threshold_value">
@@ -1746,7 +1760,7 @@ const RuleIndicator = () => {
                   {
                     validator: (rule, value, callback) => {
                       if (value == 0) {
-                        return Promise.reject(`只支持大于等于0的数字`);
+                        return Promise.reject(`只支持大于0的数字`);
                       } else {
                         return Promise.resolve("success");
                       }
@@ -1802,7 +1816,7 @@ const RuleIndicator = () => {
                   }}
                 >
                   {" "}
-                  <Tooltip title="输入关联服务后，该指标的告警会归类于该服务名，请确该保服务存在">
+                  <Tooltip title="输入关联服务后，该指标的告警会归类于该服务名，如“mysql”，如需关联到主机，请填写“node”">
                     <QuestionCircleOutlined />
                   </Tooltip>
                 </span>
@@ -1925,8 +1939,11 @@ const RuleIndicator = () => {
         loading={loading}
         onFinish={() => {
           // deleteQuota(row);
-          statusUpdate(checkedList.map(i=>i.id), 0)
-          setCheckedList([])
+          statusUpdate(
+            checkedList.map((i) => i.id),
+            0
+          );
+          setCheckedList([]);
         }}
       >
         <div style={{ padding: "20px" }}>
@@ -1954,7 +1971,7 @@ const RuleIndicator = () => {
         }
         loading={loading}
         onFinish={() => {
-          statusUpdate([row.id], 0)
+          statusUpdate([row.id], 0);
         }}
       >
         <div style={{ padding: "20px" }}>
@@ -1982,8 +1999,11 @@ const RuleIndicator = () => {
         }
         loading={loading}
         onFinish={() => {
-          statusUpdate(checkedList.map(i=>i.id), 1)
-          setCheckedList([])
+          statusUpdate(
+            checkedList.map((i) => i.id),
+            1
+          );
+          setCheckedList([]);
           // deleteQuota(row);
         }}
       >
@@ -2012,7 +2032,7 @@ const RuleIndicator = () => {
         }
         loading={loading}
         onFinish={() => {
-          statusUpdate([row.id], 1)
+          statusUpdate([row.id], 1);
           // deleteQuota(row);
         }}
       >

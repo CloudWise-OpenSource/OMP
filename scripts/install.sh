@@ -12,7 +12,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PROJECT_FOLDER}/component/env/lib/
 PYTHON3="${PROJECT_FOLDER}/component/env/bin/python3"
 OMP_SCRIPT="${PROJECT_FOLDER}/scripts/omp"
 TMP_LOG_PATH="${PROJECT_FOLDER}/tmp/install_omp.log"
-TMPCRONTAB_TXT_PATH="${PROJECT_FOLDER}/tmp/crontab.txt"
+TMP_CRONTAB_TXT_PATH="${PROJECT_FOLDER}/tmp/crontab.txt"
 
 test -d "${PROJECT_FOLDER}/tmp" || mkdir "${PROJECT_FOLDER}/tmp"
 
@@ -122,13 +122,14 @@ function install_monitor_server() {
 
 # 添加omp server端保活定时任务
 function omp_keep_alive() {
+  crontab -l 2>/dev/null > $TMP_CRONTAB_TXT_PATH
   echo "*/5 * * * * bash $OMP_SCRIPT all start &>/dev/null" >> $TMP_CRONTAB_TXT_PATH
   oka_crontab=$(crontab -l | grep "omp all start")
   if test -z "$oka_crontab"
   then
+    crontab < $TMP_CRONTAB_TXT_PATH
     echo "omp server端保活任务添加成功"
   else
-    crontab < $TMP_CRONTAB_TXT_PATH
     echo "omp server端保活任务添加成功"
   fi
 }
