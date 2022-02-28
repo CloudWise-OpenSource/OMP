@@ -254,8 +254,8 @@ def create_threshold():
         },
         {
             "alert": "kafka消费组堆积数过多",
-            "description": 'Kafka 消费组{{ $labels.consumergroup }}消息堆积数过多  {{ '
-                           'humanize $value}}',
+            "description": 'Kafka 消费组{{ $labels.consumergroup }}消息堆积数过多 {{ '
+                           'humanize $value}} 大于阈值 4000',
             "expr": 'sum(kafka_consumergroup_lag{env="default"}) by ('
                     'consumergroup,instance,job,env)',
             "summary": "-",
@@ -275,8 +275,8 @@ def create_threshold():
         },
         {
             "alert": "kafka消费组堆积数过多",
-            "description": 'Kafka 消费组{{ $labels.consumergroup }}消息堆积数过多  {{ '
-                           'humanize $value}}',
+            "description": 'Kafka 消费组{{ $labels.consumergroup }}消息堆积数过多 大于 {{ '
+                           'humanize $value}} 大于阈值 5000',
             "expr": 'sum(kafka_consumergroup_lag{env="default"}) by ('
                     'consumergroup,instance,job,env)',
             "summary": "-",
