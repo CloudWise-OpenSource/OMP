@@ -2,6 +2,7 @@ import { useSelector } from "react-redux";
 import { Button, Tooltip } from "antd";
 import styles from "./index.module.less";
 import { useEffect, useState } from "react";
+import initLogo from "../initLogo/tools.svg";
 
 const kindMap = ["管理工具", "检查工具", "安全工具", "其他工具"];
 
@@ -40,8 +41,45 @@ const Card = ({ idx, history, info, tabKey }) => {
     >
       <div className={styles.cardContent}>
         <div style={{ width: "100%", paddingTop: 5, display: "flex" }}>
-          {(!info.logo)? (
-            <InitLogo name={info.name} />
+          {!info.logo ? (
+            <div
+              style={{
+                width: 50,
+                height: 50,
+                borderRadius: "50%",
+                border: "1px solid #a8d0f8",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                marginLeft: 10,
+                marginRight: 10,
+                overflow: "hidden",
+                fontSize: 22,
+                // backgroundImage: "linear-gradient(to right, #4f85f6, #669aee)",
+                backgroundColor: "#f5f5f5",
+                color: "#fff",
+              }}
+            >
+              <div
+                style={{
+                  textAlign: "center",
+                  position: "relative",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                {/* {info.name && info.name[0].toLocaleUpperCase()} */}
+                <img
+                  style={{
+                    width: "35px",
+                    height: "35px",
+                    position: "relative",
+                    top: 1,
+                  }}
+                  src={initLogo}
+                />
+              </div>
+            </div>
           ) : (
             <div
               style={{
