@@ -48,5 +48,3 @@ router.register(r'quota', QuotaView, basename="quota")
 router.register(r'testPromSql', PromSqlTestView, basename="testPromSql")
 router.register(r'batchUpdateRule', BatchUpdateRuleView,
                 basename="batchUpdateRule")
-
-urlpatterns = router.urls
