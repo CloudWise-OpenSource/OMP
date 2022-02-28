@@ -12,7 +12,7 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PROJECT_FOLDER}/component/env/lib/
 PYTHON3="${PROJECT_FOLDER}/component/env/bin/python3"
 OMP_SCRIPT="${PROJECT_FOLDER}/scripts/omp"
 TMP_LOG_PATH="${PROJECT_FOLDER}/tmp/install_omp.log"
-TMPCRONTAB_TXT_PATH="${PROJECT_FOLDER}/tmp/crontab.txt"
+TMP_CRONTAB_TXT_PATH="${PROJECT_FOLDER}/tmp/crontab.txt"
 
 test -d "${PROJECT_FOLDER}/tmp" || mkdir "${PROJECT_FOLDER}/tmp"
 

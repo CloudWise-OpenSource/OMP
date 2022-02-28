@@ -204,7 +204,8 @@ class ValidToolTar:
         if _code:
             return _out
         self.tool_info["source_package_md5"] = md5
-        self.tool_info["tool_folder_path"] = f"tool/folder/{package_name}-{md5}"
+        tool_folder = f"tool/folder/{package_name}-{md5}"
+        self.tool_info["tool_folder_path"] = tool_folder
         self.tool_info["source_package_path"] = f"tool/tar/{tar_save_name}"
         output_dict = self.tool_info.pop("output")
         output = getattr(ToolInfo, f"OUTPUT_{output_dict.get('type').upper()}")
@@ -217,6 +218,8 @@ class ValidToolTar:
                     'required': output_dict.get("required", False)
                 }
             )
+        if os.path.exists(os.path.join(new_package_folder, 'logo.svg')):
+            self.tool_info["logo"] = f"{tool_folder}/logo.svg"
         ToolInfo(output=output, **self.tool_info).save()
         self.rm_tool_package()
 

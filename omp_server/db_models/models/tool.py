@@ -105,6 +105,7 @@ class ToolInfo(TimeStampMixin):
         "脚本的输出类型", choices=OUTPUT_TYPE_CHOICES,
         default=0, help_text="脚本的输出类型")
     description = models.TextField("描述信息", help_text="描述信息")
+    logo = models.URLField("logo url", default="")
 
     class Meta:
         """元数据"""
@@ -125,11 +126,6 @@ class ToolInfo(TimeStampMixin):
     @property
     def package_name(self):
         return self.tool_folder_path.split("/")[-1]
-
-    @property
-    def logo(self):
-        # http://10.0.0.1:19001/{logo_path}
-        return os.path.join(self.tool_folder_path, "logo.svg")
 
     @property
     def templates(self):

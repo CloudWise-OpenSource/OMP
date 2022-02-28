@@ -181,7 +181,7 @@ function agent_init() {
     if [[ $? -eq 0 ]]; then
       exit 0
     else
-      echo "*/30 * * * * bash ${THIS_SCRIPT} alive &>/dev/null" >>/tmp/omp_agent_cron
+      echo "*/5 * * * * bash ${THIS_SCRIPT} alive &>/dev/null" >>/tmp/omp_agent_cron
       crontab /tmp/omp_agent_cron && rm -f /tmp/omp_agent_cron
     fi
   fi

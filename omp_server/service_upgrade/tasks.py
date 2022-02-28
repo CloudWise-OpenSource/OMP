@@ -1,4 +1,5 @@
 import logging
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed, wait, \
     ALL_COMPLETED
 
@@ -6,7 +7,7 @@ from celery import shared_task
 
 from db_models.mixins import UpgradeStateChoices, RollbackStateChoices
 from db_models.models import UpgradeHistory, RollbackHistory, \
-    RollbackDetail, Maintain
+    RollbackDetail, Maintain, DeploymentPlan
 from promemonitor.alertmanager import Alertmanager
 from service_upgrade.handler.base import load_upgrade_detail, \
     handler_pipeline, load_rollback_detail

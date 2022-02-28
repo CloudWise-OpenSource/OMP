@@ -142,7 +142,7 @@ class CustomScriptViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, Upda
         """
         instance = self.get_object()
         new_scrape_interval = request.data.get("scrape_interval")
-        new_enabled = request.data.get("enabled")
+        new_enabled = request.data.get("enabled", 1)
         new_bound_host_list = request.data.get("bound_hosts")
         new_description = request.data.get("description", instance.description)
 
@@ -158,7 +158,7 @@ class CustomScriptViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, Upda
             script_job_str = instance.script_name.split('.', 1)[0]
             prom_target_list = list()
             monitor_agent_port = MONITOR_PORT.get('monitorAgent', 19031)
-            for host in json.loads(instance.bound_hosts):
+            for host in instance.bound_hosts:
                 agent_add_custom_script_url = f"http://{host}:{monitor_agent_port}/update/custom_scripts/add"  # NOQA
                 payload = {
                     "custom_scripts":
@@ -215,20 +215,21 @@ class CustomScriptViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, Upda
 
         if os.path.exists(job_target_json):
             os.remove(job_target_json)
-        # TODO 向agent发送删除自定义脚本的信息
-        # for host in json.loads(instance.bound_hosts):
-        #     agent_delete_custom_script_url = f"http://{host}:{monitor_agent_port}/update/custom_scripts/delete"  # NOQA
-        #     payload = {
-        #         "custom_scripts":
-        #             [{
-        #                 "script_name": script_job_str,
-        #             }]
-        #     }
-        #     res = requests.post(
-        #         url=agent_delete_custom_script_url, data=payload)
-        #     if res.status_code != 200:
-        #         logger.error(f"向主机{host}agent发送删除自定义脚本信息失败！")
-        #         return Response(data={"code": 1, "message": f"向主机{host}agent发送删除自定义脚本信息失败！"})
+        monitor_agent_port = MONITOR_PORT.get('monitorAgent', 19031)
+        for host in instance.bound_hosts:
+            agent_delete_custom_script_url = f"http://{host}:{monitor_agent_port}/update/custom_scripts/delete"  # NOQA
+            payload = {
+                "custom_scripts":
+                    [{
+                        "script_name": script_job_str,
+                    }]
+            }
+            payload = json.dumps(payload)
+            res = requests.post(
+                url=agent_delete_custom_script_url, data=payload)
+            if res.status_code != 200:
+                logger.error(f"向主机{host}agent发送删除自定义脚本信息失败！")
+                return Response(data={"code": 1, "message": f"向主机{host}agent发送删除自定义脚本信息失败！"})
         instance.delete()
         return Response({})
 
@@ -245,14 +246,13 @@ class CustomScriptJobInfoView(GenericViewSet, ListModelMixin):
         读取自定义脚本任务信息
         """
         cs_id = request.query_params.get("id")
-        logger.error(cs_id)
         instance = CustomScript.objects.get(id=cs_id)
         script_job_str = instance.script_name.split('.', 1)[0]
         job_str = f"{script_job_str}Exporter"
         prometheus_targets_url = f"http://127.0.0.1:{MONITOR_PORT.get('prometheus', '19011')}/api/v1/targets"
         try:
             res = requests.get(url=prometheus_targets_url,
-                               headers=self.prometheus_util.basic_auth)
+                               auth=self.prometheus_util.basic_auth)
             if res.status_code != 200:
                 return Response(data={"code": 1, "message": "获取自定义脚本任务信息失败！"})
             active_targets_list = res.json().get("data").get("activeTargets")
