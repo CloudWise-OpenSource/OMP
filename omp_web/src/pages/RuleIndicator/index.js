@@ -1191,7 +1191,17 @@ const RuleIndicator = () => {
                   </Tooltip>
                 </span>
               </Form.Item>
-              <Form.Item label="关联服务" name="service" key="service">
+              <Form.Item
+                label="关联服务"
+                name="service"
+                key="service"
+                rules={[
+                  {
+                    required: true,
+                    message: "请输入关联服务",
+                  },
+                ]}
+              >
                 <Form.Item noStyle name="service">
                   <Input
                     style={{ width: 520 }}
@@ -1372,277 +1382,277 @@ const RuleIndicator = () => {
       </OmpMessageModal>
 
       {/* 修改规则 */}
-        <OmpModal
-          loading={loading}
-          width={800}
-          formLabelCol={{ span: 5 }}
-          formWrapperCol={{ span: 18 }}
-          setLoading={setLoading}
-          visibleHandle={[upDateVisible, setUpDateVisible]}
-          okBtnText={"确定"}
-          title={
-            <span>
-              <span style={{ position: "relative", left: "-10px" }}>
-                <PlusSquareOutlined />
-              </span>
-              <span>修改指标规则</span>
+      <OmpModal
+        loading={loading}
+        width={800}
+        formLabelCol={{ span: 5 }}
+        formWrapperCol={{ span: 18 }}
+        setLoading={setLoading}
+        visibleHandle={[upDateVisible, setUpDateVisible]}
+        okBtnText={"确定"}
+        title={
+          <span>
+            <span style={{ position: "relative", left: "-10px" }}>
+              <PlusSquareOutlined />
             </span>
-          }
-          form={upDateForm}
-          onFinish={(data) => {
-            uploadQuota(data);
-            // console.log(upDateForm.getFieldValue());
-          }}
-          initialValues={{
-            compare_str: ">=",
-            threshold_value: 30,
-            quota_type: "0",
-            for_time: 60,
-            severity: "warning",
-            status: true,
+            <span>修改指标规则</span>
+          </span>
+        }
+        form={upDateForm}
+        onFinish={(data) => {
+          uploadQuota(data);
+          // console.log(upDateForm.getFieldValue());
+        }}
+        initialValues={{
+          compare_str: ">=",
+          threshold_value: 30,
+          quota_type: "0",
+          for_time: 60,
+          severity: "warning",
+          status: true,
+        }}
+      >
+        <div
+          style={{
+            transition: "all .2s ease-in",
+            position: "relative",
+            left: -10,
           }}
         >
-          <div
-            style={{
-              transition: "all .2s ease-in",
-              position: "relative",
-              left: -10,
-            }}
+          <Form.Item
+            label="规则名称"
+            name="alert"
+            key="alert"
+            rules={[
+              {
+                required: true,
+                message: "请输入规则名称",
+              },
+            ]}
           >
-            <Form.Item
-              label="规则名称"
-              name="alert"
-              key="alert"
-              rules={[
-                {
-                  required: true,
-                  message: "请输入规则名称",
-                },
-              ]}
+            <Form.Item noStyle name="alert">
+              <Input
+                disabled={row.forbidden == 2}
+                style={{ width: 520 }}
+                placeholder={"请输入规则名称"}
+              />
+            </Form.Item>
+            <span
+              name="tishi"
+              style={{
+                paddingLeft: 20,
+                position: "relative",
+                top: 1,
+              }}
             >
-              <Form.Item noStyle name="alert">
-                <Input
-                  disabled={row.forbidden == 2}
-                  style={{ width: 520 }}
-                  placeholder={"请输入规则名称"}
-                />
-              </Form.Item>
-              <span
-                name="tishi"
-                style={{
-                  paddingLeft: 20,
-                  position: "relative",
-                  top: 1,
+              {" "}
+              <Tooltip title="指标规则的名称，方便识别">
+                <QuestionCircleOutlined onClick={() => console.log(row)} />
+              </Tooltip>
+            </span>
+          </Form.Item>
+
+          <Form.Item
+            label="规则类型"
+            name="quota_type"
+            key="quota_type"
+            rules={[
+              {
+                required: true,
+                message: "请选择规则类型",
+              },
+            ]}
+          >
+            <Form.Item noStyle name="quota_type">
+              <Radio.Group
+                disabled={true}
+                value={ruleType}
+                onChange={(e) => {
+                  setRuleType(e.target.value);
                 }}
               >
-                {" "}
-                <Tooltip title="指标规则的名称，方便识别">
-                  <QuestionCircleOutlined  onClick={()=>console.log(row)} />
-                </Tooltip>
-              </span>
+                <Radio.Button value="0">内置指标</Radio.Button>
+                <Radio.Button value="1">自定义PromSQL</Radio.Button>
+              </Radio.Group>
             </Form.Item>
-
-            <Form.Item
-              label="规则类型"
-              name="quota_type"
-              key="quota_type"
-              rules={[
-                {
-                  required: true,
-                  message: "请选择规则类型",
-                },
-              ]}
+            <span
+              name="tishi"
+              style={{
+                paddingLeft: 20,
+                position: "relative",
+                top: 1,
+              }}
             >
-              <Form.Item noStyle name="quota_type">
-                <Radio.Group
-                  disabled={true}
-                  value={ruleType}
-                  onChange={(e) => {
-                    setRuleType(e.target.value);
+              {" "}
+              <Tooltip title="内置PromSQL指标方便使用，也可以添加自定义PromSQL规则">
+                <QuestionCircleOutlined />
+              </Tooltip>
+            </span>
+          </Form.Item>
+
+          {ruleType === "0" && (
+            <>
+              <Form.Item
+                label="选择指标"
+                name="builtins_quota"
+                key="builtins_quota"
+                rules={[
+                  {
+                    required: true,
+                    message: "请选择指标",
+                  },
+                ]}
+              >
+                <Form.Item noStyle name="builtins_quota">
+                  <Cascader
+                    disabled={true}
+                    style={{ width: 520 }}
+                    options={cascaderOption}
+                    placeholder="请选择指标"
+                  />
+                </Form.Item>
+                <span
+                  name="tishi"
+                  style={{
+                    paddingLeft: 20,
+                    position: "relative",
+                    top: 1,
                   }}
                 >
-                  <Radio.Button value="0">内置指标</Radio.Button>
-                  <Radio.Button value="1">自定义PromSQL</Radio.Button>
+                  {" "}
+                  <Tooltip title="选择需要监控的指标">
+                    <QuestionCircleOutlined />
+                  </Tooltip>
+                </span>
+              </Form.Item>
+              <Form.Item
+                label="触发条件"
+                name="compare_str"
+                key="compare_str"
+                rules={[
+                  {
+                    required: true,
+                    message: "请选择触发条件",
+                  },
+                ]}
+              >
+                <Select placeholder="请选择触发条件" style={{ width: 520 }}>
+                  <Select.Option value=">=">{`${">="}`}</Select.Option>
+                  <Select.Option value=">">{`${">"}`}</Select.Option>
+                  <Select.Option value="==">{`${"=="}`}</Select.Option>
+                  <Select.Option value="!=">{`${"!="}`}</Select.Option>
+                  <Select.Option value="<=">{`${"<="}`}</Select.Option>
+                  <Select.Option value="<">{`${"<"}`}</Select.Option>
+                </Select>
+              </Form.Item>
+              <Form.Item
+                label="触发阈值"
+                name="threshold_value"
+                key="threshold_value"
+                rules={[
+                  {
+                    required: true,
+                    message: "请选择触发阈值",
+                  },
+                  // {
+                  //   validator: (rule, value, callback) => {
+                  //     if (value == 0) {
+                  //       return Promise.reject(`只支持大于等于0的数字`);
+                  //     } else {
+                  //       return Promise.resolve("success");
+                  //     }
+                  //   },
+                  // },
+                ]}
+              >
+                <Form.Item noStyle name="threshold_value">
+                  <InputNumber style={{ width: 520 }} min={0} />
+                </Form.Item>
+                <span
+                  name="tishi"
+                  style={{
+                    paddingLeft: 20,
+                    position: "relative",
+                    top: 1,
+                  }}
+                >
+                  {" "}
+                  <Tooltip title="只支持大于等于0的数字">
+                    <QuestionCircleOutlined />
+                  </Tooltip>
+                </span>
+              </Form.Item>
+              <Form.Item
+                label="持续时长"
+                name="for_time"
+                key="for_time"
+                rules={[
+                  {
+                    required: true,
+                    message: "请选择持续时长",
+                  },
+                  {
+                    validator: (rule, value, callback) => {
+                      if (value == 0) {
+                        return Promise.reject(`只支持大于0的数字`);
+                      } else {
+                        return Promise.resolve("success");
+                      }
+                    },
+                  },
+                ]}
+              >
+                <Form.Item noStyle name="for_time">
+                  <InputNumber
+                    style={{ width: 520 }}
+                    addonAfter={
+                      <Select
+                        style={{ width: 80 }}
+                        value={forTimeCompany}
+                        onChange={(e) => {
+                          setForTimeCompany(e);
+                        }}
+                      >
+                        <Select.Option value="s">秒</Select.Option>
+                        <Select.Option value="m">分</Select.Option>
+                        <Select.Option value="h">时</Select.Option>
+                      </Select>
+                    }
+                  />
+                </Form.Item>
+                <span
+                  name="tishi"
+                  style={{
+                    paddingLeft: 20,
+                    position: "relative",
+                    top: 5,
+                  }}
+                >
+                  {" "}
+                  <Tooltip title="通在持续时长内均匹配规则后会触发告警">
+                    <QuestionCircleOutlined />
+                  </Tooltip>
+                </span>
+              </Form.Item>
+
+              <Form.Item
+                label="告警等级"
+                name="severity"
+                key="severity"
+                rules={[
+                  {
+                    required: true,
+                    message: "请选择告警等级",
+                  },
+                ]}
+              >
+                <Radio.Group>
+                  <Radio value="warning">警告</Radio>
+                  <Radio value="critical">严重</Radio>
                 </Radio.Group>
               </Form.Item>
-              <span
-                name="tishi"
-                style={{
-                  paddingLeft: 20,
-                  position: "relative",
-                  top: 1,
-                }}
-              >
-                {" "}
-                <Tooltip title="内置PromSQL指标方便使用，也可以添加自定义PromSQL规则">
-                  <QuestionCircleOutlined />
-                </Tooltip>
-              </span>
-            </Form.Item>
 
-            {ruleType === "0" && (
-              <>
-                <Form.Item
-                  label="选择指标"
-                  name="builtins_quota"
-                  key="builtins_quota"
-                  rules={[
-                    {
-                      required: true,
-                      message: "请选择指标",
-                    },
-                  ]}
-                >
-                  <Form.Item noStyle name="builtins_quota">
-                    <Cascader
-                      disabled={true}
-                      style={{ width: 520 }}
-                      options={cascaderOption}
-                      placeholder="请选择指标"
-                    />
-                  </Form.Item>
-                  <span
-                    name="tishi"
-                    style={{
-                      paddingLeft: 20,
-                      position: "relative",
-                      top: 1,
-                    }}
-                  >
-                    {" "}
-                    <Tooltip title="选择需要监控的指标">
-                      <QuestionCircleOutlined />
-                    </Tooltip>
-                  </span>
-                </Form.Item>
-                <Form.Item
-                  label="触发条件"
-                  name="compare_str"
-                  key="compare_str"
-                  rules={[
-                    {
-                      required: true,
-                      message: "请选择触发条件",
-                    },
-                  ]}
-                >
-                  <Select placeholder="请选择触发条件" style={{ width: 520 }}>
-                    <Select.Option value=">=">{`${">="}`}</Select.Option>
-                    <Select.Option value=">">{`${">"}`}</Select.Option>
-                    <Select.Option value="==">{`${"=="}`}</Select.Option>
-                    <Select.Option value="!=">{`${"!="}`}</Select.Option>
-                    <Select.Option value="<=">{`${"<="}`}</Select.Option>
-                    <Select.Option value="<">{`${"<"}`}</Select.Option>
-                  </Select>
-                </Form.Item>
-                <Form.Item
-                  label="触发阈值"
-                  name="threshold_value"
-                  key="threshold_value"
-                  rules={[
-                    {
-                      required: true,
-                      message: "请选择触发阈值",
-                    },
-                    // {
-                    //   validator: (rule, value, callback) => {
-                    //     if (value == 0) {
-                    //       return Promise.reject(`只支持大于等于0的数字`);
-                    //     } else {
-                    //       return Promise.resolve("success");
-                    //     }
-                    //   },
-                    // },
-                  ]}
-                >
-                  <Form.Item noStyle name="threshold_value">
-                    <InputNumber style={{ width: 520 }} min={0} />
-                  </Form.Item>
-                  <span
-                    name="tishi"
-                    style={{
-                      paddingLeft: 20,
-                      position: "relative",
-                      top: 1,
-                    }}
-                  >
-                    {" "}
-                    <Tooltip title="只支持大于等于0的数字">
-                      <QuestionCircleOutlined />
-                    </Tooltip>
-                  </span>
-                </Form.Item>
-                <Form.Item
-                  label="持续时长"
-                  name="for_time"
-                  key="for_time"
-                  rules={[
-                    {
-                      required: true,
-                      message: "请选择持续时长",
-                    },
-                    {
-                      validator: (rule, value, callback) => {
-                        if (value == 0) {
-                          return Promise.reject(`只支持大于0的数字`);
-                        } else {
-                          return Promise.resolve("success");
-                        }
-                      },
-                    },
-                  ]}
-                >
-                  <Form.Item noStyle name="for_time">
-                    <InputNumber
-                      style={{ width: 520 }}
-                      addonAfter={
-                        <Select
-                          style={{ width: 80 }}
-                          value={forTimeCompany}
-                          onChange={(e) => {
-                            setForTimeCompany(e);
-                          }}
-                        >
-                          <Select.Option value="s">秒</Select.Option>
-                          <Select.Option value="m">分</Select.Option>
-                          <Select.Option value="h">时</Select.Option>
-                        </Select>
-                      }
-                    />
-                  </Form.Item>
-                  <span
-                    name="tishi"
-                    style={{
-                      paddingLeft: 20,
-                      position: "relative",
-                      top: 5,
-                    }}
-                  >
-                    {" "}
-                    <Tooltip title="通在持续时长内均匹配规则后会触发告警">
-                      <QuestionCircleOutlined />
-                    </Tooltip>
-                  </span>
-                </Form.Item>
-
-                <Form.Item
-                  label="告警等级"
-                  name="severity"
-                  key="severity"
-                  rules={[
-                    {
-                      required: true,
-                      message: "请选择告警等级",
-                    },
-                  ]}
-                >
-                  <Radio.Group>
-                    <Radio value="warning">警告</Radio>
-                    <Radio value="critical">严重</Radio>
-                  </Radio.Group>
-                </Form.Item>
-
-                {/* <Form.Item
+              {/* <Form.Item
                 label="启用状态"
                 name="status"
                 key="status"
@@ -1656,278 +1666,282 @@ const RuleIndicator = () => {
               >
                 <Switch disabled={true} />
               </Form.Item> */}
-              </>
-            )}
+            </>
+          )}
 
-            {ruleType === "1" && (
-              <>
-                <Form.Item
-                  label="PromSQL"
-                  name="expr"
-                  key="expr"
-                  rules={[
-                    {
-                      required: true,
-                      message: "请输入PromSQL",
-                    },
-                  ]}
+          {ruleType === "1" && (
+            <>
+              <Form.Item
+                label="PromSQL"
+                name="expr"
+                key="expr"
+                rules={[
+                  {
+                    required: true,
+                    message: "请输入PromSQL",
+                  },
+                ]}
+              >
+                <Form.Item noStyle name="expr">
+                  <Input style={{ width: 400 }} placeholder={"请输入PromSQL"} />
+                </Form.Item>
+                <span
+                  name="tishi"
+                  style={{
+                    paddingLeft: 20,
+                    position: "relative",
+                    // top: 1,
+                  }}
                 >
-                  <Form.Item noStyle name="expr">
-                    <Input
-                      style={{ width: 400 }}
-                      placeholder={"请输入PromSQL"}
-                    />
-                  </Form.Item>
-                  <span
-                    name="tishi"
-                    style={{
-                      paddingLeft: 20,
-                      position: "relative",
-                      // top: 1,
+                  {" "}
+                  <Button
+                    type="primary"
+                    onClick={() => {
+                      fetchTestData(modalForm.getFieldValue("expr"));
+                      setTestVisible(true);
                     }}
                   >
-                    {" "}
-                    <Button
-                      type="primary"
-                      onClick={() => {
-                        fetchTestData(modalForm.getFieldValue("expr"));
-                        setTestVisible(true);
-                      }}
-                    >
-                      测试查询
-                    </Button>
-                  </span>
+                    测试查询
+                  </Button>
+                </span>
+              </Form.Item>
+              <Form.Item
+                label="触发条件"
+                name="compare_str"
+                key="compare_str"
+                rules={[
+                  {
+                    required: true,
+                    message: "请选择触发条件",
+                  },
+                ]}
+              >
+                <Select placeholder="请选择触发条件" style={{ width: 520 }}>
+                  <Select.Option value=">=">{`${">="}`}</Select.Option>
+                  <Select.Option value=">">{`${">"}`}</Select.Option>
+                  <Select.Option value="==">{`${"=="}`}</Select.Option>
+                  <Select.Option value="!=">{`${"!="}`}</Select.Option>
+                  <Select.Option value="<=">{`${"<="}`}</Select.Option>
+                  <Select.Option value="<">{`${"<"}`}</Select.Option>
+                </Select>
+              </Form.Item>
+              <Form.Item
+                label="触发阈值"
+                name="threshold_value"
+                key="threshold_value"
+                rules={[
+                  {
+                    required: true,
+                    message: "请选择触发阈值",
+                  },
+                  // {
+                  //   validator: (rule, value, callback) => {
+                  //     if (value == 0) {
+                  //       return Promise.reject(`只支持大于等于0的数字`);
+                  //     } else {
+                  //       return Promise.resolve("success");
+                  //     }
+                  //   },
+                  // },
+                ]}
+              >
+                <Form.Item noStyle name="threshold_value">
+                  <InputNumber style={{ width: 520 }} min={0} />
                 </Form.Item>
-                <Form.Item
-                  label="触发条件"
-                  name="compare_str"
-                  key="compare_str"
-                  rules={[
-                    {
-                      required: true,
-                      message: "请选择触发条件",
-                    },
-                  ]}
+                <span
+                  name="tishi"
+                  style={{
+                    paddingLeft: 20,
+                    position: "relative",
+                    top: 1,
+                  }}
                 >
-                  <Select placeholder="请选择触发条件" style={{ width: 520 }}>
-                    <Select.Option value=">=">{`${">="}`}</Select.Option>
-                    <Select.Option value=">">{`${">"}`}</Select.Option>
-                    <Select.Option value="==">{`${"=="}`}</Select.Option>
-                    <Select.Option value="!=">{`${"!="}`}</Select.Option>
-                    <Select.Option value="<=">{`${"<="}`}</Select.Option>
-                    <Select.Option value="<">{`${"<"}`}</Select.Option>
-                  </Select>
-                </Form.Item>
-                <Form.Item
-                  label="触发阈值"
-                  name="threshold_value"
-                  key="threshold_value"
-                  rules={[
-                    {
-                      required: true,
-                      message: "请选择触发阈值",
-                    },
-                    // {
-                    //   validator: (rule, value, callback) => {
-                    //     if (value == 0) {
-                    //       return Promise.reject(`只支持大于等于0的数字`);
-                    //     } else {
-                    //       return Promise.resolve("success");
-                    //     }
-                    //   },
-                    // },
-                  ]}
-                >
-                  <Form.Item noStyle name="threshold_value">
-                    <InputNumber style={{ width: 520 }} min={0} />
-                  </Form.Item>
-                  <span
-                    name="tishi"
-                    style={{
-                      paddingLeft: 20,
-                      position: "relative",
-                      top: 1,
-                    }}
-                  >
-                    {" "}
-                    <Tooltip title="只支持大于等于0的数字">
-                      <QuestionCircleOutlined />
-                    </Tooltip>
-                  </span>
-                </Form.Item>
-                <Form.Item
-                  label="持续时长"
-                  name="for_time"
-                  key="for_time"
-                  rules={[
-                    {
-                      required: true,
-                      message: "请选择持续时长",
-                    },
-                    {
-                      validator: (rule, value, callback) => {
-                        if (value == 0) {
-                          return Promise.reject(`只支持大于0的数字`);
-                        } else {
-                          return Promise.resolve("success");
-                        }
-                      },
-                    },
-                  ]}
-                >
-                  <Form.Item noStyle name="for_time">
-                    <InputNumber
-                      style={{ width: 520 }}
-                      addonAfter={
-                        <Select
-                          style={{ width: 80 }}
-                          value={forTimeCompany}
-                          onChange={(e) => {
-                            setForTimeCompany(e);
-                          }}
-                        >
-                          <Select.Option value="s">秒</Select.Option>
-                          <Select.Option value="m">分</Select.Option>
-                          <Select.Option value="h">时</Select.Option>
-                        </Select>
+                  {" "}
+                  <Tooltip title="只支持大于等于0的数字">
+                    <QuestionCircleOutlined />
+                  </Tooltip>
+                </span>
+              </Form.Item>
+              <Form.Item
+                label="持续时长"
+                name="for_time"
+                key="for_time"
+                rules={[
+                  {
+                    required: true,
+                    message: "请选择持续时长",
+                  },
+                  {
+                    validator: (rule, value, callback) => {
+                      if (value == 0) {
+                        return Promise.reject(`只支持大于0的数字`);
+                      } else {
+                        return Promise.resolve("success");
                       }
-                    />
-                  </Form.Item>
-                  <span
-                    name="tishi"
-                    style={{
-                      paddingLeft: 20,
-                      position: "relative",
-                      top: 5,
-                    }}
-                  >
-                    {" "}
-                    <Tooltip title="通在持续时长内均匹配规则后会触发告警">
-                      <QuestionCircleOutlined />
-                    </Tooltip>
-                  </span>
-                </Form.Item>
-                <Form.Item label="关联服务" name="service" key="service">
-                  <Form.Item noStyle name="service">
-                    <Input
-                      style={{ width: 520 }}
-                      placeholder={"请输入关联服务"}
-                    />
-                  </Form.Item>
-                  <span
-                    name="tishi"
-                    style={{
-                      paddingLeft: 20,
-                      position: "relative",
-                      top: 1,
-                    }}
-                  >
-                    {" "}
-                    <Tooltip title="输入关联服务后，该指标的告警会归类于该服务名，如“mysql”，如需关联到主机，请填写“node”">
-                      <QuestionCircleOutlined />
-                    </Tooltip>
-                  </span>
-                </Form.Item>
-                <Form.Item
-                  label="告警等级"
-                  name="severity"
-                  key="severity"
-                  rules={[
-                    {
-                      required: true,
-                      message: "请选择告警等级",
                     },
-                  ]}
-                >
-                  <Radio.Group>
-                    <Radio value="warning">警告</Radio>
-                    <Radio value="critical">严重</Radio>
-                  </Radio.Group>
+                  },
+                ]}
+              >
+                <Form.Item noStyle name="for_time">
+                  <InputNumber
+                    style={{ width: 520 }}
+                    addonAfter={
+                      <Select
+                        style={{ width: 80 }}
+                        value={forTimeCompany}
+                        onChange={(e) => {
+                          setForTimeCompany(e);
+                        }}
+                      >
+                        <Select.Option value="s">秒</Select.Option>
+                        <Select.Option value="m">分</Select.Option>
+                        <Select.Option value="h">时</Select.Option>
+                      </Select>
+                    }
+                  />
                 </Form.Item>
+                <span
+                  name="tishi"
+                  style={{
+                    paddingLeft: 20,
+                    position: "relative",
+                    top: 5,
+                  }}
+                >
+                  {" "}
+                  <Tooltip title="通在持续时长内均匹配规则后会触发告警">
+                    <QuestionCircleOutlined />
+                  </Tooltip>
+                </span>
+              </Form.Item>
+              <Form.Item
+                label="关联服务"
+                name="service"
+                key="service"
+                rules={[
+                  {
+                    required: true,
+                    message: "请输入关联服务",
+                  },
+                ]}
+              >
+                <Form.Item noStyle name="service">
+                  <Input
+                    style={{ width: 520 }}
+                    placeholder={"请输入关联服务"}
+                  />
+                </Form.Item>
+                <span
+                  name="tishi"
+                  style={{
+                    paddingLeft: 20,
+                    position: "relative",
+                    top: 1,
+                  }}
+                >
+                  {" "}
+                  <Tooltip title="输入关联服务后，该指标的告警会归类于该服务名，如“mysql”，如需关联到主机，请填写“node”">
+                    <QuestionCircleOutlined />
+                  </Tooltip>
+                </span>
+              </Form.Item>
+              <Form.Item
+                label="告警等级"
+                name="severity"
+                key="severity"
+                rules={[
+                  {
+                    required: true,
+                    message: "请选择告警等级",
+                  },
+                ]}
+              >
+                <Radio.Group>
+                  <Radio value="warning">警告</Radio>
+                  <Radio value="critical">严重</Radio>
+                </Radio.Group>
+              </Form.Item>
 
-                <Form.Item
-                  label="启用状态"
-                  name="status"
-                  key="status"
-                  rules={[
-                    {
-                      required: true,
-                      message: "请选择启用状态",
-                    },
-                  ]}
-                  valuePropName="checked"
-                >
-                  <Switch />
-                </Form.Item>
+              <Form.Item
+                label="启用状态"
+                name="status"
+                key="status"
+                rules={[
+                  {
+                    required: true,
+                    message: "请选择启用状态",
+                  },
+                ]}
+                valuePropName="checked"
+              >
+                <Switch />
+              </Form.Item>
 
-                <Form.Item
-                  label="告警标题"
-                  name="summary"
-                  key="summary"
-                  rules={[
-                    {
-                      required: true,
-                      message: "选择规则名称",
-                    },
-                  ]}
-                >
-                  <Form.Item noStyle name="summary">
-                    <Input
-                      style={{ width: 520 }}
-                      placeholder={"选择规则名称"}
-                    />
-                  </Form.Item>
-                  <span
-                    name="tishi"
-                    style={{
-                      paddingLeft: 20,
-                      position: "relative",
-                      top: 1,
-                    }}
-                  >
-                    {" "}
-                    <Tooltip title="标题中可配置Prometheus中的标签，如 {{ $labels.instance }}">
-                      <QuestionCircleOutlined />
-                    </Tooltip>
-                  </span>
+              <Form.Item
+                label="告警标题"
+                name="summary"
+                key="summary"
+                rules={[
+                  {
+                    required: true,
+                    message: "选择规则名称",
+                  },
+                ]}
+              >
+                <Form.Item noStyle name="summary">
+                  <Input style={{ width: 520 }} placeholder={"选择规则名称"} />
                 </Form.Item>
+                <span
+                  name="tishi"
+                  style={{
+                    paddingLeft: 20,
+                    position: "relative",
+                    top: 1,
+                  }}
+                >
+                  {" "}
+                  <Tooltip title="标题中可配置Prometheus中的标签，如 {{ $labels.instance }}">
+                    <QuestionCircleOutlined />
+                  </Tooltip>
+                </span>
+              </Form.Item>
 
-                <Form.Item
-                  label="告警消息"
-                  name="description"
-                  key="description"
-                  rules={[
-                    {
-                      required: true,
-                      message: "选择告警消息",
-                    },
-                  ]}
-                >
-                  <Form.Item noStyle name="description">
-                    <Input.TextArea
-                      rows={4}
-                      style={{ width: 520 }}
-                      placeholder={"输入告警消息"}
-                    />
-                  </Form.Item>
-                  <span
-                    name="tishi"
-                    style={{
-                      paddingLeft: 20,
-                      position: "relative",
-                      top: -70,
-                    }}
-                  >
-                    {" "}
-                    <Tooltip title="消息中可配Prometheus中的标签，如 {{ $labels.instance }}">
-                      <QuestionCircleOutlined />
-                    </Tooltip>
-                  </span>
+              <Form.Item
+                label="告警消息"
+                name="description"
+                key="description"
+                rules={[
+                  {
+                    required: true,
+                    message: "选择告警消息",
+                  },
+                ]}
+              >
+                <Form.Item noStyle name="description">
+                  <Input.TextArea
+                    rows={4}
+                    style={{ width: 520 }}
+                    placeholder={"输入告警消息"}
+                  />
                 </Form.Item>
-              </>
-            )}
-          </div>
-        </OmpModal>
+                <span
+                  name="tishi"
+                  style={{
+                    paddingLeft: 20,
+                    position: "relative",
+                    top: -70,
+                  }}
+                >
+                  {" "}
+                  <Tooltip title="消息中可配Prometheus中的标签，如 {{ $labels.instance }}">
+                    <QuestionCircleOutlined />
+                  </Tooltip>
+                </span>
+              </Form.Item>
+            </>
+          )}
+        </div>
+      </OmpModal>
 
       {/* 批量停用操作 */}
       <OmpMessageModal
