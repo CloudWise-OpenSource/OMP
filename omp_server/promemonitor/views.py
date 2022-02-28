@@ -951,7 +951,7 @@ class QuotaView(ListModelMixin, GenericViewSet, CreateModelMixin,DestroyModelMix
                 "severity": severity
             }
             if id != 0:
-                if AlertRule.objects.filter(expr=expr,
+                if AlertRule.objects.filter(expr=request.data["expr"],
                                             severity=severity).exclude(id=id).exists():
                     return Response(data={"code": 1,
                                           "message": f"更新指标规则过程中出错: "
@@ -964,7 +964,8 @@ class QuotaView(ListModelMixin, GenericViewSet, CreateModelMixin,DestroyModelMix
                 if not ok:
                     return Response(data={"code":1,"message":"prometheus 重载规则失败，请手动重启prometheus进行重载"})
                 return Response()
-            if AlertRule.objects.filter(expr=expr, severity=severity).exists():
+            print(request.data["expr"],severity)
+            if AlertRule.objects.filter(expr=request.data["expr"], severity=severity).exists():
                 return Response(data={"code": 1,
                                       "message": f"创建指标规则过程中出错: "
                                                  f"同一指标规则级别重复添加"})
