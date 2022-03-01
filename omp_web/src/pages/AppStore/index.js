@@ -207,7 +207,8 @@ const AppStore = () => {
     );
 
     return () => {
-      dispatch(getTabKeyChangeAction("component"));
+      dispatch(getTabKeyChangeAction(tabKey
+      ));
     };
   }, [tabKey, searchKey]);
 
