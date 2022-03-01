@@ -40,7 +40,7 @@ const Installation = () => {
             style={{ fontSize: 16, marginRight: 20 }}
             className={styles.backIcon}
             onClick={() => {
-              dispatch(getTabKeyChangeAction("service"));
+              // dispatch(getTabKeyChangeAction("service"));
               history?.goBack();
               // history?.push({
               //   pathname: `/application_management/app_store`,

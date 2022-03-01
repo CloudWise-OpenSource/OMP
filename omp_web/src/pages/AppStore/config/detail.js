@@ -202,7 +202,7 @@ const AppStoreDetail = () => {
         })
         .catch((e) => console.log(e))
         .finally(() => {});
-      console.log("服务");
+      // console.log("服务");
     }
   };
 
