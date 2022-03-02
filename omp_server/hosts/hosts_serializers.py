@@ -47,7 +47,7 @@ class HostUninstallSerializer(ModelSerializer):
         """ 校验主机是否存在服务 """
 
         request_data = self.context.get('request').data
-        host_list = request_data.get("host_list", [])
+        host_list = request_data.get("host_ids", [])
         host_ls = list(Host.objects.filter(
             id__in=host_list).values_list('ip', flat=True))
         service_obj = Service.objects.filter(ip__in=host_ls).exclude(
@@ -271,6 +271,7 @@ class HostSerializer(ModelSerializer):
             try:
                 data, address = client.recvfrom(1024)
             except socket.timeout as e:
+                logger.info(f"ntpd服务端不可用:{e}")
                 data = bytes('', encoding='utf-8')
             t = 0
             if data:
