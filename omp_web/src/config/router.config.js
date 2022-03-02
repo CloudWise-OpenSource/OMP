@@ -283,11 +283,11 @@ export default [
         path: "/operation-record/login-log",
         component: LoginLog,
       },
-      // {
-      //   title: "系统记录",
-      //   path: "/operation-record/system-log",
-      //   component: SystemLog,
-      // },
+      {
+        title: "系统记录",
+        path: "/operation-record/system-log",
+        component: SystemLog,
+      },
     ],
   },
   {
