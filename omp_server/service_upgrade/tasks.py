@@ -7,7 +7,7 @@ from celery import shared_task
 
 from db_models.mixins import UpgradeStateChoices, RollbackStateChoices
 from db_models.models import UpgradeHistory, RollbackHistory, \
-    RollbackDetail, Maintain, DeploymentPlan
+    RollbackDetail, Maintain
 from promemonitor.alertmanager import Alertmanager
 from service_upgrade.handler.base import load_upgrade_detail, \
     handler_pipeline, load_rollback_detail
@@ -78,19 +78,24 @@ def upgrade_service(upgrade_history_id):
         UpgradeStateChoices.UPGRADE_WAIT,
         UpgradeStateChoices.UPGRADE_FAIL
     }:
-        logger.error(f"升级记录状态为{history.get_upgrade_state_display()}，不可升级！")
+        logger.error(f"升级记录状态为{history.get_upgrade_state_display()}，"
+                     f"不可升级！")
         return
-    # 排除hadoop等多余服务，升级只升一次
-    if history.upgrade_state != UpgradeStateChoices.UPGRADE_ING:
-        history.upgrade_state = UpgradeStateChoices.UPGRADE_ING
-        history.save()
 
     upgrade_details = history.upgradedetail_set.exclude(
         upgrade_state=UpgradeStateChoices.UPGRADE_SUCCESS
     ).exclude(has_rollback=True)
 
+    if history.upgrade_state != UpgradeStateChoices.UPGRADE_ING:
+        history.upgrade_state = UpgradeStateChoices.UPGRADE_ING
+        history.save()
+
+    # 排除hadoop等多余服务，升级只升一次
     order_layer_details = computer_operation_sorted(upgrade_details)
+
+    # 进入维护模式
     set_alert_maintain(history.env.name)
+
     with ThreadPoolExecutor(THREAD_POOL_MAX_WORKERS) as executor:
         upgrade_state = UpgradeStateChoices.UPGRADE_SUCCESS
         for sort, details in order_layer_details:

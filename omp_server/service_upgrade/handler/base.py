@@ -210,8 +210,12 @@ class StartServiceMixin:
             )
             if not state:
                 raise Exception(f"salt执行命令失败，错误输出: {str(message)}")
-            time.sleep(10)
-            return True
+            if "[running]" in message:
+                # 休眠5秒等待停止
+                time.sleep(10)
+                return True
+            time.sleep(5)
+        return True
 
 
 def handler_pipeline(handlers, objs):
