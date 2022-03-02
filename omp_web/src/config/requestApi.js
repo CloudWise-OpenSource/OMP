@@ -48,6 +48,9 @@ export const apiRequest = {
     batchValidate: "/api/hosts/batchValidate/",
     // 主机批量导入创建主机
     batchImport: "/api/hosts/batchImport/",
+
+    // 主机删除
+    deleteHost: "/api/hosts/hostUninstall/",
   },
   MonitoringSettings: {
     // 配置初始查询监控
