@@ -64,7 +64,7 @@ def explain_prometheus(params):
     if r.get('status') == 'success':
         prometheus_info = []
         compare_list = []
-        alerts = r.get('data').get('alerts')
+        alerts = r.get('data', {}).get('alerts')
         prometheus_alerts = sorted(
             alerts, key=lambda e: e.get('labels').__getitem__('severity'), reverse=False)
         for lab in prometheus_alerts:
@@ -110,8 +110,6 @@ def explain_filter(prometheus_json, params):
         value = j.get(fil_filed[0])
         if value and fil_filed[1].lower() in value.lower():
             fil_info.append(j)
-    # fil_info = filter(lambda x: fil_filed[1].lower()
-    # in x.get(fil_filed[0]).lower(), prometheus_json)
     return explain_filter(fil_info, params)
 
 
