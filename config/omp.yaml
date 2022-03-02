@@ -108,7 +108,6 @@ basic_order:
     - postgreSql
     - prometheus
     - pushgateway
-    - aopsUtils
   1:
     - keepalived
     - httpd
@@ -125,6 +124,7 @@ basic_order:
     - hadoop
   3:
     - flink
+    - aopsUtils
 
 
 # 亲和力服务名称
