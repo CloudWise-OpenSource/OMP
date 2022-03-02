@@ -103,6 +103,9 @@ const MachineManagement = () => {
   // 初始化主机
   const [ininHostModal, setIninHostModal] = useState(false);
 
+  // 删除主机
+  const [deleteHostModal, setDeleteHostModal] = useState(false);
+
   const [showIframe, setShowIframe] = useState({});
 
   // 列表查询
@@ -488,6 +491,37 @@ const MachineManagement = () => {
       });
   };
 
+  // 主机删除
+  const deleteHost = () => {
+    setLoading(true);
+    fetchPost(apiRequest.machineManagement.deleteHost, {
+      body: {
+        host_ids: checkedList.map((item) => item.id),
+      },
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          if (res.code == 0) {
+            message.success("删除主机任务已下发");
+          }
+          if (res.code == 1) {
+            message.warning(res.message);
+          }
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setLoading(false);
+        setDeleteHostModal(false);
+        setCheckedList([]);
+        fetchData(
+          { current: pagination.current, pageSize: pagination.pageSize },
+          { ip: selectValue },
+          pagination.ordering
+        );
+      });
+  };
+
   useEffect(() => {
     fetchData(
       { current: pagination.current, pageSize: pagination.pageSize },
@@ -578,6 +612,16 @@ const MachineManagement = () => {
                 }}
               >
                 重装监控Agent
+              </Menu.Item>
+              <Menu.Item
+                key="initHost"
+                style={{ textAlign: "center" }}
+                disabled={checkedList.map((item) => item.id).length == 0}
+                onClick={() => {
+                  setDeleteHostModal(true);
+                }}
+              >
+                删除主机
               </Menu.Item>
               {/* <Menu.Item
                 key="initHost"
@@ -985,6 +1029,35 @@ const MachineManagement = () => {
           <span style={{ fontWeight: 500 }}>执行初始化</span> ？
         </div>
       </OmpMessageModal>
+
+      <OmpMessageModal
+        visibleHandle={[deleteHostModal, setDeleteHostModal]}
+        title={
+          <span>
+            <ExclamationCircleOutlined
+              style={{
+                fontSize: 20,
+                color: "#f0a441",
+                paddingRight: "10px",
+                position: "relative",
+                top: 2,
+              }}
+            />
+            提示
+          </span>
+        }
+        loading={loading}
+        onFinish={() => {
+          deleteHost();
+        }}
+      >
+        <div style={{ padding: "20px" }}>
+          确定要对{" "}
+          <span style={{ fontWeight: 500 }}>{checkedList.length}台</span> 主机{" "}
+          <span style={{ fontWeight: 500 }}>执行删除命令</span> ？
+        </div>
+      </OmpMessageModal>
+
       <BatchImportMachineModal
         batchImport={batchImport}
         setBatchImport={setBatchImport}

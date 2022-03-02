@@ -334,7 +334,7 @@ const RuleIndicator = () => {
                   return {
                     label: item.name,
                     value: item.name,
-                    disabled:item.name == "数据分区使用率" ? true :false
+                    disabled: item.name == "数据分区使用率" ? true : false,
                     // JSON.stringify({
                     //   description: item.description,
                     //   name: item.name,
@@ -459,9 +459,13 @@ const RuleIndicator = () => {
     let queryData = {};
     if (data.quota_type === "0") {
       let builtins_quota = data.builtins_quota;
-      // let result = dictionaries.current[builtins_quota[0]].filter(
-      //   (f) => f.name == builtins_quota[1]
-      // )[0];
+      let result = dictionaries.current[builtins_quota[0]].filter(
+        (f) => f.name == builtins_quota[1]
+      )[0];
+
+      if(row.name == "数据分区使用率"){
+        result.expr = row.expr
+      }
 
       queryData = {
         threshold_value: data.threshold_value,
@@ -473,10 +477,10 @@ const RuleIndicator = () => {
         status: row.status,
         quota_type: Number(data.quota_type),
         builtins_quota: {
-          description: row?.description,
-          name: row?.name,
-          expr: row?.expr,
-          service: row?.service,
+          description: result?.description,
+          name: result?.name,
+          expr: result?.expr,
+          service: result?.service,
         },
       };
     } else if (data.quota_type === "1") {
@@ -1191,7 +1195,17 @@ const RuleIndicator = () => {
                   </Tooltip>
                 </span>
               </Form.Item>
-              <Form.Item label="关联服务" name="service" key="service">
+              <Form.Item
+                label="关联服务"
+                name="service"
+                key="service"
+                rules={[
+                  {
+                    required: true,
+                    message: "请输入关联服务",
+                  },
+                ]}
+              >
                 <Form.Item noStyle name="service">
                   <Input
                     style={{ width: 520 }}
@@ -1421,7 +1435,11 @@ const RuleIndicator = () => {
             ]}
           >
             <Form.Item noStyle name="alert">
-              <Input style={{ width: 520 }} placeholder={"请输入规则名称"} />
+              <Input
+                disabled={row.forbidden == 2}
+                style={{ width: 520 }}
+                placeholder={"请输入规则名称"}
+              />
             </Form.Item>
             <span
               name="tishi"
@@ -1433,7 +1451,7 @@ const RuleIndicator = () => {
             >
               {" "}
               <Tooltip title="指标规则的名称，方便识别">
-                <QuestionCircleOutlined />
+                <QuestionCircleOutlined onClick={() => console.log(row)} />
               </Tooltip>
             </span>
           </Form.Item>
@@ -1683,7 +1701,7 @@ const RuleIndicator = () => {
                   <Button
                     type="primary"
                     onClick={() => {
-                      fetchTestData(modalForm.getFieldValue("expr"));
+                      fetchTestData(upDateForm.getFieldValue("expr"));
                       setTestVisible(true);
                     }}
                   >
@@ -1800,7 +1818,17 @@ const RuleIndicator = () => {
                   </Tooltip>
                 </span>
               </Form.Item>
-              <Form.Item label="关联服务" name="service" key="service">
+              <Form.Item
+                label="关联服务"
+                name="service"
+                key="service"
+                rules={[
+                  {
+                    required: true,
+                    message: "请输入关联服务",
+                  },
+                ]}
+              >
                 <Form.Item noStyle name="service">
                   <Input
                     style={{ width: 520 }}

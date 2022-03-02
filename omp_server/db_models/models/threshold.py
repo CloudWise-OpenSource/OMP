@@ -126,6 +126,7 @@ class AlertRule(models.Model):
     description = models.TextField("描述, 告警指标描述", null=True)
     create_time = models.DateTimeField("告警规则入库时间", auto_now_add=True)
     update_time = models.DateTimeField("告警规则更新时间", auto_now_add=True)
+    forbidden = models.IntegerField("禁止删除", default=1)  # 1能删除  2 禁止删除
 
     class Meta:
         """
