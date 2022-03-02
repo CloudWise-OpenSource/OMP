@@ -252,21 +252,21 @@ const ReleaseModal = ({
 
                     if (fileList.length > 5) {
                       if (file == fileList[0]) {
-                        message.error("仅支持上传5个文件");
+                        message.error("单次发布操作，最多支持上传5个文件");
                       }
                       return Upload.LIST_IGNORE;
                     }
 
                     if (filesList.length + fileList.length > 5) {
                       if (file == fileList[0]) {
-                        message.error("仅支持上传5个文件");
+                        message.error("单次发布操作，最多支持上传5个文件");
                       }
                       return Upload.LIST_IGNORE;
                     }
 
                     if (filesList.length >= 5) {
                       if (file == fileList[0]) {
-                        message.error("仅支持上传5个文件");
+                        message.error("单次发布操作，最多支持上传5个文件");
                       }
                       return Upload.LIST_IGNORE;
                     }
@@ -323,7 +323,7 @@ const ReleaseModal = ({
                         paddingTop: 10,
                       }}
                     >
-                      支持扩展名: .tar .tar.gz 文件大小不超过4G
+                      支持扩展名: .tar 或 .tar.gz  文件大小不超过4G
                     </p>
                     <p
                       style={{
