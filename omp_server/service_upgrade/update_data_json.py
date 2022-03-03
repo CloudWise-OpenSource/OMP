@@ -4,6 +4,7 @@ import os
 from django.conf import settings
 
 from db_models.models import DetailInstallHistory, Service, Host, UpgradeDetail
+from utils.plugin.salt_client import SaltClient
 
 
 class DataJsonUpdate(object):
@@ -15,7 +16,8 @@ class DataJsonUpdate(object):
         :param operation_uuid: 唯一操作uuid
         :type operation_uuid: str
         """
-        self.operation_uuid = operation_uuid
+        self.json_name = f"{operation_uuid}.json"
+        self.data_path = os.path.join("data_files", self.json_name)
 
     def get_ser_install_args(self, obj, app_install_args=None):
         """
@@ -58,6 +60,9 @@ class DataJsonUpdate(object):
             "ports": json.loads(service.service_port or '[]'),
             "dependence": json.loads(service.service_dependence or '[]'),
         }
+        if service.service.app_name == "hadoop":
+            _ser_dic["instance_name"] = \
+                "hadoop-" + "-".join(service.ip.split(".")[-2:])
         if tag_app:
             _ser_dic["ports"] = service.update_port(
                 json.loads(tag_app.app_port or '[]')
@@ -73,6 +78,12 @@ class DataJsonUpdate(object):
         _ser_dic.update(_others)
         return _ser_dic
 
+    def parse_hadoop_service(self, service, role, ports, tag_app=None):
+        _ser_dic = self.parse_single_service(service, tag_app)
+        _ser_dic.update(role=role)
+        _ser_dic.update(ports=ports)
+        return _ser_dic
+
     def make_data_json(self, json_lst):
         """
         创建data.json数据文件
@@ -82,8 +93,8 @@ class DataJsonUpdate(object):
         """
         _path = os.path.join(
             settings.PROJECT_DIR,
-            "package_hub/data_files",
-            f"{self.operation_uuid}.json"
+            "package_hub",
+            self.data_path
         )
         if not os.path.exists(os.path.dirname(_path)):
             os.makedirs(os.path.dirname(_path))
@@ -103,19 +114,64 @@ class DataJsonUpdate(object):
         return _dic
 
     def load_json_lst(self, details):
-        services = Service.objects.all()
         # 在json文件中标记该服务所在主机上的agent的地址
         ip_agent_dir_dir = {
             ip: agent_dir for ip, agent_dir in
             Host.objects.values_list("ip", "agent_dir")
         }
         json_lst = list()
+        services = Service.objects.exclude(service__app_name="hadoop")
         for service in services:
             tag_app = details.get(service.service_instance_name)
             _item = self.parse_single_service(service, tag_app)
             _item["agent_dir"] = ip_agent_dir_dir.get(_item.get("ip"))
             json_lst.append(_item)
+        hadoop_services = Service.objects.filter(service__app_name="hadoop")
+        hadoop_info = {}
+        for hadoop_service in hadoop_services:
+            role = hadoop_service.service_instance_name.split("_")[0]
+            port = json.loads(hadoop_service.service_port or '[]')
+            if not hadoop_info.get(hadoop_service.ip):
+                hadoop_info[hadoop_service.ip] = {
+                    "role": role, "ports": port, "service": hadoop_service}
+            else:
+                hadoop_info[hadoop_service.ip]["role"] += f",{role}"
+                hadoop_info[hadoop_service.ip]["ports"].extend(port)
+        for ip, service_info in hadoop_info.items():
+            service = service_info.get("service")
+            hadoop_app = details.get(service.service_instance_name)
+            _item = self.parse_hadoop_service(
+                **service_info, tag_app=hadoop_app)
+            _item["agent_dir"] = ip_agent_dir_dir.get(_item.get("ip"))
+            json_lst.append(_item)
         return json_lst
+
+    def send_data_json_target(self, salt_obj, target_ip):
+        host = Host.objects.get(ip=target_ip)
+        json_target_path = os.path.join(
+            host.data_folder, "omp_packages", self.json_name)
+        return salt_obj.cp_file(
+            target=target_ip,
+            source_path=self.data_path,
+            target_path=json_target_path
+        )
+
+    def send_data_json_all(self):
+        hosts = Host.objects.all().values_list("ip", "data_folder")
+        fail_message = []
+        salt_obj = SaltClient()
+        for host in hosts:
+            json_target_path = os.path.join(
+                host[1], "omp_packages", self.json_name)
+            state, message = salt_obj.cp_file(
+                target=host[0],
+                source_path=self.data_path,
+                target_path=json_target_path
+            )
+            if not state:
+                fail_message.append(
+                    f"ip:{host[1]}更新data.json失败，错误：{message}")
+        return fail_message
 
     def run(self, details=None):
         """

@@ -1,4 +1,7 @@
+import hashlib
+from uuid import uuid4
 from django.db import models
+
 
 
 class HostThreshold(models.Model):
@@ -100,6 +103,9 @@ class Rule(models.Model):
         db_table = "omp_rule"
         verbose_name = verbose_name_plural = "规则表达式"
 
+
+
+
 class AlertRule(models.Model):
     """
     告警规则
@@ -113,7 +119,7 @@ class AlertRule(models.Model):
     alert = models.TextField("标题，自定义摘要")
     service = models.CharField("指标所属服务名称", max_length=255)
     status = models.IntegerField("启用状态", default=0)
-    name = models.CharField("内置指标名称", max_length=255,null=True)
+    name = models.CharField("内置指标名称", max_length=255, null=True)
     TYPE = (
         (0, "builtins"),
         (1, "custom"),
@@ -127,6 +133,7 @@ class AlertRule(models.Model):
     create_time = models.DateTimeField("告警规则入库时间", auto_now_add=True)
     update_time = models.DateTimeField("告警规则更新时间", auto_now_add=True)
     forbidden = models.IntegerField("禁止删除", default=1)  # 1能删除  2 禁止删除
+    hash_data = models.CharField("唯一hash值", null=True, blank=True, default=uuid4,max_length=255) # 唯一hash禁止规则重复
 
     class Meta:
         """
