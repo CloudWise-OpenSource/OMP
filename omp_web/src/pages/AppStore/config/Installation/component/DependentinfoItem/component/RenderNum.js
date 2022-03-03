@@ -33,16 +33,18 @@ const RenderNum = ({ data, form }) => {
         >
           <InputNumber
             onChange={(e) => {
-              if (
-                e - data.deploy_mode.step == numRef.current ||
-                e + data.deploy_mode.step == numRef.current
-              ) {
-                numRef.current = e;
-                setNum(e);
-              } else {
-                form.setFieldsValue({
-                  [`${data.name}=num`]: numRef.current,
-                });
+              if (e) {
+                if (
+                  e - data.deploy_mode.step == numRef.current ||
+                  e + data.deploy_mode.step == numRef.current
+                ) {
+                  numRef.current = e;
+                  setNum(e);
+                } else {
+                  form.setFieldsValue({
+                    [`${data.name}=num`]: numRef.current,
+                  });
+                }
               }
 
               if (e > 1) {
