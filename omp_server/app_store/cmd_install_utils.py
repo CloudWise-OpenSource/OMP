@@ -79,7 +79,8 @@ class ReadDeploymentExcel(object):
             "数据分区[必填]": "data_folder",
             "操作系统[必填]": "operate_system",
             "是否执行初始化": "init_host",
-            "运行用户": "run_user"
+            "运行用户": "run_user",
+            "时间同步服务器": "ntpd_server"
         }
         return self._read(start_row=4, keys=keys_map, table=table)
 
@@ -117,6 +118,11 @@ class ReadDeploymentExcel(object):
                 item["init_host"] = True
             else:
                 item["init_host"] = False
+            if "ntpd_server" in item and item["ntpd_server"] != "":
+                item["use_ntpd"] = True
+            else:
+                item["use_ntpd"] = False
+                del item["ntpd_server"]
         service_table = book.sheet_by_name("服务分布")
         service_info = self.read_service_info(table=service_table)
         return True, {
