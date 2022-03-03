@@ -16,6 +16,7 @@ import pickle
 import shutil
 import logging
 import requests
+import hashlib
 
 # import requests
 import yaml
@@ -713,6 +714,11 @@ class PrometheusUtils(object):
         }
         return one_rule
 
+    def get_hash_value(self, expr, severity):
+        data = expr + severity
+        hash_data = hashlib.md5(data.encode(encoding='UTF-8')).hexdigest()
+        return hash_data
+
     def add_data_disk_rules(self, data_path, env="default"):
         """
         """
@@ -750,9 +756,14 @@ class PrometheusUtils(object):
                 "forbidden": 2,
 
             }
-            if AlertRule.objects.filter(expr=expr,severity=level).exists():
+            hash_data = self.get_hash_value(expr=expr, severity=level)
+            if AlertRule.objects.filter(expr=expr, severity=level, hash_data=hash_data).exists():
                 continue
-            AlertRule(**data).save()
+            try:
+                data.update(hash_data=hash_data)
+                AlertRule(**data).save()
+            except Exception as e:
+                logger.error(f"更新数据分区错误:{e}")
         self.update_rule_file(env=env)
         return True
 

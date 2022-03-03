@@ -393,28 +393,28 @@ class Prometheus:
             'cpu': (80, 90),
             'mem': (80, 90)
         }
-        try:
-            from db_models.models import ServiceThreshold
-            cpu_warning_st = ServiceThreshold.objects.filter(env_id=env_id, index_type="service_cpu_used",
-                                                             alert_level="warning").first()
-            cpu_critical_st = ServiceThreshold.objects.filter(env_id=env_id, index_type="service_cpu_used",
-                                                              alert_level="critical").first()
-            mem_warning_st = ServiceThreshold.objects.filter(env_id=env_id, index_type="service_memory_used",
-                                                             alert_level="warning").first()
-            mem_critical_st = ServiceThreshold.objects.filter(env_id=env_id, index_type="service_memory_used",
-                                                              alert_level="critical").first()
-            service_threshold.update(
-                cpu=(
-                    int(cpu_warning_st.condition_value) if cpu_warning_st else 0,
-                    int(cpu_critical_st.condition_value) if cpu_critical_st else 100,
-                ),
-                mem=(
-                    int(mem_warning_st.condition_value) if mem_warning_st else 0,
-                    int(mem_critical_st.condition_value) if mem_critical_st else 100,
-                )
-            )
-        except Exception as e:
-            logger.error(f"获取服务阈值失败，详情为：{e}")
+        # try:
+        #     from db_models.models import ServiceThreshold
+        #     cpu_warning_st = ServiceThreshold.objects.filter(env_id=env_id, index_type="service_cpu_used",
+        #                                                      alert_level="warning").first()
+        #     cpu_critical_st = ServiceThreshold.objects.filter(env_id=env_id, index_type="service_cpu_used",
+        #                                                       alert_level="critical").first()
+        #     mem_warning_st = ServiceThreshold.objects.filter(env_id=env_id, index_type="service_memory_used",
+        #                                                      alert_level="warning").first()
+        #     mem_critical_st = ServiceThreshold.objects.filter(env_id=env_id, index_type="service_memory_used",
+        #                                                       alert_level="critical").first()
+        #     service_threshold.update(
+        #         cpu=(
+        #             int(cpu_warning_st.condition_value) if cpu_warning_st else 0,
+        #             int(cpu_critical_st.condition_value) if cpu_critical_st else 100,
+        #         ),
+        #         mem=(
+        #             int(mem_warning_st.condition_value) if mem_warning_st else 0,
+        #             int(mem_critical_st.condition_value) if mem_critical_st else 100,
+        #         )
+        #     )
+        # except Exception as e:
+        #     logger.error(f"获取服务阈值失败，详情为：{e}")
         return service_threshold
 
     def get_service_metric_status(self, metric, metric_value):
