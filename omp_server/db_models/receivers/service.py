@@ -13,6 +13,8 @@ def update_execution_record(sender, instance, *args, **kwargs):
         UpgradeHistory: "upgradedetail__service",
         RollbackHistory: "rollbackdetail__upgrade__service"
     }
+    if instance.service.app_name == "hadoop":
+        Service.split_objects.filter(service__app_name="hadoop").delete()
     for model_cls, filter_key in filter_keys.items():
         history = model_cls.objects.filter(**{filter_key: instance}).first()
         if not history:

@@ -2,9 +2,19 @@
 
 from django.db import migrations, models
 import django.db.models.manager
+from db_models.models import Service
 
 
 class Migration(migrations.Migration):
+
+    def combine_names(apps, schema_editor):
+        for service in Service.objects.all():
+            if service.service.app_name == "hadoop" and service.service_split == 0:
+                if service.service_instance_name.startswith("hadoop"):
+                    service.service_split = 1
+                else:
+                    service.service_split = 2
+                service.save()
 
     dependencies = [
         ('db_models', '0025_alertrule_forbidden'),
@@ -20,6 +30,8 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='service',
             name='service_split',
-            field=models.IntegerField(choices=[(1, '拆分前'), (2, '拆分后'), (0, '未拆分')], default=0, help_text='拆分服务前对象', verbose_name='拆分服务前对象'),
+            field=models.IntegerField(choices=[(1, '拆分前'), (2, '拆分后'), (0, '未拆分')], default=0, help_text='拆分服务前对象',
+                                      verbose_name='拆分服务前对象'),
         ),
+        migrations.RunPython(combine_names)
     ]
