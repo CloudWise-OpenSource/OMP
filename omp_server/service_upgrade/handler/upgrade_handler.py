@@ -183,10 +183,12 @@ class UpgradeServiceHandler(UpgradeBaseHandler):
             self.detail.data_path,
             f"omp_packages/{self.service._uuid}.json"
         )
+        # 适配流水线加的统一版本后缀commit_id
+        version = self.detail.current_app.app_version.split("-")[0]
         cmd_str = f"python {upgrade_path} " \
                   f"--local_ip {self.service.ip} " \
                   f"--data_json {data_json_path} " \
-                  f"--version {self.detail.current_app.app_version} " \
+                  f"--version {version} " \
                   f"--backup_path " \
                   f"{self.detail.path_info.get('backup_file_path')}"
         state, message = self.salt_client.cmd(
