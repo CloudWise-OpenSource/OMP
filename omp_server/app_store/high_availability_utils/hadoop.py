@@ -204,13 +204,13 @@ class Hadoop(object):
     def _create_service(self, role, detail_obj):
         ip = detail_obj.service.ip
         instance_name = role + "_" + "_".join(ip.split(".")[2:])
-        if "secondarynamenode" in detail_obj.service.service_role:
-            cluster = ClusterInfo.objects.get_or_create(
-                cluster_service_name="hadoop",
-                cluster_name=detail_obj.service.service_instance_name,
-            )[0]
-        else:
-            cluster = detail_obj.service.cluster
+        # if "secondarynamenode" in detail_obj.service.service_role:
+        #    cluster = ClusterInfo.objects.get_or_create(
+        #        cluster_service_name="hadoop",
+        #        cluster_name=detail_obj.service.service_instance_name,
+        #    )[0]
+        # else:
+        #    cluster = detail_obj.service.cluster
         service_obj = Service.objects.create(
             ip=ip,
             service_instance_name=instance_name,
@@ -218,8 +218,9 @@ class Hadoop(object):
             service=detail_obj.service.service,
             service_port=self._get_service_port(role),
             service_controllers=self._get_service_controllers(ip, role),
-            cluster=cluster,
-            env=detail_obj.service.env
+            # cluster=cluster,
+            env=detail_obj.service.env,
+            service_split=2
         )
         # TODO 操作用户
         ServiceHistory.objects.create(
@@ -280,8 +281,12 @@ class Hadoop(object):
                     for role in roles_name.split(","):
                         ser_obj = self._create_service(role, obj)
                         self._create_detail(ser_obj, obj)
-                    obj.service.delete()
-                    obj.delete()
+                    obj.service.service_split = 1
+                    obj.service.save()
+                    # obj.service.delete()
+                    # 更新拆分前服务detail状态
+                    obj.install_step_status = DetailInstallHistory.INSTALL_STATUS_SUCCESS
+                    obj.save()
                     Host.objects.filter(ip=host_ip).update(
                         service_num=F("service_num") - 1)
             logger.info("Finish thread poll executor!")
