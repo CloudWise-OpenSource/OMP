@@ -124,9 +124,9 @@ const BasicInfoItem = ({ data, form }) => {
                   max={32}
                   onChange={(e)=>{
                     if (
-                      e - item.deploy_mode.step == numRef.current[`${data.name}=${item.name}`] ||
+                      e && (e - item.deploy_mode.step == numRef.current[`${data.name}=${item.name}`] ||
                       e + item.deploy_mode.step == numRef.current[`${data.name}=${item.name}`]
-                    ) {
+                    )) {
                       numRef.current[`${data.name}=${item.name}`] = e;
                     } else {
                       form.setFieldsValue({
