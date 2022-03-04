@@ -507,11 +507,11 @@ class HostBatchValidateSerializer(Serializer):
                 host_serializer.validated_data.get("init_host")
             return "correct", host_data
         err_ls = []
-        for k, v in host_serializer.errors.items():
-            err_ls.extend(v)
         ip_err = "Enter a valid IPv4 or IPv6 address."
-        if ip_err in err_ls:
-            err_ls[err_ls.index(ip_err)] = "IP格式不合法"
+        for k, v in host_serializer.errors.items():
+            if ip_err in v:
+                v = [f"{k} 格式不合法"]
+            err_ls.extend(v)
         host_data["validate_error"] = "; ".join(err_ls)
         return "error", host_data
 
