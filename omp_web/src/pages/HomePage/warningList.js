@@ -118,7 +118,13 @@ const ExceptionList = () => {
                   lineHeight: 2.8,
                 }}
               >
-                <p style={{ color: "rgb(152, 157, 171)" }}>
+                <p
+                  style={{
+                    color: "rgb(152, 157, 171)",
+                    position: "relative",
+                    top: -4,
+                  }}
+                >
                   共计{" "}
                   <span style={{ color: "rgb(63, 64, 70)" }}>
                     {dataSource?.length}
