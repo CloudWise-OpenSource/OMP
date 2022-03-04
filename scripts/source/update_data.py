@@ -8,6 +8,7 @@
 
 import os
 import sys
+import hashlib
 
 import django
 
@@ -77,6 +78,11 @@ def create_default_env():
     Env(name=env_name).save()
 
 
+def get_hash_value(expr, severity):
+    data = expr + severity
+    hash_data = hashlib.md5(data.encode(encoding='UTF-8')).hexdigest()
+    return hash_data
+
 def create_threshold():
     """
     为告警添加默认的告警阈值规则
@@ -110,7 +116,8 @@ def create_threshold():
             "quota_type": 0,
             "status": 1,
             "service": "node",
-            "forbidden": 2
+            "forbidden": 2,
+
 
         },
         {
@@ -402,13 +409,13 @@ def create_threshold():
 
     ]
     for info in builtins_rules:
-        if AlertRule.objects.filter(
-                alert=info.get("alert"),
-                severity=info.get("severity"),
-                service=info.get("service"),
-        ).exists():
-            continue
-        AlertRule(**info).save()
+        hash_value = get_hash_value(info.get("expr"), info.get("severity"))
+        alert = AlertRule.objects.filter(hasd_data=hash_value, severity=info.get("severity"),service=info.get("service")).first()
+        info.update(hash_data=hash_value)
+        if alert:
+            alert.update(**info)
+        else:
+            AlertRule(**info).save()
     for rule_info in rule:
         if Rule.objects.filter(name=rule_info.get("name")).exists():
             continue
