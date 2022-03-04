@@ -15,6 +15,7 @@ import time
 import logging
 import traceback
 import subprocess
+import requests
 
 from django.conf import settings
 from celery import shared_task
@@ -469,7 +470,8 @@ class UninstallHosts(object):
             f"卸载{ip}上的omp_salt_agent的结果为: {salt_res_flag} {salt_res_msg}")
         # 卸载monitor agent
         monitor_agent_dir = os.path.join(agent_dir, "omp_monitor_agent")
-        _delete_monitor_cron_cmd = "crontab -l|grep -v omp_monitor_agent 2>/dev/null | crontab -;"
+        _delete_monitor_cron_cmd = "crontab -l|grep -v omp_monitor_agent |" \
+                                   " grep -v {0}/app/ntpdate 2>/dev/null | crontab -;".format(data_dir)
         _uninstall_monitor_agent_cmd = f"cd {monitor_agent_dir} &&" \
                                        f" ./manage stop_all &&" \
                                        f" bash monitor_agent.sh stop &&" \
@@ -526,6 +528,9 @@ class UninstallHosts(object):
                 continue
             write_str.append(node)
         pro_obj.write_dic_to_yaml(write_str, node_path)
+        reload_prometheus_url = "http://localhost:19011/-/reload"
+        requests.post(reload_prometheus_url,
+                      auth=pro_obj.basic_auth)
 
         if not _uninstall_flag:
             print(_uninstall_msg)
