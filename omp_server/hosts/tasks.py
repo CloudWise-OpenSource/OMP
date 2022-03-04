@@ -25,7 +25,8 @@ from promemonitor.prometheus_utils import PrometheusUtils
 
 from db_models.models import (
     Host, Service,
-    HostOperateLog
+    HostOperateLog,
+    Alert
 )
 from utils.plugin.ssh import SSH
 from utils.plugin.monitor_agent import MonitorAgentManager
@@ -548,3 +549,5 @@ def delete_hosts(host_ids):
     uninstall_objs = UninstallHosts(host_objs)
     uninstall_objs.delete_all_omp_agent()
     host_objs.delete()
+    Service.objects.filter(ip__in=host_ids).delete()
+    Alert.objects.filter(alert_host_ip__in=host_ids).delete()
