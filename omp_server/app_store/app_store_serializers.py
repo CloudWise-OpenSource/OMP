@@ -707,7 +707,29 @@ class DeploymentPlanValidateSerializer(Serializer):
                     })
 
         # 验证所有 product 下的 application 都已经包含
-        app_target = ApplicationHub.objects.filter(product_id__in=pro_id_list)
+        app_target_all = ApplicationHub.objects.filter(
+            product_id__in=pro_id_list)
+
+        # 考虑到同产品下会有同名服务情况，做去重处理，按照时间版本号取最新
+        app_target_id_ls = []
+        for pro_id in pro_id_list:
+            # 同产品的 app_name 集合
+            app_name_set = set()
+            app_ls = app_target_all.filter(product_id=pro_id)
+            for app in app_ls:
+                if app.app_name not in app_name_set:
+                    new_version = app_ls.filter(
+                        app_name=app.app_name
+                    ).order_by("-created").first().app_version
+                    if new_version == app.app_version:
+                        app_name_set.add(app.app_name)
+                        app_target_id_ls.append(app.id)
+
+        # 获取目标 app
+        app_target = app_target_all.filter(
+            id__in=app_target_id_ls, is_release=True
+        )
+
         # 所有 affinity 为 tengine 字段 (Web 服务)，不参与比较
         now_set = set(filter(
             lambda x: x.extend_fields.get("affinity") != "tengine", app_now))
