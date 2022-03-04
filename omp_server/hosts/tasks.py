@@ -20,6 +20,7 @@ from django.conf import settings
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from promemonitor.alertmanager import Alertmanager
+from promemonitor.prometheus_utils import PrometheusUtils
 
 from db_models.models import (
     Host, Service,
@@ -227,7 +228,7 @@ def real_init_host(host_obj):
         raise Exception("send script failed")
 
     modified_host_name = str(HOSTNAME_PREFIX) + "-" + \
-        "-".join(host_obj.ip.split(".")[-2:])
+                         "-".join(host_obj.ip.split(".")[-2:])
     # 执行初始化
     is_success, script_msg = _ssh.cmd(
         f"python /tmp/{init_script_name} init_valid {modified_host_name} {host_obj.ip}")
@@ -516,6 +517,15 @@ class UninstallHosts(object):
         _uninstall_flag, _uninstall_msg = self.execute_uninstall(host_obj_list=self.all_host,
                                                                  thread_name_prefix="uninstall_agent_",
                                                                  function=self.del_single_agent)
+        ips = self.all_host.values_list("ip", flat=True)
+        pro_obj = PrometheusUtils()
+        write_str = []
+        node_path = os.path.join(pro_obj.prometheus_targets_path, "nodeExporter_all.json")
+        for node in pro_obj.get_dic_from_yaml(node_path):
+            if node.get("targets", [""])[0].split(":")[0] in ips:
+                continue
+            write_str.append(node)
+        pro_obj.write_dic_to_yaml(write_str, node_path)
 
         if not _uninstall_flag:
             print(_uninstall_msg)
