@@ -16,6 +16,7 @@ import logging
 import traceback
 import subprocess
 import requests
+import json
 
 from django.conf import settings
 from celery import shared_task
@@ -528,7 +529,8 @@ class UninstallHosts(object):
             if node.get("targets", [""])[0].split(":")[0] in ips:
                 continue
             write_str.append(node)
-        pro_obj.write_dic_to_yaml(write_str, node_path)
+        with open(node_path, "w") as f2:
+            json.dump(write_str, f2, ensure_ascii=False, indent=4)
         reload_prometheus_url = "http://localhost:19011/-/reload"
         requests.post(reload_prometheus_url,
                       auth=pro_obj.basic_auth)
