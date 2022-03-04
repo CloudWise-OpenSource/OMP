@@ -578,7 +578,7 @@ class PrometheusUtils(object):
             service_data.get('ip'), 'add', [service_data])
         if not flag:
             return False, msg
-        self.add_rules('service', service_data.get('env'))
+        # self.add_rules('service', service_data.get('env'))
         reload_prometheus_url = 'http://localhost:19011/-/reload'
         # TODO 确认重载prometheus动作在哪执行
         try:
