@@ -229,6 +229,11 @@ def front_end_verified(uuid, operation_user, package_name, random_str, ver_dir, 
             service_pk = service_package.get(ser_name)
             if not service_pk:
                 continue
+            ser_kind = explain_service_yml[1].get("kind", "")
+            if ser_kind != "service":
+                return public_action.update_package_status(
+                    1,
+                    f"安装包{package_name}类型错误，请解压后将服务单独发布服务")
             # 校验服务是否唯一,无安装包跳过逻辑后
             count = ApplicationHub.objects.filter(app_version=ser_name,
                                                   app_name=i.get("version")).count()
