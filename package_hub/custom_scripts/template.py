@@ -3,6 +3,10 @@ class CustomMetrics:
 
     @staticmethod
     def get_node_cpu_guest_seconds_total():
+        """
+        获取guest占用cpu时间
+        :return:
+        """
         return {
             "help": "node_cpu_guest_seconds_total Seconds the cpus spent in guests (VMs) for each mode.",
             "type": "counter",

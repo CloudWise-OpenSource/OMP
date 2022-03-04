@@ -7,7 +7,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ModelSerializer, ListSerializer, \
     Serializer
 
-from db_models.models import Host, MonitorUrl, Alert, Maintain, Service, Rule,AlertRule
+from db_models.models import Host, MonitorUrl, Alert, Maintain, Service, Rule, AlertRule
 from promemonitor.alert_util import AlertAnalysis
 from promemonitor.alertmanager import Alertmanager
 from promemonitor.tasks import monitor_agent_restart
@@ -218,6 +218,8 @@ class ReceiveAlertSerializer(Serializer):
             alert_info = alert_analysis()
             if not alert_info:
                 continue
+            if alert_info.get('status') != 'firing':
+                continue
             alert = Alert(
                 is_read=0,
                 alert_type=alert_info.get('alert_type'),
@@ -299,11 +301,10 @@ class QuotaSerializer(ModelSerializer):
     """
     告警规则序列化类
     """
+
     class Meta:
         """
         元数据
         """
         model = AlertRule
         fields = '__all__'
-
-
