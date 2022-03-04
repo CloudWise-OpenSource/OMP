@@ -408,14 +408,17 @@ def create_threshold():
 
 
     ]
-    for info in builtins_rules:
-        hash_value = get_hash_value(info.get("expr"), info.get("severity"))
-        alert = AlertRule.objects.filter(hasd_data=hash_value, severity=info.get("severity"),service=info.get("service")).first()
-        info.update(hash_data=hash_value)
-        if alert:
-            alert.update(**info)
-        else:
-            AlertRule(**info).save()
+    try:
+        for info in builtins_rules:
+            hash_value = get_hash_value(info.get("expr"), info.get("severity"))
+            alert = AlertRule.objects.filter(expr=info.get("expr"), severity=info.get("severity"),service=info.get("service"))
+            info.update(hash_data=hash_value)
+            if alert:
+                alert.update(**info)
+            else:
+                AlertRule(**info).save()
+    except Exception as e:
+        print(f"初始化规则数据失败{e}")
     for rule_info in rule:
         if Rule.objects.filter(name=rule_info.get("name")).exists():
             continue
