@@ -357,9 +357,18 @@ class HostDetailSerializer(ModelSerializer):
         result_ls = []
         base_env_queryset = Service.objects.filter(
             ip=obj.ip, service__is_base_env=True)
+        host_env_queryset = Host.objects.filter(ip=obj.ip).exclude(
+            ntpdate_install_status=Host.NTPDATE_NOT_INSTALL)
         if base_env_queryset.exists():
             result_ls = list(base_env_queryset.values(
                 "service__app_name", "service__app_version", "service__app_logo"))
+        if host_env_queryset.exists():
+            result_ls.append(
+                {"service__app_name": "ntpdate",
+                 "service__app_version": "4.2.8",
+                 "service__app_logo": ""
+                 }
+            )
         return result_ls
 
 
