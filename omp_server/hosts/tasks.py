@@ -452,7 +452,8 @@ class UninstallHosts(object):
         if not data_dir:
             raise Exception(f"主机{ip}无数据目录")
         # TODO /app/bash_profile目前是指定目录
-        delete_cmd_str = f"rm -rf {data_dir}/omp_packages; rm -rf {data_dir}/app/bash_profile; rm -rf /tmp/upgrade_openssl; rm -rf /tmp/hadoop"
+        delete_cmd_str = f"rm -rf {data_dir}/omp_packages; " \
+                         f"rm -rf {data_dir}/app/bash_profile; rm -rf /tmp/upgrade_openssl"
         cmd_res, msg = _ssh_obj.cmd(
             delete_cmd_str,
             timeout=120
@@ -478,7 +479,8 @@ class UninstallHosts(object):
                                        f" ./manage stop_all &&" \
                                        f" bash monitor_agent.sh stop &&" \
                                        f" cd {agent_dir} &&" \
-                                       f" rm -rf omp_monitor_agent"
+                                       f" rm -rf omp_monitor_agent &&" \
+                                       f" rm -rf {data_dir}/app/ntpdate"
         monitor_res_flag, monitor_res_msg = _ssh_obj.cmd(
             _uninstall_monitor_agent_cmd, timeout=120)
         res, msg = _ssh_obj.cmd(
@@ -531,6 +533,7 @@ class UninstallHosts(object):
             write_str.append(node)
         with open(node_path, "w") as f2:
             json.dump(write_str, f2, ensure_ascii=False, indent=4)
+        time.sleep(2)
         reload_prometheus_url = "http://localhost:19011/-/reload"
         requests.post(reload_prometheus_url,
                       auth=pro_obj.basic_auth)
