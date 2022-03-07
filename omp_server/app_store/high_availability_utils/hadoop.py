@@ -281,6 +281,7 @@ class Hadoop(object):
                     for role in roles_name.split(","):
                         ser_obj = self._create_service(role, obj)
                         self._create_detail(ser_obj, obj)
+                    obj.service.service_status = Service.SERVICE_STATUS_UNKNOWN
                     obj.service.service_split = 1
                     obj.service.save()
                     # obj.service.delete()
