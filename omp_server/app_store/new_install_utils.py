@@ -917,6 +917,9 @@ class SerDependenceParseUtils(object):
                 app_version__startswith=_version,
                 is_release=True
             ).order_by("created").last()
+            if _app:
+                inner["version"] = _app.app_version
+                _version = _app.app_version
             # 定义服务&版本唯一标准，防止递归错误
             unique_key = str(_name) + str(_version)
             # 如果当前服务和需要被解析的源服务重叠，那么则跳过

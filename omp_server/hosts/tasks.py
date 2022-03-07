@@ -473,18 +473,29 @@ class UninstallHosts(object):
             f"卸载{ip}上的omp_salt_agent的结果为: {salt_res_flag} {salt_res_msg}")
         # 卸载monitor agent
         monitor_agent_dir = os.path.join(agent_dir, "omp_monitor_agent")
-        _delete_monitor_cron_cmd = "crontab -l|grep -v omp_monitor_agent |" \
-                                   " grep -v {0}/app/ntpdate 2>/dev/null | crontab -;".format(data_dir)
+        _delete_monitor_cron_cmd = "crontab -l|grep -v omp_monitor_agent " \
+                                   "2>/dev/null | crontab -;"
         _uninstall_monitor_agent_cmd = f"cd {monitor_agent_dir} &&" \
                                        f" ./manage stop_all &&" \
                                        f" bash monitor_agent.sh stop &&" \
                                        f" cd {agent_dir} &&" \
-                                       f" rm -rf omp_monitor_agent &&" \
-                                       f" rm -rf {data_dir}/app/ntpdate"
+                                       f" rm -rf omp_monitor_agent"
         monitor_res_flag, monitor_res_msg = _ssh_obj.cmd(
             _uninstall_monitor_agent_cmd, timeout=120)
         res, msg = _ssh_obj.cmd(
             _delete_monitor_cron_cmd, timeout=120)
+
+        cmd_ntpd_uninstall = "rm -rf {0}/app/ntpdate &&" \
+                             "crontab -l| grep -v {0}/app/ntpdate 2>/dev/null" \
+                             " | crontab -;".format(data_dir)
+        if obj.username != "root":
+            cmd_ntpd_uninstall = "sudo rm -rf {0}/app/ntpdate &&" \
+                                 "sudo crontab -l| grep -v {0}/app/ntpdate 2>/dev/null" \
+                                 " | sudo crontab -;".format(data_dir)
+        ntpd_res, ntpd_msg = _ssh_obj.cmd(
+            cmd_ntpd_uninstall, timeout=120)
+        logger.info(
+            f"卸载{ip}上的ntpd的结果为: {ntpd_res} {ntpd_msg}")
         logger.info(
             f"卸载{ip}上的omp_monitor_agent的命令为: {_uninstall_monitor_agent_cmd}")
         logger.info(
