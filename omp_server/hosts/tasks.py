@@ -15,15 +15,19 @@ import time
 import logging
 import traceback
 import subprocess
+import requests
+import json
 
 from django.conf import settings
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from promemonitor.alertmanager import Alertmanager
+from promemonitor.prometheus_utils import PrometheusUtils
 
 from db_models.models import (
     Host, Service,
-    HostOperateLog
+    HostOperateLog,
+    Alert
 )
 from utils.plugin.ssh import SSH
 from utils.plugin.monitor_agent import MonitorAgentManager
@@ -227,7 +231,7 @@ def real_init_host(host_obj):
         raise Exception("send script failed")
 
     modified_host_name = str(HOSTNAME_PREFIX) + "-" + \
-        "-".join(host_obj.ip.split(".")[-2:])
+                         "-".join(host_obj.ip.split(".")[-2:])
     # 执行初始化
     is_success, script_msg = _ssh.cmd(
         f"python /tmp/{init_script_name} init_valid {modified_host_name} {host_obj.ip}")
@@ -448,7 +452,8 @@ class UninstallHosts(object):
         if not data_dir:
             raise Exception(f"主机{ip}无数据目录")
         # TODO /app/bash_profile目前是指定目录
-        delete_cmd_str = f"rm -rf {data_dir}/omp_packages; rm -rf {data_dir}/app/bash_profile; rm -rf /tmp/upgrade_openssl; rm -rf /tmp/hadoop"
+        delete_cmd_str = f"rm -rf {data_dir}/omp_packages; " \
+                         f"rm -rf {data_dir}/app/bash_profile; rm -rf /tmp/upgrade_openssl"
         cmd_res, msg = _ssh_obj.cmd(
             delete_cmd_str,
             timeout=120
@@ -468,7 +473,8 @@ class UninstallHosts(object):
             f"卸载{ip}上的omp_salt_agent的结果为: {salt_res_flag} {salt_res_msg}")
         # 卸载monitor agent
         monitor_agent_dir = os.path.join(agent_dir, "omp_monitor_agent")
-        _delete_monitor_cron_cmd = "crontab -l|grep -v omp_monitor_agent 2>/dev/null | crontab -;"
+        _delete_monitor_cron_cmd = "crontab -l|grep -v omp_monitor_agent " \
+                                   "2>/dev/null | crontab -;"
         _uninstall_monitor_agent_cmd = f"cd {monitor_agent_dir} &&" \
                                        f" ./manage stop_all &&" \
                                        f" bash monitor_agent.sh stop &&" \
@@ -478,6 +484,18 @@ class UninstallHosts(object):
             _uninstall_monitor_agent_cmd, timeout=120)
         res, msg = _ssh_obj.cmd(
             _delete_monitor_cron_cmd, timeout=120)
+
+        cmd_ntpd_uninstall = "rm -rf {0}/app/ntpdate &&" \
+                             "crontab -l| grep -v {0}/app/ntpdate 2>/dev/null" \
+                             " | crontab -;".format(data_dir)
+        if obj.username != "root":
+            cmd_ntpd_uninstall = "sudo rm -rf {0}/app/ntpdate &&" \
+                                 "sudo crontab -l| grep -v {0}/app/ntpdate 2>/dev/null" \
+                                 " | sudo crontab -;".format(data_dir)
+        ntpd_res, ntpd_msg = _ssh_obj.cmd(
+            cmd_ntpd_uninstall, timeout=120)
+        logger.info(
+            f"卸载{ip}上的ntpd的结果为: {ntpd_res} {ntpd_msg}")
         logger.info(
             f"卸载{ip}上的omp_monitor_agent的命令为: {_uninstall_monitor_agent_cmd}")
         logger.info(
@@ -516,6 +534,20 @@ class UninstallHosts(object):
         _uninstall_flag, _uninstall_msg = self.execute_uninstall(host_obj_list=self.all_host,
                                                                  thread_name_prefix="uninstall_agent_",
                                                                  function=self.del_single_agent)
+        ips = self.all_host.values_list("ip", flat=True)
+        pro_obj = PrometheusUtils()
+        write_str = []
+        node_path = os.path.join(pro_obj.prometheus_targets_path, "nodeExporter_all.json")
+        for node in pro_obj.get_dic_from_yaml(node_path):
+            if node.get("targets", [""])[0].split(":")[0] in ips:
+                continue
+            write_str.append(node)
+        with open(node_path, "w") as f2:
+            json.dump(write_str, f2, ensure_ascii=False, indent=4)
+        time.sleep(2)
+        reload_prometheus_url = "http://localhost:19011/-/reload"
+        requests.post(reload_prometheus_url,
+                      auth=pro_obj.basic_auth)
 
         if not _uninstall_flag:
             print(_uninstall_msg)
@@ -533,3 +565,5 @@ def delete_hosts(host_ids):
     uninstall_objs = UninstallHosts(host_objs)
     uninstall_objs.delete_all_omp_agent()
     host_objs.delete()
+    Service.objects.filter(ip__in=host_ids).delete()
+    Alert.objects.filter(alert_host_ip__in=host_ids).delete()

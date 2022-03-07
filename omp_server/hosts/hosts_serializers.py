@@ -357,9 +357,18 @@ class HostDetailSerializer(ModelSerializer):
         result_ls = []
         base_env_queryset = Service.objects.filter(
             ip=obj.ip, service__is_base_env=True)
+        host_env_queryset = Host.objects.filter(ip=obj.ip).exclude(
+            ntpdate_install_status=Host.NTPDATE_NOT_INSTALL)
         if base_env_queryset.exists():
             result_ls = list(base_env_queryset.values(
                 "service__app_name", "service__app_version", "service__app_logo"))
+        if host_env_queryset.exists():
+            result_ls.append(
+                {"service__app_name": "ntpdate",
+                 "service__app_version": "4.2.8",
+                 "service__app_logo": ""
+                 }
+            )
         return result_ls
 
 
@@ -507,11 +516,11 @@ class HostBatchValidateSerializer(Serializer):
                 host_serializer.validated_data.get("init_host")
             return "correct", host_data
         err_ls = []
-        for k, v in host_serializer.errors.items():
-            err_ls.extend(v)
         ip_err = "Enter a valid IPv4 or IPv6 address."
-        if ip_err in err_ls:
-            err_ls[err_ls.index(ip_err)] = "IP格式不合法"
+        for k, v in host_serializer.errors.items():
+            if ip_err in v:
+                v = [f"{k} 格式不合法"]
+            err_ls.extend(v)
         host_data["validate_error"] = "; ".join(err_ls)
         return "error", host_data
 

@@ -154,8 +154,9 @@ def exec_action(action, instance, operation_user, del_file=False, need_sleep=Tru
         if not service_obj.service.is_base_env:
             with transaction.atomic():
                 service_obj.delete()
+                count = Service.objects.filter(ip=service_obj.ip).count()
                 Host.objects.filter(ip=service_obj.ip).update(
-                    service_num=F("service_num") - 1)
+                    service_num=count)
                 # 当服务被删除时，应该将其所在的集群都连带删除
                 if service_obj.cluster and Service.objects.filter(
                         cluster=service_obj.cluster
