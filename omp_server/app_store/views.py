@@ -951,7 +951,7 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
             logger.error(f"import deployment plan err: {err}")
             import traceback
             logger.error(traceback.print_exc())
-            raise OperateError("导入执行计划失败")
+            raise OperateError(f"导入执行计划失败: {err}")
 
         return Response({
             "operation_uuid": operation_uuid,
