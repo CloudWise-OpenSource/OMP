@@ -122,7 +122,7 @@ class ReadDeploymentExcel(object):
                 item["use_ntpd"] = True
             else:
                 item["use_ntpd"] = False
-                del item["ntpd_server"]
+                item.pop("ntpd_server", "")
         service_table = book.sheet_by_name("服务分布")
         service_info = self.read_service_info(table=service_table)
         return True, {
