@@ -7,13 +7,15 @@ from celery import shared_task
 
 from db_models.mixins import UpgradeStateChoices, RollbackStateChoices
 from db_models.models import UpgradeHistory, RollbackHistory, \
-    RollbackDetail, Maintain
+    RollbackDetail, Maintain, MainInstallHistory
 from promemonitor.alertmanager import Alertmanager
 from service_upgrade.handler.base import load_upgrade_detail, \
     handler_pipeline, load_rollback_detail
 from service_upgrade.handler.rollback_handler import rollback_handlers
 from service_upgrade.handler.upgrade_handler import upgrade_handlers
+from service_upgrade.update_data_json import DataJsonUpdate
 from utils.parse_config import BASIC_ORDER, THREAD_POOL_MAX_WORKERS
+from utils.plugin.salt_client import SaltClient
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +70,20 @@ def set_alert_maintain(env_name):
     return None
 
 
+def update_data_json(operation_uuid, details):
+
+    data_json = DataJsonUpdate(operation_uuid)
+    try:
+        data_json.create_json_file(details)
+        fail_message = data_json.send_data_json_all()
+    except Exception as e:
+        logger.error(str(e))
+        return False, str(e)
+    if fail_message:
+        return False, ",".join(fail_message)
+    return True, "data.json更新成功！"
+
+
 @shared_task
 def upgrade_service(upgrade_history_id):
     history = UpgradeHistory.objects.filter(id=upgrade_history_id).first()
@@ -81,10 +97,27 @@ def upgrade_service(upgrade_history_id):
         logger.error(f"升级记录状态为{history.get_upgrade_state_display()}，"
                      f"不可升级！")
         return
+    main_install = MainInstallHistory.objects.order_by("-id").first()
 
     upgrade_details = history.upgradedetail_set.exclude(
         upgrade_state=UpgradeStateChoices.UPGRADE_SUCCESS
     ).exclude(has_rollback=True)
+
+    if history.pre_upgrade_state != UpgradeStateChoices.UPGRADE_SUCCESS:
+        state, msg = update_data_json(
+            main_install.operation_uuid, upgrade_details)
+        history.pre_upgrade_result = {
+            "update_data_json": {
+                "state": state, "message": msg}
+        }
+        if not state:
+            history.pre_upgrade_state = UpgradeStateChoices.UPGRADE_FAIL
+            history.upgrade_state = UpgradeStateChoices.UPGRADE_FAIL
+            history.save()
+            return
+        else:
+            history.pre_upgrade_state = UpgradeStateChoices.UPGRADE_SUCCESS
+            history.save()
 
     if history.upgrade_state != UpgradeStateChoices.UPGRADE_ING:
         history.upgrade_state = UpgradeStateChoices.UPGRADE_ING
@@ -101,7 +134,8 @@ def upgrade_service(upgrade_history_id):
         for sort, details in order_layer_details:
             all_task = []
             for detail in details:
-                upgrade_args = load_upgrade_detail(detail)
+                upgrade_args = load_upgrade_detail(
+                    detail, main_install.operation_uuid)
                 future_obj = executor.submit(
                     handler_pipeline, upgrade_handlers, upgrade_args)
                 all_task.append(future_obj)
@@ -113,6 +147,7 @@ def upgrade_service(upgrade_history_id):
                     break
             if upgrade_state == UpgradeStateChoices.UPGRADE_FAIL:
                 break
+            time.sleep(5)
     history.upgrade_state = upgrade_state
     history.save()
 
@@ -141,12 +176,15 @@ def rollback_service(rollback_history_id):
 
     set_alert_maintain(history.env.name)
 
+    main_install = MainInstallHistory.objects.order_by("-id").first()
+
     with ThreadPoolExecutor(THREAD_POOL_MAX_WORKERS) as executor:
         rollback_state = RollbackStateChoices.ROLLBACK_SUCCESS
         for sort, details in order_layer_details:
             all_task = []
             for detail in details:
-                rollback_args = load_rollback_detail(detail)
+                rollback_args = load_rollback_detail(
+                    detail, main_install.operation_uuid)
                 future_obj = executor.submit(
                     handler_pipeline, rollback_handlers, rollback_args)
                 all_task.append(future_obj)

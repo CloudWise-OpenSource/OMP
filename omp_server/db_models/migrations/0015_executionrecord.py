@@ -2,17 +2,6 @@
 
 from django.db import migrations, models
 
-from db_models.models import MainInstallHistory, UpgradeHistory, \
-    RollbackHistory
-from db_models.receivers.execution_record import create_execution_record
-
-
-def update_execution_record(apps, schema_editor):
-    for model in [MainInstallHistory, UpgradeHistory, RollbackHistory]:
-        histories = model.objects.all()
-        for history in histories:
-            create_execution_record(history)
-
 
 class Migration(migrations.Migration):
 
@@ -39,6 +28,5 @@ class Migration(migrations.Migration):
                 'verbose_name_plural': '执行记录',
                 'db_table': 'omp_execution_record',
             },
-        ),
-        migrations.RunPython(update_execution_record),
+        )
     ]

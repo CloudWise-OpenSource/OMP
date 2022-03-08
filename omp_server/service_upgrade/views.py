@@ -20,7 +20,7 @@ from .serializers import UpgradeHistorySerializer, ServiceSerializer, \
     RollbackListSerializer
 from .tasks import upgrade_service, rollback_service
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("server")
 
 
 class UpgradeHistoryListAPIView(ListAPIView):
@@ -55,8 +55,8 @@ class UpgradeHistoryDetailAPIView(RetrieveUpdateAPIView):
 
 class UpgradeChoiceAllVersionListAPIView(GenericAPIView):
     # 可升级服务列表（可选择升级的目标）
-    queryset = Service.objects.filter(
-        service_status__in=[0, 1, 2, 3, 4, 9]
+    queryset = Service.split_objects.filter(
+        service_status__in=[0, 1, 2, 3, 4]
     ).select_related("service")
     filter_backends = (SearchFilter, )
     search_fields = ("service__app_name",)
@@ -182,7 +182,7 @@ class DoUpgradeAPIView(GenericAPIView):
         # todo：校验升级依赖
         # 校验信息
         services = list(
-            Service.objects.filter(
+            Service.split_objects.filter(
                 id__in=data.keys(),
                 service_status__in=[0, 1, 2, 3, 4]
             ).annotate(
@@ -260,7 +260,6 @@ class DoUpgradeAPIView(GenericAPIView):
                 )
             UpgradeDetail.objects.bulk_create(details)
         upgrade_service.delay(history.id)
-        # todo: update data.json && ???
         return Response({"history": history.id})
 
 
@@ -382,5 +381,4 @@ class DoRollbackAPIView(GenericAPIView):
                 ]
             )
         rollback_service.delay(history.id)
-        # todo: rollback data.json && 升级、回滚过程中禁止取消维护模式
         return Response({"history": history.id})

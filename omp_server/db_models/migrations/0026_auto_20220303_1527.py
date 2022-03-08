@@ -5,16 +5,17 @@ import django.db.models.manager
 from db_models.models import Service
 
 
-class Migration(migrations.Migration):
+def combine_names(apps, schema_editor):
+    for service in Service.objects.all():
+        if service.service.app_name == "hadoop" and service.service_split == 0:
+            if service.service_instance_name.startswith("hadoop"):
+                service.service_split = 1
+            else:
+                service.service_split = 2
+            service.save()
 
-    def combine_names(apps, schema_editor):
-        for service in Service.objects.all():
-            if service.service.app_name == "hadoop" and service.service_split == 0:
-                if service.service_instance_name.startswith("hadoop"):
-                    service.service_split = 1
-                else:
-                    service.service_split = 2
-                service.save()
+
+class Migration(migrations.Migration):
 
     dependencies = [
         ('db_models', '0025_alertrule_forbidden'),
