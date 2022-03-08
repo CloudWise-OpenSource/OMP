@@ -74,9 +74,28 @@ class ClusterInfo(TimeStampMixin, DeleteMixin):
         return f"<instance> of {self.cluster_name}"
 
 
+class ExcludeSplit(models.Manager):
+    """
+    拆分前服务过滤，展示监控纳管专用
+    """
+
+    def get_queryset(self):
+        return super(ExcludeSplit, self).get_queryset().exclude(service_split=1)
+
+
+class AfterSplit(models.Manager):
+    """
+    拆分后服务过滤,安装升级专用
+    """
+
+    def get_queryset(self):
+        return super(AfterSplit, self).get_queryset().exclude(service_split=2)
+
+
 class Service(TimeStampMixin):
     """ 服务表 (删除前会触发update_execution_record)"""
-    objects = None
+    split_objects = AfterSplit()
+    objects = ExcludeSplit()
     SERVICE_STATUS_NORMAL = 0
     SERVICE_STATUS_STARTING = 1
     SERVICE_STATUS_STOPPING = 2
@@ -104,6 +123,17 @@ class Service(TimeStampMixin):
         (SERVICE_STATUS_ROLLBACK, "回滚中")
     )
 
+    PRE_IS_SPLIT = 1
+    NO_SPLIT = 0
+    AFT_IS_SPLIT = 2
+    SERVICE_STATUS_SPLIT = (
+        (
+            (PRE_IS_SPLIT, "拆分前"),
+            (AFT_IS_SPLIT, "拆分后"),
+            (NO_SPLIT, "未拆分")
+        )
+    )
+
     # 是否用外键关联？
     ip = models.GenericIPAddressField(
         "服务所在主机", help_text="服务所在主机")
@@ -111,6 +141,10 @@ class Service(TimeStampMixin):
     service_instance_name = models.CharField(
         "服务实例名称", max_length=64,
         null=False, blank=False, help_text="服务实例名称")
+
+    service_split = models.IntegerField(
+        "拆分服务前对象", choices=SERVICE_STATUS_SPLIT,
+        default=0, help_text="拆分服务前对象")
 
     service = models.ForeignKey(
         ApplicationHub, null=True, blank=True,

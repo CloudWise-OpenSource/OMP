@@ -10,6 +10,10 @@ from db_models.mixins import TimeStampMixin, UpgradeStateMixin, \
 
 class UpgradeHistory(UpgradeStateMixin, TimeStampMixin):
 
+    COMMON_OPERATION = [
+        {"name": "更新data.json", "key": "update_data_json", "result": False}
+    ]
+
     operator = models.ForeignKey(
         UserProfile, null=True,
         on_delete=models.SET_NULL,
@@ -18,6 +22,12 @@ class UpgradeHistory(UpgradeStateMixin, TimeStampMixin):
         Env, null=True,
         on_delete=models.SET_NULL,
         verbose_name="所属环境")
+    pre_upgrade_state = models.IntegerField(
+        "升级前置结果",
+        choices=UpgradeStateChoices.choices,
+        default=UpgradeStateChoices.UPGRADE_WAIT
+    )
+    pre_upgrade_result = models.JSONField("升级前置信息", default=dict)
 
     class Meta:
         db_table = "omp_upgrade_history"

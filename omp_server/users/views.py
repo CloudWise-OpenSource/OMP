@@ -3,6 +3,8 @@
 """
 import re
 import datetime
+
+from django.contrib.auth import authenticate, login
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
@@ -35,6 +37,8 @@ import ipware
 import ipaddress
 import logging
 from django.utils import timezone
+
+from utils.plugin.crypto import decrypt_rsa
 
 logger = logging.getLogger("server")
 
@@ -152,15 +156,21 @@ class JwtAPIView(JSONWebTokenAPIView):
 
     def post(self, request, *args, **kwargs):
         # django authenticate 缺陷，验证 username 大小写不敏感
-        username_ls = list(
-            UserProfile.objects.values_list(
-                "username", flat=True))
-        if request.data.get("username", "") not in username_ls or \
-                re.search(r"\s", request.data.get("password", "")):
+        username = decrypt_rsa(request.data.get("username", ""))
+        password = decrypt_rsa(request.data.get("password", ""))
+        if not UserProfile.objects.filter(username=username).exists():
+            raise ValidationError(f"{username} dose not exists.")
+        if re.search(r"\s", password):
             raise ValidationError(
                 "Unable to log in with provided credentials.")
 
-        serializer = self.get_serializer(data=request.data)
+        serializer = self.get_serializer(
+            data={
+                "username": username,
+                "password": password,
+                "remember": request.data.get("remember")
+            }
+        )
 
         if not serializer.is_valid():
             raise ValidationError(

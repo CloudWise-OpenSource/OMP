@@ -52,7 +52,7 @@ function echo_omp_url() {
     echo "=========OMP平台访问信息================"
     echo "平台访问地址：http://$local_ip:19001"
     echo "平台默认用户：admin"
-    echo "平台默认密码：Common@123"
+    echo "平台默认密码：Yunweiguanli@OMP_123"
     echo "======================================="
     echo " "
 }

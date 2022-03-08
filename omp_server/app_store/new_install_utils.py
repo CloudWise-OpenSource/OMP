@@ -865,7 +865,7 @@ class SerDependenceParseUtils(object):
             ]
         )
         # 判断当前服务的实例信息
-        instance_info = list(Service.objects.filter(
+        instance_info = list(Service.split_objects.filter(
             service__app_name=obj.app_name,
             service__app_version=obj.app_version,
             cluster__isnull=True
@@ -1466,7 +1466,7 @@ class BaseEnvServiceUtils(object):
                 continue
             # 当被依赖的基础服务已经被安装时，使用如下方法进行过滤处理
             # 服务版本弱依赖逻辑 jon.liu 20211225
-            if Service.objects.filter(
+            if Service.split_objects.filter(
                 ip=item["ip"],
                 service__app_name=el["name"],
                 service__app_version__startswith=el["version"]
@@ -1596,7 +1596,7 @@ class WithServiceUtils(object):
                 is_found_flag = True
         # 如果没有找到，则证明被with的服务是在复用的列表内的，需要查看当前系统内的该服务信息
         if not is_found_flag:
-            with_ser_ips = Service.objects.filter(
+            with_ser_ips = Service.split_objects.filter(
                 service__app_name=with_ser).values("ip")
             with_ser_ips = [el["ip"] for el in with_ser_ips]
             for _ip in with_ser_ips:
@@ -1717,7 +1717,7 @@ class DataJson(object):
         :return:
         """
         # step1: 获取所有的服务列表
-        all_ser_lst = Service.objects.all()
+        all_ser_lst = Service.split_objects.all()
         json_lst = list()
         for item in all_ser_lst:
             json_lst.append(self.parse_single_service(obj=item))
@@ -1862,7 +1862,7 @@ class CreateInstallPlan(object):
                 "cluster_name": cl_obj.cluster_name,
                 "instance_name": None
             }
-        ser_obj = Service.objects.filter(id=inner["id"]).last()
+        ser_obj = Service.split_objects.filter(id=inner["id"]).last()
         return {
             "name": ser_obj.service.app_name,
             "cluster_name": None,
@@ -1916,7 +1916,7 @@ class CreateInstallPlan(object):
                 app_version__startswith=item.get("version")
             ).last()
             if _dep_obj.is_base_env:
-                _ser_obj = Service.objects.filter(
+                _ser_obj = Service.split_objects.filter(
                     service=_dep_obj, ip=dic.get("ip")
                 ).last()
                 if _ser_obj:
@@ -2197,7 +2197,7 @@ class ValidateInstallServicePortArgs(object):
         """
         _salt_obj = SaltClient()
         for el in app_install_args:
-            if el.get("key") == "instance_name" and Service.objects.filter(
+            if el.get("key") == "instance_name" and Service.split_objects.filter(
                 service_instance_name=el.get("default")
             ).count() != 0:
                 el["check_flag"] = False

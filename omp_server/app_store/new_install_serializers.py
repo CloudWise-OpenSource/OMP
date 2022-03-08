@@ -605,7 +605,7 @@ class CheckServiceDistributionSerializer(BaseInstallSerializer):
                     "error_msg": f"主机 [{key}] Agent当前不在线，无法使用该主机"
                 })
                 continue
-            exist_services = Service.objects.filter(
+            exist_services = Service.split_objects.filter(
                 ip=key, service__app_name__in=value
             )
             if exist_services.exists():

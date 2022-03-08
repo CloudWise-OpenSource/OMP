@@ -14,11 +14,17 @@ import os
 
 from ruamel import yaml
 
-config_file_path = os.path.join(
-    os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    ), "config/omp.yaml"
+project_path = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 )
+config_file_path = os.path.join(project_path, "config/omp.yaml")
+
+private_key_path = os.path.join(project_path, "config/private_key.pem")
+
+# openssl genrsa -out private_key.pem 2048
+# openssl rsa -in private_key.pem -out public_key.pem -pubout
+with open(private_key_path, "r") as key_f:
+    PRIVATE_KEY = key_f.read()
 
 with open(config_file_path, "r") as fp:
     CONFIG_DIC = yaml.load(fp, Loader=yaml.SafeLoader)

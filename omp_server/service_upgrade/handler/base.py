@@ -11,7 +11,7 @@ from utils.plugin.salt_client import SaltClient
 logger = logging.getLogger(__name__)
 
 
-def get_install_detail(detail, service):
+def get_install_detail(detail, service, operation_uuid):
     install_history = service.detailinstallhistory_set.filter(
         install_step_status=2).last()
 
@@ -44,14 +44,17 @@ def get_install_detail(detail, service):
     setattr(
         service,
         "_uuid",
-        install_history.main_install_history.operation_uuid
+        operation_uuid
     )
     return detail, service
 
 
-def load_upgrade_detail(upgrade_detail):
+def load_upgrade_detail(upgrade_detail, operation_uuid):
     service = upgrade_detail.service
-    upgrade_detail, service = get_install_detail(upgrade_detail, service)
+    upgrade_detail, service = get_install_detail(
+        upgrade_detail, service, operation_uuid)
+    if not upgrade_detail or not service:
+        return None, None, None
     # 加载关联的升级对象
     relation_details = list(
         UpgradeDetail.objects.filter(
@@ -61,10 +64,11 @@ def load_upgrade_detail(upgrade_detail):
     return upgrade_detail, service, relation_details
 
 
-def load_rollback_detail(rollback_detail):
+def load_rollback_detail(rollback_detail, operation_uuid):
     service = rollback_detail.upgrade.service
     # 安装成功记录
-    rollback_detail, service = get_install_detail(rollback_detail, service)
+    rollback_detail, service = get_install_detail(
+        rollback_detail, service, operation_uuid)
     # 加载关联的升级对象
     relation_details = list(
         RollbackDetail.objects.filter(

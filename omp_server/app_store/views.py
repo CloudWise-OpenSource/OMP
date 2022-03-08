@@ -636,6 +636,12 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
         operation_uuid = serializer.data.get("operation_uuid") if \
             serializer.data.get("operation_uuid") else uuid.uuid4()
 
+        # 考虑到录入主机可能大于分配服务主机，故此记录真实使用的主机实例数量
+        service_instance_set = set(
+            map(lambda x: x.get("instance_name"), service_data_ls))
+        use_host_queryset = host_queryset.filter(
+            instance_name__in=service_instance_set)
+
         try:
             # 服务对象列表、基础环境字典
             service_obj_ls = []
@@ -656,7 +662,7 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                 vip = service_data.get("vip")
                 role = service_data.get("role")
                 # 主机、应用对象
-                host_obj = host_queryset.filter(
+                host_obj = use_host_queryset.filter(
                     instance_name=instance_name).first()
                 app_obj = app_queryset.filter(app_name=service_name).first()
 
@@ -799,7 +805,7 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
 
                 # 主机层安装记录表
                 pre_install_obj_ls = []
-                for host_obj in host_queryset:
+                for host_obj in use_host_queryset:
                     pre_install_obj_ls.append(PreInstallHistory(
                         main_install_history=main_history_obj,
                         ip=host_obj.ip,
@@ -814,7 +820,8 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                 # 安装详情表
                 for service_obj in service_queryset:
                     # 获取主机对象
-                    host_obj = host_queryset.filter(ip=service_obj.ip).first()
+                    host_obj = use_host_queryset.filter(
+                        ip=service_obj.ip).first()
 
                     app_args = ServiceArgsPortUtils().get_app_install_args(
                         service_obj.service
@@ -929,7 +936,7 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                 # 部署计划表
                 DeploymentPlan.objects.create(
                     plan_name=f"快速部署-{str(int(round(time.time() * 1000)))}",
-                    host_num=host_queryset.count(),
+                    host_num=use_host_queryset.count(),
                     product_num=pro_queryset.count(),
                     service_num=len(service_data_ls),
                     create_user=request.user.username,
@@ -944,7 +951,7 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
             logger.error(f"import deployment plan err: {err}")
             import traceback
             logger.error(traceback.print_exc())
-            raise OperateError("导入执行计划失败")
+            raise OperateError(f"导入执行计划失败: {err}")
 
         return Response({
             "operation_uuid": operation_uuid,
