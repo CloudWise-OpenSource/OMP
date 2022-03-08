@@ -26,18 +26,27 @@ class DataJsonUpdate(object):
         :param app_install_args: app_install_args, list
         :return:
         """
-        deploy_detail = DetailInstallHistory.objects.get(service=obj)
-        install_args = \
-            deploy_detail.install_detail_args.get("install_args")
+        deploy_detail = DetailInstallHistory.objects.filter(
+            service=obj).first()
+        install_args = []
+        deploy_mode = ""
+        if deploy_detail:
+            install_args = \
+                deploy_detail.install_detail_args.get("install_args", [])
+            deploy_mode = \
+                deploy_detail.install_detail_args.get("deploy_mode")
         old_arg_dict = {}
         for old_arg in install_args:
             old_arg_dict[old_arg["key"]] = old_arg
         if app_install_args:
             for new_arg in app_install_args:
                 if new_arg.get("key") not in old_arg_dict:
+                    new_arg["default"] = new_arg["default"].format(
+                        data_path="data_path")
                     install_args.append(new_arg)
-        deploy_mode = \
-            deploy_detail.install_detail_args.get("deploy_mode")
+        if deploy_detail:
+            deploy_detail.install_detail_args["install_args"] = install_args
+            deploy_detail.save()
         return {
             "install_args": install_args,
             "deploy_mode": deploy_mode
@@ -78,12 +87,6 @@ class DataJsonUpdate(object):
         _ser_dic.update(_others)
         return _ser_dic
 
-    def parse_hadoop_service(self, service, role, ports, tag_app=None):
-        _ser_dic = self.parse_single_service(service, tag_app)
-        _ser_dic.update(role=role)
-        _ser_dic.update(ports=ports)
-        return _ser_dic
-
     def make_data_json(self, json_lst):
         """
         创建data.json数据文件
@@ -120,28 +123,10 @@ class DataJsonUpdate(object):
             Host.objects.values_list("ip", "agent_dir")
         }
         json_lst = list()
-        services = Service.objects.exclude(service__app_name="hadoop")
+        services = Service.split_objects.all()
         for service in services:
             tag_app = details.get(service.service_instance_name)
             _item = self.parse_single_service(service, tag_app)
-            _item["agent_dir"] = ip_agent_dir_dir.get(_item.get("ip"))
-            json_lst.append(_item)
-        hadoop_services = Service.objects.filter(service__app_name="hadoop")
-        hadoop_info = {}
-        for hadoop_service in hadoop_services:
-            role = hadoop_service.service_instance_name.split("_")[0]
-            port = json.loads(hadoop_service.service_port or '[]')
-            if not hadoop_info.get(hadoop_service.ip):
-                hadoop_info[hadoop_service.ip] = {
-                    "role": role, "ports": port, "service": hadoop_service}
-            else:
-                hadoop_info[hadoop_service.ip]["role"] += f",{role}"
-                hadoop_info[hadoop_service.ip]["ports"].extend(port)
-        for ip, service_info in hadoop_info.items():
-            service = service_info.get("service")
-            hadoop_app = details.get(service.service_instance_name)
-            _item = self.parse_hadoop_service(
-                **service_info, tag_app=hadoop_app)
             _item["agent_dir"] = ip_agent_dir_dir.get(_item.get("ip"))
             json_lst.append(_item)
         return json_lst
@@ -173,7 +158,7 @@ class DataJsonUpdate(object):
                     f"ip:{host[1]}更新data.json失败，错误：{message}")
         return fail_message
 
-    def run(self, details=None):
+    def create_json_file(self, details=None):
         """
         更新data.json
         :param details: 升级details
