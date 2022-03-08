@@ -24,6 +24,7 @@ from db_models.models import (
     UserLoginLog
 )
 from utils.common.validators import UserPasswordValidator
+from utils.plugin.crypto import decrypt_rsa
 
 
 class UserSerializer(ModelSerializer):
@@ -133,39 +134,37 @@ class UserUpdatePasswordSerializer(Serializer):
 
     username = serializers.CharField(
         help_text="用户名",
-        max_length=32, required=True,
+        min_length=344, max_length=344, required=True,
         error_messages={"required": "必须包含名字"})
     old_password = serializers.CharField(
         help_text="原密码", required=True,
-        min_length=8, max_length=16,
-        error_messages={"required": "必须包含password字段"},
-        validators=[
-            UserPasswordValidator(),
-        ])
+        min_length=344, max_length=344,
+        error_messages={"required": "必须包含password字段"}
+    )
     new_password = serializers.CharField(
         help_text="新密码", required=True,
-        min_length=8, max_length=16,
-        error_messages={"required": "必须包含password字段"},
-        validators=[
-            UserPasswordValidator(),
-        ])
+        min_length=344, max_length=344,
+        error_messages={"required": "必须包含new_password字段"}
+    )
 
     def validate(self, attrs):
         """ 校验，用户的原密码是否正确 """
         credentials = {
-            "username": attrs.get("username"),
-            "password": attrs.get("old_password")
+            "username": decrypt_rsa(attrs.get("username")),
+            "password": decrypt_rsa(attrs.get("old_password"))
         }
         user = authenticate(**credentials)
         if not user:
             raise ValidationError({"old_password": "当前密码不正确"})
+        new_password = decrypt_rsa(attrs.get("new_password"))
+        UserPasswordValidator()(new_password, self.fields.get("new_password"))
         attrs["user_obj"] = user
+        attrs["new_password"] = new_password
         return attrs
 
     def create(self, validated_data):
         """ 用户密码加密入库 """
         user = validated_data["user_obj"]
-        user.set_password(
-            validated_data.get("new_password"))
+        user.set_password(validated_data.get("new_password"))
         user.save()
         return validated_data
