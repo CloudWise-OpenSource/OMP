@@ -21,6 +21,7 @@ import {
   SettingOutlined,
   InfoCircleOutlined,
   SaveOutlined,
+  WarningFilled
 } from "@ant-design/icons";
 import moment from "moment";
 import star from "@/pages/BackupRecords/config/asterisk.svg";
@@ -259,6 +260,9 @@ const BackupStrategy = () => {
         备份策略
       </div>
       <Spin spinning={loading}>
+        <div style={{ color: "red", position: "relative", left: 30, top: 15 }}>
+        <WarningFilled style={{marginRight:15, fontSize:18}} />OMP会对数据库进行全库备份，备份数据库可能会造成数据库暂时锁库，导致数据不可写的情况，请确保了解后再开启定时备份
+        </div>
         <Form
           name="pushSetting"
           labelCol={{ span: 3 }}

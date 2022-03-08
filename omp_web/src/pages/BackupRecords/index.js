@@ -6,7 +6,7 @@ import { fetchGet, fetchPost, fetchPatch } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import star from "./config/asterisk.svg";
 import getColumnsConfig from "./config/columns";
-import { SaveOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
+import { SaveOutlined, ExclamationCircleOutlined, WarningFilled } from "@ant-design/icons";
 import { useHistory, useLocation } from "react-router-dom";
 
 const BackupRecords = () => {
@@ -22,6 +22,9 @@ const BackupRecords = () => {
 
   //选中的数据
   const [checkedList, setCheckedList] = useState([]);
+
+  // 已了解参数
+  const [isRead, setIsRead] = useState(false)
 
   //table表格数据
   const [dataSource, setDataSource] = useState([]);
@@ -211,6 +214,7 @@ const BackupRecords = () => {
           style={{ marginRight: 15 }}
           type="primary"
           onClick={() => {
+            setIsRead(false)
             setBackupModal(true);
           }}
         >
@@ -337,6 +341,8 @@ const BackupRecords = () => {
       </div>
 
       <OmpMessageModal
+        disabled={!isRead}
+        width={800}
         visibleHandle={[backupModal, setBackupModal]}
         title={
           <span>
@@ -391,7 +397,13 @@ const BackupRecords = () => {
               })}
             </Checkbox.Group>
           )}
-          <p
+         <div style={{ color: "red", position: "relative", left: 20, top: 0, paddingTop:20,paddingBottom:5 }}>
+        <WarningFilled style={{marginRight:10, fontSize:18}} />OMP会对数据库进行全库备份，备份数据库可能会造成数据库暂时锁库，导致数据不可写的情况，请确保了解后再执行备份
+        </div>
+        <Checkbox style={{marginLeft:20, marginBottom:20, marginTop:10}} onChange={(e)=>{
+          setIsRead(e.target.checked)
+        }}>确认备份</Checkbox>
+          {/* <p
             style={{
               marginTop: 10,
               marginLeft: 6,
@@ -400,7 +412,7 @@ const BackupRecords = () => {
             }}
           >
             是否确认对已选实例进行单次备份操作 ?
-          </p>
+          </p> */}
         </div>
       </OmpMessageModal>
 
