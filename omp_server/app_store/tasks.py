@@ -719,7 +719,7 @@ def publish_entry(uuid):
         valid_name = tmp_dir[0].rsplit('/', 1)
         valid_pk = f"{valid_name[1]}-{tmp_dir[1]}" if len(
             tmp_dir) == 2 else valid_name[1]
-        if product_obj:
+        if product_obj and line.get('kind') == 'service':
             valid_pk = f"{product_obj.pro_name}-{product_obj.pro_version}/{valid_name[1]}"
 
         valid_dir = os.path.join(project_dir, 'package_hub',

@@ -116,6 +116,8 @@ basic_order:
     - rocketmq
     - wkhtmltox
     - tomcat
+    - jkbPhp
+    - beanstalk
   2:
     - nacos
     - xxlJob
