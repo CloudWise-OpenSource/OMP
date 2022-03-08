@@ -14,7 +14,8 @@ import random
 import datetime
 from pathlib import Path
 from utils.parse_config import OMP_MYSQL_HOST, OMP_MYSQL_PORT, \
-    OMP_MYSQL_USERNAME, OMP_MYSQL_PASSWORD, TOKEN_EXPIRATION, SSH_CMD_TIMEOUT
+    OMP_MYSQL_USERNAME, OMP_MYSQL_PASSWORD, TOKEN_EXPIRATION, \
+    SSH_CMD_TIMEOUT, PRIVATE_KEY
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
