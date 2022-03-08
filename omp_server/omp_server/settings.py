@@ -14,8 +14,7 @@ import random
 import datetime
 from pathlib import Path
 from utils.parse_config import OMP_MYSQL_HOST, OMP_MYSQL_PORT, \
-    OMP_MYSQL_USERNAME, OMP_MYSQL_PASSWORD, TOKEN_EXPIRATION, \
-    SSH_CMD_TIMEOUT, PRIVATE_KEY
+    OMP_MYSQL_USERNAME, OMP_MYSQL_PASSWORD, TOKEN_EXPIRATION
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -250,7 +249,7 @@ CUSTOM_THRESHOLD_SERVICES = {
 
 # 备份相关配置
 # 可备份的组件
-BACKUP_SERVICE = {"mysql", "arangodb"}
+BACKUP_SERVICE = {"mysql", "arangodb", "postgreSql"}
 BACKUP_DEFAULT_PATH = os.path.join(PROJECT_DIR, "data/backup/")
 
 SCAN_TOOL_LOCK_KEY = "tool_package_verify"
