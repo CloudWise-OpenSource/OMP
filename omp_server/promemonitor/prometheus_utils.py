@@ -22,7 +22,7 @@ import hashlib
 import yaml
 from ruamel.yaml import YAML
 
-from db_models.models import HostThreshold, ServiceCustomThreshold,AlertRule
+from db_models.models import HostThreshold, ServiceCustomThreshold, AlertRule
 from omp_server.settings import PROJECT_DIR
 from utils.parse_config import MONITOR_PORT, PROMETHEUS_AUTH
 
@@ -370,7 +370,7 @@ class PrometheusUtils(object):
                     "env": item["env"]}
             }
             node_target_list.append(node_target_ele)
-            print("添加数据分区",item["data_path"])
+            print("添加数据分区", item["data_path"])
             # 需要像数据库添加数据分区的的规则
             if item["data_path"]:
                 self.add_data_disk_rules(item["data_path"], item["env"])
@@ -532,17 +532,25 @@ class PrometheusUtils(object):
             return False, "args cant be null"
 
         logger.info(f'收到信息：{service_data}')
-        with open(self.prometheus_conf_path, 'r') as fr:
-            fr_content = fr.read()
         job_name_str = "'{}Exporter".format(service_data.get('service_name'))
-        if job_name_str not in fr_content:  # TODO 采用读写yaml文件的方式
-            new_job_chunk = "\n  - job_name: '{}Exporter'\n    metrics_path: /metrics/monitor/{}\n    scheme: http\n    file_sd_configs:\n    - refresh_interval: 30s\n      files:\n      - targets/{}Exporter_all.json".format(
-                service_data.get('service_name'), service_data.get(
-                    'service_name'),
-                service_data.get('service_name'))
-            fw_content = fr_content + new_job_chunk
-            with open(self.prometheus_conf_path, 'w') as fw:
-                fw.write(fw_content)
+        prom_job_dict = {
+            "job_name": job_name_str,
+            "metrics_path": f"/metrics/monitor/{service_data.get('service_name')}",
+            "file_sd_configs": [
+                {
+                    "refresh_interval": "30s",
+                    "files": [
+                        f"targets/{service_data.get('service_name')}Exporter_all.json"
+                    ]
+                }
+            ]
+        }
+        with open(self.prometheus_conf_path, "r") as fr:
+            content = yaml.load(fr.read(), yaml.Loader)
+        content.get("scrape_configs").append(prom_job_dict)
+        with open(self.prometheus_conf_path, "w", encoding="utf8") as fw:
+            yaml.dump(data=content, stream=fw,
+                      allow_unicode=True, sort_keys=False)
         self_exporter_target_file = os.path.join(self.prometheus_targets_path,
                                                  "{}Exporter_all.json".format(service_data["service_name"]))
         self_target_list = list()
@@ -688,7 +696,7 @@ class PrometheusUtils(object):
             logger.error(f"同步监控指标出错:{e}{traceback.format_exc()}")
             return False, "failed"
 
-    def gen_one_rule(self, **kwargs):
+    def gen_one_rule(self, **kwargs):  # NOQA
         """
         生成单个规则
 
@@ -714,7 +722,7 @@ class PrometheusUtils(object):
         }
         return one_rule
 
-    def get_hash_value(self, expr, severity):
+    def get_hash_value(self, expr, severity):  # NOQA
         data = expr + severity
         hash_data = hashlib.md5(data.encode(encoding='UTF-8')).hexdigest()
         return hash_data
@@ -724,22 +732,22 @@ class PrometheusUtils(object):
         """
         # threshold = "80" if level == "warning" else 90
         logger.error("开始添加数据分区规则")
-        threshold_list = [("warning","80"),("critical","90")]
+        threshold_list = [("warning", "80"), ("critical", "90")]
         for i in range(2):
             info = threshold_list[i]
             level = info[0]
             threshold = info[1]
             expr = 'max((node_filesystem_size_bytes{env="ENV",' \
-            'mountpoint="DATA_PATH"}-node_filesystem_free_bytes{env="ENV",' \
-            'mountpoint="DATA_PATH"})*100/(node_filesystem_avail_bytes{' \
-            'env="ENV",mountpoint="DATA_PATH"}+(node_filesystem_size_bytes{' \
-            'env="ENV",mountpoint="DATA_PATH"}-node_filesystem_free_bytes{' \
-            'env="ENV",mountpoint="DATA_PATH"}))) by (instance,env)'.replace(
-                "ENV", env).replace("DATA_PATH", data_path)
+                   'mountpoint="DATA_PATH"}-node_filesystem_free_bytes{env="ENV",' \
+                   'mountpoint="DATA_PATH"})*100/(node_filesystem_avail_bytes{' \
+                   'env="ENV",mountpoint="DATA_PATH"}+(node_filesystem_size_bytes{' \
+                   'env="ENV",mountpoint="DATA_PATH"}-node_filesystem_free_bytes{' \
+                   'env="ENV",mountpoint="DATA_PATH"}))) by (instance,env)'.replace(
+                       "ENV", env).replace("DATA_PATH", data_path)
             data = {
                 "alert": f"主机数据分区{data_path}磁盘使用率",
                 "description": '主机 {{ $labels.instance }} 数据分区使用率为 {{ $value | humanize }}%, 大于阈值 $threshold$%'.replace(
-                  "$threshold$", threshold),
+                    "$threshold$", threshold),
                 "expr": expr,
                 "compare_str": ">=",
                 "threshold_value": threshold,
@@ -767,16 +775,18 @@ class PrometheusUtils(object):
         self.update_rule_file(env=env)
         return True
 
-
-    def update_rule_file(self, add_data=None, add=False, update=False, delete=False, env="default", rule_id=0,env_id=1):
+    def update_rule_file(self, add_data=None, add=False, update=False, delete=False, env="default", rule_id=0,
+                         env_id=1):
         """
         更新规则文件
         """
+        rule_file_path = os.path.join(
+            self.prometheus_rules_path, f"{env}_rule.yml")
         try:
-            rule_file_path = os.path.join(self.prometheus_rules_path, f"{env}_rule.yml")
             all_rules = AlertRule.objects.filter(status=1).all()
             if delete or update:
-                all_rules = AlertRule.objects.filter(status=1).exclude(id=rule_id).all()
+                all_rules = AlertRule.objects.filter(
+                    status=1).exclude(id=rule_id).all()
             init_data = {"groups": [
                 {
                     "name": "OMP Alert",
@@ -808,7 +818,6 @@ class PrometheusUtils(object):
             logger.error(f"生成规则文件{rule_file_path}失败{e}")
             return False
 
-
     def reload_prometheus(self):
         """
         重载prometheus
@@ -816,7 +825,8 @@ class PrometheusUtils(object):
         reload_prometheus_url = 'http://localhost:19011/-/reload'
         # TODO 确认重载prometheus动作在哪执行
         try:
-            response = requests.post(reload_prometheus_url, auth=self.basic_auth)
+            response = requests.post(
+                reload_prometheus_url, auth=self.basic_auth)
             logger.error(f"重载成功 {response.text}")
             return True
         except Exception as e:
