@@ -15,7 +15,6 @@ from service_upgrade.handler.rollback_handler import rollback_handlers
 from service_upgrade.handler.upgrade_handler import upgrade_handlers
 from service_upgrade.update_data_json import DataJsonUpdate
 from utils.parse_config import BASIC_ORDER, THREAD_POOL_MAX_WORKERS
-from utils.plugin.salt_client import SaltClient
 
 logger = logging.getLogger(__name__)
 
@@ -106,9 +105,13 @@ def upgrade_service(upgrade_history_id):
     if history.pre_upgrade_state != UpgradeStateChoices.UPGRADE_SUCCESS:
         state, msg = update_data_json(
             main_install.operation_uuid, upgrade_details)
+        # todo:后续优化
         history.pre_upgrade_result = {
             "update_data_json": {
-                "state": state, "message": msg}
+                "state": 2 if state else 3,
+                "message": msg,
+                "state_display": "升级成功" if state else "升级失败"
+            }
         }
         if not state:
             history.pre_upgrade_state = UpgradeStateChoices.UPGRADE_FAIL

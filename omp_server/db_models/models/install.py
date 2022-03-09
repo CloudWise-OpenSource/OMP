@@ -52,10 +52,10 @@ class MainInstallHistory(TimeStampMixin):
         # 安装服务个数, exclude_service_ids删除服务前触发
         queryset = self.detailinstallhistory_set.filter(
             service__isnull=False
-        )
+        ).exclude(service__service_split=1)
         if exclude_service_ids:
             queryset = queryset.exclude(service_id__in=exclude_service_ids)
-        return queryset.count()
+        return queryset.values("service_id").distinct().count()
 
     @property
     def module_id(self):

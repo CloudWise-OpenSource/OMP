@@ -1,3 +1,4 @@
+import json
 import logging
 import traceback
 
@@ -179,7 +180,6 @@ class DoUpgradeAPIView(GenericAPIView):
     post_description = "升级服务"
 
     def valid_can_upgrade(self, data):
-        # todo：校验升级依赖
         # 校验信息
         services = list(
             Service.split_objects.filter(
@@ -188,22 +188,36 @@ class DoUpgradeAPIView(GenericAPIView):
             ).annotate(
                 app_name=models.F("service__app_name"),
                 current_app_id=models.F("service_id")
-            ).values("id", "app_name", "ip", "current_app_id")
+            ).values(
+                "id", "app_name", "ip", "current_app_id", "service_dependence"
+            )
         )
         if not services:
             raise GeneralError("请选择需要升级的服务！")
         apps = ApplicationHub.objects.filter(
             id__in=data.values(),
             is_release=True
-        ).values("id", "app_name", "app_version")
+        ).values("id", "app_name", "app_version", "app_dependence")
         app_dict = {}
         for app in apps:
-            app_dict[app.get("app_name")] = {"target_app_id": app.get("id")}
+            app_dict[app.get("app_name")] = {
+                "target_app_id": app.get("id"),
+                "app_dependence": json.loads(app.get("app_dependence"))
+            }
         for service in services:
             app_name = service.get("app_name")
-            if app_dict.get(app_name, {}).get("target_app_id", float("-inf"))\
+            app_info = app_dict.get(app_name, {})
+            if app_info.get("target_app_id", float("-inf")) \
                     <= service["current_app_id"]:
                 raise GeneralError(f"服务{app_name}升级版本小于或等于当前版本！")
+            try:
+                Service.update_dependence(
+                    service.get("service_dependence"),
+                    app_info.get("app_dependence", [])
+                )
+            except Exception as e:
+                raise GeneralError(
+                    f"服务{service.get('app_name')}依赖校验失败：{str(e)}")
             service.update(app_dict.get(app_name))
         return services
 
@@ -250,6 +264,8 @@ class DoUpgradeAPIView(GenericAPIView):
                 service_id = service.pop("id")
                 app_name = service.pop("app_name")
                 ip = service.pop("ip")
+                service.pop("app_dependence")
+                service.pop("service_dependence")
                 details.append(
                     UpgradeDetail(
                         history=history,
