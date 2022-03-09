@@ -92,10 +92,16 @@ class AfterSplit(models.Manager):
         return super(AfterSplit, self).get_queryset().exclude(service_split=2)
 
 
+class AllManage(models.Manager):
+    def get_queryset(self):
+        return super(AllManage, self).get_queryset()
+
+
 class Service(TimeStampMixin):
     """ 服务表 (删除前会触发update_execution_record)"""
     split_objects = AfterSplit()
     objects = ExcludeSplit()
+    all_objects = AllManage()
     SERVICE_STATUS_NORMAL = 0
     SERVICE_STATUS_STARTING = 1
     SERVICE_STATUS_STOPPING = 2
