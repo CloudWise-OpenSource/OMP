@@ -726,7 +726,7 @@ class ComponentServiceParse(object):
         :return:
         """
         app_obj = ApplicationHub.objects.filter(
-            app_type=ApplicationHub.APP_TYPE_COMPONENT,
+            # app_type=ApplicationHub.APP_TYPE_COMPONENT,
             app_name=self.ser_name,
             app_version=self.ser_version
         ).last()
