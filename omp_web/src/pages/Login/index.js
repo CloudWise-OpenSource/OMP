@@ -10,7 +10,7 @@ import {
 import { OmpContentWrapper } from "@/components";
 import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-import { handleResponse, logout } from "@/utils/utils";
+import { handleResponse, logout, encrypt } from "@/utils/utils";
 import { withRouter } from "react-router";
 
 const Login = withRouter(({ history }) => {
@@ -26,7 +26,8 @@ const Login = withRouter(({ history }) => {
     setLoading(true);
     fetchPost(apiRequest.auth.login, {
       body: {
-        ...data,
+        username: encrypt(data.username),
+        password: encrypt(data.password),
         remember: isAutoLogin,
       },
     })
@@ -34,7 +35,6 @@ const Login = withRouter(({ history }) => {
         if (res.data && res.data.code == 1) {
           setMsgShow(true);
         } else if (res.data.code == 0) {
-          //history.replace({pathname:"/homepage"})
           history.replace({
             pathname: "/homepage",
             state: {

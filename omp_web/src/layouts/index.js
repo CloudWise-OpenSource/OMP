@@ -15,7 +15,13 @@ import { useHistory, useLocation } from "react-router-dom";
 import { CustomBreadcrumb, OmpModal } from "@/components";
 import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-import { handleResponse, _idxInit, logout, isPassword } from "@/utils/utils";
+import {
+  handleResponse,
+  _idxInit,
+  logout,
+  isPassword,
+  encrypt,
+} from "@/utils/utils";
 import { useDispatch } from "react-redux";
 import { getSetViewSizeAction } from "./store/actionsCreators";
 import { getMaintenanceChangeAction } from "@/pages/SystemManagement/store/actionsCreators";
@@ -102,9 +108,9 @@ const OmpLayout = (props) => {
     setLoading(true);
     fetchPost(apiRequest.auth.changePassword, {
       body: {
-        username: localStorage.getItem("username"),
-        old_password: data.old_password,
-        new_password: data.new_password2,
+        username: encrypt(localStorage.getItem("username")),
+        old_password: encrypt(data.old_password),
+        new_password: encrypt(data.new_password2),
       },
     })
       .then((res) => {

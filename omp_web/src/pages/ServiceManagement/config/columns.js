@@ -545,67 +545,6 @@ const getColumnsConfig = (
       //ellipsis: true,
     },
     {
-      title: "端口",
-      key: "port",
-      dataIndex: "port",
-      align: "center",
-      ellipsis: true,
-      render: (text) => {
-        return <Tooltip title={text}>{text ? text : "-"}</Tooltip>;
-      },
-    },
-    {
-      title: "功能模块",
-      key: "label_name",
-      dataIndex: "label_name",
-      usefilter: true,
-      queryRequest: queryRequest,
-      ellipsis: true,
-      initfilter: initfilterLabelName,
-      filterMenuList: labelsData.map((item) => ({ value: item, text: item })),
-      align: "center",
-      render: (text) => {
-        return <Tooltip title={text}>{text ? text : "-"}</Tooltip>;
-      },
-    },
-    {
-      title: "服务类型",
-      key: "app_type",
-      dataIndex: "app_type",
-      align: "center",
-      usefilter: true,
-      queryRequest: queryRequest,
-      initfilter: initfilterAppType,
-      filterMenuList: [
-        {
-          value: 0,
-          text: "基础组件",
-        },
-        {
-          value: 1,
-          text: "应用服务",
-        },
-      ],
-      render: (text) => {
-        return text ? "应用服务" : "基础组件";
-      },
-      //ellipsis: true,
-    },
-    {
-      title: "服务名称",
-      key: "app_name",
-      dataIndex: "app_name",
-      align: "center",
-      ellipsis: true,
-    },
-    {
-      title: "版本",
-      key: "app_version",
-      dataIndex: "app_version",
-      align: "center",
-      ellipsis: true,
-    },
-    {
       title: "CPU使用率",
       key: "cpu_usage",
       dataIndex: "cpu_usage",
@@ -683,6 +622,68 @@ const getColumnsConfig = (
       },
       //ellipsis: true,
     },
+    {
+      title: "端口",
+      key: "port",
+      dataIndex: "port",
+      align: "center",
+      ellipsis: true,
+      render: (text) => {
+        return <Tooltip title={text}>{text ? text : "-"}</Tooltip>;
+      },
+    },
+    {
+      title: "服务名称",
+      key: "app_name",
+      dataIndex: "app_name",
+      align: "center",
+      ellipsis: true,
+    },
+    {
+      title: "版本",
+      key: "app_version",
+      dataIndex: "app_version",
+      align: "center",
+      ellipsis: true,
+    },
+    {
+      title: "功能模块",
+      key: "label_name",
+      dataIndex: "label_name",
+      usefilter: true,
+      queryRequest: queryRequest,
+      ellipsis: true,
+      initfilter: initfilterLabelName,
+      filterMenuList: labelsData.map((item) => ({ value: item, text: item })),
+      align: "center",
+      render: (text) => {
+        return <Tooltip title={text}>{text ? text : "-"}</Tooltip>;
+      },
+    },
+    {
+      title: "服务类型",
+      key: "app_type",
+      dataIndex: "app_type",
+      align: "center",
+      usefilter: true,
+      queryRequest: queryRequest,
+      initfilter: initfilterAppType,
+      filterMenuList: [
+        {
+          value: 0,
+          text: "基础组件",
+        },
+        {
+          value: 1,
+          text: "应用服务",
+        },
+      ],
+      render: (text) => {
+        return text ? "应用服务" : "基础组件";
+      },
+      //ellipsis: true,
+    },
+   
     {
       title: "集群模式",
       key: "cluster_type",

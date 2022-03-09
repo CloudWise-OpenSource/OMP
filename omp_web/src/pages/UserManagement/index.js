@@ -9,6 +9,7 @@ import {
   nonEmptyProcessing,
   logout,
   isPassword,
+  encrypt
 } from "@/utils/utils";
 import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
@@ -193,9 +194,9 @@ const UserManagement = () => {
     setLoading(true);
     fetchPost(apiRequest.auth.changePassword, {
       body: {
-        username: row.username,
-        old_password: data.old_password,
-        new_password: data.new_password2,
+        username: encrypt(row.username),
+        old_password: encrypt(data.old_password),
+        new_password: encrypt(data.new_password2),
       },
     })
       .then((res) => {

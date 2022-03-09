@@ -18,7 +18,6 @@ import {
 } from "antd";
 import {
   PlusSquareOutlined,
-  FormOutlined,
   SyncOutlined,
   ImportOutlined,
   DownloadOutlined,
@@ -661,7 +660,20 @@ export const ImportPlanModal = ({ importPlan, setImportPlan }) => {
           // 开始安装
           startInstall(res.data.operation_uuid);
         } else {
-          message.warning(res.message);
+          message.warning(
+            <>
+              {res.message}
+              <a
+                style={{ marginLeft: 8, color: "#3790ff" }}
+                onClick={() => {
+                  message.destroy();
+                }}
+              >
+                [关闭]
+              </a>
+            </>,
+            0
+          );
           setImportStep(false);
           setImportResult(false);
         }

@@ -11,6 +11,7 @@ def get_hash_value(expr, severity):
     hash_data = hashlib.md5(data.encode(encoding='UTF-8')).hexdigest()
     return hash_data
 
+
 def update_hash_data(apps, schema_editor):
     alert_rulers = AlertRule.objects.all()
     for alert in alert_rulers:

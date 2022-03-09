@@ -865,7 +865,7 @@ class SerDependenceParseUtils(object):
             ]
         )
         # 判断当前服务的实例信息
-        instance_info = list(Service.objects.filter(
+        instance_info = list(Service.split_objects.filter(
             service__app_name=obj.app_name,
             service__app_version=obj.app_version,
             cluster__isnull=True
@@ -881,7 +881,7 @@ class SerDependenceParseUtils(object):
         )
         return exist_instance, is_pack_exist, msg
 
-    def get_is_base_env(self, obj):     # NOQA
+    def get_is_base_env(self, obj):  # NOQA
         """
         确定当前服务是否为基础环境：如 jdk 等
         :param obj: 服务对象
@@ -1141,7 +1141,7 @@ class ServiceArgsPortUtils(object):
         with open(config_path, "r") as fp:
             product_config = yaml.load(fp, Loader=yaml.SafeLoader)
         return product_config.get("install", dict()), \
-            product_config.get("ports", dict())
+               product_config.get("ports", dict())
 
     @staticmethod
     def inner_replace_args(target_lst, config_lst):
@@ -1209,7 +1209,7 @@ class ServiceArgsPortUtils(object):
         ser = SerDependenceParseUtils(obj.app_name, obj.app_version)
         return ser.run_ser()
 
-    def get_app_port(self, obj):    # NOQA
+    def get_app_port(self, obj):  # NOQA
         """
         获取app的端口
         :param obj: 服务对象
@@ -1228,7 +1228,7 @@ class ServiceArgsPortUtils(object):
             self.make_editable(item)
         return final_ports
 
-    def format_app_install_args(self, app_install_args):    # NOQA
+    def format_app_install_args(self, app_install_args):  # NOQA
         """
         构建安装参数
         :param app_install_args: 服务安装参数
@@ -1323,7 +1323,7 @@ class ValidateInstallService(object):
             )
         self.data = data
 
-    def check_service_port(self, app_port, ip):     # NOQA
+    def check_service_port(self, app_port, ip):  # NOQA
         """
         检查服务端口
         :param app_port: 服务端口列表
@@ -1385,7 +1385,7 @@ class ValidateInstallService(object):
                 el["error_msg"] = f"{_tobe_check_path} 在目标主机 {ip} 上已存在"
         return app_install_args
 
-    def check_single_service(self, dic):    # NOQA
+    def check_single_service(self, dic):  # NOQA
         """
         检查单个服务的安装信息
         :param dic: 服务安装信息
@@ -1466,10 +1466,10 @@ class BaseEnvServiceUtils(object):
                 continue
             # 当被依赖的基础服务已经被安装时，使用如下方法进行过滤处理
             # 服务版本弱依赖逻辑 jon.liu 20211225
-            if Service.objects.filter(
-                ip=item["ip"],
-                service__app_name=el["name"],
-                service__app_version__startswith=el["version"]
+            if Service.split_objects.filter(
+                    ip=item["ip"],
+                    service__app_name=el["name"],
+                    service__app_version__startswith=el["version"]
             ).count() > 0:
                 continue
             if item["ip"] in base_env_dic and \
@@ -1559,7 +1559,7 @@ class WithServiceUtils(object):
         }
         _ser_lst = list()
         with_ser = ser_dic.get("with")
-        is_found_flag = False   # 是否已经找到with服务的标识
+        is_found_flag = False  # 是否已经找到with服务的标识
         for item in self.all:
             _tmp_ser = deepcopy(_ser)
             # 当需要被with的服务在需要安装的服务列表中时
@@ -1596,7 +1596,7 @@ class WithServiceUtils(object):
                 is_found_flag = True
         # 如果没有找到，则证明被with的服务是在复用的列表内的，需要查看当前系统内的该服务信息
         if not is_found_flag:
-            with_ser_ips = Service.objects.filter(
+            with_ser_ips = Service.split_objects.filter(
                 service__app_name=with_ser).values("ip")
             with_ser_ips = [el["ip"] for el in with_ser_ips]
             for _ip in with_ser_ips:
@@ -1647,15 +1647,17 @@ class WithServiceUtils(object):
 class DataJson(object):
     """ 生成data.json数据 """
 
-    def __init__(self, operation_uuid):
+    def __init__(self, operation_uuid, service_obj=None):
         """
         data.json数据生成方法
         :param operation_uuid: 唯一操作uuid
+        :param service_obj: service 操作对象，可为空
         :type operation_uuid: str
         """
         self.operation_uuid = operation_uuid
+        self.service_obj = service_obj
 
-    def get_ser_install_args(self, obj):    # NOQA
+    def get_ser_install_args(self, obj):  # NOQA
         """
         获取服务的安装参数
         :param obj: Service
@@ -1717,7 +1719,12 @@ class DataJson(object):
         :return:
         """
         # step1: 获取所有的服务列表
-        all_ser_lst = Service.objects.all()
+        # edit by vum:
+        # 服务中表中会有残留 base_env 服务的情况，类似 jdk，此时不宜获取所有服务
+        if self.service_obj:
+            all_ser_lst = self.service_obj
+        else:
+            all_ser_lst = Service.split_objects.all()
         json_lst = list()
         for item in all_ser_lst:
             json_lst.append(self.parse_single_service(obj=item))
@@ -1744,7 +1751,7 @@ class CreateInstallPlan(object):
         self.install_services = all_install_service_lst
         self.unique_key = unique_key
 
-    def get_app_obj_for_service(self, dic):     # NOQA
+    def get_app_obj_for_service(self, dic):  # NOQA
         """
         获取服务实例表中关联的app对象
         :param dic: 服务数据
@@ -1797,7 +1804,7 @@ class CreateInstallPlan(object):
         # TODO 暂时使用默认环境
         return Env.objects.last()
 
-    def create_connect_info(self, dic):     # NOQA
+    def create_connect_info(self, dic):  # NOQA
         """
         创建或获取服务的用户名、密码信息
         :param dic: 服务数据
@@ -1862,7 +1869,7 @@ class CreateInstallPlan(object):
                 "cluster_name": cl_obj.cluster_name,
                 "instance_name": None
             }
-        ser_obj = Service.objects.filter(id=inner["id"]).last()
+        ser_obj = Service.split_objects.filter(id=inner["id"]).last()
         return {
             "name": ser_obj.service.app_name,
             "cluster_name": None,
@@ -1916,7 +1923,7 @@ class CreateInstallPlan(object):
                 app_version__startswith=item.get("version")
             ).last()
             if _dep_obj.is_base_env:
-                _ser_obj = Service.objects.filter(
+                _ser_obj = Service.split_objects.filter(
                     service=_dep_obj, ip=dic.get("ip")
                 ).last()
                 if _ser_obj:
@@ -1958,7 +1965,7 @@ class CreateInstallPlan(object):
         _ser_obj.save()
         return _ser_obj
 
-    def create_product_instance(self, dic):     # NOQA
+    def create_product_instance(self, dic):  # NOQA
         """
         创建产品实例
         :param dic: 服务数据
@@ -1979,7 +1986,7 @@ class CreateInstallPlan(object):
                     product=_obj.product
                 )
 
-    def check_if_has_post_action(self, ser):    # NOQA
+    def check_if_has_post_action(self, ser):  # NOQA
         """
         检测是否需要执行安装后的动作
         :param ser: 服务对象
@@ -2155,7 +2162,7 @@ class ValidateInstallServicePortArgs(object):
             )
         self.data = data
 
-    def check_service_port(self, app_port, ip):     # NOQA
+    def check_service_port(self, app_port, ip):  # NOQA
         """
         检查服务端口
         :param app_port: 服务端口列表
@@ -2197,8 +2204,8 @@ class ValidateInstallServicePortArgs(object):
         """
         _salt_obj = SaltClient()
         for el in app_install_args:
-            if el.get("key") == "instance_name" and Service.objects.filter(
-                service_instance_name=el.get("default")
+            if el.get("key") == "instance_name" and Service.split_objects.filter(
+                    service_instance_name=el.get("default")
             ).count() != 0:
                 el["check_flag"] = False
                 el["error_msg"] = f"实例名称 {el.get('default')} 已存在"
@@ -2224,7 +2231,7 @@ class ValidateInstallServicePortArgs(object):
                 el["error_msg"] = f"{_tobe_check_path} 在目标主机 {ip} 上已存在"
         return app_install_args
 
-    def check_single_service(self, dic):    # NOQA
+    def check_single_service(self, dic):  # NOQA
         """
         检查单个服务的安装信息
         :param dic: 服务安装信息

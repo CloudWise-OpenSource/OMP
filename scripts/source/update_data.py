@@ -36,13 +36,13 @@ def create_default_user():
     :return:
     """
     username = "admin"
-    password = "Common@123"
+    password = "Yunweiguanli@OMP_123"
     if UserProfile.objects.filter(username=username).count() != 0:
         return
     UserProfile.objects.create_superuser(
         username=username,
         password=password,
-        email="admin@yunzhihui.com"
+        email="omp@cloudwise.com"
     )
 
 

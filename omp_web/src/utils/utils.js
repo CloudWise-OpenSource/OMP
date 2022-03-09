@@ -5,6 +5,7 @@ import * as R from "ramda";
 import styles from "./index.module.less";
 import { getRefreshTimeChangeAction } from "@/components/CustomBreadcrumb/store/actionsCreators";
 import { CloseCircleFilled } from "@ant-design/icons";
+import JSEncrypt from "jsencrypt";
 
 /**
  * 正常/绿色  bg"rgb(238, 250, 244)"  bo:"rgb(84, 187, 166)"
@@ -1812,7 +1813,7 @@ export const colorConfig = {
   normal: "#76ca68",
   warning: "#ffbf00",
   critical: "#f04134",
-  notMonitored: "rgb(170, 170, 170)"
+  notMonitored: "rgb(170, 170, 170)",
 };
 
 export const renderDisc = (level = "normal", size = 5, top = 0, left = 0) => {
@@ -1932,7 +1933,7 @@ export function isPassword(str) {
 export const downloadFile = (url) => {
   let a = document.createElement("a");
   a.href = url;
-  a.download =  url.split("/").pop()
+  a.download = url.split("/").pop();
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -1994,4 +1995,12 @@ export const randomNumber = (length = 6) => {
     r += str[num];
   });
   return r;
+};
+
+//定义加密函数
+export const encrypt = (message) => {
+  var encrypt = new JSEncrypt();
+  encrypt.setPublicKey(PublicKey); //	 publicKey为公钥
+  const txt = encrypt.encrypt(message);
+  return txt;
 };
