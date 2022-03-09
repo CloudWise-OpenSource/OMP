@@ -97,10 +97,21 @@ class UninstallServices(object):
 
     def uninstall_service(self, item_list):
         """调用卸载函数执行卸载"""
-        ids_uninstall_list = [item.id for item in item_list]
-        for id in ids_uninstall_list:
+        need_split = ["hadoop"]
+        for service_obj in item_list:
+            if service_obj and service_obj.service.app_name in need_split:
+                delete_objs = Service.objects.filter(ip=service_obj.ip, service__app_name="hadoop")
+                status = service_obj.service_status
+                delete_objs.update(service_status=Service.SERVICE_STATUS_DELETING)
+                if status != Service.SERVICE_STATUS_DELETING \
+                        and delete_objs.first().id == service_obj.id:
+                    del_file = True
+                else:
+                    del_file = False
+            else:
+                del_file = True
             uninstall_exec_action.delay(
-                action="4", instance=id, operation_user="command_line", del_file=True)
+                action="4", instance=service_obj.id, operation_user="command_line", del_file=del_file)
 
     def uninstall_all_services(self, uninstall_list):
         """卸载所有的服务"""
@@ -125,7 +136,12 @@ class UninstallServices(object):
         service_list = self.get_all_services()
         uninstall_list = self.get_uninstall_order(service_list=service_list)
         self.uninstall_all_services(uninstall_list=uninstall_list)
-        time.sleep(int(self.service_num))
+        for i in range(5):
+            if Service.objects.all().count() != 0:
+                time.sleep(int(self.service_num))
+                print(f"等待服务删除第{i}次")
+            else:
+                break
         uninstall_host_obj = UninstallHosts(self.all_host)
         self.is_success = uninstall_host_obj.delete_all_omp_agent()
         self.clean_db()
