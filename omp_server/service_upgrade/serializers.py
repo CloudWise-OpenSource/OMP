@@ -94,6 +94,24 @@ class UpgradeHistoryDetailSerializer(serializers.ModelSerializer):
         setattr(obj, "upgrade_result", upgrade_result)
         return getattr(obj, key)
 
+    def get_pre_upgrade(self, obj):
+        result = []
+        if not obj.pre_upgrade_result:
+            pre_upgrade_result = {"update_data_json": {}}
+        else:
+            pre_upgrade_result = obj.pre_upgrade_result
+        for k, v in pre_upgrade_result.items():
+            default_dict = {
+                "id": 0, "ip": "",
+                "service_name": k,
+                "instance_name": k,
+                "upgrade_state": v.get("state", 1),
+                "message": v.get("message", ""),
+                "state_display": v.get("state_display", "正在升级")
+            }
+            result.append(default_dict)
+        return "升级前置操作", result
+
     def get_upgrade_detail(self, obj):
         result = self.get_upgrade_details(obj, "upgrade_result")
         # 获取服务顺序
@@ -108,6 +126,9 @@ class UpgradeHistoryDetailSerializer(serializers.ModelSerializer):
             result.items(),
             key=lambda x: service_index.get(x[0], sum_index+1)
         )
+        pre_upgrade = self.get_pre_upgrade(obj)
+        results.insert(0, pre_upgrade)
+
         # 调整返回数据结构
         return [
             {

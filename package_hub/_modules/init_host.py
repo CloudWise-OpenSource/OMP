@@ -95,6 +95,7 @@ net.core.somaxconn = 16384
 net.ipv4.tcp_sack = 1
 net.ipv4.tcp_window_scaling = 1
 vm.max_map_count=262144
+vm.min_free_kbytes=512000
 vm.swappiness = 0"""
 
 KERNEL_KEYWORD = [
@@ -133,6 +134,7 @@ KERNEL_KEYWORD = [
     "net.ipv4.tcp_window_scaling",
     "vm.max_map_count",
     "vm.swappiness",
+    "vm.min_free_kbytes"
 ]
 TO_MODIFY_HOST_NAME = [
     "localhost",
