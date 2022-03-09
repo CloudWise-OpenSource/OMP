@@ -151,11 +151,22 @@ class ServiceActionView(GenericViewSet, CreateModelMixin):
             instance = data.get("id")
             operation_user = data.get("operation_user")
             del_file = data.get("del_file", True)
+            service_obj = Service.objects.filter(id=instance).first()
+            need_split = ["hadoop"]
+            if service_obj and service_obj.service.app_name in need_split and action == 4:
+                delete_objs = Service.objects.filter(ip=service_obj.ip, service__app_name="hadoop")
+                status = service_obj.service_status
+                delete_objs.update(service_status=Service.SERVICE_STATUS_DELETING)
+                if status != Service.SERVICE_STATUS_DELETING \
+                        and delete_objs.first().id == service_obj.id:
+                    del_file = True
+                else:
+                    del_file = False
             if action and instance and operation_user:
                 if action == 4:
                     try:
-                        Service.objects.filter(id=instance).update(
-                            service_status=Service.SERVICE_STATUS_DELETING)
+                        service_obj.service_status = Service.SERVICE_STATUS_DELETING
+                        service_obj.save()
                     except Exception as e:
                         logger.error(f"service实例id，不存在{instance}:{e}")
                         return Response("执行异常")

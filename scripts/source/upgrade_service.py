@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+import json
 import os
 import re
 import sys
@@ -186,6 +187,10 @@ class Upgrade(BaseOperation):
             )
             details = []
             for service in self.services:
+                Service.update_dependence(
+                    service.service_dependence,
+                    json.loads(app.app_dependence or '[]')
+                )
                 details.append(
                     UpgradeDetail(
                         history=history,
@@ -209,7 +214,11 @@ class Upgrade(BaseOperation):
             log_print("该服务包已被升级！", "error")
             return False
         self._wait()
-        history = self.upgrade(app)
+        try:
+            history = self.upgrade(app)
+        except Exception as e:
+            log_print(f"服务依赖校验失败:{str(e)}", "error")
+            return False
         self.decr()
         history.refresh_from_db()
         if history.upgrade_state != UpgradeStateChoices.UPGRADE_SUCCESS:

@@ -30,7 +30,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='alertrule',
             name='hash_data',
-            field=models.CharField(default=uuid4, unique=True, verbose_name='唯一hash值', max_length=255),
+            field=models.CharField(null=True, blank=True, unique=True, verbose_name='唯一hash值', max_length=255),
         ),
         migrations.RunPython(update_hash_data),
     ]

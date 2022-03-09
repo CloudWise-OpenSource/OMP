@@ -151,26 +151,25 @@ def exec_action(action, instance, operation_user, del_file=False, need_sleep=Tru
                                           description=f"卸载服务 [{service_obj.service.app_name}]",
                                           result="success" if is_success else "failed",
                                           host=instance)
-        if not service_obj.service.is_base_env:
-            with transaction.atomic():
-                service_obj.delete()
-                count = Service.objects.filter(ip=service_obj.ip).count()
-                Host.objects.filter(ip=service_obj.ip).update(
-                    service_num=count)
-                # 当服务被删除时，应该将其所在的集群都连带删除
-                if service_obj.cluster and Service.objects.filter(
-                        cluster=service_obj.cluster
-                ).count() == 0:
-                    ClusterInfo.objects.filter(
-                        id=service_obj.cluster.id
-                    ).delete()
-                # 当服务被删除时，如果他所属的产品下已没有其他服务，那么应该删除产品实例
-                if Service.objects.filter(
-                        service__product=service_obj.service.product
-                ).count() == 0:
-                    Product.objects.filter(
-                        product=service_obj.service.product
-                    ).delete()
+        with transaction.atomic():
+            service_obj.delete()
+            count = Service.objects.filter(ip=service_obj.ip).count()
+            Host.objects.filter(ip=service_obj.ip).update(
+                service_num=count)
+            # 当服务被删除时，应该将其所在的集群都连带删除
+            if service_obj.cluster and Service.objects.filter(
+                    cluster=service_obj.cluster
+            ).count() == 0:
+                ClusterInfo.objects.filter(
+                    id=service_obj.cluster.id
+                ).delete()
+            # 当服务被删除时，如果他所属的产品下已没有其他服务，那么应该删除产品实例
+            if Service.objects.filter(
+                    service__product=service_obj.service.product
+            ).count() == 0:
+                Product.objects.filter(
+                    product=service_obj.service.product
+                ).delete()
         return None
 
     exe_action = service_controllers.get(action[0])

@@ -16,7 +16,6 @@ from rest_framework.mixins import (
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import F
 from django_filters.rest_framework.backends import DjangoFilterBackend
 
 from db_models.models import (
@@ -502,9 +501,19 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
 
     @staticmethod
     def _add_service(service_obj_ls, host_obj, app_obj, env_obj, only_dict,
-                     cluster_dict, product_dict, host_ins_num_dict,
+                     cluster_dict, product_dict, service_set,
                      is_base_env=False, vip=None, role=None):
         """ 添加服务 """
+        # 切分 ip 字段，构建服务实例名
+        ip_split_ls = host_obj.ip.split(".")
+        service_name = app_obj.app_name
+        service_instance_name = f"{service_name}-{ip_split_ls[-2]}-{ip_split_ls[-1]}"
+
+        # 当服务实例已经存在，则跳过
+        if service_instance_name in service_set:
+            return
+        service_set.add(service_instance_name)
+
         # 服务端口
         service_port = json.dumps(ServiceArgsPortUtils().get_app_port(app_obj))
         if not service_port:
@@ -539,10 +548,6 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
             service_controllers["post_action"] = os.path.join(
                 base_dir, app_obj.extend_fields.get("post_action")
             )
-        # 切分 ip 字段，构建服务实例名
-        ip_split_ls = host_obj.ip.split(".")
-        service_name = app_obj.app_name
-        service_instance_name = f"{service_name}-{ip_split_ls[-2]}-{ip_split_ls[-1]}"
 
         # 创建服务连接信息表
         connection_obj = None
@@ -558,10 +563,6 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
         # 集群信息
         cluster_id = None
         if not is_base_env:
-            # 非基础环境，主机服务数量 + 1
-            if not host_ins_num_dict.get(host_obj.ip):
-                host_ins_num_dict[host_obj.ip] = 0
-            host_ins_num_dict[host_obj.ip] += 1
             if service_name in only_dict:
                 # 存在于单实例字典中，删除单实例字典中数据，创建集群
                 only_dict.pop(service_name)
@@ -648,12 +649,14 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
             base_env_dict = {}
             # 产品信息字典
             product_dict = {}
-            # 主机增加实例数量字典
-            host_ins_num_dict = {}
             # 单实例、集群服务字典
             only_dict, cluster_dict = {}, {}
             # tengine 所在主机对象字典
             tengine_host_obj_dict = {}
+
+            # 服务实例唯一集合，用于限制重复服务
+            service_set = set()
+
             # 遍历获取所有需要安装的服务
             for service_data in service_data_ls:
                 instance_name = service_data.get("instance_name")
@@ -688,7 +691,7 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                             # base_env 一定为单实例
                             self._add_service(
                                 service_obj_ls, host_obj, base_env_obj, default_env,
-                                only_dict, cluster_dict, product_dict, host_ins_num_dict,
+                                only_dict, cluster_dict, product_dict, service_set,
                                 is_base_env=True)
                             # 以 ip 为维度记录，避免重复
                             if host_obj.ip not in base_env_dict:
@@ -698,7 +701,7 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                 # 添加服务
                 self._add_service(
                     service_obj_ls, host_obj, app_obj, default_env,
-                    only_dict, cluster_dict, product_dict, host_ins_num_dict,
+                    only_dict, cluster_dict, product_dict, service_set,
                     vip=vip, role=role)
 
             # 亲和力为 tengine 字段 (Web 服务) 列表
@@ -712,7 +715,7 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                 for app_obj in tengine_app_list:
                     self._add_service(
                         service_obj_ls, host_obj, app_obj, default_env,
-                        only_dict, cluster_dict, product_dict, host_ins_num_dict)
+                        only_dict, cluster_dict, product_dict, service_set)
 
             service_instance_name_ls = list(map(
                 lambda x: x.service_instance_name, service_obj_ls))
@@ -734,11 +737,6 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
 
             # 数据库入库
             with transaction.atomic():
-
-                # 更新主机服务数量
-                for ip, ins_num in host_ins_num_dict.items():
-                    Host.objects.filter(ip=ip).update(
-                        service_num=F("service_num") + ins_num)
 
                 # 已安装产品信息
                 product_obj_ls = []
@@ -794,6 +792,16 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                         service_dependence_list)
                     service_obj.save()
 
+                # 更新主机非base_env服务数量
+                # for ip, ins_num in host_ins_num_dict.items():
+                #     Host.objects.filter(ip=ip).update(
+                #         service_num=F("service_num") + ins_num)
+                for host_obj in use_host_queryset:
+                    obj_service_num = service_queryset.filter(
+                        ip=host_obj.ip).exclude(service__is_base_env=True).count()
+                    host_obj.service_num = obj_service_num
+                    host_obj.save()
+
                 # 主安装记录表、后续任务记录表
                 main_history_obj = MainInstallHistory.objects.create(
                     operator=request.user.username,
@@ -812,11 +820,17 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                     ))
                 PreInstallHistory.objects.bulk_create(pre_install_obj_ls)
 
+                # 构建基础组件多维列表
+                component_order_ls = [[] for _ in range(len(BASIC_ORDER))]
+                for k, v in BASIC_ORDER.items():
+                    for i in range(len(v)):
+                        component_order_ls[k].append([])
+
                 # 用于详情表排序的列表
-                component_order_ls = []
                 component_last_ls = []
                 service_order_ls = []
                 service_last_ls = []
+
                 # 安装详情表
                 for service_obj in service_queryset:
                     # 获取主机对象
@@ -898,11 +912,10 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                     if app_type == ApplicationHub.APP_TYPE_COMPONENT:
                         for k, v in BASIC_ORDER.items():
                             if service_obj.service.app_name in v:
-                                # 动态根据层级索引创建空列表
-                                if len(component_order_ls) <= k:
-                                    for i in range(len(component_order_ls), k + 1):
-                                        component_order_ls.append([])
-                                component_order_ls[k].append(detail_obj)
+                                # 动态根据层级插入数据
+                                target = v.index(service_obj.service.app_name)
+                                component_order_ls[k][target].append(
+                                    detail_obj)
                                 break
                         else:
                             component_last_ls.append(detail_obj)
@@ -924,8 +937,10 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
 
                 # 合并多维列表和后置列表
                 detail_history_obj_ls = []
-                for i in component_order_ls:
-                    detail_history_obj_ls += i
+                for child_ls in component_order_ls:
+                    for i in child_ls:
+                        if len(i) != 0:
+                            detail_history_obj_ls += i
                 detail_history_obj_ls += component_last_ls
                 for i in service_order_ls:
                     detail_history_obj_ls += i
@@ -944,7 +959,9 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                 )
 
                 # 生成 data.json
-                data_json = DataJson(operation_uuid=str(operation_uuid))
+                data_json = DataJson(
+                    operation_uuid=str(operation_uuid),
+                    service_obj=service_queryset)
                 data_json.run()
 
         except Exception as err:

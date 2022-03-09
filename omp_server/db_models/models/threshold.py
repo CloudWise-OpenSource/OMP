@@ -133,7 +133,7 @@ class AlertRule(models.Model):
     create_time = models.DateTimeField("告警规则入库时间", auto_now_add=True)
     update_time = models.DateTimeField("告警规则更新时间", auto_now_add=True)
     forbidden = models.IntegerField("禁止删除", default=1)  # 1能删除  2 禁止删除
-    hash_data = models.CharField("唯一hash值", default=uuid4, max_length=255) # 唯一hash禁止规则重复
+    hash_data = models.CharField("唯一hash值", null=True, blank=True, max_length=255) # 唯一hash禁止规则重复
 
     class Meta:
         """

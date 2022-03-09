@@ -719,7 +719,7 @@ def publish_entry(uuid):
         valid_name = tmp_dir[0].rsplit('/', 1)
         valid_pk = f"{valid_name[1]}-{tmp_dir[1]}" if len(
             tmp_dir) == 2 else valid_name[1]
-        if product_obj:
+        if product_obj and line.get('kind') == 'service':
             valid_pk = f"{product_obj.pro_name}-{product_obj.pro_version}/{valid_name[1]}"
 
         valid_dir = os.path.join(project_dir, 'package_hub',
@@ -731,7 +731,6 @@ def publish_entry(uuid):
             line['package_name'].package_status = 4
             line['package_name'].save()
             logger.error('移动或删除失败')
-            return None
         valid_packages_obj.append(line['package_name'].id)
         if "front_end_verified" in tmp_dir[0]:
             front_dir.append(tmp_dir)

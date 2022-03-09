@@ -27,6 +27,7 @@ from db_models.models import (
     Host
 )
 from utils.plugin.salt_client import SaltClient
+
 logger = logging.getLogger("server")
 
 
@@ -152,6 +153,14 @@ class BackupDB(object):
                               "--output-directory {backup_dir}/{service_name}-{ip}-{tmp}".format(
                                   **service_dict)
                     service_dict["file_name"] = "{service_name}-{ip}-{tmp}".format(
+                        **service_dict)
+                elif service_obj.service.app_name == "postgreSql":
+                    cmd_str = "test -d {backup_dir} || mkdir -p {backup_dir}&& " \
+                              "chown -R {run_user}:{run_user} {backup_dir} &&" \
+                              " {app_dir}/bin/pg_dumpall -U {run_user} -h'127.0.0.1' -p{service_port} > " \
+                              "{backup_dir}/{service_name}-{ip}-{tmp}.sql".format(
+                                  **service_dict)
+                    service_dict["file_name"] = "{service_name}-{ip}-{tmp}.sql".format(
                         **service_dict)
                 else:
                     # TODO 应用不合法
