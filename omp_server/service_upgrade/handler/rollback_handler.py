@@ -1,6 +1,7 @@
 import logging
 import os
 import random
+import time
 from datetime import datetime
 
 from django.conf import settings
@@ -9,7 +10,7 @@ from django.db import transaction
 from db_models.mixins import RollbackStateChoices
 from db_models.models import RollbackDetail, Service, ServiceHistory
 from service_upgrade.handler.base import BaseHandler, StartOperationMixin, \
-    StopServiceMixin, StartServiceMixin
+    StartServiceMixin
 
 logger = logging.getLogger(__name__)
 
@@ -76,8 +77,24 @@ class StartRollbackHandler(StartOperationMixin, RollbackBaseHandler):
             detail.refresh_from_db()
 
 
-class RollBackStopServiceHandler(StopServiceMixin, RollbackBaseHandler):
+class RollBackStopServiceHandler(RollbackBaseHandler):
     operation_type = "ROLLBACK"
+    log_message = "服务实例{}: 停止服务{}"
+    no_need_print = True
+
+    def stop_service(self, service):
+        for i in range(2):
+            state, message = self.salt_client.cmd(
+                self.service.ip,
+                f'bash {service.service_controllers.get("stop")}',
+                timeout=settings.SSH_CMD_TIMEOUT
+            )
+            if "[not  running]" in message:
+                # 休眠5秒等待停止
+                time.sleep(5)
+                return True
+            time.sleep(5)
+        return True
 
     def handler(self):
         if self.service.is_static:

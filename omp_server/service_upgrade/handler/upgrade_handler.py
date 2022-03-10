@@ -160,7 +160,7 @@ class UnzipPackageHandler(UpgradeBaseHandler):
         install_path = os.path.dirname(self.service.install_folder)
 
         cmd_str = f"cd {tar_packages_path} &&" \
-                  f"tar -xf {package_name} -C {install_path}"
+                  f"tar -xmf {package_name} -C {install_path}"
         state, message = self.salt_client.cmd(
             self.service.ip, cmd_str, settings.SSH_CMD_TIMEOUT)
         if not state:
