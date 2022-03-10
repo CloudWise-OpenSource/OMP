@@ -125,10 +125,14 @@ def deploy_agent(host_id, need_monitor=True):
     :return:
     """
     try:
-        host_obj = Host.objects.get(id=host_id)
-        host_obj.host_agent = 3
-        host_obj.save()
-        real_deploy_agent(host_obj=host_obj, need_monitor=need_monitor)
+        # edit by vum:
+        # obj.save 在异步任务并发读写下存在数值覆盖问题
+        host_query = Host.objects.filter(id=host_id)
+        host_query.update(host_agent=3)
+        real_deploy_agent(
+            host_obj=host_query.first(),
+            need_monitor=need_monitor
+        )
     except Exception as e:
         logger.error(
             f"Deploy Host Agent For {host_id} Failed with error: {str(e)};\n"
@@ -231,7 +235,7 @@ def real_init_host(host_obj):
         raise Exception("send script failed")
 
     modified_host_name = str(HOSTNAME_PREFIX) + "-" + \
-                         "-".join(host_obj.ip.split(".")[-2:])
+        "-".join(host_obj.ip.split(".")[-2:])
     # 执行初始化
     is_success, script_msg = _ssh.cmd(
         f"python /tmp/{init_script_name} init_valid {modified_host_name} {host_obj.ip}")
@@ -239,9 +243,9 @@ def real_init_host(host_obj):
         logger.error(f"init host [{host_obj.id}] failed: execute init failed, "
                      f"detail: {script_push_msg}")
         raise Exception("execute failed")
-
-    host_obj.init_status = Host.INIT_SUCCESS
-    host_obj.save()
+    Host.objects.filter(
+        id=host_obj.id
+    ).update(init_status=Host.INIT_SUCCESS)
     logger.info("init host Success")
 
 
@@ -249,10 +253,11 @@ def real_init_host(host_obj):
 def init_host(host_id):
     """ 初始化主机 """
     try:
-        host_obj = Host.objects.get(id=host_id)
-        host_obj.init_status = Host.INIT_EXECUTING
-        host_obj.save()
-        real_init_host(host_obj=host_obj)
+        # edit by vum:
+        # obj.save 在异步任务并发读写下存在数值覆盖问题
+        host_query = Host.objects.filter(id=host_id)
+        host_query.update(init_status=Host.INIT_EXECUTING)
+        real_init_host(host_obj=host_query.first())
     except Exception as e:
         print(e)
         logger.error(
@@ -277,9 +282,11 @@ def insert_host_celery_task(host_id, init=False):
                 num += 1
             if host_obj is None:
                 raise Exception("Host Object not found")
-            host_obj.init_status = Host.INIT_EXECUTING
-            host_obj.save()
-            real_init_host(host_obj=host_obj)
+            # edit by vum:
+            # obj.save 在异步任务并发读写下存在数值覆盖问题
+            host_query = Host.objects.filter(id=host_id)
+            host_query.update(init_status=Host.INIT_EXECUTING)
+            real_init_host(host_obj=host_query.first())
         except Exception as e:
             print(e)
             logger.error(
@@ -298,9 +305,9 @@ def insert_host_celery_task(host_id, init=False):
             num += 1
         if host_obj is None:
             raise Exception("Host Object not found")
-        host_obj.host_agent = Host.AGENT_DEPLOY_ING
-        host_obj.save()
-        real_deploy_agent(host_obj=host_obj)
+        host_query = Host.objects.filter(id=host_id)
+        host_query.update(host_agent=Host.AGENT_DEPLOY_ING)
+        real_deploy_agent(host_obj=host_query.first())
     except Exception as e:
         logger.error(
             f"Deploy Host Agent For {host_id} Failed with error: {str(e)};\n"
@@ -320,7 +327,8 @@ def insert_host_celery_task(host_id, init=False):
             f"Deplot ntpdate for {id} Failed with error: {str(e)};\n"
             f"detail: {traceback.format_exc()}"
         )
-        Host.objects.filter(id=host_id).update(ntpdate_install_status=Host.NTPDATE_INSTALL_FAILED)
+        Host.objects.filter(id=host_id).update(
+            ntpdate_install_status=Host.NTPDATE_INSTALL_FAILED)
 
 
 def write_host_log(host_queryset, status, result, username):
@@ -351,9 +359,9 @@ def maintenance(host_obj, entry, username):
         logger.error(f"host {en_status} maintain failed: {host_obj.ip}")
         # 操作失败记录写入
         write_host_log([host_obj], status, "failed", username)
-    # 操作成功
-    host_obj.is_maintenance = entry
-    host_obj.save()
+    Host.objects.filter(
+        id=host_obj.id
+    ).update(is_maintenance=entry)
     logger.info(f"host {en_status} maintain success: {host_obj.ip}")
     # 操作成功记录写入
     write_host_log([host_obj], status, "success", username)
@@ -537,7 +545,8 @@ class UninstallHosts(object):
         ips = self.all_host.values_list("ip", flat=True)
         pro_obj = PrometheusUtils()
         write_str = []
-        node_path = os.path.join(pro_obj.prometheus_targets_path, "nodeExporter_all.json")
+        node_path = os.path.join(
+            pro_obj.prometheus_targets_path, "nodeExporter_all.json")
         for node in pro_obj.get_dic_from_yaml(node_path):
             if node.get("targets", [""])[0].split(":")[0] in ips:
                 continue
