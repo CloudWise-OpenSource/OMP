@@ -95,7 +95,8 @@ def service_actions(actions, ip=None, service_name=None):
         "restart": ["3", Service.SERVICE_STATUS_RESTARTING]
     }
     action = choice.get(actions)
-    actions = "start" if actions == "status" else actions
+    old_actions = actions
+    actions = "start" if actions in ["status", "restart"] else actions
     service_obj = Service.objects.filter(service_controllers__has_key=actions).exclude(
         service_status__in=[Service.SERVICE_STATUS_INSTALLING,
                             Service.SERVICE_STATUS_UPGRADE,
@@ -111,10 +112,10 @@ def service_actions(actions, ip=None, service_name=None):
     if service_name:
         service_obj = service_obj.filter(service__app_name=service_name)
     service_obj.update(service_status=action[1])
-    service_ls = order(service_obj, actions)
+    service_ls = order(service_obj, old_actions)
     for index, service_ids in enumerate(service_ls):
         # 重启重写
-        if actions == "restart":
+        if old_actions == "restart":
             if index < len(service_ls) / 2:
                 action[0] = "2"
             else:
