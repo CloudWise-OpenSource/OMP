@@ -95,10 +95,33 @@ class ScanFile:
                 #    log_print("后台扫描校验失败")
                 #    result = False
                 else:
-                    log_print("应用商店扫描成功")
-                    result = False
+                    status = True
+                    result_ls = []
+                    package_status = {
+                        0: "成功",
+                        1: "失败",
+                        2: "解析中",
+                        3: "发布成功",
+                        4: "发布失败",
+                        5: "发布中",
+                    }
+                    valid_uuids = UploadPackageHistory.objects.filter(
+                        operation_uuid=uuid,
+                        package_parent__isnull=True,
+                    ).values_list("package_name", "package_status", "error_msg")
+                    for value in valid_uuids:
+                        if value[1] != 0:
+                            status = False
+                        result_ls.append(f"安装包{value[0]},扫描状态:{package_status.get(value[1], '')},扫描信息:{value[2]}")
+                    log_print("应用商店扫描完成")
+                    log_print("\n".join(result_ls))
+                    if status:
+                        sys.exit(0)
+                    else:
+                        sys.exit(1)
         except Exception as e:
             log_print(f"后台扫描失败:{e}")
+            sys.exit(1)
         finally:
             self.redis.rdcon.delete(self._move_lock_key)
 
