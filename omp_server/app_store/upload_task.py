@@ -55,7 +55,7 @@ class CreateDatabase(object):
             "pro_version": self.json_data.get('version'),
             "pro_description": self.json_data.get('description'),
             "pro_dependence": self.explain('dependencies'),
-            "pro_services": self.explain('service'),
+            "pro_services": self.explain('service', []),
             "pro_package": self.json_data.get('package_name'),
             "pro_logo": self.json_data.get('image'),
             "extend_fields": self.json_data.get("extend_fields")
@@ -108,6 +108,9 @@ class CreateDatabase(object):
         self.json_data['labels'] = [app_obj.pro_name]
         self.label_type = 0
         self.create_lab()
+        pro_services = json.loads(app_obj.pro_services)
+        name_ls = [name.get('name') for name in pro_services]
+        version_ls = [version.get('version') for version in pro_services]
         for info in valid_info:
             self.json_data = info
             # 服务json添加labels字段，给create_pro_app_lab做筛选
@@ -118,8 +121,8 @@ class CreateDatabase(object):
             _dic = {
                 "is_release": True,
                 "app_type": 1,
-                "app_name": self.json_data.get("name"),
-                "app_version": self.json_data.get("version"),
+                "app_name": self.json_data.get("name", ""),
+                "app_version": self.json_data.get("version", ""),
                 "app_port": self.explain("ports", json.dumps([])),
                 "app_dependence": self.explain("dependencies"),
                 "app_install_args": self.explain("install"),
@@ -134,12 +137,17 @@ class CreateDatabase(object):
                 app_name=self.json_data.get("name"),
                 app_version=self.json_data.get("version")
             )
+            if _dic["app_name"] not in name_ls\
+                    or _dic["app_version"] not in version_ls:
+                pro_services.append({"name": _dic["app_name"], "version": _dic["app_version"]})
             if app_queryset.exists():
                 app_queryset.update(**_dic)
             else:
                 ser_obj = ApplicationHub.objects.create(**_dic)
                 # 做多对多关联
                 self.create_pro_app_lab(ser_obj)
+        app_obj.pro_services = json.dumps(pro_services, ensure_ascii=False)
+        app_obj.save()
             # ApplicationHub.objects.create(
             #     is_release=True, app_type=1,
             #     app_name=self.json_data.get("name"),
