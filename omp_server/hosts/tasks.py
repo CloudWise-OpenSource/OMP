@@ -234,8 +234,7 @@ def real_init_host(host_obj):
                      f"detail: {script_push_msg}")
         raise Exception("send script failed")
 
-    modified_host_name = str(HOSTNAME_PREFIX) + "-" + \
-        "-".join(host_obj.ip.split(".")[-2:])
+    modified_host_name = str(HOSTNAME_PREFIX) + host_obj.ip.replace(".", "")
     # 执行初始化
     is_success, script_msg = _ssh.cmd(
         f"python /tmp/{init_script_name} init_valid {modified_host_name} {host_obj.ip}")

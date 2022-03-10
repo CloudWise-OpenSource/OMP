@@ -24,7 +24,7 @@ from ruamel.yaml import YAML
 
 from db_models.models import HostThreshold, ServiceCustomThreshold, AlertRule
 from omp_server.settings import PROJECT_DIR
-from utils.parse_config import MONITOR_PORT, PROMETHEUS_AUTH
+from utils.parse_config import MONITOR_PORT, PROMETHEUS_AUTH, LOKI_CONFIG
 
 # from utils.parse_config import MONITOR_PORT
 
@@ -581,7 +581,7 @@ class PrometheusUtils(object):
 
         with open(self_exporter_target_file, 'w') as f2:
             json.dump(self_target_list, f2, ensure_ascii=False, indent=4)
-
+        service_data["scrape_log_level"] = LOKI_CONFIG.get("scrape_log_level")
         flag, msg = self.update_agent_service(
             service_data.get('ip'), 'add', [service_data])
         if not flag:

@@ -165,13 +165,13 @@ class InstallServiceExecutor:
             if path_ls[1] == app_name:
                 _target_path = path_ls[0]
                 test_path_cmd_str = f"(test -d {_target_path} || mkdir -p {_target_path}) && " \
-                                    f"tar -xf {package_path} -C {_target_path}"
+                                    f"tar -xmf {package_path} -C {_target_path}"
             else:
                 # 当路径结尾与服务名不一致时
                 _target_path = path_ls[0]
                 real_path = os.path.join(_target_path, app_name)
                 test_path_cmd_str = f"(test -d {_target_path} || mkdir -p {_target_path}) && " \
-                                    f"tar -xf {package_path} -C {_target_path} && mv {real_path} {target_path}/"
+                                    f"tar -xmf {package_path} -C {_target_path} && mv {real_path} {target_path}/"
             is_success, message = salt_client.cmd(
                 target=target_ip,
                 command=test_path_cmd_str,

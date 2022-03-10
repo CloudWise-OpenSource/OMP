@@ -109,7 +109,7 @@ class Agent(object):
 
         # step3: install agent
         logger.info(f"execute install command for {self.host}!")
-        command = "cd {0} && tar xf {1}.tar.gz && chown -R {2}:{2} {1} && rm -f {1}.tar.gz".format(
+        command = "cd {0} && tar xmf {1}.tar.gz && chown -R {2}:{2} {1} && rm -f {1}.tar.gz".format(
             self.install_dir, self.agent_name, self.run_user)
         cmd_exec_state, cmd_exec_msg = self.ssh.cmd(command)
         if not cmd_exec_state:

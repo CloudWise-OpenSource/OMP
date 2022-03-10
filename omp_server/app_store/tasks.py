@@ -164,7 +164,7 @@ def front_end_verified(uuid, operation_user, package_name, random_str, ver_dir, 
     tmp_dir = os.path.join(package_path, touch_name + random_str)
     # 创建临时校验路径
     os.mkdir(tmp_dir)
-    tar_out = public_utils.local_cmd(f'tar -xvf {file_name} -C {tmp_dir}')
+    tar_out = public_utils.local_cmd(f'tar -xmf {file_name} -C {tmp_dir}')
     if tar_out[2] != 0:
         return public_action.update_package_status(
             1,
