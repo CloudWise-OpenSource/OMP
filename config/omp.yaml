@@ -108,6 +108,9 @@ basic_order:
     - postgreSql
     - prometheus
     - pushgateway
+    - mongodb
+    - nodejs
+    - beanstalk
   1:
     - keepalived
     - httpd
@@ -117,7 +120,6 @@ basic_order:
     - wkhtmltox
     - tomcat
     - jkbPhp
-    - beanstalk
   2:
     - nacos
     - xxlJob

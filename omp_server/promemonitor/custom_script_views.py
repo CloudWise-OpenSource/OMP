@@ -146,11 +146,16 @@ class CustomScriptViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, Upda
         new_bound_host_list = request.data.get("bound_hosts")
         new_description = request.data.get("description", instance.description)
 
+        add_host_list = set(new_bound_host_list) - set(instance.bound_hosts)
+        deleted_host_list = set(instance.bound_hosts) - \
+            set(new_bound_host_list)
+
         instance.scrape_interval = new_scrape_interval
         instance.enabled = new_enabled
         instance.bound_hosts = new_bound_host_list
         instance.description = new_description
         instance.save()
+
         headers = {"Content-Type": "application/json"}
         headers.update(CW_TOKEN)
 
@@ -158,8 +163,13 @@ class CustomScriptViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, Upda
             script_job_str = instance.script_name.split('.', 1)[0]
             prom_target_list = list()
             monitor_agent_port = MONITOR_PORT.get('monitorAgent', 19031)
-            for host in instance.bound_hosts:
-                agent_add_custom_script_url = f"http://{host}:{monitor_agent_port}/update/custom_scripts/add"  # NOQA
+            for item in (add_host_list | deleted_host_list):
+                if item in add_host_list:
+                    agent_custom_script_url = f"http://{item}:{monitor_agent_port}/update/custom_scripts/add"  # NOQA
+                elif item in deleted_host_list:
+                    agent_custom_script_url = f"http://{item}:{monitor_agent_port}/update/custom_scripts/delete"  # NOQA
+                else:
+                    continue
                 payload = {
                     "custom_scripts":
                         [{
@@ -170,10 +180,12 @@ class CustomScriptViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, Upda
                 }
                 payload = json.dumps(payload)
                 res = requests.post(
-                    url=agent_add_custom_script_url, headers=headers, data=payload)
+                    url=agent_custom_script_url, headers=headers, data=payload)
                 if res.status_code != 200:
-                    logger.error(f"向主机{host}agent发送添加自定义脚本信息失败！")
-                    return Response(data={"code": 1, "message": f"向主机{host}agent发送添加自定义脚本信息失败！"})
+                    logger.error(f"向主机{item}agent发送添加自定义脚本信息失败！")
+                    return Response(data={"code": 1, "message": f"向主机{item}agent发送添加自定义脚本信息失败！"})
+
+            for host in instance.bound_hosts:
                 prom_target_list.append({
                     "targets": [
                         f"{host}:{monitor_agent_port}"
