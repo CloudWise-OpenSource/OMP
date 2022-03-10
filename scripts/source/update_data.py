@@ -330,13 +330,12 @@ def create_threshold():
             "for_time": "60s",
             "severity": "critical",
             "labels": {
-                "job": "nodeExporter",
                 "severity": "critical"
             },
             "name":"服务状态",
             "quota_type": 0,
             "status": 1,
-            "service": "node",
+            "service": "service",
             "forbidden": 2
         },
 
