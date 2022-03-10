@@ -793,14 +793,12 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                     service_obj.save()
 
                 # 更新主机非base_env服务数量
-                # for ip, ins_num in host_ins_num_dict.items():
-                #     Host.objects.filter(ip=ip).update(
-                #         service_num=F("service_num") + ins_num)
                 for host_obj in use_host_queryset:
                     obj_service_num = service_queryset.filter(
                         ip=host_obj.ip).exclude(service__is_base_env=True).count()
-                    host_obj.service_num = obj_service_num
-                    host_obj.save()
+                    Host.objects.filter(
+                        id=host_obj.id
+                    ).update(service_num=obj_service_num)
 
                 # 主安装记录表、后续任务记录表
                 main_history_obj = MainInstallHistory.objects.create(
