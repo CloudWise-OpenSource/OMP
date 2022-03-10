@@ -58,7 +58,8 @@ def load_upgrade_detail(upgrade_detail, operation_uuid):
     # 加载关联的升级对象
     relation_details = list(
         UpgradeDetail.objects.filter(
-            union_server=upgrade_detail.union_server
+            union_server=upgrade_detail.union_server,
+            history_id=upgrade_detail.history_id
         ).exclude(id=upgrade_detail.id)
     )
     return upgrade_detail, service, relation_details
@@ -72,7 +73,8 @@ def load_rollback_detail(rollback_detail, operation_uuid):
     # 加载关联的升级对象
     relation_details = list(
         RollbackDetail.objects.filter(
-            upgrade__union_server=rollback_detail.upgrade.union_server
+            upgrade__union_server=rollback_detail.upgrade.union_server,
+            history_id=rollback_detail.history_id
         ).exclude(id=rollback_detail.id).exclude(
             history_id=rollback_detail.history.id
         )

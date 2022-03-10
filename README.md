@@ -55,7 +55,7 @@ OMP安装包内部包含了其使用的绝大部分组件，但是缺少MySQL和
 step0：下载/解压安装包
 ```shell
 # omp_open-0.1.tar.gz  omp_monitor_agent-0.1.tar.gz
-tar -xf omp_open-0.1.tar.gz -C /data && mv omp_monitor_agent-0.1.tar.gz /data/omp/package_hub/
+tar -xmf omp_open-0.1.tar.gz -C /data && mv omp_monitor_agent-0.1.tar.gz /data/omp/package_hub/
 ```
 
 step1：依赖环境配置

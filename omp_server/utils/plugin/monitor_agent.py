@@ -109,7 +109,7 @@ class MonitorAgentManager(object):
         cmd_flag, cmd_res = salt_obj.cmd(
             target=obj.ip,
             command=f"cd {obj.agent_dir} && "
-                    f"tar -xf {self.monitor_agent_package_name} && "
+                    f"tar -xmf {self.monitor_agent_package_name} && "
                     f"rm -rf {self.monitor_agent_package_name} && "
                     f"cd {self.name} && "
                     f"./install --agent_ip={obj.ip} --metrics_auth='{metrics_auth}' && "
