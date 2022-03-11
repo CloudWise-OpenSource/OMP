@@ -65,56 +65,68 @@ class FiledCheck(object):
         self.db_obj = db_obj
         self.yaml_dir = yaml_dir
 
-    def strong_check(self, settings, field=None, is_weak=False, ignore=None):
-        if is_weak:
-            if not self.weak_check(settings, field):
-                return False
-        if ignore:
-            field = field - ignore
-        if isinstance(settings, dict):
-            if not field:
-                field = set(settings.keys())
-            for i in field:
-                if settings.get(i) is None:
-                    self.db_obj.update_package_status(
-                        1,
-                        f"yml{i}缺乏值，检查yml文件{self.yaml_dir}")
+    def strong_check(self, settings, field=None, is_weak=False, ignore=None, attention=""):
+        try:
+            if is_weak:
+                if not self.weak_check(settings, field, attention=attention):
                     return False
-            return True
-        elif isinstance(settings, list):
-            if not field:
-                field = set(settings[0].keys())
-            for i in settings:
-                for j in field:
-                    if i.get(j) is None:
+            if ignore:
+                field = field - ignore
+            if isinstance(settings, dict):
+                if not field:
+                    field = set(settings.keys())
+                for i in field:
+                    if settings.get(i) is None:
                         self.db_obj.update_package_status(
                             1,
                             f"yml{i}缺乏值，检查yml文件{self.yaml_dir}")
                         return False
-            return True
-        else:
+                return True
+            elif isinstance(settings, list):
+                if not field:
+                    field = set(settings[0].keys())
+                for i in settings:
+                    for j in field:
+                        if i.get(j) is None:
+                            self.db_obj.update_package_status(
+                                1,
+                                f"yml{i}缺乏值，检查yml文件{self.yaml_dir}")
+                            return False
+                return True
+            else:
+                return False
+        except Exception as e:
+            self.db_obj.update_package_status(
+                1,
+                f"yml:{attention}异常，检查yml文件{self.yaml_dir}")
             return False
 
-    def weak_check(self, settings, field):
-        if isinstance(settings, dict):
-            # 以field为基准,settings多出的也不会显示,只要满足field即可
-            status = field - set(settings.keys())
-            if status:
-                self.db_obj.update_package_status(
-                    1,
-                    f"yml{str(status)}字段和预期不符，检查yml文件{self.yaml_dir}")
-                return False
-            return True
-        elif isinstance(settings, list):
-            for i in settings:
-                status = field - set(i.keys())
+    def weak_check(self, settings, field, attention=""):
+        try:
+            if isinstance(settings, dict):
+                # 以field为基准,settings多出的也不会显示,只要满足field即可
+                status = field - set(settings.keys())
                 if status:
                     self.db_obj.update_package_status(
                         1,
                         f"yml{str(status)}字段和预期不符，检查yml文件{self.yaml_dir}")
                     return False
-            return True
-        else:
+                return True
+            elif isinstance(settings, list):
+                for i in settings:
+                    status = field - set(i.keys())
+                    if status:
+                        self.db_obj.update_package_status(
+                            1,
+                            f"yml{str(status)}字段和预期不符，检查yml文件{self.yaml_dir}")
+                        return False
+                return True
+            else:
+                return False
+        except Exception as e:
+            self.db_obj.update_package_status(
+                1,
+                f"yml:{attention}异常，检查yml文件{self.yaml_dir}")
             return False
 
 
@@ -152,7 +164,7 @@ def front_end_verified(uuid, operation_user, package_name, random_str, ver_dir, 
     tmp_dir = os.path.join(package_path, touch_name + random_str)
     # 创建临时校验路径
     os.mkdir(tmp_dir)
-    tar_out = public_utils.local_cmd(f'tar -xvf {file_name} -C {tmp_dir}')
+    tar_out = public_utils.local_cmd(f'tar -xmf {file_name} -C {tmp_dir}')
     if tar_out[2] != 0:
         return public_action.update_package_status(
             1,
@@ -467,7 +479,7 @@ class ExplainYml:
         # level 默认0 monitor不做校验
         first_check = {"ports", "install",
                        "control"}
-        if not self.check_obj.weak_check(settings, first_check):
+        if not self.check_obj.weak_check(settings, first_check, attention=str(first_check)):
             return False
         # auto_launch 校验 不填写默认给true
         settings["auto_launch"] = settings.get("auto_launch", "true")
@@ -479,7 +491,8 @@ class ExplainYml:
         port = self.check_obj.strong_check(
             ports, ports_strong_check,
             is_weak=True,
-            ignore={"key"}) if ports else 1
+            ignore={"key"},
+            attention="ports") if ports else 1
         if not port:
             return False
         db_filed['ports'] = ports
@@ -489,12 +502,14 @@ class ExplainYml:
                               "init"}
         control_check = self.check_obj.weak_check(
             control,
-            control_weak_check) if control else 1
+            control_weak_check,
+            attention=str(control_weak_check)) if control else 1
         if not control_check:
             return False
         control_strong_check = self.check_obj.strong_check(
             control,
-            {"install"})
+            {"install"},
+            attention="control")
         if not control_strong_check:
             return False
         db_filed['control'] = control
@@ -504,7 +519,8 @@ class ExplainYml:
         install_check = self.check_obj.strong_check(
             install,
             single_strong_install,
-            is_weak=True) if install else 1
+            is_weak=True,
+            attention="install") if install else 1
         if not install_check:
             return False
         db_filed['install'] = install
@@ -512,7 +528,8 @@ class ExplainYml:
         monitor = settings.pop('monitor', None)
         monitor_weak_check = {"process_name", "metric_port", "type"}
         monitor_check = self.check_obj.weak_check(
-            monitor, monitor_weak_check) if monitor else 1
+            monitor, monitor_weak_check,
+            attention=str(monitor_weak_check)) if monitor else 1
         if not monitor_check:
             return False
         db_filed['monitor'] = monitor

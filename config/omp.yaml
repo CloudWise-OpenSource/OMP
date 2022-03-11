@@ -91,6 +91,10 @@ monitor_port:
   arangodbExporter: 18119
   nacosExporter: 18117
   monitorAgent: 19031
+# Loki相关配置
+loki_config:
+  # promtail采集日志文件名等级过滤 [debug, info, warn, error, all]
+  scrape_log_level: error
 
 # 基础及公共组件间的等级划分，不要将自研服务类的服务放入下面的配置
 # 用于控制服务安装过程中的执行顺序、服务的启停控制顺序
@@ -108,6 +112,9 @@ basic_order:
     - postgreSql
     - prometheus
     - pushgateway
+    - mongodb
+    - nodejs
+    - beanstalk
   1:
     - keepalived
     - httpd
@@ -117,7 +124,6 @@ basic_order:
     - wkhtmltox
     - tomcat
     - jkbPhp
-    - beanstalk
   2:
     - nacos
     - xxlJob

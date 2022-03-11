@@ -681,10 +681,12 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                     dependence_list = json.loads(app_obj.app_dependence)
                     for dependence in dependence_list:
                         app_name = dependence.get("name")
-                        version = dependence.get("version")
+                        # version = dependence.get("version")
+                        # base_env_obj = base_env_queryset.filter(
+                        #     app_name=app_name, app_version__startswith=version
+                        # ).order_by("-created").first()
                         base_env_obj = base_env_queryset.filter(
-                            app_name=app_name, app_version__startswith=version
-                        ).order_by("-created").first()
+                            app_name=app_name).order_by("-created").first()
                         # 如果服务的依赖中有 base_env，并且对应 ip 上不存在则写入
                         if base_env_obj and \
                                 app_name not in base_env_dict.get(host_obj.ip, []):
@@ -793,14 +795,12 @@ class DeploymentPlanImportView(GenericViewSet, CreateModelMixin):
                     service_obj.save()
 
                 # 更新主机非base_env服务数量
-                # for ip, ins_num in host_ins_num_dict.items():
-                #     Host.objects.filter(ip=ip).update(
-                #         service_num=F("service_num") + ins_num)
                 for host_obj in use_host_queryset:
                     obj_service_num = service_queryset.filter(
                         ip=host_obj.ip).exclude(service__is_base_env=True).count()
-                    host_obj.service_num = obj_service_num
-                    host_obj.save()
+                    Host.objects.filter(
+                        id=host_obj.id
+                    ).update(service_num=obj_service_num)
 
                 # 主安装记录表、后续任务记录表
                 main_history_obj = MainInstallHistory.objects.create(

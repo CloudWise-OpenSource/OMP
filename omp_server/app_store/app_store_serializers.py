@@ -694,16 +694,17 @@ class DeploymentPlanValidateSerializer(Serializer):
             # 校验依赖项的指定版本是否存在
             for dependence in dependence_list:
                 name = dependence.get("name")
-                version = dependence.get("version")
+                # version = dependence.get("version")
                 pro_obj = pro_queryset.filter(
                     pro_name=name).order_by("-created").first()
-                if not pro_obj or not pro_obj.pro_version.startswith(version):
+                # if not pro_obj or not pro_obj.pro_version.startswith(version):
+                if not pro_obj:
                     result_dict["error"].append({
                         "row": -2,
                         "instance_name": "待补充",
                         "service_name": "待补充",
                         "validate_error": f"产品 {pro.pro_name}-{pro.pro_version} "
-                                          f"缺失依赖产品 {name}-{version}"
+                                          f"缺失依赖产品 {name}"
                     })
 
         # 验证所有 product 下的 application 都已经包含
@@ -757,21 +758,23 @@ class DeploymentPlanValidateSerializer(Serializer):
             # 校验依赖项的指定版本是否存在
             for dependence in dependence_list:
                 name = dependence.get("name")
-                version = dependence.get("version")
+                # version = dependence.get("version")
                 app_obj = app_queryset.filter(
                     app_name=name).order_by("-created").first()
-                if not app_obj or not app_obj.app_version.startswith(version):
+                # if not app_obj or not app_obj.app_version.startswith(version):
+                if not app_obj:
                     # 如果为 base_env 则跳过
-                    if base_env_queryset.filter(
-                            app_name=name, app_version=version
-                    ).exists():
+                    # if base_env_queryset.filter(
+                    #         app_name=name, app_version=version
+                    # ).exists():
+                    if base_env_queryset.filter(app_name=name).exists():
                         continue
                     result_dict["error"].append({
                         "row": -2,
                         "instance_name": "待补充",
                         "service_name": f"{name}",
                         "validate_error": f"服务 {app.app_name}-{app.app_version} "
-                                          f"缺失依赖产品 {name}-{version}"
+                                          f"缺失依赖服务 {name}"
                     })
 
         # hadoop 实例列表、角色集合
