@@ -137,7 +137,7 @@ def exec_action(action, instance, operation_user, del_file=False, need_sleep=Tru
                 "ip": ip,
                 "listen_port": service_port
             }
-            PrometheusUtils().deletede_service(service_data)
+            PrometheusUtils().delete_service(service_data)
         # 删除hosts实例个数
         service_history_obj = ServiceHistory.objects.filter(
             service=service_obj)
