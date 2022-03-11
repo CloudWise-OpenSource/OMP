@@ -14,6 +14,8 @@ from concurrent.futures import (
     ThreadPoolExecutor, as_completed
 )
 # from django.db.models import F
+from django.conf import settings
+
 from app_store.high_availability_utils import HIGH_AVAILABILITY_UTILS
 from db_models.models import (
     Host, Service, HostOperateLog, ServiceHistory,
@@ -58,10 +60,6 @@ class InstallServiceExecutor:
             content = json.loads(fp.read())
             if not isinstance(content, list):
                 raise GeneralError("json文件不符合格式要求!")
-        ip_data_folder_map = {
-            el["ip"]: el["data_folder"]
-            for el in list(Host.objects.all().values("ip", "data_folder"))
-        }
         ip_user_map = dict()
         for item in content:
             if item["ip"] not in ip_user_map:
@@ -72,16 +70,51 @@ class InstallServiceExecutor:
                 if el.get("key") == "run_user" and el.get("default"):
                     ip_user_map[item["ip"]].append(el.get("default"))
                     break
-        return ip_data_folder_map, ip_user_map
+        return ip_user_map
+
+    def set_hostname_analysis(self, ips_data, ip, salt_client):
+        if ips_data.get(ip, {}).get("username") != "root":
+            return f"{self.now_time()} 主机用户非root，请手动添加集群主机名解析！\n"
+        test_write_host_func = "cat /tmp/init_host.py | grep write_hostname"
+        flag, msg = salt_client.cmd(
+            target=ip,
+            command=test_write_host_func,
+            timeout=60
+        )
+        logger.info(f"测试主机[{ip}]init_host.py脚本write_host功能，结果 {msg}")
+        if not flag or "write_hostname" not in msg:
+            is_success, message = salt_client.cp_file(
+                target=ip,
+                source_path="_modules/init_host.py",
+                target_path="/tmp/init_host.py"
+            )
+            logger.info(f"主机[{ip}]发送init_host.py脚本成功！")
+            if not is_success:
+                return f"{self.now_time()} 执行主机名解析失败！请手动添加集群主机名解析！\n"
+        hosts_data = json.dumps(
+            [
+                {"ip": k, "hostname": v.get("host_name")}
+                for k, v in ips_data.items()
+            ], separators=(',', ':')
+        )
+        write_host = f"python /tmp/init_host.py write_hostname '{hosts_data}'"
+        flag, msg = salt_client.cmd(
+            target=ip,
+            command=write_host,
+            timeout=60
+        )
+        if not flag:
+            return f"{self.now_time()} 执行主机名解析失败！请手动添加集群主机名解析！\n"
+        return f"{self.now_time()} 执行主机名解析成功！\n"
 
     def _execute_pre_install(
-            self, ip_data_folder_map,
+            self, ips_data,
             key, value, main_obj,
             json_source_path, salt_client, pre_install_obj
     ):
         """
 
-        :param ip_data_folder_map:
+        :param ips_data:
         :param key:
         :param value:
         :param main_obj:
@@ -90,9 +123,17 @@ class InstallServiceExecutor:
         :param pre_install_obj:
         :return:
         """
+        try:
+            message = self.set_hostname_analysis(ips_data, key, salt_client)
+        except Exception as e:
+            logger.error(f"执行主机名解析报错：{str(e)}")
+            message = f"{self.now_time()} 执行主机名解析失败！请手动添加集群主机名解析！\n"
+        pre_install_obj.install_log += message
+        pre_install_obj.save()
+
         json_target_path = os.path.join(
-            ip_data_folder_map[key], "omp_packages",
-            f"{main_obj.operation_uuid}.json")
+            ips_data[key].get("data_folder", "/data"),
+            f"omp_packages/{main_obj.operation_uuid}.json")
         pre_install_obj.install_log += f"{self.now_time()} 开始发送json文件\n"
         pre_install_obj.save()
         # 发送 json 文件
@@ -174,9 +215,15 @@ class InstallServiceExecutor:
         json_source_path = os.path.join(
             "data_files",
             f"{main_obj.operation_uuid}.json")
-        ip_data_folder_map, ip_user_map = self.parse_origin_data(
-            json_source_path=json_source_path
-        )
+        ips_data = {
+            host["ip"]: host for host in list(
+                Host.objects.all().values(
+                    "ip", "data_folder", "username", "host_name"
+                )
+            )
+        }
+
+        ip_user_map = self.parse_origin_data(json_source_path)
         for key, value in ip_user_map.items():
             pre_install_obj = PreInstallHistory.objects.filter(
                 main_install_history=main_obj, ip=key
@@ -189,7 +236,7 @@ class InstallServiceExecutor:
                     f"{self.now_time()} 开始执行前置安装操作\n"
                 pre_install_obj.save()
                 self._execute_pre_install(
-                    ip_data_folder_map, key, value, main_obj,
+                    ips_data, key, value, main_obj,
                     json_source_path, salt_client, pre_install_obj
                 )
             except GeneralError as e:

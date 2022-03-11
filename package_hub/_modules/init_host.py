@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+import json
 import os
 import sys
 import logging
@@ -444,13 +444,49 @@ class ValidInit(BaseInit):
         assert _out.strip().lower() not in TO_MODIFY_HOST_NAME and not _out.strip().isdigit(), "校验主机名失败"
 
 
+def add_hostname_analysis(hostname_str):
+    logger.debug("传入主机信息：\n{}".format(hostname_str))
+    hostnames = json.loads(hostname_str or '[]')
+    with open("/etc/hosts", "r") as f:
+        hosts = f.read()
+    logger.debug("获取主机解析：\n{}".format(hosts))
+    hosts_analysis_dict = {}
+    for analysis_str in hosts.split("\n"):
+        if analysis_str.lstrip().startswith("#"):
+            continue
+        analysis_list = list(
+            filter(
+                lambda x: x,
+                analysis_str.strip().replace("\t", " ").split(" ")
+            )
+        )
+        if not analysis_list:
+            continue
+        hosts_analysis_dict[analysis_list[0]] = analysis_str
+    for hostname_dict in hostnames:
+        ip = hostname_dict.get("ip")
+        hostname = hostname_dict.get("hostname")
+        host_analysis_str = hosts_analysis_dict.get(ip, "")
+        if not host_analysis_str:
+            hosts += "{} {}\n".format(ip, hostname)
+        elif hostname in host_analysis_str:
+            continue
+        else:
+            host_analysis_str_new = "{} {}".format(host_analysis_str, hostname)
+            hosts = hosts.replace(host_analysis_str, host_analysis_str_new)
+    logger.debug("对比获得最新主机信息：\n{}".format(hosts))
+    with open("/etc/hosts", "w") as f:
+        f.write(hosts)
+    logger.debug("写入最新主机信息成功！")
+
+
 def usage(error=None):
     script_full_path = os.path.join(CURRENT_DIR, os.path.basename(__file__))
     print("""{0} 脚本 功能为初始化节点，职能包括: 设置时区、关闭防火墙、设置文件具柄和内核参数等
     Command:
-            init                初始化节点
-            valid               校验初始化结果
-            init_valid          初始化节点，在完成初始化后执行校验
+            init        <host_name>  <local_ip>  初始化节点
+            valid                                校验初始化结果
+            init_valid  <host_name>  <local_ip>  初始化节点，在完成初始化后执行校验
 
     Use "python {0} <command>" for more information about a given command.
     """.format(script_full_path))
@@ -461,29 +497,31 @@ def usage(error=None):
 
 
 def main():
-    command_list = ('init', 'valid', 'init_valid', 'help')
+    command_list = ('init', 'valid', 'init_valid', 'help', 'write_hostname')
     try:
-        if len(sys.argv) != 4 or sys.argv[1] not in command_list:
+        if sys.argv[1] not in command_list:
             usage(error='参数错误: {}'.format(sys.argv[1:]))
-        host_name = sys.argv[2]
-        local_ip = sys.argv[3]
-        if sys.argv[1] == 'init':
-
+        if sys.argv[1] in ['init', 'init_valid']:
+            if len(sys.argv) != 4:
+                usage(error='参数错误: {}'.format(sys.argv[1:]))
+            host_name = sys.argv[2]
+            local_ip = sys.argv[3]
             init = InitHost(host_name, local_ip)
             init.run()
+            if sys.argv[1] == 'init_valid':
+                check = ValidInit()
+                check.run()
+                logger.info("valid success")
         elif sys.argv[1] == 'valid':
             check = ValidInit()
             check.run()
-        elif sys.argv[1] == 'init_valid':
-            init = InitHost(host_name, local_ip)
-            init.run()
-            logger.info("init success")
-            check = ValidInit()
-            check.run()
             logger.info("valid success")
+        elif sys.argv[1] == "write_hostname":
+            hosts_info = sys.argv[2]
+            # '[{"ip":"10.0.9.18","hostname":"docp-9-18"}]'
+            add_hostname_analysis(hosts_info)
         else:
             usage()
-
     except Exception as e:
         usage(error="参数错误, {}".format(e))
 
