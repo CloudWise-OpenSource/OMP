@@ -1759,7 +1759,7 @@ class CreateInstallPlan(object):
         :return:
         """
         return ApplicationHub.objects.filter(
-            app_name=dic["name"], app_version=dic["version"]
+            app_name=dic["name"], app_version__startswith=dic["version"]
         ).last()
 
     def get_controllers_for_service(self, dic):  # NOQA
