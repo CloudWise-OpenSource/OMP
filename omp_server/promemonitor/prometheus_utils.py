@@ -532,7 +532,7 @@ class PrometheusUtils(object):
             return False, "args cant be null"
 
         logger.info(f'收到信息：{service_data}')
-        job_name_str = "'{}Exporter".format(service_data.get('service_name'))
+        job_name_str = "{}Exporter".format(service_data.get('service_name'))
         prom_job_dict = {
             "job_name": job_name_str,
             "metrics_path": f"/metrics/monitor/{service_data.get('service_name')}",
