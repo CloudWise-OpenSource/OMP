@@ -548,6 +548,8 @@ class PrometheusUtils(object):
         with open(self.prometheus_conf_path, "r") as fr:
             content = yaml.load(fr.read(), yaml.Loader)
         content.get("scrape_configs").append(prom_job_dict)
+        content["scrape_configs"] = self.json_distinct(
+            content.get("scrape_configs"))
         with open(self.prometheus_conf_path, "w", encoding="utf8") as fw:
             yaml.dump(data=content, stream=fw,
                       allow_unicode=True, sort_keys=False)
