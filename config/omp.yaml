@@ -133,6 +133,7 @@ basic_order:
   3:
     - flink
     - aopsUtils
+    - filebeat
 
 
 # 亲和力服务名称
