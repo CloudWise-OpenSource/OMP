@@ -29,6 +29,28 @@ def log_print(message, level="info"):
     print(msg_str)
 
 
+def check_upload(uuid):
+    valid_uuids = UploadPackageHistory.objects.filter(
+        operation_uuid=uuid,
+        package_parent__isnull=True,
+    ).values_list("package_status", flat=True)
+    upload_obj = UploadPackageHistory.objects.filter(
+        operation_uuid=uuid,
+        package_parent__isnull=True,
+    ).first()
+    if 5 in valid_uuids:
+        for i in range(6):
+            time.sleep(5)
+            print(f"等待发布第{i}次")
+            upload_obj.refresh_from_db()
+            if valid_uuids.package_status != 5:
+                break
+    return UploadPackageHistory.objects.filter(
+        operation_uuid=uuid,
+        package_parent__isnull=True,
+    ).values_list("package_name", "package_status", "error_msg")
+
+
 class ScanFile:
     def __init__(self):
         self._scan_lock_key = "back_end_verified"
@@ -87,7 +109,7 @@ class ScanFile:
                     operation_uuid=uuid,
                     package_parent__isnull=True,
                 ).exclude(
-                    package_status__in=[2])
+                    package_status__in=[2, 5])
                 if len(exec_name) != valid_uuids.count():
                     log_print("后台扫描中")
                     time.sleep(5)
@@ -105,12 +127,9 @@ class ScanFile:
                         4: "发布失败",
                         5: "发布中",
                     }
-                    valid_uuids = UploadPackageHistory.objects.filter(
-                        operation_uuid=uuid,
-                        package_parent__isnull=True,
-                    ).values_list("package_name", "package_status", "error_msg")
+                    valid_uuids = check_upload(uuid)
                     for value in valid_uuids:
-                        if value[1] != 0:
+                        if value[1] != 3:
                             status = False
                         result_ls.append(f"安装包{value[0]},扫描状态:{package_status.get(value[1], '')},扫描信息:{value[2]}")
                     log_print("应用商店扫描完成")
