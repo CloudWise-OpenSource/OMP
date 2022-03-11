@@ -43,6 +43,16 @@ class CreateDatabase(object):
             data_info = default
         return data_info
 
+    def explain_dependence(self):
+        # 不符合常规逻辑，慎用
+        data_info = self.json_data.get("dependencies")
+        if isinstance(data_info, list):
+            for key in data_info:
+                if isinstance(key, dict):
+                    key["version"] = key.get("version", "").split(".")[0]
+            data_info = json.dumps(data_info, ensure_ascii=False)
+        return data_info
+
     def create_product(self):
         """
         创建产品表
@@ -124,7 +134,7 @@ class CreateDatabase(object):
                 "app_name": self.json_data.get("name", ""),
                 "app_version": self.json_data.get("version", ""),
                 "app_port": self.explain("ports", json.dumps([])),
-                "app_dependence": self.explain("dependencies"),
+                "app_dependence": self.explain_dependence(),
                 "app_install_args": self.explain("install"),
                 "app_controllers": self.explain("control"),
                 "app_package": self.json_data.get("package_name"),
@@ -137,7 +147,7 @@ class CreateDatabase(object):
                 app_name=self.json_data.get("name"),
                 app_version=self.json_data.get("version")
             )
-            if _dic["app_name"] not in name_ls\
+            if _dic["app_name"] not in name_ls \
                     or _dic["app_version"] not in version_ls:
                 pro_services.append({"name": _dic["app_name"], "version": _dic["app_version"]})
             if app_queryset.exists():
@@ -148,19 +158,19 @@ class CreateDatabase(object):
                 self.create_pro_app_lab(ser_obj)
         app_obj.pro_services = json.dumps(pro_services, ensure_ascii=False)
         app_obj.save()
-            # ApplicationHub.objects.create(
-            #     is_release=True, app_type=1,
-            #     app_name=self.json_data.get("name"),
-            #     app_version=self.json_data.get("version"),
-            #     app_description=self.json_data.get("description"),
-            #     app_port=self.explain("ports"),
-            #     app_dependence=self.explain("dependencies"),
-            #     app_install_args=self.explain("install"),
-            #     app_controllers=self.explain("control"),
-            #     app_package=self.json_data.get("package_name"),
-            #     product=app_obj,
-            #     extend_fields=self.json_data.get("extend_fields")
-            # )
+        # ApplicationHub.objects.create(
+        #     is_release=True, app_type=1,
+        #     app_name=self.json_data.get("name"),
+        #     app_version=self.json_data.get("version"),
+        #     app_description=self.json_data.get("description"),
+        #     app_port=self.explain("ports"),
+        #     app_dependence=self.explain("dependencies"),
+        #     app_install_args=self.explain("install"),
+        #     app_controllers=self.explain("control"),
+        #     app_package=self.json_data.get("package_name"),
+        #     product=app_obj,
+        #     extend_fields=self.json_data.get("extend_fields")
+        # )
 
     def create_component(self):
         """
