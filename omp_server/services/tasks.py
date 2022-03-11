@@ -63,6 +63,8 @@ def delete_file(service_controllers, service_obj):
     exe_action = service_controllers.get("stop", "")
     if "hadoop" in exe_action:
         scripts_param = exe_action.split()
+        if len(scripts_param) > 3:
+            return True
         scripts_param[2] = "all"
         exe_action = " ".join(scripts_param)
     # 存在stop脚本先执行stop脚本后执行删除
@@ -135,7 +137,7 @@ def exec_action(action, instance, operation_user, del_file=False, need_sleep=Tru
                 "ip": ip,
                 "listen_port": service_port
             }
-            PrometheusUtils().delete_service(service_data)
+            PrometheusUtils().deletede_service(service_data)
         # 删除hosts实例个数
         service_history_obj = ServiceHistory.objects.filter(
             service=service_obj)

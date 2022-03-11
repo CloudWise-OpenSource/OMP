@@ -187,7 +187,7 @@ class CreateDatabase(object):
             "app_version": self.json_data.get("version"),
             "app_description": self.json_data.get("description"),
             "app_port": self.explain("ports"),
-            "app_dependence": self.explain("dependencies"),
+            "app_dependence": self.explain_dependence(),
             "app_install_args": self.explain("install"),
             "app_controllers": self.explain("control"),
             "app_package": self.json_data.get("package_name"),
