@@ -58,7 +58,7 @@ class UninstallServices(object):
             self._app_obj = ApplicationHub.objects.filter(product__pro_name=self.product)
             self.product_all = True
         # 产品服务均存在
-        if not self._app_obj:
+        if self.app_name and self.product:
             app_obj = ApplicationHub.objects.filter(app_name__startswith=self.app_name,
                                                     product__pro_name=self.product)
             if not app_obj:
@@ -66,7 +66,7 @@ class UninstallServices(object):
                 sys.exit(1)
             self._app_obj = app_obj
         # 版本筛选
-        if self.version:
+        if self.version and self._app_obj:
             self._app_obj = self._app_obj.filter(app_version__startswith=self.version)
         # 检查是否存在已安装的应用
         have_app = False
@@ -97,7 +97,6 @@ class UninstallServices(object):
         else:
             return stdout
 
-
     def delete_database(self):
         try:
             for obj in self._app_obj:
@@ -111,6 +110,12 @@ class UninstallServices(object):
                 else:
                     self.del_dir.add(os.path.join(PACKAGE_DIR, upload_obj.package_path, upload_obj.package_name))
                     obj.delete()
+            if not self._app_obj and self.product and not self.app_name:
+                pro_obj = ProductHub.objects.filter(pro_name=self.product).first()
+                if pro_obj:
+                    self.del_dir.add(os.path.join(PACKAGE_DIR, "verified", f"{pro_obj.pro_name}-{pro_obj.pro_version}"))
+                    pro_obj.delete()
+
         except Exception as e:
             print(f"数据库异常:{e}")
             sys.exit(1)
