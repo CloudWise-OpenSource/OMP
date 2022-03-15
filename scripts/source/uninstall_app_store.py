@@ -148,13 +148,12 @@ if __name__ == '__main__':
                                       )
     result = uninstall_obj.check_database()
     if result:
-        print("应用商店的服务存在已安装实例，是否确认删除 yes or no")
-        result = input()
-        if result not in ["yes", "no"]:
-            print("请输入正确的参数")
-            sys.exit(1)
-    if result != "no":
-        uninstall_obj.delete_database()
-        time.sleep(5)
-        uninstall_obj.delete_file()
-        print("删除完成")
+        print("应用商店的服务存在已安装实例")
+        # result = input()
+        # if result not in ["yes", "no"]:
+        # print("请输入正确的参数")
+        sys.exit(1)
+    uninstall_obj.delete_database()
+    time.sleep(5)
+    uninstall_obj.delete_file()
+    print("删除完成")
