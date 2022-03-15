@@ -460,6 +460,8 @@ class PrometheusUtils(object):
                 service_temp_data['instance'] = dest_ip
                 service_temp_data['env'] = sd.get('env')
                 service_temp_data['log_path'] = sd.get('log_path')
+                service_temp_data["scrape_log_level"] = LOKI_CONFIG.get(
+                    "scrape_log_level")
                 json_content.append(service_temp_data)
         elif action == 'delete':
             dest_url = 'http://{}:{}/update/service/delete'.format(dest_ip, self.monitor_port)  # NOQA
@@ -583,7 +585,6 @@ class PrometheusUtils(object):
 
         with open(self_exporter_target_file, 'w') as f2:
             json.dump(self_target_list, f2, ensure_ascii=False, indent=4)
-        service_data["scrape_log_level"] = LOKI_CONFIG.get("scrape_log_level")
         flag, msg = self.update_agent_service(
             service_data.get('ip'), 'add', [service_data])
         if not flag:
