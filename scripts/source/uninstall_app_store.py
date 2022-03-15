@@ -70,9 +70,16 @@ class UninstallServices(object):
             self._app_obj = self._app_obj.filter(app_version__startswith=self.version)
         # 检查是否存在已安装的应用
         have_app = False
+        serivce_instance_name = []
         for obj in self._app_obj:
             if obj.service_set.count() != 0:
+                serivce_instance_name.append(obj.service_set.values_list('service_instance_name', flat=True))
                 have_app = True
+        if serivce_instance_name:
+            list_str = ""
+            for _ in serivce_instance_name:
+                list_str = list_str + ",".join(_) + ","
+            print(f"请删除已安装服务{list_str}再删除应用商店")
         return have_app
 
     def sys_cmd(self, cmd, ignore_exception=True):
@@ -148,10 +155,6 @@ if __name__ == '__main__':
                                       )
     result = uninstall_obj.check_database()
     if result:
-        print("应用商店的服务存在已安装实例")
-        # result = input()
-        # if result not in ["yes", "no"]:
-        # print("请输入正确的参数")
         sys.exit(1)
     uninstall_obj.delete_database()
     time.sleep(5)
