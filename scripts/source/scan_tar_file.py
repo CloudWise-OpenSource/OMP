@@ -43,7 +43,7 @@ def check_upload(uuid):
             time.sleep(5)
             print(f"等待发布第{i}次")
             upload_obj.refresh_from_db()
-            if valid_uuids.package_status != 5:
+            if upload_obj.package_status != 5:
                 break
     return UploadPackageHistory.objects.filter(
         operation_uuid=uuid,
