@@ -1282,7 +1282,11 @@ class ServiceArgsPortUtils(object):
         """
         if not obj.app_install_args:
             return list()
-        app_install_args = json.loads(obj.app_install_args)
+        app_install_args = self.make_product_config_overwrite(
+            app_name=obj.app_name,
+            rep_type="app_install_args",
+            lst=json.loads(obj.app_install_args)
+        )
         return self._parse(app_install_args)
 
     def _parse(self, app_install_args):
@@ -2073,7 +2077,7 @@ class CreateInstallPlan(object):
                 # 创建安装前的操作记录
                 self.create_pre_install_history(main_obj)
                 # 创建安装后操作日志
-                self.create_post_install_history(main_obj)
+                # self.create_post_install_history(main_obj)
                 _json_obj = DataJson(operation_uuid=operation_uuid)
                 _json_obj.run()
                 # 调用安装异步任务，并回写异步任务到
