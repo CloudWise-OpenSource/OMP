@@ -144,7 +144,7 @@ class UninstallServices(object):
         service_list = self.get_all_services()
         uninstall_list = self.get_uninstall_order(service_list=service_list)
         self.uninstall_all_services(uninstall_list=uninstall_list)
-        for i in range(5):
+        for i in range(10):
             if Service.objects.all().count() != 0:
                 time.sleep(int(self.service_num))
                 print(f"等待服务删除第{i}次")
