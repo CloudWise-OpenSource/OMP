@@ -479,11 +479,12 @@ class PrometheusUtils(object):
             else:
                 logger.error('向{}更新服务{}配置失败！'.format(
                     dest_ip, services_data[0].get('service_name')))
-                return False, result.get('return_message')
-        except requests.exceptions.ConnectionError as e:
+                # return False, result.get('return_message')
+        except Exception as e:
             logger.error('向{}更新服务{}配置失败！'.format(
                 dest_ip, services_data[0].get('service_name')))
-            return False, e
+            logger.error(e)
+            # return False, e
         try:
             from utils.parse_config import MONITOR_PORT, LOCAL_IP
             from db_models.models import Host
@@ -505,12 +506,12 @@ class PrometheusUtils(object):
             else:
                 logger.error('向{}更新服务{}日志监控配置失败！'.format(
                     dest_ip, services_data[0].get('service_name')))
-                return False, promtail_result.get('return_message')
+                # return False, promtail_result.get('return_message')
         except Exception as e:
             logger.error(e)
             logger.error('向{}更新服务{}日志监控失败！'.format(
                 dest_ip, services_data[0].get('service_name')))
-            return False, e
+            # return False, e
 
         return True, 'success'
 
