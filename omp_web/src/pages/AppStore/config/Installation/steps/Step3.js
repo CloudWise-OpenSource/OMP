@@ -216,7 +216,9 @@ const Step3 = ({ setStepNum }) => {
               // 校验通过，跳转，请求服务分布数据并跳转
               setStepNum(3);
             } else {
-              message.warn("校验未通过，请检查");
+              res.data && res.data.error_msg
+                ? message.warn(res.data.error_msg)
+                : message.warn("校验未通过，请检查");
               dispatch(
                 getStep3ErrorInfoChangeAction(getErrorInfo(res.data.data))
               );
