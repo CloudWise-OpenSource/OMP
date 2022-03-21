@@ -686,6 +686,10 @@ class CreateInstallPlanSerializer(BaseInstallSerializer):
         help_text="服务运行用户",
         required=True, allow_null=True, allow_blank=True
     )
+    error_msg = serializers.CharField(
+        help_text="错误信息",
+        required=False, allow_null=True, allow_blank=True
+    )
 
     def check_service_dis(self, host_service_map, install_data):  # NOQA
         """
@@ -789,8 +793,8 @@ class CreateInstallPlanSerializer(BaseInstallSerializer):
             lst.extend(item.get("ports"))
             for el in lst:
                 if "error_msg" in el and el["error_msg"]:
-                    return False
-        return True
+                    return False, el["error_msg"]
+        return True, ""
 
     def create(self, validated_data):
         """
@@ -872,7 +876,7 @@ class CreateInstallPlanSerializer(BaseInstallSerializer):
         all_install_service_lst = ValidateInstallServicePortArgs(
             data=all_install_service_lst
         ).run()
-        is_continue = self.check_error_msg(all_install_service_lst)
+        is_continue, error_msg = self.check_error_msg(all_install_service_lst)
         logger.info(f"Final check_error_msg: {is_continue}")
         logger.info(f"Final check service: {all_install_service_lst}")
         if not is_continue:
@@ -884,6 +888,7 @@ class CreateInstallPlanSerializer(BaseInstallSerializer):
             }
             validated_data["data"] = _re_data
             validated_data["is_continue"] = is_continue
+            validated_data["error_msg"] = error_msg
             return validated_data
         # 分配role
         all_install_service_lst = SerRoleUtils.get(all_install_service_lst)
@@ -899,6 +904,7 @@ class CreateInstallPlanSerializer(BaseInstallSerializer):
             logger.error(f"Failed CreateInstallPlan: {_res}")
             raise _res
         validated_data["is_continue"] = is_continue
+        validated_data["error_msg"] = error_msg
         return validated_data
 
 
