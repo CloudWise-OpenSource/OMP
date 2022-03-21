@@ -460,6 +460,8 @@ class PrometheusUtils(object):
                 service_temp_data['instance'] = dest_ip
                 service_temp_data['env'] = sd.get('env')
                 service_temp_data['log_path'] = sd.get('log_path')
+                service_temp_data["scrape_log_level"] = LOKI_CONFIG.get(
+                    "scrape_log_level")
                 json_content.append(service_temp_data)
         elif action == 'delete':
             dest_url = 'http://{}:{}/update/service/delete'.format(dest_ip, self.monitor_port)  # NOQA
@@ -477,11 +479,12 @@ class PrometheusUtils(object):
             else:
                 logger.error('向{}更新服务{}配置失败！'.format(
                     dest_ip, services_data[0].get('service_name')))
-                return False, result.get('return_message')
-        except requests.exceptions.ConnectionError as e:
+                # return False, result.get('return_message')
+        except Exception as e:
             logger.error('向{}更新服务{}配置失败！'.format(
                 dest_ip, services_data[0].get('service_name')))
-            return False, e
+            logger.error(e)
+            # return False, e
         try:
             from utils.parse_config import MONITOR_PORT, LOCAL_IP
             from db_models.models import Host
@@ -503,12 +506,12 @@ class PrometheusUtils(object):
             else:
                 logger.error('向{}更新服务{}日志监控配置失败！'.format(
                     dest_ip, services_data[0].get('service_name')))
-                return False, promtail_result.get('return_message')
+                # return False, promtail_result.get('return_message')
         except Exception as e:
             logger.error(e)
             logger.error('向{}更新服务{}日志监控失败！'.format(
                 dest_ip, services_data[0].get('service_name')))
-            return False, e
+            # return False, e
 
         return True, 'success'
 
@@ -532,7 +535,7 @@ class PrometheusUtils(object):
             return False, "args cant be null"
 
         logger.info(f'收到信息：{service_data}')
-        job_name_str = "'{}Exporter".format(service_data.get('service_name'))
+        job_name_str = "{}Exporter".format(service_data.get('service_name'))
         prom_job_dict = {
             "job_name": job_name_str,
             "metrics_path": f"/metrics/monitor/{service_data.get('service_name')}",
@@ -548,6 +551,8 @@ class PrometheusUtils(object):
         with open(self.prometheus_conf_path, "r") as fr:
             content = yaml.load(fr.read(), yaml.Loader)
         content.get("scrape_configs").append(prom_job_dict)
+        content["scrape_configs"] = self.json_distinct(
+            content.get("scrape_configs"))
         with open(self.prometheus_conf_path, "w", encoding="utf8") as fw:
             yaml.dump(data=content, stream=fw,
                       allow_unicode=True, sort_keys=False)
@@ -581,7 +586,6 @@ class PrometheusUtils(object):
 
         with open(self_exporter_target_file, 'w') as f2:
             json.dump(self_target_list, f2, ensure_ascii=False, indent=4)
-        service_data["scrape_log_level"] = LOKI_CONFIG.get("scrape_log_level")
         flag, msg = self.update_agent_service(
             service_data.get('ip'), 'add', [service_data])
         if not flag:
