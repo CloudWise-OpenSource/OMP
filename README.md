@@ -201,8 +201,3 @@ bash omp loki [status|start|stop|restart]
 
 [更新日志](./doc/changelogs.md)
 
-## 欢迎加入
-
-获取更多关于 OMP 的技术资料，或加入 OMP 开发者交流群，可扫描下方二维码咨询
-
-<img src="./doc/contact-us.png" width="600px" />
