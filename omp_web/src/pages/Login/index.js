@@ -64,7 +64,8 @@ const Login = withRouter(({ history }) => {
           <header className={styles.loginTitle}>
             <img className={styles.loginLogo} src={img} />
             <span className={styles.loginOMP}>
-              OMP<span className={styles.loginOpenText}>运维管理平台</span>
+              {/* OMP<span className={styles.loginOpenText}>运维管理平台</span> */}
+              运维工具包
             </span>
           </header>
           <p className={styles.loginInputTitle}>用户名密码登录</p>

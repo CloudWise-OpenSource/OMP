@@ -249,7 +249,8 @@ const OmpLayout = (props) => {
               }}
               onClick={() => history.push("/homepage")}
             >
-              运维管理平台
+              {/* 运维管理平台 */}
+              运维工具包
             </div>
           )}
         </div>
