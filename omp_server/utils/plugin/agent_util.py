@@ -94,7 +94,7 @@ class Agent(object):
         omp_salt = os.path.join(self.install_dir, "omp_salt_agent")
         _delete_cron_cmd = f"sed -i '/omp_salt_agent/d' /var/spool/cron/{self.username}; "
         # _stop_agent = f"bash {omp_salt}/bin/omp_salt_agent stop; rm -rf {omp_salt}"
-        _stop_agent = f"bash {omp_salt}/bin/omp_salt_agent stop; rm -rf {omp_salt}/data/*"
+        _stop_agent = f"bash {omp_salt}/bin/omp_salt_agent stop; /bin/rm -rf {omp_salt}/data/*"
         final_cmd = f"{_delete_cron_cmd} {_stop_agent}"
         self.ssh.cmd(final_cmd, timeout=60)
 

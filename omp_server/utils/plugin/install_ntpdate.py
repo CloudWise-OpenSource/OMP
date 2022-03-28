@@ -107,7 +107,7 @@ class InstallNtpdate(object):
                     f"(test -d {log_dir}|| mkdir -p {log_dir})&&"
                     f"cd {app_dir} &&"
                     f" tar -xmf {self.ntpdate_package_name} &&"
-                    f" rm -rf {self.ntpdate_package_name} &&"
+                    f" /bin/rm -rf {self.ntpdate_package_name} &&"
                     f"sed -i -e \"s#\${{CW_INSTALL_APP_DIR}}#{app_dir}#g\" -e 's#\${{CW_NTP_ADDRESS}}#{host_obj.ntpd_server}#g' {ntpdate_cron_path} &&"
                     f"sed -i -e 's#\${{CW_INSTALL_APP_DIR}}#{app_dir}#g' -e 's#\${{CW_INSTALL_LOGS_DIR}}#{log_dir}#g' -e 's#\${{CW_INSTALL_DATA_DIR}}#{data_dir}#g' -e's#\${{CW_RUN_USER}}#{self.get_run_user()}#g' {scripts_path};"
                     f"bash {scripts_path} start",

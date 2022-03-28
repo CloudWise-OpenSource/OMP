@@ -29,7 +29,7 @@ function uninstall() {
   clear_omp_keep_alive
   bash $OMP_SCRIPT all stop
   sleep 5
-  rm -rf ${PROJECT_FOLDER}
+  /bin/rm -rf ${PROJECT_FOLDER}
 }
 
 uninstall

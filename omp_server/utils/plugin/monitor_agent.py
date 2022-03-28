@@ -110,7 +110,7 @@ class MonitorAgentManager(object):
             target=obj.ip,
             command=f"cd {obj.agent_dir} && "
                     f"tar -xmf {self.monitor_agent_package_name} && "
-                    f"rm -rf {self.monitor_agent_package_name} && "
+                    f"/bin/rm -rf {self.monitor_agent_package_name} && "
                     f"cd {self.name} && "
                     f"./install --agent_ip={obj.ip} --metrics_auth='{metrics_auth}' && "
                     f"bash monitor_agent.sh init &&"
@@ -195,7 +195,7 @@ class MonitorAgentManager(object):
             target=obj.ip,
             command=f"cd {monitor_agent_home} && "
                     f"./manage stop_all && bash monitor_agent.sh stop && "
-                    f"cd {obj.agent_dir} && rm -rf {self.name}",
+                    f"cd {obj.agent_dir} && /bin/rm -rf {self.name}",
             timeout=120)
         logger.info(
             f"Uninstall monitor_agent, "

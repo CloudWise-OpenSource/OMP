@@ -390,7 +390,7 @@ def reinstall_monitor_celery_task(host_id, username):
     # 删除目录，防止agent_dir异常保护系统
     if host_obj.agent_dir:
         monitor_dir = os.path.join(host_obj.agent_dir, "omp_monitor_agent")
-        flag, message = _obj.cmd(f"rm -rf {monitor_dir}")
+        flag, message = _obj.cmd(f"/bin/rm -rf {monitor_dir}")
     logger.info(
         f"Stop monitor agent for {host_obj.ip}: "
         f"get flag: {flag}; get res: {message}")
@@ -460,7 +460,7 @@ class UninstallHosts(object):
             raise Exception(f"主机{ip}无数据目录")
         # TODO /app/bash_profile目前是指定目录
         delete_cmd_str = f"rm -rf {data_dir}/omp_packages; " \
-                         f"rm -rf {data_dir}/app/bash_profile; rm -rf /tmp/upgrade_openssl"
+                         f"/bin/rm -rf {data_dir}/app/bash_profile; /bin/rm -rf /tmp/upgrade_openssl"
         cmd_res, msg = _ssh_obj.cmd(
             delete_cmd_str,
             timeout=120
@@ -471,7 +471,7 @@ class UninstallHosts(object):
         salt_agent_dir = os.path.join(agent_dir, "omp_salt_agent")
         _delete_cron_cmd = "crontab -l|grep -v omp_salt_agent 2>/dev/null | crontab -;"
         _stop_agent = (
-            f"bash {salt_agent_dir}/bin/omp_salt_agent stop; rm -rf {salt_agent_dir}"
+            f"bash {salt_agent_dir}/bin/omp_salt_agent stop; /bin/rm -rf {salt_agent_dir}"
         )
         final_cmd = f"{_delete_cron_cmd} {_stop_agent}"
         salt_res_flag, salt_res_msg = _ssh_obj.cmd(final_cmd, timeout=60)
@@ -486,17 +486,17 @@ class UninstallHosts(object):
                                        f" ./manage stop_all &&" \
                                        f" bash monitor_agent.sh stop &&" \
                                        f" cd {agent_dir} &&" \
-                                       f" rm -rf omp_monitor_agent"
+                                       f" /bin/rm -rf omp_monitor_agent"
         monitor_res_flag, monitor_res_msg = _ssh_obj.cmd(
             _uninstall_monitor_agent_cmd, timeout=120)
         res, msg = _ssh_obj.cmd(
             _delete_monitor_cron_cmd, timeout=120)
 
-        cmd_ntpd_uninstall = "rm -rf {0}/app/ntpdate &&" \
+        cmd_ntpd_uninstall = "/bin/rm -rf {0}/app/ntpdate &&" \
                              "crontab -l| grep -v {0}/app/ntpdate 2>/dev/null" \
                              " | crontab -;".format(data_dir)
         if obj.username != "root":
-            cmd_ntpd_uninstall = "sudo rm -rf {0}/app/ntpdate &&" \
+            cmd_ntpd_uninstall = "sudo /bin/rm -rf {0}/app/ntpdate &&" \
                                  "sudo crontab -l| grep -v {0}/app/ntpdate 2>/dev/null" \
                                  " | sudo crontab -;".format(data_dir)
         ntpd_res, ntpd_msg = _ssh_obj.cmd(
