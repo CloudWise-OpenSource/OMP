@@ -87,7 +87,7 @@ def delete_file(service_controllers, service_obj):
     # 删除安装路径
     if base_dir:
         is_success, info = salt_obj.cmd(
-            service_obj.ip, f"rm -rf {base_dir}", 600)
+            service_obj.ip, f"/bin/rm -rf {base_dir}", 600)
         logger.info(f"执行 [delete] 操作 {is_success}，原因: {info}")
         return cmd_res and is_success
 

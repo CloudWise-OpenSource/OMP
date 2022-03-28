@@ -161,7 +161,11 @@ class Upgrade(BaseOperation):
             if not package:
                 log_print(f"未找到服务包：{self.service_package}!", "error")
                 return None
+            start = time.time()
             while True:
+                if time.time() - start > 60 * 10:
+                    log_print(f"校验服务包超时！", "error")
+                    break
                 package.refresh_from_db()
                 if package.package_status in [
                     package.PACKAGE_STATUS_FAILED,
@@ -170,8 +174,10 @@ class Upgrade(BaseOperation):
                     log_print(
                         f"校验服务包失败，失败详情:{package.error_msg}", "error")
                     return None
-                if package.package_status == \
-                        package.PACKAGE_STATUS_PUBLISH_SUCCESS:
+                if package.package_status in [
+                    package.PACKAGE_STATUS_PUBLISH_SUCCESS,
+                    package.PACKAGE_STATUS_SUCCESS
+                ]:
                     log_print("校验服务包通过！")
                     return ApplicationHub.objects.filter(
                         app_package=package).first()
@@ -207,22 +213,26 @@ class Upgrade(BaseOperation):
     def handle(self):
         app = self.valid_package()
         if not app:
-            return False
+            # 无app情况下流水线不凋回滚
+            return True
         self.app = app
         self.services = self.services.exclude(service=app)
         if not self.services.exists():
-            log_print("该服务包已被升级！", "error")
-            return False
+            log_print("该服务包已被升级！")
+            # 流水线不凋回滚
+            return True
         self._wait()
         try:
             history = self.upgrade(app)
         except Exception as e:
-            log_print(f"服务依赖校验失败:{str(e)}", "error")
-            return False
+            log_print(f"服务依赖校验失败:{str(e)}")
+            # 流水线不凋回滚
+            return True
         self.decr()
         history.refresh_from_db()
         if history.upgrade_state != UpgradeStateChoices.UPGRADE_SUCCESS:
             return False
+        log_print("操作成功，即将退出！")
         return True
 
 
@@ -252,6 +262,7 @@ class Rollback(BaseOperation):
         ).first()
         if not app:
             log_print("未找到该服务包相关信息，不可回滚！", "error")
+            return False
         self.app = app
         details = UpgradeDetail.objects.filter(
             target_app=app,
@@ -283,6 +294,7 @@ class Rollback(BaseOperation):
         history.refresh_from_db()
         if history.rollback_state != RollbackStateChoices.ROLLBACK_SUCCESS:
             return False
+        log_print("操作成功，即将退出！")
         return True
 
 
@@ -304,7 +316,6 @@ if __name__ == '__main__':
         exit(1)
     result = eval(operation.capitalize())(*sys_args[1:])()
     if result:
-        log_print("操作成功，即将退出！")
         exit(0)
     log_print("操作失败，即将退出！", "error")
     exit(1)

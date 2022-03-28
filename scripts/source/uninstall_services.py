@@ -26,7 +26,7 @@ from db_models.models import (Service, ApplicationHub, Host, HostOperateLog,
                               PreInstallHistory, DetailInstallHistory,
                               PostInstallHistory, MainInstallHistory, Alert,
                               ExecutionRecord, UpgradeHistory, RollbackDetail,
-                              RollbackHistory, UpgradeDetail)
+                              RollbackHistory, UpgradeDetail, DeploymentPlan)
 from utils.parse_config import BASIC_ORDER
 from services.tasks import exec_action as uninstall_exec_action
 from utils.plugin.salt_client import SaltClient
@@ -131,6 +131,7 @@ class UninstallServices(object):
         DetailInstallHistory.objects.all().delete()
         PostInstallHistory.objects.all().delete()
         MainInstallHistory.objects.all().delete()
+        Service.all_objects.all().delete()
         # TODO Alert.objects.filter(env_id=self.env_id).delete()
         Alert.objects.all().delete()
         ExecutionRecord.objects.all().delete()
@@ -138,6 +139,7 @@ class UninstallServices(object):
         RollbackHistory.objects.all().delete()
         UpgradeDetail.objects.all().delete()
         UpgradeHistory.objects.all().delete()
+        DeploymentPlan.objects.all().delete()
 
     def run(self):
         """卸载的总控制函数"""

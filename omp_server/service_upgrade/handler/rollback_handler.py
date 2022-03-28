@@ -114,21 +114,6 @@ class RollBackServiceHandler(RollbackBaseHandler):
     log_message = "服务实例{}: 回滚{}"
     operation_type = "ROLLBACK"
 
-    def backup_file_str(self):
-        backup_package = os.path.join(
-            os.path.dirname(self.service.install_folder),
-            f"rollback_backup/"
-        )
-        time_str = datetime.today().strftime('%Y%m%d')
-        backup_name = f"{self.service.service.app_name}.back-{time_str}-" \
-                      f"{random.randint(1, 120)}"
-        backup_file = os.path.join(backup_package, backup_name)
-        rollback_file = self.detail.upgrade.path_info.get('backup_file_path')
-        return f"mkdir -p {backup_package} && " \
-               f"mv {self.service.install_folder} {backup_file} && " \
-               f"mv {rollback_file} {self.service.install_folder} && " \
-               f"echo 备份路径:{backup_file}"
-
     def handler(self):
         rollback_file = self.detail.upgrade.path_info.get('backup_file_path')
         if not rollback_file:
@@ -139,13 +124,15 @@ class RollBackServiceHandler(RollbackBaseHandler):
         )
         rollback_path = self.service.service_controllers.get("rollback")
         if not rollback_path:
-            cmd_str = self.backup_file_str()
-        else:
-            cmd_str = f"python {rollback_path} " \
-                      f"--local_ip {self.service.ip} " \
-                      f"--data_json {data_json_path} " \
-                      f"--version {self.detail.upgrade.current_app.app_version} " \
-                      f"--backup_path {rollback_file}"
+            rollback_path = os.path.join(
+                self.service.install_folder,
+                "scripts/rollback.py"
+            )
+        cmd_str = f"python {rollback_path} " \
+                  f"--local_ip {self.service.ip} " \
+                  f"--data_json {data_json_path} " \
+                  f"--version {self.detail.upgrade.current_app.app_version} " \
+                  f"--backup_path {rollback_file}"
         state, message = self.salt_client.cmd(
             self.service.ip,
             cmd_str,

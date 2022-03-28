@@ -7,7 +7,7 @@ from celery import shared_task
 
 from db_models.mixins import UpgradeStateChoices, RollbackStateChoices
 from db_models.models import UpgradeHistory, RollbackHistory, \
-    RollbackDetail, Maintain, MainInstallHistory
+    RollbackDetail, Maintain, MainInstallHistory, Product, ApplicationHub
 from promemonitor.alertmanager import Alertmanager
 from service_upgrade.handler.base import load_upgrade_detail, \
     handler_pipeline, load_rollback_detail
@@ -83,6 +83,44 @@ def update_data_json(operation_uuid, details):
     return True, "data.json更新成功！"
 
 
+def load_upgrade_service(history):
+    app_ids = list(
+        history.upgradedetail_set.filter(
+            service__service__product__isnull=False
+        ).values_list("service__service_id", flat=True)
+    )
+    return app_ids
+
+
+def load_rollback_service(history):
+    app_ids = list(
+        history.rollbackdetail_set.filter(
+            upgrade__service__service__product__isnull=False
+        ).values_list("upgrade__service__service_id", flat=True)
+    )
+    return app_ids
+
+
+def update_product_version(app_ids):
+    product_info = ApplicationHub.objects.filter(
+        id__in=app_ids
+    ).values("product__pro_name", "product_id")
+    product_union = {}
+    for product in product_info:
+        product_name = product["product__pro_name"]
+        product_id = product["product_id"]
+        if product_name not in product_union:
+            product_union[product_name] = {product_id}
+        else:
+            product_union[product_name].add(product_id)
+    for product_name, product_ids in product_union.items():
+        if len(product_ids) > 1:
+            continue
+        Product.objects.filter(
+            product_instance_name__startswith=product_name
+        ).update(product_id=product_ids.pop())
+
+
 @shared_task
 def upgrade_service(upgrade_history_id):
     history = UpgradeHistory.objects.filter(id=upgrade_history_id).first()
@@ -153,6 +191,8 @@ def upgrade_service(upgrade_history_id):
             time.sleep(5)
     history.upgrade_state = upgrade_state
     history.save()
+    app_ids = load_upgrade_service(history)
+    update_product_version(app_ids)
 
 
 @shared_task
@@ -201,3 +241,5 @@ def rollback_service(rollback_history_id):
                 break
     history.rollback_state = rollback_state
     history.save()
+    app_ids = load_rollback_service(history)
+    update_product_version(app_ids)
