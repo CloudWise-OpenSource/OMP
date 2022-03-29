@@ -236,11 +236,16 @@ class DoUpgradeAPIView(GenericAPIView):
             ]
         ).exists():
             raise GeneralError("存在正在回滚的服务，请稍后！")
-        if UpgradeDetail.objects.filter(
+        fail_query = UpgradeDetail.objects.filter(
                 upgrade_state=UpgradeStateChoices.UPGRADE_FAIL,
                 service__isnull=False
-        ).exclude(has_rollback=True).exists():
-            raise GeneralError("存在升级失败的服务，请继续升级或回滚！")
+        ).exclude(has_rollback=True)
+        if fail_query.exists():
+            fail_services = list(
+                fail_query.values_list("union_server", flat=True)
+            )
+            raise GeneralError(
+                f"存在升级失败的服务，请继续升级或回滚！失败服务：{fail_services}")
         choices = requests.data.get("choices", [])
         if not choices:
             raise GeneralError("请选择需要升级的服务！")
