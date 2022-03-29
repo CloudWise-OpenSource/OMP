@@ -508,6 +508,7 @@ def main():
             local_ip = sys.argv[3]
             init = InitHost(host_name, local_ip)
             init.run()
+            logger.info("init success")
             if sys.argv[1] == 'init_valid':
                 check = ValidInit()
                 check.run()

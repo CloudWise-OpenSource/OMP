@@ -4,7 +4,7 @@ from django.dispatch import receiver
 from db_models.mixins import UpgradeStateChoices, RollbackStateChoices
 from db_models.models import Service, MainInstallHistory, \
     ExecutionRecord, UpgradeHistory, RollbackHistory, UpgradeDetail, \
-    RollbackDetail
+    RollbackDetail, DetailInstallHistory
 
 
 def update_upgrade_history(history, union_server):
@@ -31,7 +31,7 @@ def update_rollback_history(history, union_server):
 
 @receiver(pre_delete, sender=Service)
 def update_execution_record(sender, instance, *args, **kwargs):
-    # models.SET_NULL --> models.SET() ?
+    # models.SET_NULL必须改！
     filter_keys = [
         (MainInstallHistory, "detailinstallhistory__service"),
         (RollbackHistory, "rollbackdetail__upgrade__service"),
@@ -42,7 +42,7 @@ def update_execution_record(sender, instance, *args, **kwargs):
             ip=instance.ip,
             service__app_name="hadoop"
         ).delete()
-
+    DetailInstallHistory.objects.filter(service=instance).delete()
     union_server = f"{instance.ip}-{instance.service.app_name}"
 
     for model_cls, filter_key in filter_keys:

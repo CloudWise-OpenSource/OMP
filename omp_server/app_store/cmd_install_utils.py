@@ -114,7 +114,7 @@ class ReadDeploymentExcel(object):
         host_table = book.sheet_by_name("节点信息")
         host_info = self.read_host_info(table=host_table)
         for item in host_info:
-            if "init_host" in item and item["init_host"] == "是":
+            if item["username"] == "root":
                 item["init_host"] = True
             else:
                 item["init_host"] = False
