@@ -1067,9 +1067,13 @@ class InstallServiceExecutor:
             MainInstallHistory.INSTALL_STATUS_SUCCESS
         main_obj.save()
         # doim安装成功后，相关操作
-        doim_ip_set = set(
-            [el.service.ip for el in queryset if el.service.service.app_name == DOIM_APP_NAME])
-        if doim_ip_set:
-            service_splitting()
+        doim_ids = list(
+            DetailInstallHistory.objects.filter(
+                main_install_history_id=self.main_id,
+                service__service_instance_name__startswith=DOIM_APP_NAME
+            ).values_list("service_id", flat=True)
+        )
+        if doim_ids:
+            service_splitting(doim_ids)
         logger.info(f"Main Install Success, id[{self.main_id}]")
         return self.is_error

@@ -788,10 +788,11 @@ class DeploymentPlanValidateSerializer(Serializer):
                 result_dict["error"].append(service_data)
                 continue
             # 校验服务是否存在
+            app_name = service_data.get("service_name", "unKnow")
             if not app_queryset.filter(
-                    app_name=service_data.get("service_name", "unKnow")
+                    app_name=app_name
             ).order_by("-created").exists():
-                service_data["validate_error"] = "服务不在应用商店中"
+                service_data["validate_error"] = f"{app_name}服务不在应用商店中"
                 result_dict["error"].append(service_data)
                 continue
             # 如果含 vip 字段，校验是否为 IP 格式
@@ -809,7 +810,7 @@ class DeploymentPlanValidateSerializer(Serializer):
                 result_dict["error"].append(service_data)
                 continue
             # 当服务名为 hadoop 时，记录 hadoop 实例列表、角色集合
-            if service_data.get("service_name") == "hadoop":
+            if app_name == "hadoop":
                 hadoop_instance_ls.append(service_data)
                 if service_data.get("role"):
                     hadoop_role_set = hadoop_role_set | set(
