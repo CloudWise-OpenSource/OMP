@@ -328,7 +328,8 @@ class MainProcess(object):
         """
         queryset = DetailInstallHistory.objects.filter(
             main_install_history__operation_uuid=self.operation_uuid
-        ).values("install_step_status", "service__service_instance_name")
+        ).exclude(service__service_split=2).values(
+            "install_step_status", "service__service_instance_name")
         status_dic = {
             el["service__service_instance_name"]:
                 el["install_step_status"] for el in queryset

@@ -174,10 +174,8 @@ class Upgrade(BaseOperation):
                     log_print(
                         f"校验服务包失败，失败详情:{package.error_msg}", "error")
                     return None
-                if package.package_status in [
-                    package.PACKAGE_STATUS_PUBLISH_SUCCESS,
-                    package.PACKAGE_STATUS_SUCCESS
-                ]:
+                if package.package_status == \
+                        package.PACKAGE_STATUS_PUBLISH_SUCCESS:
                     log_print("校验服务包通过！")
                     return ApplicationHub.objects.filter(
                         app_package=package).first()
