@@ -113,7 +113,7 @@ def install_mysql():
     time.sleep(30)
     # 确保mysql启动成功并可用
     _mysql_cli = os.path.join(_dic["CW_MYSQL_BASE_DIR"], "bin/mysql")
-    _mysql_cli = f"{_mysql_cli} -S {os.path.join(_dic['CW_MYSQL_DATA_DIR'], 'mysql.sock')}"
+    _mysql_cli = f"{_mysql_cli} -S {os.path.join(_dic['CW_MYSQL_DATA_DIR'], 'mysql.sock')} -uroot"
     try_times = 0
     while try_times < 10:
         out, _, _ = cmd(f"{_mysql_cli} -e 'SHOW DATABASES;'")
