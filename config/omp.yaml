@@ -11,12 +11,12 @@ thread_pool_max_workers: 10
 # redis相关配置
 redis:
   host: 127.0.0.1
-  port: 6379
+  port: 6380
   password: common123
 # mysql相关配置
 mysql:
   host: 127.0.0.1
-  port: 3306
+  port: 3307
   username: common
   password: Common@123
 # salt相关配置
