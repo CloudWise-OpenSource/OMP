@@ -1,3 +1,11 @@
+import json
+import logging
+import os
+
+from django.conf import settings
+from django.http import Http404
+from django_filters.rest_framework.backends import DjangoFilterBackend
+from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.mixins import (
     ListModelMixin, RetrieveModelMixin,
@@ -6,11 +14,9 @@ from rest_framework.mixins import (
 from rest_framework.response import Response
 from rest_framework.filters import OrderingFilter
 
-from django_filters.rest_framework.backends import DjangoFilterBackend
-
-from db_models.models import (
-    Service, ApplicationHub
-)
+from db_models.models import Service, ApplicationHub, MainInstallHistory
+from service_upgrade.update_data_json import DataJsonUpdate
+from services.permission import GetDataJsonAuthenticated
 from services.tasks import exec_action
 from services.services_filters import ServiceFilter
 from services.services_serializers import (
@@ -22,8 +28,6 @@ from promemonitor.prometheus import Prometheus
 from promemonitor.grafana_url import explain_url
 from utils.common.exceptions import OperateError
 from utils.common.paginations import PageNumberPager
-import json
-import logging
 
 logger = logging.getLogger('server')
 
@@ -282,3 +286,22 @@ class ServiceStatusView(GenericViewSet, ListModelMixin):
                     status = prometheus_dict.get(key_name, None)
                     service_obj["service_status"] = status
         return Response(serializer_data)
+
+
+class ServiceDataJsonView(APIView):
+    # for automated testing
+    permission_classes = (GetDataJsonAuthenticated, )
+
+    def get(self, request):
+        main_install = MainInstallHistory.objects.order_by("-id").first()
+        if not main_install:
+            raise Http404('No install history matches the given query.')
+        json_path = os.path.join(
+            settings.PROJECT_DIR,
+            f"package_hub/data_files/{main_install.operation_uuid}.json"
+        )
+        if not os.path.exists(json_path):
+            DataJsonUpdate(main_install.operation_uuid).create_json_file()
+        with open(json_path, "r") as f:
+            json_data = json.load(f)
+        return Response({"json_data": json_data})
