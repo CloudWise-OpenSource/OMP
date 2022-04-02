@@ -308,3 +308,6 @@ INTERFACE_KINDS = {"/api/appStore/upload/": "修改",
                    "/api/users/users/": "新增",
                    "/api/users/updatePassword/": "修改"
                    }
+
+# for automated testing
+DATA_JSON_SECRET = "Yunweiguanli@OMP_123"

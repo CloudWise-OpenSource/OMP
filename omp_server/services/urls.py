@@ -1,9 +1,10 @@
+from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from services.views import (
     ServiceListView, ServiceDetailView,
     ServiceActionView, ServiceDeleteView,
-    ServiceStatusView
+    ServiceStatusView, ServiceDataJsonView
 )
 from services.self_heal_view import (
     SelfHealingSettingView, ListSelfHealingHistoryView,
@@ -20,5 +21,12 @@ router.register("SelfHealingSetting", SelfHealingSettingView,
 router.register("ListSelfHealingHistory",
                 ListSelfHealingHistoryView, basename="ListSelfHealingHistory")
 router.register("UpdateSelfHealingHistory",
-                UpdateSelfHealingHistoryView, basename="UpdateSelfHealingHistory")
+                UpdateSelfHealingHistoryView,
+                basename="UpdateSelfHealingHistory")
 router.register("serviceStatus", ServiceStatusView, basename="serviceStatus")
+
+urlpatterns = [
+    path('data_json', ServiceDataJsonView.as_view(), name="serviceDataJson")
+]
+
+urlpatterns += router.urls
