@@ -259,7 +259,7 @@ class MainProcess(object):
             time.sleep(INFO_FRESH_SECOND)
             _status_dic = self.get_service_install_status()
             for key, value in _status_dic.items():
-                if status_dic[key] == value:
+                if key not in status_dic or status_dic.get(key) == value:
                     continue
                 if value == DetailInstallHistory.INSTALL_STATUS_FAILED:
                     self.check_failed_status(key)

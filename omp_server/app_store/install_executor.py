@@ -365,8 +365,9 @@ class InstallServiceExecutor:
                 detail_obj.service.save()
                 detail_obj.save()
                 return True, "Start Un Do"
-
-            cmd_str = f"bash {start_script_path} start"
+            if "start" not in start_script_path:
+                start_script_path += " start"
+            cmd_str = f"bash {start_script_path}"
 
             # 执行启动
             is_success, message = salt_client.cmd(
