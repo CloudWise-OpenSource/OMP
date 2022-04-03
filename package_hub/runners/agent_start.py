@@ -37,12 +37,15 @@ def get_agent_detail(target):
     try:
         salt_obj = SaltClient()
         _flag, res = salt_obj.fun(target=target, fun="saltutil.sync_modules")
-        logger.info(f"同步模块返回标志: {_flag}; 返回值: {res}")
-        _flag, res = salt_obj.fun(target, "get_agent_info.get_agent_info")
-        if _flag is not True:
-            logger.error(f"获取target: {target} 详情失败")
+        logger.info(f"同步模块返回标志: {_flag}; 返回值: {target} {res}")
+        for i in range(5):
+            _flag, res = salt_obj.fun(target, "get_agent_info.get_agent_info")
+            if _flag:
+                break
+        if not _flag:
+            logger.error(f"获取{target} get_agent_info详情失败: {res}")
             return
-        logger.info(f"获取{target}详情成功: {res}")
+        logger.info(f"获取{target} get_agent_info详情成功: {res}")
         obj_list = Host.objects.filter(ip=target)
         if obj_list:
             obj_list.update(

@@ -91,12 +91,14 @@ class InstallServiceExecutor:
             logger.info(f"主机[{ip}]发送init_host.py脚本成功！")
             if not is_success:
                 return f"{self.now_time()} 执行主机名解析失败！请手动添加集群主机名解析！\n"
-        hosts_data = json.dumps(
-            [
-                {"ip": k, "hostname": v.get("host_name")}
-                for k, v in ips_data.items()
-            ], separators=(',', ':')
-        )
+        host_data = []
+        for k, v in ips_data.items():
+            if not v.get("host_name"):
+                logger.error(f"未获取到主机[{ip}]的主机名，添加主机名解析失败！")
+                return f"未获取到主机[{ip}]的主机名，添加主机名解析失败！" \
+                       f"请重启主机agent重试或手动添加主机名解析"
+            host_data.append({"ip": k, "hostname": v.get("host_name")})
+        hosts_data = json.dumps(host_data, separators=(',', ':'))
         write_host = f"python /tmp/init_host.py write_hostname '{hosts_data}'"
         flag, msg = salt_client.cmd(
             target=ip,
