@@ -200,9 +200,12 @@ class DoUpgradeAPIView(GenericAPIView):
         ).values("id", "app_name", "app_version", "app_dependence")
         app_dict = {}
         for app in apps:
+            # todo: app_dependence字段有问题，后续需修改
             app_dict[app.get("app_name")] = {
                 "target_app_id": app.get("id"),
-                "app_dependence": json.loads(app.get("app_dependence"))
+                "app_dependence": json.loads(
+                    app.get("app_dependence") or '[]'
+                )
             }
         for service in services:
             app_name = service.get("app_name")
