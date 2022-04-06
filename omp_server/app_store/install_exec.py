@@ -73,8 +73,6 @@ class InstallServiceExecutor:
         return ip_user_map
 
     def set_hostname_analysis(self, ips_data, ip, salt_client):
-        if ips_data.get(ip, {}).get("username") != "root":
-            return f"{self.now_time()} 主机用户非root，请手动添加集群主机名解析！\n"
         test_write_host_func = "cat /tmp/init_host.py | grep write_hostname"
         flag, msg = salt_client.cmd(
             target=ip,
@@ -99,7 +97,8 @@ class InstallServiceExecutor:
                        f"请重启主机agent重试或手动添加主机名解析"
             host_data.append({"ip": k, "hostname": v.get("host_name")})
         hosts_data = json.dumps(host_data, separators=(',', ':'))
-        write_host = f"python /tmp/init_host.py write_hostname '{hosts_data}'"
+        # 直接用sudo执行，报错即进行警告
+        write_host = f"sudo python /tmp/init_host.py write_hostname '{hosts_data}'"
         flag, msg = salt_client.cmd(
             target=ip,
             command=write_host,
@@ -623,13 +622,17 @@ class InstallServiceExecutor:
                 detail_obj.save()
                 return True, "Start Un Do"
 
-            cmd_str = f"bash {start_script_path} start"
+            if "start" not in start_script_path:
+                start_script_path += " start"
+            cmd_str = f"bash {start_script_path}"
 
             # 执行启动
             is_success, message = salt_client.cmd(
                 target=target_ip,
                 command=cmd_str,
-                timeout=self.timeout)
+                timeout=self.timeout,
+                real_timeout=self.timeout
+            )
             if not is_success:
                 raise GeneralError(message)
             result_str = message.upper()
@@ -648,7 +651,7 @@ class InstallServiceExecutor:
             detail_obj.start_flag = 3
             detail_obj.start_msg += f"{self.now_time()} {service_name} " \
                                     f"启动服务失败: {err}\n"
-            # 如果是基础组件服务的启动步骤，如果启动失败则认为其启动失败
+            # 如果是基础组件服务的启动步骤，如果启动失败则认为其安装失败
             if detail_obj.service.service.app_type == \
                     ApplicationHub.APP_TYPE_COMPONENT:
                 detail_obj.install_step_status = \
@@ -893,28 +896,28 @@ class InstallServiceExecutor:
         post_obj.install_flag = 1
         post_obj.save()
         # 确定重新加载的服务 tengine & nacos & aopsUtils
-        if DetailInstallHistory.objects.filter(
-                service__service__app_name__in=[
-                    "tengine", "nacos", "aopsUtils"]
-        ).exclude(main_install_history=main_obj).exists():
-            for key, value in POST_INSTALL_SERVICE.items():
-                if not DetailInstallHistory.objects.filter(
-                        service__service__app_name=key).exclude(
-                    main_install_history=main_obj
-                ).exists():
-                    continue
-                post_obj.install_log += \
-                    f"{self.now_time()} 开始执行 {key} 安装后续任务\n"
-                post_obj.save()
-                _flag, _msg = value(main_obj=main_obj).run()
-                post_obj.install_log += \
-                    f"{self.now_time()} " \
-                    f"{key} 安装后续任务执行标志: {_flag}; 执行结果为: {_msg}\n"
-                post_obj.save()
-                if not _flag:
-                    post_obj.install_flag = 3
-                    post_obj.save()
-                    return False, "execute post install action failed"
+        # if DetailInstallHistory.objects.filter(
+        #         service__service__app_name__in=[
+        #             "tengine", "nacos", "aopsUtils"]
+        # ).exclude(main_install_history=main_obj).exists():
+        #     for key, value in POST_INSTALL_SERVICE.items():
+        #         if not DetailInstallHistory.objects.filter(
+        #                 service__service__app_name=key).exclude(
+        #             main_install_history=main_obj
+        #         ).exists():
+        #             continue
+        #         post_obj.install_log += \
+        #             f"{self.now_time()} 开始执行 {key} 安装后续任务\n"
+        #         post_obj.save()
+        #         _flag, _msg = value(main_obj=main_obj).run()
+        #         post_obj.install_log += \
+        #             f"{self.now_time()} " \
+        #             f"{key} 安装后续任务执行标志: {_flag}; 执行结果为: {_msg}\n"
+        #         post_obj.save()
+        #         if not _flag:
+        #             post_obj.install_flag = 3
+        #             post_obj.save()
+        #             return False, "execute post install action failed"
 
         # TODO 在增量安装的前提下，需要在加载nacos和tengine完成后，再启动其他自研服务
         if self.is_error:
