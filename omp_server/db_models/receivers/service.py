@@ -42,9 +42,7 @@ def update_execution_record(sender, instance, *args, **kwargs):
             ip=instance.ip,
             service__app_name="hadoop"
         ).delete()
-    DetailInstallHistory.objects.filter(service=instance).delete()
     union_server = f"{instance.ip}-{instance.service.app_name}"
-
     for model_cls, filter_key in filter_keys:
         history = model_cls.objects.filter(**{filter_key: instance}).first()
         if not history:
@@ -63,3 +61,5 @@ def update_execution_record(sender, instance, *args, **kwargs):
         if model_cls.__name__ == "UpgradeHistory" and \
                 history.upgrade_state != UpgradeStateChoices.UPGRADE_SUCCESS:
             update_upgrade_history(history, union_server)
+    # 删除安装记录, 修复卸载产品再重试安装
+    DetailInstallHistory.objects.filter(service=instance).delete()

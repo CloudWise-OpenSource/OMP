@@ -2077,7 +2077,7 @@ class CreateInstallPlan(object):
                 # 创建安装前的操作记录
                 self.create_pre_install_history(main_obj)
                 # 创建安装后操作日志
-                # self.create_post_install_history(main_obj)
+                self.create_post_install_history(main_obj)
                 _json_obj = DataJson(operation_uuid=operation_uuid)
                 _json_obj.run()
                 # 调用安装异步任务，并回写异步任务到
