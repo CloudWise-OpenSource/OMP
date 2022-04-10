@@ -42,7 +42,7 @@ def computer_operation_sorted(details):
         else:
             union_server = detail.union_server
             app_name = detail.current_app.app_name
-            extend_fields = detail.current_app.extend_fields
+            extend_fields = detail.target_app.extend_fields
         if union_server in union_service:
             continue
         union_service.add(union_server)
