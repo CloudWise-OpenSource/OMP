@@ -15,14 +15,16 @@ from copy import deepcopy
 from concurrent.futures import ThreadPoolExecutor
 
 import redis
+from ruamel import yaml
 from django.db import transaction
+from django.db.models import F
 from rest_framework.exceptions import ValidationError
 
 from omp_server.settings import PROJECT_DIR
 from db_models.models import (
     ProductHub, ApplicationHub, ClusterInfo, Service, Host,
     Env, ServiceConnectInfo, Product, MainInstallHistory,
-    DetailInstallHistory
+    DetailInstallHistory, PreInstallHistory, PostInstallHistory
 )
 from app_store.tasks import install_service as install_service_task
 from app_store.deploy_mode_utils import SERVICE_MAP
@@ -34,11 +36,12 @@ from utils.parse_config import (
     OMP_REDIS_PORT,
     OMP_REDIS_PASSWORD
 )
+from app_store.deploy_role_utils import DEPLOY_ROLE_UTILS
 
 logger = logging.getLogger("server")
 
 DIR_KEY = "{data_path}"
-UNIQUE_KEY_ERROR = "后台无法追踪此流程,请重新进行安装操作!"
+UNIQUE_KEY_ERROR = "后台无法追踪此流程或安装流程已开始,请查看安装记录或重新进入部署流程!"
 WEB_CONTAINERS = ["tengine"]
 
 
@@ -57,6 +60,15 @@ class RedisDB(object):
             db=15,
             password=OMP_REDIS_PASSWORD
         )
+
+    def delete_keys(self, keyword):
+        """
+        删除以某个关键字开头的key
+        :param keyword: 关键字
+        :return:
+        """
+        for key in self.conn.scan_iter(f"{keyword}*"):
+            self.conn.delete(key)
 
     def set(self, name, data, timeout=60 * 60 * 8):
         """
@@ -98,6 +110,13 @@ class BaseRedisData(object):
     def __init__(self, unique_key):
         self.unique_key = unique_key
         self.redis = RedisDB()
+
+    def delete_all_keys(self):
+        """
+        删除unique_key相关数据
+        :return:
+        """
+        self.redis.delete_keys(keyword=self.unique_key)
 
     def _get(self, key):
         """
@@ -276,8 +295,13 @@ class BaseRedisData(object):
                 _data["use_exist"][item["name"]] = item.get(
                     "exist_instance", [])
                 continue
+            # TODO 优化版本间若依赖选择
             _data["install"][item["name"]] = {
-                "version": item["version"],
+                # "version": item["version"],
+                "version": ApplicationHub.objects.filter(
+                    app_name=item["name"],
+                    app_version__startswith=item["version"]
+                ).last().app_version,
                 "product": None
             }
         self.redis.set(
@@ -339,6 +363,7 @@ class BaseRedisData(object):
             data=data
         )
         cluster_name_map = dict()
+        service_vip_map = dict()
         basic = data.get("data", {}).get("basic", [])
         for item in basic:
             cluster_name_map[item["name"]] = \
@@ -350,11 +375,17 @@ class BaseRedisData(object):
         for item in dependence:
             if item.get("is_use_exist"):
                 continue
+            if item.get("vip"):
+                service_vip_map[item.get("name")] = item.get("vip")
             cluster_name_map[item["name"]] = \
                 item.get("cluster_name")
         self.redis.set(
             name=self.unique_key + "_step_3_cluster_name_map",
             data=cluster_name_map
+        )
+        self.redis.set(
+            name=self.unique_key + "_step3_service_vip_map",
+            data=service_vip_map
         )
 
     def get_step_3_checked_data(self):
@@ -371,6 +402,14 @@ class BaseRedisData(object):
         :return:
         """
         key = self.unique_key + "_step_3_cluster_name_map"
+        return self._get(key=key)
+
+    def get_step3_service_vip_map(self):
+        """
+        获取要是用的 vip 名
+        :return:
+        """
+        key = self.unique_key + "_step3_service_vip_map"
         return self._get(key=key)
 
     def step_4_set_service_distribution(self, data):
@@ -481,6 +520,24 @@ class BaseRedisData(object):
         key = self.unique_key + "_step_6_set_final_data"
         return self._get(key=key)
 
+    def set_host_user_map(self):
+        """
+        设置主机与用户之间的关系
+        :return:
+        """
+        host_user_lst = Host.objects.all().values("ip", "username")
+        host_user_dic = dict()
+        for item in host_user_lst:
+            host_user_dic[item["ip"]] = item["username"]
+        self.redis.set(self.unique_key + "_host_user_map", data=host_user_dic)
+
+    def get_host_user_map(self):
+        """
+        获取主机与用户映射关系
+        :return:
+        """
+        return self._get(self.unique_key + "_host_user_map")
+
 
 def check_package_exists(app_obj):
     """
@@ -532,7 +589,7 @@ class ProductServiceParse(object):
         :return:
         """
         if not self.high_availability:
-            return 1, 0
+            return 1, 1
         # 如果服务是和tengine进行强绑定的，那么需要限制其数量为1
         # TODO 当前tengine不支持高可用模式
         if "affinity" in app_obj.extend_fields and \
@@ -669,7 +726,7 @@ class ComponentServiceParse(object):
         :return:
         """
         app_obj = ApplicationHub.objects.filter(
-            app_type=ApplicationHub.APP_TYPE_COMPONENT,
+            # app_type=ApplicationHub.APP_TYPE_COMPONENT,
             app_name=self.ser_name,
             app_version=self.ser_version
         ).last()
@@ -728,6 +785,20 @@ def make_lst_unique(lst, key_1, key_2):
         _unique = el.get(key_1, "") + "_" + el.get(key_2, "")
         if _unique in unique_dic:
             continue
+        # 服务版本模糊判断逻辑 jon.liu 20211225
+        _app = ApplicationHub.objects.filter(
+            app_name=el.get(key_1),
+            app_version__startswith=el.get(key_2)
+        ).last()
+        if not _app or el.get(key_1) + "_" + el.get(key_2) not in unique_dic:
+            unique_dic[el.get(key_1) + "_" + el.get(key_2)] = True
+            ret_lst.append(el)
+            continue
+        _unique = _app.app_name + "_" + _app.app_version
+        if _unique in unique_dic:
+            continue
+        # 更新弱校验的服务版本
+        el["version"] = _app.app_version
         ret_lst.append(el)
         unique_dic[_unique] = True
     return ret_lst
@@ -794,7 +865,7 @@ class SerDependenceParseUtils(object):
             ]
         )
         # 判断当前服务的实例信息
-        instance_info = list(Service.objects.filter(
+        instance_info = list(Service.split_objects.filter(
             service__app_name=obj.app_name,
             service__app_version=obj.app_version,
             cluster__isnull=True
@@ -810,7 +881,7 @@ class SerDependenceParseUtils(object):
         )
         return exist_instance, is_pack_exist, msg
 
-    def get_is_base_env(self, obj):     # NOQA
+    def get_is_base_env(self, obj):  # NOQA
         """
         确定当前服务是否为基础环境：如 jdk 等
         :param obj: 服务对象
@@ -840,11 +911,15 @@ class SerDependenceParseUtils(object):
         unique_key_lst = list()
         for inner in dep:
             _name, _version = inner.get("name"), inner.get("version")
+            # 服务版本弱依赖逻辑 jon.liu 20211225
             _app = ApplicationHub.objects.filter(
                 app_name=_name,
-                app_version=_version,
+                app_version__startswith=_version,
                 is_release=True
             ).order_by("created").last()
+            if _app:
+                inner["version"] = _app.app_version
+                _version = _app.app_version
             # 定义服务&版本唯一标准，防止递归错误
             unique_key = str(_name) + str(_version)
             # 如果当前服务和需要被解析的源服务重叠，那么则跳过
@@ -926,6 +1001,95 @@ class SerDeployModeUtils(object):
         }
 
 
+class SerRoleUtils(object):
+    """ 针对开源组件角色分配类 """
+
+    @staticmethod
+    def get(install_services):
+        """
+        获取服务的部署模式
+        :return:
+        """
+        tmp_dict = {}
+        cp_service = deepcopy(install_services)
+        for item in cp_service:
+            if item['name'] in DEPLOY_ROLE_UTILS.keys():
+                tmp_dict[item['name']] = tmp_dict.get(
+                    item['name'], []) + [item]
+                if item["name"] != "mysql":
+                    install_services.remove(item)
+        for name, obj in tmp_dict.items():
+            # 发现有需要分role的实例
+            if name == "mysql":
+                install_services = DEPLOY_ROLE_UTILS[name]().update_service(
+                    install_services
+                )
+            else:
+                install_services.extend(
+                    DEPLOY_ROLE_UTILS[name]().update_service(obj))
+        return install_services
+
+
+class SerVipUtils(object):
+    """ 针对开源组件进行vip绑定处理 """
+
+    def __init__(
+            self,
+            install_services, service_vip_map, host_user_map, run_user):
+        self.install_services = install_services
+        self.service_vip_map = service_vip_map
+        self.host_user_map = host_user_map
+        self.run_user = run_user
+
+    def get_keep_alive(self, ip, data_folder, name):
+        _tmp_ser = dict()
+        _app = ApplicationHub.objects.filter(
+            app_name="keepalived",
+        ).last()
+        install_args = ServiceArgsPortUtils(
+            ip=ip,
+            data_folder=data_folder,
+            run_user=self.run_user,
+            host_user_map=self.host_user_map
+        ).remake_install_args(obj=_app)
+        ports = ServiceArgsPortUtils(
+            ip=ip,
+            data_folder=data_folder,
+            run_user=self.run_user,
+            host_user_map=self.host_user_map
+        ).get_app_port(obj=_app)
+        _tmp_ser["name"] = _app.app_name
+        _tmp_ser["version"] = _app.app_version
+        instance_name = \
+            "keepalived" + "-" + "-".join(ip.split(".")[-2:])
+        _tmp_ser["ip"] = ip
+        _tmp_ser["data_folder"] = data_folder
+        _tmp_ser["run_user"] = self.run_user
+        _tmp_ser["install_args"] = install_args
+        _tmp_ser["ports"] = ports
+        _tmp_ser["instance_name"] = instance_name
+        _tmp_ser["cluster_name"] = None
+        _tmp_ser["roles"] = name
+        return _tmp_ser
+
+    def run(self):
+        """
+        处理服务的 vip 模式
+        :return:
+        """
+        keep_alive_lst = list()
+        for item in self.install_services:
+            if item.get("name") in self.service_vip_map:
+                _ser = self.get_keep_alive(
+                    ip=item.get("ip"),
+                    data_folder=item.get("data_folder"),
+                    name=item.get("name")
+                )
+                _ser["vip"] = self.service_vip_map[item["name"]]
+                keep_alive_lst.append(_ser)
+        return keep_alive_lst
+
+
 class SerWithUtils(object):
     """ 服务强绑定关系解析类 """
 
@@ -958,10 +1122,82 @@ class SerWithUtils(object):
 class ServiceArgsPortUtils(object):
     """ 服务安装过程中参数解析类 """
 
-    def __init__(self, ip=None, data_folder=None, run_user=None):
+    def __init__(self, ip=None, data_folder=None,
+                 run_user=None, host_user_map=None):
         self.ip = ip
         self.data_folder = data_folder
         self.run_user = run_user
+        self.host_user_map = host_user_map
+
+    @staticmethod
+    def get_product_config():
+        """
+        获取产品配置信息，读取 config/product.yaml 配置文件
+        :return:
+        """
+        config_path = os.path.join(PROJECT_DIR, "config/product.yaml")
+        if not os.path.exists(config_path):
+            return dict(), dict()
+        with open(config_path, "r") as fp:
+            product_config = yaml.load(fp, Loader=yaml.SafeLoader)
+        return product_config.get("install", dict()), \
+               product_config.get("ports", dict())
+
+    @staticmethod
+    def inner_replace_args(target_lst, config_lst):
+        """
+        更新配置参数方法
+        :param target_lst: 源配置列表
+        :param config_lst: 需要更新的配置列表
+        :return:
+        """
+        try:
+            config_dic = {el["key"]: el for el in config_lst}
+            new_lst = list()
+            for item in target_lst:
+                if item.get("key") in config_dic:
+                    new_lst.append(config_dic[item.get("key")])
+                else:
+                    new_lst.append(item)
+            return new_lst
+        except Exception as e:
+            raise GeneralError(
+                f"更新安装参数错误, "
+                f"请检查 {os.path.join(PROJECT_DIR, 'config/product.yaml')} "
+                f"数据格式是否符合规则, 错误信息: {str(e)}"
+            )
+
+    def make_product_config_overwrite(self, app_name, rep_type, lst):
+        """
+        覆盖原有数据库中的yaml，利用 config/product.yaml 中的配置文件覆盖相关参数
+        :param app_name: 服务名称
+        :param rep_type: 替换类型, app_install_args | app_ports
+        :param lst: 替换参数列表
+        :return:
+        """
+        app_install_args_dic, app_ports_dic = self.get_product_config()
+        if rep_type == "app_install_args" and app_name in app_install_args_dic:
+            return self.inner_replace_args(
+                target_lst=lst, config_lst=app_install_args_dic[app_name]
+            )
+        elif rep_type == "app_ports" and app_name in app_ports_dic:
+            return self.inner_replace_args(
+                target_lst=lst, config_lst=app_ports_dic[app_name]
+            )
+        return lst
+
+    @staticmethod
+    def make_editable(element):
+        """
+        处理参数是否可编辑
+        :param element: 参数字典
+        :return:
+        """
+        if element.get("editable") is False or \
+                str(element.get("editable")).lower() == "false":
+            element["editable"] = False
+        else:
+            element["editable"] = True
 
     def get_app_dependence(self, obj):  # NOQA
         """
@@ -973,7 +1209,7 @@ class ServiceArgsPortUtils(object):
         ser = SerDependenceParseUtils(obj.app_name, obj.app_version)
         return ser.run_ser()
 
-    def get_app_port(self, obj):    # NOQA
+    def get_app_port(self, obj):  # NOQA
         """
         获取app的端口
         :param obj: 服务对象
@@ -982,9 +1218,17 @@ class ServiceArgsPortUtils(object):
         """
         if not obj.app_port:
             return []
-        return json.loads(obj.app_port)
+        origin_ports = json.loads(obj.app_port)
+        final_ports = self.make_product_config_overwrite(
+            app_name=obj.app_name,
+            rep_type="app_ports",
+            lst=origin_ports
+        )
+        for item in final_ports:
+            self.make_editable(item)
+        return final_ports
 
-    def format_app_install_args(self, app_install_args):    # NOQA
+    def format_app_install_args(self, app_install_args):  # NOQA
         """
         构建安装参数
         :param app_install_args: 服务安装参数
@@ -1010,7 +1254,15 @@ class ServiceArgsPortUtils(object):
         # 在后续前端提供出安装参数后，我们应该检查其准确性
         if not obj.app_install_args:
             return list()
-        return self.format_app_install_args(json.loads(obj.app_install_args))
+        origin_args = json.loads(obj.app_install_args)
+        final_args = self.make_product_config_overwrite(
+            app_name=obj.app_name,
+            rep_type="app_install_args",
+            lst=origin_args
+        )
+        for item in final_args:
+            self.make_editable(item)
+        return self.format_app_install_args(final_args)
 
     def reformat_install_args(self, install_args):
         """
@@ -1030,7 +1282,11 @@ class ServiceArgsPortUtils(object):
         """
         if not obj.app_install_args:
             return list()
-        app_install_args = json.loads(obj.app_install_args)
+        app_install_args = self.make_product_config_overwrite(
+            app_name=obj.app_name,
+            rep_type="app_install_args",
+            lst=json.loads(obj.app_install_args)
+        )
         return self._parse(app_install_args)
 
     def _parse(self, app_install_args):
@@ -1047,8 +1303,12 @@ class ServiceArgsPortUtils(object):
                     el["default"].replace(DIR_KEY, "").lstrip("/")
                 )
                 el["dir_key"] = DIR_KEY
-            if el.get("key") == "run_user" and self.run_user:
-                el["default"] = self.run_user
+            if el.get("key") == "run_user":
+                if self.host_user_map[self.ip] != "root":
+                    el["default"] = self.host_user_map[self.ip]
+                    continue
+                if self.run_user:
+                    el["default"] = self.run_user
         return app_install_args
 
 
@@ -1067,7 +1327,7 @@ class ValidateInstallService(object):
             )
         self.data = data
 
-    def check_service_port(self, app_port, ip):     # NOQA
+    def check_service_port(self, app_port, ip):  # NOQA
         """
         检查服务端口
         :param app_port: 服务端口列表
@@ -1129,7 +1389,7 @@ class ValidateInstallService(object):
                 el["error_msg"] = f"{_tobe_check_path} 在目标主机 {ip} 上已存在"
         return app_install_args
 
-    def check_single_service(self, dic):    # NOQA
+    def check_single_service(self, dic):  # NOQA
         """
         检查单个服务的安装信息
         :param dic: 服务安装信息
@@ -1182,13 +1442,14 @@ class ValidateInstallService(object):
 class BaseEnvServiceUtils(object):
     """ 解决base_env服务的安装事宜 """
 
-    def __init__(self, all_install_service_lst):
+    def __init__(self, all_install_service_lst, host_user_map):
         """
         解决依赖于base_env服务的安装操作
         :param all_install_service_lst: 所有需要安装的服务
         :type all_install_service_lst: list
         """
         self.all = all_install_service_lst
+        self.host_user_map = host_user_map
 
     def _dep_parse(self, dep_lst, base_env_dic, base_env_ser_lst, item):  # NOQA
         """
@@ -1200,17 +1461,19 @@ class BaseEnvServiceUtils(object):
         :return:
         """
         for el in dep_lst:
+            # 服务版本弱依赖逻辑 jon.liu 20211225
             _dep_obj = ApplicationHub.objects.filter(
                 app_name=el["name"],
-                app_version=el["version"]
+                app_version__startswith=el["version"]
             ).last()
             if not _dep_obj.is_base_env:
                 continue
             # 当被依赖的基础服务已经被安装时，使用如下方法进行过滤处理
-            if Service.objects.filter(
-                ip=item["ip"],
-                service__app_name=el["name"],
-                service__app_version=el["version"]
+            # 服务版本弱依赖逻辑 jon.liu 20211225
+            if Service.split_objects.filter(
+                    ip=item["ip"],
+                    service__app_name=el["name"],
+                    service__app_version__startswith=el["version"]
             ).count() > 0:
                 continue
             if item["ip"] in base_env_dic and \
@@ -1225,12 +1488,14 @@ class BaseEnvServiceUtils(object):
                 "install_args": ServiceArgsPortUtils(
                     ip=item["ip"],
                     data_folder=item["data_folder"],
-                    run_user=item["run_user"]
+                    run_user=item["run_user"],
+                    host_user_map=self.host_user_map
                 ).remake_install_args(obj=_dep_obj),
                 "ports": ServiceArgsPortUtils(
                     ip=item["ip"],
                     data_folder=item["data_folder"],
-                    run_user=item["run_user"]
+                    run_user=item["run_user"],
+                    host_user_map=self.host_user_map
                 ).get_app_port(obj=_dep_obj),
                 "instance_name": _ins_name
             })
@@ -1267,7 +1532,8 @@ class BaseEnvServiceUtils(object):
 class WithServiceUtils(object):
     """ 解决带有with的服务场景 """
 
-    def __init__(self, all_install_service_lst, unique_key=None, run_user=None):
+    def __init__(self, all_install_service_lst,
+                 unique_key=None, run_user=None, host_user_map=None):
         """
         解决依赖于base_env服务的安装操作
         :param all_install_service_lst: 所有需要安装的服务
@@ -1276,10 +1542,13 @@ class WithServiceUtils(object):
         :type unique_key: str
         :param run_user: 运行用户
         :type run_user: str
+        :param host_user_map: 主机与运行用户关系
+        :type host_user_map: str
         """
         self.all = all_install_service_lst
         self.unique_key = unique_key
         self.run_user = run_user
+        self.host_user_map = host_user_map
 
     def parse_single_service(self, ser_dic):
         """
@@ -1294,7 +1563,7 @@ class WithServiceUtils(object):
         }
         _ser_lst = list()
         with_ser = ser_dic.get("with")
-        is_found_flag = False   # 是否已经找到with服务的标识
+        is_found_flag = False  # 是否已经找到with服务的标识
         for item in self.all:
             _tmp_ser = deepcopy(_ser)
             # 当需要被with的服务在需要安装的服务列表中时
@@ -1309,12 +1578,14 @@ class WithServiceUtils(object):
                 install_args = ServiceArgsPortUtils(
                     ip=ip,
                     data_folder=data_folder,
-                    run_user=run_user
+                    run_user=run_user,
+                    host_user_map=self.host_user_map
                 ).remake_install_args(obj=_app)
                 ports = ServiceArgsPortUtils(
                     ip=ip,
                     data_folder=data_folder,
-                    run_user=run_user
+                    run_user=run_user,
+                    host_user_map=self.host_user_map
                 ).get_app_port(obj=_app)
                 instance_name = \
                     _tmp_ser["name"] + "-" + "-".join(ip.split(".")[-2:])
@@ -1329,7 +1600,7 @@ class WithServiceUtils(object):
                 is_found_flag = True
         # 如果没有找到，则证明被with的服务是在复用的列表内的，需要查看当前系统内的该服务信息
         if not is_found_flag:
-            with_ser_ips = Service.objects.filter(
+            with_ser_ips = Service.split_objects.filter(
                 service__app_name=with_ser).values("ip")
             with_ser_ips = [el["ip"] for el in with_ser_ips]
             for _ip in with_ser_ips:
@@ -1343,12 +1614,14 @@ class WithServiceUtils(object):
                 install_args = ServiceArgsPortUtils(
                     ip=_ip,
                     data_folder=data_folder,
-                    run_user=run_user
+                    run_user=run_user,
+                    host_user_map=self.host_user_map
                 ).remake_install_args(obj=_app)
                 ports = ServiceArgsPortUtils(
                     ip=_ip,
                     data_folder=data_folder,
-                    run_user=run_user
+                    run_user=run_user,
+                    host_user_map=self.host_user_map
                 ).get_app_port(obj=_app)
                 instance_name = \
                     _tmp_ser["name"] + "-" + "-".join(_ip.split(".")[-2:])
@@ -1378,15 +1651,17 @@ class WithServiceUtils(object):
 class DataJson(object):
     """ 生成data.json数据 """
 
-    def __init__(self, operation_uuid):
+    def __init__(self, operation_uuid, service_obj=None):
         """
         data.json数据生成方法
         :param operation_uuid: 唯一操作uuid
+        :param service_obj: service 操作对象，可为空
         :type operation_uuid: str
         """
         self.operation_uuid = operation_uuid
+        self.service_obj = service_obj
 
-    def get_ser_install_args(self, obj):    # NOQA
+    def get_ser_install_args(self, obj):  # NOQA
         """
         获取服务的安装参数
         :param obj: Service
@@ -1413,12 +1688,13 @@ class DataJson(object):
         _ser_dic = {
             "ip": obj.ip,
             "name": obj.service.app_name,
-            "role": obj.service_role,
+            "role": obj.service_role if obj.service_role else "master",
             "instance_name": obj.service_instance_name,
             "cluster_name": obj.cluster.cluster_name if obj.cluster else None,
             "ports": json.loads(obj.service_port) if obj.service_port else [],
             "dependence": json.loads(obj.service_dependence) if
-            obj.service_dependence else []
+            obj.service_dependence else [],
+            "vip": obj.vip
         }
         _others = self.get_ser_install_args(obj)
         _ser_dic.update(_others)
@@ -1447,10 +1723,22 @@ class DataJson(object):
         :return:
         """
         # step1: 获取所有的服务列表
-        all_ser_lst = Service.objects.all()
+        # edit by vum:
+        # 服务中表中会有残留 base_env 服务的情况，类似 jdk，此时不宜获取所有服务
+        if self.service_obj:
+            all_ser_lst = self.service_obj
+        else:
+            all_ser_lst = Service.split_objects.all()
         json_lst = list()
         for item in all_ser_lst:
             json_lst.append(self.parse_single_service(obj=item))
+        # 在json文件中标记该服务所在主机上的agent的地址
+        ip_agent_dir_dir = {
+            el["ip"]: el["agent_dir"] for el in
+            Host.objects.values("ip", "agent_dir")
+        }
+        for item in json_lst:
+            item["agent_dir"] = ip_agent_dir_dir.get(item.get("ip"))
         # step2: 生成data.json
         self.make_data_json(json_lst=json_lst)
 
@@ -1467,7 +1755,7 @@ class CreateInstallPlan(object):
         self.install_services = all_install_service_lst
         self.unique_key = unique_key
 
-    def get_app_obj_for_service(self, dic):     # NOQA
+    def get_app_obj_for_service(self, dic):  # NOQA
         """
         获取服务实例表中关联的app对象
         :param dic: 服务数据
@@ -1475,7 +1763,7 @@ class CreateInstallPlan(object):
         :return:
         """
         return ApplicationHub.objects.filter(
-            app_name=dic["name"], app_version=dic["version"]
+            app_name=dic["name"], app_version__startswith=dic["version"]
         ).last()
 
     def get_controllers_for_service(self, dic):  # NOQA
@@ -1520,7 +1808,7 @@ class CreateInstallPlan(object):
         # TODO 暂时使用默认环境
         return Env.objects.last()
 
-    def create_connect_info(self, dic):     # NOQA
+    def create_connect_info(self, dic):  # NOQA
         """
         创建或获取服务的用户名、密码信息
         :param dic: 服务数据
@@ -1585,7 +1873,7 @@ class CreateInstallPlan(object):
                 "cluster_name": cl_obj.cluster_name,
                 "instance_name": None
             }
-        ser_obj = Service.objects.filter(id=inner["id"]).last()
+        ser_obj = Service.split_objects.filter(id=inner["id"]).last()
         return {
             "name": ser_obj.service.app_name,
             "cluster_name": None,
@@ -1602,7 +1890,7 @@ class CreateInstallPlan(object):
         _ser_version = inner["version"]
         for el in self.install_services:
             if el.get("name") == _ser_name and \
-                    el.get("version") == _ser_version:
+                    el.get("version").startswith(_ser_version):
                 cluster_name = el.get("cluster_name")
                 instance_name = el.get("instance_name")
                 if cluster_name:
@@ -1636,10 +1924,10 @@ class CreateInstallPlan(object):
             # 已存在的base_env服务依赖
             _dep_obj = ApplicationHub.objects.filter(
                 app_name=item.get("name"),
-                app_version=item.get("version")
+                app_version__startswith=item.get("version")
             ).last()
             if _dep_obj.is_base_env:
-                _ser_obj = Service.objects.filter(
+                _ser_obj = Service.split_objects.filter(
                     service=_dep_obj, ip=dic.get("ip")
                 ).last()
                 if _ser_obj:
@@ -1669,17 +1957,19 @@ class CreateInstallPlan(object):
             service_instance_name=dic["instance_name"],
             service=self.get_app_obj_for_service(dic),
             service_port=json.dumps(dic.get("ports")),
+            service_role=dic.get("roles", ""),
             service_controllers=self.get_controllers_for_service(dic),
             cluster=self.create_cluster(dic),
             env=self.get_env_for_service(),
             service_status=6,
             service_connect_info=self.create_connect_info(dic),
-            service_dependence=json.dumps(self.get_dependence(dic))
+            service_dependence=json.dumps(self.get_dependence(dic)),
+            vip=dic.get("vip")
         )
         _ser_obj.save()
         return _ser_obj
 
-    def create_product_instance(self, dic):     # NOQA
+    def create_product_instance(self, dic):  # NOQA
         """
         创建产品实例
         :param dic: 服务数据
@@ -1700,7 +1990,7 @@ class CreateInstallPlan(object):
                     product=_obj.product
                 )
 
-    def check_if_has_post_action(self, ser):    # NOQA
+    def check_if_has_post_action(self, ser):  # NOQA
         """
         检测是否需要执行安装后的动作
         :param ser: 服务对象
@@ -1712,12 +2002,52 @@ class CreateInstallPlan(object):
             return True
         return False
 
+    def create_pre_install_history(self, main_obj):
+        """
+        创建安装计划，在执行安装计划时，优先执行此处的操作记录
+        :param main_obj:
+        :return:
+        """
+        _data = list(DetailInstallHistory.objects.filter(
+            main_install_history=main_obj
+        ).values_list("service__ip", flat=True))
+
+        for item in set(_data):
+            PreInstallHistory(
+                main_install_history=main_obj,
+                ip=item
+            ).save()
+
+    def create_post_install_history(self, main_obj):
+        """
+        创建安装后的行为规范
+        :param main_obj:
+        :return:
+        """
+        # 在安装完成后，需要执行一些操作
+        # 在这里进行定制化处理，所有的安装操作都需要执行下重新加载nacos和tengine的配置
+        # 此处专为 云智慧 进行定制
+        PostInstallHistory(main_install_history=main_obj).save()
+        # post_action_queryset = DetailInstallHistory.objects.select_related(
+        #     "service", "service__service", "service__service__app_package"
+        # ).filter(main_install_history=main_obj).exclude(
+        #     post_action_flag__in=[2, 4]
+        # )
+        # if post_action_queryset.exists():
+        #     PostInstallHistory(main_install_history=main_obj).save()
+        #     return
+        # logger.info(f"Do execute_post_install for {main_obj.operation_uuid}")
+        # if DetailInstallHistory.objects.filter(
+        #         main_install_history=main_obj,
+        #         service__service__app_type=ApplicationHub.APP_TYPE_SERVICE
+        # ).exists():
+        #     PostInstallHistory(main_install_history=main_obj).save()
+
     def run(self):
         """
         服务部署信息入库操作
         :return:
         """
-
         try:
             logger.info("start CreateInstallPlan.run!")
             with transaction.atomic():
@@ -1744,6 +2074,10 @@ class CreateInstallPlan(object):
                         install_detail_args=item,
                         post_action_flag=post_action_flag
                     ).save()
+                # 创建安装前的操作记录
+                self.create_pre_install_history(main_obj)
+                # 创建安装后操作日志
+                self.create_post_install_history(main_obj)
                 _json_obj = DataJson(operation_uuid=operation_uuid)
                 _json_obj.run()
                 # 调用安装异步任务，并回写异步任务到
@@ -1751,6 +2085,21 @@ class CreateInstallPlan(object):
                 MainInstallHistory.objects.filter(id=main_obj.id).update(
                     task_id=task_id
                 )
+                # 删除redis中缓存的安装临时数据
+                BaseRedisData(unique_key=self.unique_key).delete_all_keys()
+                # 更新主机上的服务数量
+                _ser_ip_lst = DetailInstallHistory.objects.filter(
+                    main_install_history=main_obj,
+                    service__service__is_base_env=False
+                ).values("service__ip")
+                _tmp_dic = dict()
+                for item in _ser_ip_lst:
+                    if item["service__ip"] not in _tmp_dic:
+                        _tmp_dic[item["service__ip"]] = 0
+                    _tmp_dic[item["service__ip"]] += 1
+                for key, value in _tmp_dic.items():
+                    Host.objects.filter(ip=key).update(
+                        service_num=F("service_num") + value)
         except Exception as e:
             logger.error(
                 f"CreateInstallPlan.run failed with error: \n"
@@ -1817,7 +2166,7 @@ class ValidateInstallServicePortArgs(object):
             )
         self.data = data
 
-    def check_service_port(self, app_port, ip):     # NOQA
+    def check_service_port(self, app_port, ip):  # NOQA
         """
         检查服务端口
         :param app_port: 服务端口列表
@@ -1859,8 +2208,8 @@ class ValidateInstallServicePortArgs(object):
         """
         _salt_obj = SaltClient()
         for el in app_install_args:
-            if el.get("key") == "instance_name" and Service.objects.filter(
-                service_instance_name=el.get("default")
+            if el.get("key") == "instance_name" and Service.split_objects.filter(
+                    service_instance_name=el.get("default")
             ).count() != 0:
                 el["check_flag"] = False
                 el["error_msg"] = f"实例名称 {el.get('default')} 已存在"
@@ -1886,7 +2235,7 @@ class ValidateInstallServicePortArgs(object):
                 el["error_msg"] = f"{_tobe_check_path} 在目标主机 {ip} 上已存在"
         return app_install_args
 
-    def check_single_service(self, dic):    # NOQA
+    def check_single_service(self, dic):  # NOQA
         """
         检查单个服务的安装信息
         :param dic: 服务安装信息

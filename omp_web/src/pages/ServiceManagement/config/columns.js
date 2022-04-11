@@ -34,12 +34,15 @@ export const DetailHost = ({
           </span>
         </div>
       }
+      headerStyle={{
+        padding: "19px 24px",
+      }}
       placement="right"
       closable={true}
       width={`calc(100% - 200px)`}
       style={{
         height: "calc(100%)",
-        paddingTop: "60px",
+        // paddingTop: "60px",
       }}
       onClose={() => {
         setIsShowDrawer({
@@ -57,7 +60,7 @@ export const DetailHost = ({
       destroyOnClose={true}
     >
       <div
-        style={{ height: "calc(100% - 65px)", width: "100%", display: "flex" }}
+        style={{ height: "calc(100% - 15px)", width: "100%", display: "flex" }}
       >
         <div style={{ flex: 4 }}>
           <div
@@ -83,7 +86,9 @@ export const DetailHost = ({
               }}
             >
               <div style={{ flex: 1 }}>实例名称</div>
-              <div style={{ flex: 1 }}>{isShowDrawer.record?.service_instance_name}</div>
+              <div style={{ flex: 1 }}>
+                {isShowDrawer.record?.service_instance_name}
+              </div>
             </div>
             <div
               style={{
@@ -262,10 +267,8 @@ export const DetailHost = ({
             >
               <div style={{ flex: 1 }}>安装时间</div>
               <div style={{ flex: 1 }}>
-                {(data?.created)
-                  ? moment(data?.created).format(
-                      "YYYY-MM-DD HH:mm:ss"
-                    )
+                {data?.created
+                  ? moment(data?.created).format("YYYY-MM-DD HH:mm:ss")
                   : "-"}
               </div>
             </div>
@@ -340,7 +343,8 @@ const renderMenu = (
   record,
   setOperateAciton,
   setServiceAcitonModal,
-  queryDeleteMsg
+  queryDeleteMsg,
+  deleteConditionReset
 ) => {
   return (
     <Menu>
@@ -385,13 +389,14 @@ const renderMenu = (
         //disabled={!record.operable}
         key="delete"
         onClick={() => {
-          queryDeleteMsg([record])
+          queryDeleteMsg([record]);
           setOperateAciton(4);
           setServiceAcitonModal(true);
+          deleteConditionReset();
         }}
       >
         <span style={{ fontSize: 12, paddingLeft: 5, paddingRight: 5 }}>
-          删除
+          卸载
         </span>
       </Menu.Item>
     </Menu>
@@ -401,13 +406,75 @@ const renderMenu = (
 const renderStatus = (text) => {
   switch (text) {
     case "未监控":
-      return <span>{renderDisc("notMonitored", 7, -1)}{text}</span>;
-    case "启动中" || "停止中" || "重启中" || "未知" || "安装中":
-      return <span>{renderDisc("warning", 7, -1)}{text}</span>;
-    case "停止" || "安装失败":
-      return <span>{renderDisc("critical", 7, -1)}{text}</span>;
+      return (
+        <span>
+          {renderDisc("notMonitored", 7, -1)}
+          {text}
+        </span>
+      );
+    case "启动中":
+      return (
+        <span>
+          {renderDisc("warning", 7, -1)}
+          {text}
+        </span>
+      );
+    case "停止中":
+      return (
+        <span>
+          {renderDisc("warning", 7, -1)}
+          {text}
+        </span>
+      );
+    case "重启中":
+      return (
+        <span>
+          {renderDisc("warning", 7, -1)}
+          {text}
+        </span>
+      );
+    case "未知":
+      return (
+        <span>
+          {renderDisc("warning", 7, -1)}
+          {text}
+        </span>
+      );
+    case "安装中":
+      return (
+        <span>
+          {renderDisc("warning", 7, -1)}
+          {text}
+        </span>
+      );
+    case "待安装":
+      return (
+        <span>
+          {renderDisc("warning", 7, -1)}
+          {text}
+        </span>
+      );
+    case "停止":
+      return (
+        <span>
+          {renderDisc("critical", 7, -1)}
+          {text}
+        </span>
+      );
+    case "安装失败":
+      return (
+        <span>
+          {renderDisc("critical", 7, -1)}
+          {text}
+        </span>
+      );
     default:
-      return <span>{renderDisc("normal", 7, -1)}{text}</span>;
+      return (
+        <span>
+          {renderDisc("normal", 7, -1)}
+          {text}
+        </span>
+      );
   }
 };
 
@@ -427,7 +494,9 @@ const getColumnsConfig = (
   setShowIframe,
   setOperateAciton,
   setServiceAcitonModal,
-  queryDeleteMsg
+  queryDeleteMsg,
+  // 删除的前置条件重置
+  deleteConditionReset
 ) => {
   return [
     {
@@ -476,6 +545,84 @@ const getColumnsConfig = (
       //ellipsis: true,
     },
     {
+      title: "CPU使用率",
+      key: "cpu_usage",
+      dataIndex: "cpu_usage",
+      align: "center",
+      sorter: (a, b) => a.cpu_usage - b.cpu_usage,
+      sortDirections: ["descend", "ascend"],
+      render: (text, record) => {
+        let str = nonEmptyProcessing(text);
+        return str == "-" ? (
+          "-"
+        ) : (
+          <span
+            style={{ color: colorConfig[record.cpu_status], fontWeight: 500 }}
+          >
+            {str}%
+          </span>
+        );
+      },
+    },
+    {
+      title: "内存使用率",
+      key: "mem_usage",
+      dataIndex: "mem_usage",
+      sorter: (a, b) => a.mem_usage - b.mem_usage,
+      sortDirections: ["descend", "ascend"],
+      align: "center",
+      render: (text, record) => {
+        let str = nonEmptyProcessing(text);
+        return str == "-" ? (
+          "-"
+        ) : (
+          <span
+            style={{ color: colorConfig[record.mem_status], fontWeight: 500 }}
+          >
+            {str}%
+          </span>
+        );
+      },
+    },
+    {
+      title: "状态",
+      key: "service_status",
+      dataIndex: "service_status",
+      align: "center",
+      //ellipsis: true,
+      render: (text) => {
+        return renderStatus(text);
+      },
+    },
+    {
+      title: "告警次数",
+      key: "alert_count",
+      dataIndex: "alert_count",
+      align: "center",
+      render: (text, record) => {
+        if (text == "-" || text == "0次") {
+          return text;
+        } else {
+          return (
+            <a
+              onClick={() => {
+                text &&
+                  history.push({
+                    pathname: "/application-monitoring/alarm-log",
+                    state: {
+                      ip: record.ip,
+                    },
+                  });
+              }}
+            >
+              {text}
+            </a>
+          );
+        }
+      },
+      //ellipsis: true,
+    },
+    {
       title: "端口",
       key: "port",
       dataIndex: "port",
@@ -484,6 +631,20 @@ const getColumnsConfig = (
       render: (text) => {
         return <Tooltip title={text}>{text ? text : "-"}</Tooltip>;
       },
+    },
+    {
+      title: "服务名称",
+      key: "app_name",
+      dataIndex: "app_name",
+      align: "center",
+      ellipsis: true,
+    },
+    {
+      title: "版本",
+      key: "app_version",
+      dataIndex: "app_version",
+      align: "center",
+      ellipsis: true,
     },
     {
       title: "功能模块",
@@ -522,58 +683,7 @@ const getColumnsConfig = (
       },
       //ellipsis: true,
     },
-    {
-      title: "服务名称",
-      key: "app_name",
-      dataIndex: "app_name",
-      align: "center",
-      ellipsis: true,
-    },
-    {
-      title: "版本",
-      key: "app_version",
-      dataIndex: "app_version",
-      align: "center",
-      ellipsis: true,
-    },
-    {
-      title: "状态",
-      key: "service_status",
-      dataIndex: "service_status",
-      align: "center",
-      //ellipsis: true,
-      render: (text) => {
-        return renderStatus(text)
-      },
-    },
-    {
-      title: "告警次数",
-      key: "alert_count",
-      dataIndex: "alert_count",
-      align: "center",
-      render: (text, record) => {
-        if (text == "-" || text == "0次") {
-          return text;
-        } else {
-          return (
-            <a
-              onClick={() => {
-                text &&
-                  history.push({
-                    pathname: "/application-monitoring/alarm-log",
-                    state: {
-                      ip: record.ip,
-                    },
-                  });
-              }}
-            >
-              {text}
-            </a>
-          );
-        }
-      },
-      //ellipsis: true,
-    },
+   
     {
       title: "集群模式",
       key: "cluster_type",
@@ -597,56 +707,64 @@ const getColumnsConfig = (
             }}
             style={{ display: "flex", justifyContent: "space-around" }}
           >
-            {record.monitor_url ? (
-              <a
-                onClick={() => {
-                  setShowIframe({
-                    isOpen: true,
-                    src: record.monitor_url,
-                    record: record,
-                    isLog: false,
-                  });
-                }}
-              >
-                监控
-              </a>
-            ) : (
-              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
-            )}
-
-            {record.log_url ? (
-              <a
-                onClick={() => {
-                  setShowIframe({
-                    isOpen: true,
-                    src: record.log_url,
-                    record: record,
-                    isLog: true,
-                  });
-                }}
-              >
-                日志
-              </a>
-            ) : (
-              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>日志</span>
-            )}
-
-            <Dropdown
-              arrow
-              overlay={renderMenu(
-                // setUpdateMoadlVisible,
-                // setCloseMaintainModal,
-                // setOpenMaintainModal,
-                record,
-                setOperateAciton,
-                setServiceAcitonModal,
-                queryDeleteMsg
+            <div style={{ margin: "auto" }}>
+              {record.monitor_url ? (
+                <a
+                  onClick={() => {
+                    setShowIframe({
+                      isOpen: true,
+                      src: record.monitor_url,
+                      record: record,
+                      isLog: false,
+                    });
+                  }}
+                >
+                  监控
+                </a>
+              ) : (
+                <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
               )}
-            >
-              <a>
-                更多 <DownOutlined style={{ position: "relative", top: 1 }} />
-              </a>
-            </Dropdown>
+
+              {record.log_url ? (
+                <a
+                  style={{ marginLeft: 10 }}
+                  onClick={() => {
+                    setShowIframe({
+                      isOpen: true,
+                      src: record.log_url,
+                      record: record,
+                      isLog: true,
+                    });
+                  }}
+                >
+                  日志
+                </a>
+              ) : (
+                <span style={{ color: "rgba(0, 0, 0, 0.25)", marginLeft: 10 }}>
+                  日志
+                </span>
+              )}
+
+              <Dropdown
+                arrow
+                placement="bottomCenter"
+                overlay={renderMenu(
+                  // setUpdateMoadlVisible,
+                  // setCloseMaintainModal,
+                  // setOpenMaintainModal,
+                  record,
+                  setOperateAciton,
+                  setServiceAcitonModal,
+                  queryDeleteMsg,
+                  deleteConditionReset
+                )}
+              >
+                <a style={{ marginLeft: 10 }}>
+                  更多
+                  {/* <DownOutlined style={{ position: "relative", top: 1 }} /> */}
+                </a>
+              </Dropdown>
+            </div>
           </div>
         );
       },

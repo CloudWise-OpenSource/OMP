@@ -15,7 +15,13 @@ import { useHistory, useLocation } from "react-router-dom";
 import { CustomBreadcrumb, OmpModal } from "@/components";
 import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-import { handleResponse, _idxInit, logout, isPassword } from "@/utils/utils";
+import {
+  handleResponse,
+  _idxInit,
+  logout,
+  isPassword,
+  encrypt,
+} from "@/utils/utils";
 import { useDispatch } from "react-redux";
 import { getSetViewSizeAction } from "./store/actionsCreators";
 import { getMaintenanceChangeAction } from "@/pages/SystemManagement/store/actionsCreators";
@@ -42,7 +48,8 @@ const OmpLayout = (props) => {
 
   const headerLink = [
     // { title: "仪表盘", path: "/homepage" },
-    { title: "应用商店", path: "/application_management/app_store" },
+    // { title: "应用商店", path: "/application_management/app_store" },
+    { title: "快速部署", path: "/application_management/deployment-plan" },
     // { title: "数据上传", path: "/products-management/version/upload" },
     // { title: "深度分析", path: "/operation-management/report" },
     {
@@ -101,9 +108,9 @@ const OmpLayout = (props) => {
     setLoading(true);
     fetchPost(apiRequest.auth.changePassword, {
       body: {
-        username: localStorage.getItem("username"),
-        old_password: data.old_password,
-        new_password: data.new_password2,
+        username: encrypt(localStorage.getItem("username")),
+        old_password: encrypt(data.old_password),
+        new_password: encrypt(data.new_password2),
       },
     })
       .then((res) => {
@@ -223,7 +230,7 @@ const OmpLayout = (props) => {
             color: "white",
             justifyContent: "center",
             // /marginBottom:10,
-            backgroundColor: "#171e2b",
+            backgroundColor: "#151a21",
           }}
         >
           <div className={styles.headerLogo}>
@@ -235,14 +242,15 @@ const OmpLayout = (props) => {
                 cursor: "pointer",
                 position: "relative",
                 top: 1,
-                fontSize: 16,
+                fontSize: 18,
                 fontWeight: 600,
                 display: "flex",
                 alignItems: "center",
               }}
               onClick={() => history.push("/homepage")}
             >
-              运维管理平台
+              {/* 运维管理平台 */}
+              运维工具包
             </div>
           )}
         </div>
@@ -251,8 +259,11 @@ const OmpLayout = (props) => {
           style={{
             height: "calc(100% - 60px)",
             //paddingTop:3,
-            borderRight: "1px solid #d7d9e1",
+            // borderRight: "1px solid #d7d9e1",
             color: "rgba(0,0,0,0.65)",
+            overflowY: "auto",
+            // position:"fixed",
+            // zIndex:1000,
           }}
           //theme="dark"
           onClick={onPathChange}
@@ -290,13 +301,18 @@ const OmpLayout = (props) => {
           })}
         </Menu>
       </Sider>
-      <Layout className="site-layout">
+      <Layout className="site-layout" style={{ width: "100%" }}>
         <Header
           className="site-layout-background"
           style={{
             padding: 0,
             display: "flex",
             justifyContent: "space-between",
+            position: "fixed",
+            zIndex: 1000,
+            transition: collapsed ? "all 0.1s ease-out" : "all 0.4s ease-out",
+            width: collapsed ? "calc(100% - 49px)" : "calc(100% - 199px)",
+            marginLeft: collapsed ? 49 : 199,
           }}
         >
           <div style={{ display: "flex" }}>
@@ -356,7 +372,7 @@ const OmpLayout = (props) => {
               placement="bottomCenter"
               overlay={
                 <Menu className="menu">
-                  <Menu.Item>版本信息：V0.1.0</Menu.Item>
+                  <Menu.Item>版本信息：V1.7.0</Menu.Item>
                 </Menu>
               }
             >
@@ -373,17 +389,24 @@ const OmpLayout = (props) => {
             </Dropdown>
           </div>
         </Header>
-        <CustomBreadcrumb />
+        <CustomBreadcrumb collapsed={collapsed} />
         <Content style={{ margin: "0 16px", color: "rgba(0,0,0,0.65)" }}>
           <div
             style={{
+              transition: "all 0.2s ease-in-out",
+              marginTop: 120,
+              marginLeft: collapsed ? 50 : 200,
               padding: 0,
               paddingBottom: 30,
-              height: "calc(100% - 10px)",
+              height: "calc(100% - 130px)",
               // 应用商店content大背景不是白色，特殊处理
               backgroundColor:
                 location.pathname == "/application_management/app_store" ||
                 location.pathname.includes("installation") ||
+                location.pathname.includes("service_upgrade") ||
+                location.pathname.includes("service_rollback") ||
+                (location.pathname.includes("tool-management") &&
+                  !location.pathname.includes("tool-execution")) ||
                 location.pathname.includes("/homepage")
                   ? undefined
                   : "#fff",
@@ -399,9 +422,10 @@ const OmpLayout = (props) => {
             height: 30,
             padding: 0,
             paddingTop: 0,
+            paddingLeft: 195,
           }}
         >
-          Copyright © 2020-2021 Cloudwise.All Rights Reserved{" "}
+          Copyright © 2020-2022 Cloudwise.All Rights Reserved{" "}
         </Footer>
       </Layout>
       <OmpModal

@@ -29,8 +29,8 @@ class RedisLock(object):
             return redis.Redis(host, port, db, kwargs['password'])
         return redis.Redis(host, port, db)
 
-    def get_lock(self):
-        if self.rdcon.exists('back_end_verified') == 0:
+    def get_lock(self, key='back_end_verified'):
+        if self.rdcon.exists(key) == 0:
             return False, self.rdcon
         return True, self.rdcon
 
@@ -81,6 +81,5 @@ def front_end_verified_init(uuid, operation_user, package_name, obj_id, md5=None
         ver_dir = package_dir.get("front_end_verified")
     else:
         ver_dir = package_dir.get("back_end_verified")
-        md5 = random_str
-    front_end_verified.delay(uuid, operation_user, package_name, md5,
+    front_end_verified.delay(uuid, operation_user, package_name,
                              random_str, ver_dir, obj_id)

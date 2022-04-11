@@ -3,6 +3,8 @@
 """
 import re
 import datetime
+
+from django.contrib.auth import authenticate, login
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
@@ -15,13 +17,30 @@ from rest_framework_jwt.settings import api_settings
 
 from django_filters.rest_framework.backends import DjangoFilterBackend
 
-from db_models.models import (UserProfile, OperateLog)
-from users.users_filters import UserFilter
+from db_models.models import (
+    UserProfile, OperateLog,
+    UserLoginLog
+)
+from rest_framework.filters import OrderingFilter
+from users.users_filters import (
+    UserFilter, UserOperateFilter,
+    UserLoginOperateFilter
+)
 from utils.common.paginations import PageNumberPager
 from users.users_serializers import (
     UserSerializer, JwtSerializer,
-    OperateLogSerializer, UserUpdatePasswordSerializer
+    OperateLogSerializer, UserUpdatePasswordSerializer,
+    UserLoginOperateSerializer
 )
+
+import ipware
+import ipaddress
+import logging
+from django.utils import timezone
+
+from utils.plugin.crypto import decrypt_rsa
+
+logger = logging.getLogger("server")
 
 
 class UsersView(ListModelMixin, RetrieveModelMixin, CreateModelMixin,
@@ -66,8 +85,31 @@ class OperateLogView(ListModelMixin, RetrieveModelMixin, GenericViewSet):
         retrieve:
         查询一条操作记录
     """
-    queryset = OperateLog.objects.all()
+    queryset = OperateLog.objects.all().order_by("-create_time")
     serializer_class = OperateLogSerializer
+    pagination_class = PageNumberPager
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    filter_class = UserOperateFilter
+    ordering_fields = ("create_time", "username", "request_ip")
+    # 操作描述信息
+    get_description = "获取用户操作记录"
+
+
+class UserLoginOperateView(ListModelMixin, RetrieveModelMixin, GenericViewSet):
+    """
+        list:
+        查询操作记录列表
+
+        retrieve:
+        查询一条操作记录
+    """
+    queryset = UserLoginLog.objects.all().exclude(
+        username="匿名用户").order_by("-login_time")
+    serializer_class = UserLoginOperateSerializer
+    pagination_class = PageNumberPager
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    filter_class = UserLoginOperateFilter
+    ordering_fields = ("login_time", "username", "ip", "role")
     # 操作描述信息
     get_description = "获取用户操作记录"
 
@@ -79,17 +121,56 @@ class JwtAPIView(JSONWebTokenAPIView):
     """
     serializer_class = JwtSerializer
 
+    @staticmethod
+    def validate_ip(str_ip):
+        """
+        校验ip格式
+        暂时不用
+        """
+        try:
+            ipaddress.ip_address(str_ip)
+            return True
+        except ValueError:
+            pass
+        return False
+
+    @staticmethod
+    def _get_login_log(request):
+        """
+        创建登陆记录
+        暂时不用
+        """
+        login_ip, routeable = ipware.get_client_ip(request)
+        data = {
+            'username': request.data.get("username", ""),
+            'login_time': timezone.now(),
+            'role': "超级管理员用户",
+            'ip': login_ip
+        }
+        try:
+            if not (login_ip and JwtAPIView.validate_ip(login_ip)):
+                data.update({'ip': login_ip[:15]})
+            UserLoginLog.objects.create(**data)
+        except Exception as e:
+            logger.error("Create login log error: {}".format(e))
+
     def post(self, request, *args, **kwargs):
         # django authenticate 缺陷，验证 username 大小写不敏感
-        username_ls = list(
-            UserProfile.objects.values_list(
-                "username", flat=True))
-        if request.data.get("username", "") not in username_ls or \
-                re.search(r"\s", request.data.get("password", "")):
+        username = decrypt_rsa(request.data.get("username", ""))
+        password = decrypt_rsa(request.data.get("password", ""))
+        if not UserProfile.objects.filter(username=username).exists():
+            raise ValidationError(f"{username} dose not exists.")
+        if re.search(r"\s", password):
             raise ValidationError(
                 "Unable to log in with provided credentials.")
 
-        serializer = self.get_serializer(data=request.data)
+        serializer = self.get_serializer(
+            data={
+                "username": username,
+                "password": password,
+                "remember": request.data.get("remember")
+            }
+        )
 
         if not serializer.is_valid():
             raise ValidationError(
@@ -99,6 +180,7 @@ class JwtAPIView(JSONWebTokenAPIView):
         response_data = api_settings.JWT_RESPONSE_PAYLOAD_HANDLER(
             token, user, request)
         response = Response(response_data)
+        # self._get_login_log(request)
         if api_settings.JWT_AUTH_COOKIE:
             # remember 取值 True，则 cookie 过期时间为 7 天
             expiration_time = api_settings.JWT_EXPIRATION_DELTA

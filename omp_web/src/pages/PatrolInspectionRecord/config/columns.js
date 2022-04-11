@@ -264,23 +264,30 @@ const getColumnsConfig = (queryRequest, history, pushData) => {
       render: function renderFunc(text, record, index) {
         return (
           <div style={{ display: "flex", justifyContent: "space-around" }}>
-            {record.inspection_status == 2 ? (
-              <>
-                <a
-                  onClick={() => {
-                    message.success(
-                      `正在下载巡检报告，双击文件夹中index.html查看报告`
-                    );
-                    fetchDetailData(record.id);
-                  }}
-                >
-                  导出
-                </a>
-                <a onClick={() => clickPush(record)}>推送</a>
-              </>
-            ) : (
-              <span style={{ color: "rgba(0, 0, 0, 0.25" }}>导出</span>
-            )}
+            <div style={{ margin: "auto" }}>
+              {record.inspection_status == 2 ? (
+                <>
+                  <a
+                    onClick={() => {
+                      message.success(
+                        `正在下载巡检报告，双击文件夹中index.html查看报告`
+                      );
+                      fetchDetailData(record.id);
+                    }}
+                  >
+                    导出
+                  </a>
+                  <a
+                    style={{ marginLeft: 10 }}
+                    onClick={() => clickPush(record)}
+                  >
+                    推送
+                  </a>
+                </>
+              ) : (
+                <span style={{ color: "rgba(0, 0, 0, 0.25" }}>导出</span>
+              )}
+            </div>
           </div>
         );
       },

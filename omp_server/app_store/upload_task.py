@@ -31,7 +31,7 @@ class CreateDatabase(object):
         result = "true" if str_bool.lower() == "true" else None
         return bool(result)
 
-    def explain(self, data):
+    def explain(self, data, default=None):
         """
         将dict list转换成 json
         """
@@ -40,7 +40,17 @@ class CreateDatabase(object):
             if isinstance(data_info, dict) or isinstance(data_info, list):
                 data_info = json.dumps(data_info, ensure_ascii=False)
         else:
-            data_info = None
+            data_info = default
+        return data_info
+
+    def explain_dependence(self):
+        # 不符合常规逻辑，慎用
+        data_info = self.json_data.get("dependencies")
+        if isinstance(data_info, list):
+            for key in data_info:
+                if isinstance(key, dict):
+                    key["version"] = key.get("version", "").split(".")[0]
+            data_info = json.dumps(data_info, ensure_ascii=False)
         return data_info
 
     def create_product(self):
@@ -55,7 +65,7 @@ class CreateDatabase(object):
             "pro_version": self.json_data.get('version'),
             "pro_description": self.json_data.get('description'),
             "pro_dependence": self.explain('dependencies'),
-            "pro_services": self.explain('service'),
+            "pro_services": self.explain('service', []),
             "pro_package": self.json_data.get('package_name'),
             "pro_logo": self.json_data.get('image'),
             "extend_fields": self.json_data.get("extend_fields")
@@ -84,9 +94,9 @@ class CreateDatabase(object):
         self.create_pro_app_lab(app_obj)
         service = self.json_data.pop('product_service')
         # 创建服务表
-        self._create_service(service, app_obj)
+        self.create_service(service, app_obj)
 
-    def _create_service(self, service, app_obj):
+    def create_service(self, service, app_obj):
         """
         创建服务表
         params service service的json字段，格式同json_data一致
@@ -108,6 +118,9 @@ class CreateDatabase(object):
         self.json_data['labels'] = [app_obj.pro_name]
         self.label_type = 0
         self.create_lab()
+        pro_services = json.loads(app_obj.pro_services)
+        name_ls = [name.get('name') for name in pro_services]
+        version_ls = [version.get('version') for version in pro_services]
         for info in valid_info:
             self.json_data = info
             # 服务json添加labels字段，给create_pro_app_lab做筛选
@@ -118,10 +131,10 @@ class CreateDatabase(object):
             _dic = {
                 "is_release": True,
                 "app_type": 1,
-                "app_name": self.json_data.get("name"),
-                "app_version": self.json_data.get("version"),
-                "app_port": self.explain("ports"),
-                "app_dependence": self.explain("dependencies"),
+                "app_name": self.json_data.get("name", ""),
+                "app_version": self.json_data.get("version", ""),
+                "app_port": self.explain("ports", json.dumps([])),
+                "app_dependence": self.explain_dependence(),
                 "app_install_args": self.explain("install"),
                 "app_controllers": self.explain("control"),
                 "app_package": self.json_data.get("package_name"),
@@ -134,25 +147,30 @@ class CreateDatabase(object):
                 app_name=self.json_data.get("name"),
                 app_version=self.json_data.get("version")
             )
+            if _dic["app_name"] not in name_ls \
+                    or _dic["app_version"] not in version_ls:
+                pro_services.append({"name": _dic["app_name"], "version": _dic["app_version"]})
             if app_queryset.exists():
                 app_queryset.update(**_dic)
             else:
                 ser_obj = ApplicationHub.objects.create(**_dic)
                 # 做多对多关联
                 self.create_pro_app_lab(ser_obj)
-            # ApplicationHub.objects.create(
-            #     is_release=True, app_type=1,
-            #     app_name=self.json_data.get("name"),
-            #     app_version=self.json_data.get("version"),
-            #     app_description=self.json_data.get("description"),
-            #     app_port=self.explain("ports"),
-            #     app_dependence=self.explain("dependencies"),
-            #     app_install_args=self.explain("install"),
-            #     app_controllers=self.explain("control"),
-            #     app_package=self.json_data.get("package_name"),
-            #     product=app_obj,
-            #     extend_fields=self.json_data.get("extend_fields")
-            # )
+        app_obj.pro_services = json.dumps(pro_services, ensure_ascii=False)
+        app_obj.save()
+        # ApplicationHub.objects.create(
+        #     is_release=True, app_type=1,
+        #     app_name=self.json_data.get("name"),
+        #     app_version=self.json_data.get("version"),
+        #     app_description=self.json_data.get("description"),
+        #     app_port=self.explain("ports"),
+        #     app_dependence=self.explain("dependencies"),
+        #     app_install_args=self.explain("install"),
+        #     app_controllers=self.explain("control"),
+        #     app_package=self.json_data.get("package_name"),
+        #     product=app_obj,
+        #     extend_fields=self.json_data.get("extend_fields")
+        # )
 
     def create_component(self):
         """
@@ -169,7 +187,7 @@ class CreateDatabase(object):
             "app_version": self.json_data.get("version"),
             "app_description": self.json_data.get("description"),
             "app_port": self.explain("ports"),
-            "app_dependence": self.explain("dependencies"),
+            "app_dependence": self.explain_dependence(),
             "app_install_args": self.explain("install"),
             "app_controllers": self.explain("control"),
             "app_package": self.json_data.get("package_name"),

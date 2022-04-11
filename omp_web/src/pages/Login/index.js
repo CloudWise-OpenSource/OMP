@@ -10,7 +10,7 @@ import {
 import { OmpContentWrapper } from "@/components";
 import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-import { handleResponse, logout } from "@/utils/utils";
+import { handleResponse, logout, encrypt } from "@/utils/utils";
 import { withRouter } from "react-router";
 
 const Login = withRouter(({ history }) => {
@@ -26,7 +26,8 @@ const Login = withRouter(({ history }) => {
     setLoading(true);
     fetchPost(apiRequest.auth.login, {
       body: {
-        ...data,
+        username: encrypt(data.username),
+        password: encrypt(data.password),
         remember: isAutoLogin,
       },
     })
@@ -34,7 +35,6 @@ const Login = withRouter(({ history }) => {
         if (res.data && res.data.code == 1) {
           setMsgShow(true);
         } else if (res.data.code == 0) {
-          //history.replace({pathname:"/homepage"})
           history.replace({
             pathname: "/homepage",
             state: {
@@ -42,7 +42,7 @@ const Login = withRouter(({ history }) => {
             },
           });
           //console.log(data)
-          localStorage.setItem("username",data.username)
+          localStorage.setItem("username", data.username);
         }
       })
       .catch((e) => {
@@ -51,9 +51,9 @@ const Login = withRouter(({ history }) => {
       .finally(() => setLoading(false));
   }
 
-  useEffect(()=>{
-    logout("loginPage")
-  },[])
+  useEffect(() => {
+    logout("loginPage");
+  }, []);
 
   return (
     <OmpContentWrapper
@@ -64,7 +64,8 @@ const Login = withRouter(({ history }) => {
           <header className={styles.loginTitle}>
             <img className={styles.loginLogo} src={img} />
             <span className={styles.loginOMP}>
-              OMP<span className={styles.loginOpenText}>运维管理平台</span>
+              {/* OMP<span className={styles.loginOpenText}>运维管理平台</span> */}
+              运维工具包
             </span>
           </header>
           <p className={styles.loginInputTitle}>用户名密码登录</p>

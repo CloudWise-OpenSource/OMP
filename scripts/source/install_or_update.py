@@ -61,7 +61,7 @@ def install(pack_path, ip_address):
     :return:
     """
     # 解压源码包
-    cmd("tar -xf {0} -C {1}".format(pack_path, os.path.dirname(OMP_HOME)))
+    cmd("tar -xmf {0} -C {1}".format(pack_path, os.path.dirname(OMP_HOME)))
     # 执行安装脚本
     cmd("bash {0} {1}".format(os.path.join(
         OMP_HOME, 'scripts/install.sh'), ip_address))
@@ -79,7 +79,7 @@ def update_omp_platform(pack_path, update_file_folder):
     :return:
     """
     # 解压安装包
-    cmd("tar -xf {0} -C {1}".format(pack_path, update_file_folder))
+    cmd("tar -xmf {0} -C {1}".format(pack_path, update_file_folder))
     # 备份服务端文件
     omp_server_old = os.path.join(OMP_HOME, 'omp_server')
     omp_server_bak = os.path.join(update_file_folder, 'omp_server')

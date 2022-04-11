@@ -12,12 +12,14 @@ from rest_framework.serializers import ModelSerializer
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import Serializer
 from utils.common.exceptions import OperateError
+from utils.plugin.public_utils import check_is_ip_address, timedelta_strftime
 from app_store.tmp_exec_back_task import front_end_verified_init
 
 from db_models.models import (
     ApplicationHub, ProductHub, UploadPackageHistory,
-    Service, DetailInstallHistory, MainInstallHistory
-)
+    Service, DetailInstallHistory, MainInstallHistory, Product,
+    DeploymentPlan, ExecutionRecord)
+from db_models import models
 
 from app_store.install_utils import (
     make_lst_unique, ServiceArgsSerializer,
@@ -25,6 +27,7 @@ from app_store.install_utils import (
     ValidateExistService, ValidateInstallService,
     CreateInstallPlan
 )
+from utils.parse_config import HADOOP_ROLE
 
 logger = logging.getLogger("server")
 
@@ -57,8 +60,9 @@ class ServiceListSerializer(ModelSerializer):
 
     def get_instance_number(self, obj):
         """ 获取组件已安装实例数量 """
-        return Service.objects.filter(
-            service__product__pro_name=obj.pro_name).count()
+        # return Service.objects.filter(
+        #     service__product__pro_name=obj.pro_name).count()
+        return Product.objects.filter(product=obj).count()
 
 
 class UploadPackageSerializer(Serializer):
@@ -543,7 +547,7 @@ class InstallHistorySerializer(ModelSerializer):
         source="get_install_status_display")
     detail_lst = serializers.SerializerMethodField()
 
-    def parse_single_obj(self, obj):    # NOQA
+    def parse_single_obj(self, obj):  # NOQA
         """
         解析单个服务安装记录信息
         :param obj:
@@ -631,3 +635,265 @@ class ServiceInstallHistorySerializer(ModelSerializer):
         fields = (
             "install_step_status", "log"
         )
+
+
+class DeploymentPlanValidateSerializer(Serializer):
+    """ 部署计划服务信息验证序列化类 """
+
+    instance_name_ls = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="主机实例名列表",
+        required=True, allow_empty=False,
+        error_messages={"required": "必须包含[instance_name_ls]字段"}
+    )
+
+    service_data_ls = serializers.ListField(
+        child=serializers.DictField(),
+        help_text="服务数据列表",
+        required=True, allow_empty=False,
+        error_messages={"required": "必须包含[host_list]字段"}
+    )
+
+    def validate(self, attrs):
+        """ 校验主机数据列表 """
+        instance_name_ls = attrs.get("instance_name_ls")
+        service_data_ls = attrs.get("service_data_ls")
+        result_dict = {
+            "correct": [],
+            "error": []
+        }
+        logger.info("deployment plan validate start")
+
+        # 查询所有 application 信息
+        service_name_ls = list(
+            map(lambda x: x.get("service_name"), service_data_ls))
+        _queryset = ApplicationHub.objects.filter(
+            app_name__in=service_name_ls, is_release=True)
+        # 所有 application 默认取最新
+        new_app_id_list = []
+        for app in _queryset:
+            new_version = _queryset.filter(
+                app_name=app.app_name
+            ).order_by("-created").first().app_version
+            if new_version == app.app_version:
+                new_app_id_list.append(app.id)
+        app_queryset = _queryset.filter(
+            id__in=new_app_id_list, is_release=True
+        ).select_related("product")
+
+        # 获取 application 对应的 product 信息
+        app_now = app_queryset.exclude(product__isnull=True)
+        pro_id_list = app_now.values_list("product_id", flat=True).distinct()
+        # 验证 product 的依赖项均已包含
+        pro_queryset = ProductHub.objects.filter(id__in=pro_id_list)
+        for pro in pro_queryset:
+            # 无依赖项则跳过
+            if not pro.pro_dependence:
+                continue
+            dependence_list = json.loads(pro.pro_dependence)
+            # 校验依赖项的指定版本是否存在
+            for dependence in dependence_list:
+                name = dependence.get("name")
+                # version = dependence.get("version")
+                pro_obj = pro_queryset.filter(
+                    pro_name=name).order_by("-created").first()
+                # if not pro_obj or not pro_obj.pro_version.startswith(version):
+                if not pro_obj:
+                    result_dict["error"].append({
+                        "row": -2,
+                        "instance_name": "待补充",
+                        "service_name": "待补充",
+                        "validate_error": f"产品 {pro.pro_name}-{pro.pro_version} "
+                                          f"缺失依赖产品 {name}"
+                    })
+
+        # 验证所有 product 下的 application 都已经包含
+        app_target_all = ApplicationHub.objects.filter(
+            product_id__in=pro_id_list)
+
+        # 考虑到同产品下会有同名服务情况，做去重处理，按照时间版本号取最新
+        app_target_id_ls = []
+        for pro_id in pro_id_list:
+            # 同产品的 app_name 集合
+            app_name_set = set()
+            app_ls = app_target_all.filter(product_id=pro_id)
+            for app in app_ls:
+                if app.app_name not in app_name_set:
+                    new_version = app_ls.filter(
+                        app_name=app.app_name
+                    ).order_by("-created").first().app_version
+                    if new_version == app.app_version:
+                        app_name_set.add(app.app_name)
+                        app_target_id_ls.append(app.id)
+
+        # 获取目标 app
+        app_target = app_target_all.filter(
+            id__in=app_target_id_ls, is_release=True
+        )
+
+        # 所有 affinity 为 tengine 字段 (Web 服务)，不参与比较
+        now_set = set(filter(
+            lambda x: x.extend_fields.get("affinity") != "tengine", app_now))
+        target_set = set(filter(
+            lambda x: x.extend_fields.get("affinity") != "tengine", app_target))
+        diff_set = target_set - now_set
+
+        # 存在遗漏的 application
+        if diff_set:
+            for app in diff_set:
+                result_dict["error"].append({
+                    "row": -1,
+                    "instance_name": "待补充",
+                    "service_name": f"{app.app_name}",
+                    "validate_error": f"产品 {app.product.pro_name} "
+                                      f"缺失依赖服务 {app.app_name}"
+                })
+
+        # 验证所有 application 的依赖项均已包含
+        base_env_queryset = ApplicationHub.objects.filter(is_base_env=True)
+        for app in app_queryset:
+            if not app.app_dependence:
+                continue
+            dependence_list = json.loads(app.app_dependence)
+            # 校验依赖项的指定版本是否存在
+            for dependence in dependence_list:
+                name = dependence.get("name")
+                # version = dependence.get("version")
+                app_obj = app_queryset.filter(
+                    app_name=name).order_by("-created").first()
+                # if not app_obj or not app_obj.app_version.startswith(version):
+                if not app_obj:
+                    # 如果为 base_env 则跳过
+                    # if base_env_queryset.filter(
+                    #         app_name=name, app_version=version
+                    # ).exists():
+                    if base_env_queryset.filter(app_name=name).exists():
+                        continue
+                    result_dict["error"].append({
+                        "row": -2,
+                        "instance_name": "待补充",
+                        "service_name": f"{name}",
+                        "validate_error": f"服务 {app.app_name}-{app.app_version} "
+                                          f"缺失依赖服务 {name}"
+                    })
+
+        # hadoop 实例列表、角色集合
+        hadoop_instance_ls = []
+        hadoop_role_set = set()
+
+        for service_data in service_data_ls:
+            # 校验主机数据是否已经存在
+            if service_data.get("instance_name") not in instance_name_ls:
+                service_data["validate_error"] = "主机不在表格中"
+                result_dict["error"].append(service_data)
+                continue
+            # 校验服务是否存在
+            app_name = service_data.get("service_name", "unKnow")
+            if not app_queryset.filter(
+                    app_name=app_name
+            ).order_by("-created").exists():
+                service_data["validate_error"] = f"{app_name}服务不在应用商店中"
+                result_dict["error"].append(service_data)
+                continue
+            # 如果含 vip 字段，校验是否为 IP 格式
+            if service_data.get("vip"):
+                is_valid, _ = check_is_ip_address(
+                    service_data.get("vip"))
+                if not is_valid:
+                    service_data["validate_error"] = "虚拟IP不合法"
+                    result_dict["error"].append(service_data)
+                    continue
+            # 如果含 role 字段，校验是否含中文逗号
+            if service_data.get("role") and \
+                    "，" in service_data.get("role"):
+                service_data["validate_error"] = "角色请用英文逗号分隔"
+                result_dict["error"].append(service_data)
+                continue
+            # 当服务名为 hadoop 时，记录 hadoop 实例列表、角色集合
+            if app_name == "hadoop":
+                hadoop_instance_ls.append(service_data)
+                if service_data.get("role"):
+                    hadoop_role_set = hadoop_role_set | set(
+                        service_data.get("role").split(","))
+                continue
+            result_dict["correct"].append(service_data)
+
+        # 如果存在 hadoop 实例，则校验角色
+        if hadoop_instance_ls:
+            key_name = "single"
+            if len(hadoop_instance_ls) > 1:
+                key_name = "cluster"
+            diff = set(HADOOP_ROLE.get(key_name)) - hadoop_role_set
+            if diff:
+                for hadoop_instance in hadoop_instance_ls:
+                    hadoop_instance["validate_error"] = f"缺少角色{','.join(diff)}"
+                    result_dict["error"].append(hadoop_instance)
+            else:
+                for hadoop_instance in hadoop_instance_ls:
+                    result_dict["correct"].append(hadoop_instance)
+
+        # 按照 row 行号对列表进行排序
+        for v in result_dict.values():
+            if len(v) > 0:
+                v.sort(key=lambda x: x.get("row", 999))
+        attrs["result_dict"] = result_dict
+        logger.info("deployment plan validate end")
+        return attrs
+
+
+class DeploymentImportSerializer(Serializer):
+    """ 部署计划导入序列化类 """
+
+    instance_info_ls = serializers.ListField(
+        child=serializers.DictField(),
+        help_text="主机信息列表",
+        required=True, allow_empty=False,
+        error_messages={"required": "必须包含[instance_info_ls]字段"}
+    )
+
+    service_data_ls = serializers.ListField(
+        child=serializers.DictField(),
+        help_text="服务数据列表",
+        required=True, allow_empty=False,
+        error_messages={"required": "必须包含[host_list]字段"}
+    )
+
+    operation_uuid = serializers.CharField(
+        max_length=64,
+        help_text="唯一操作id",
+        required=False
+    )
+
+
+class DeploymentPlanListSerializer(ModelSerializer):
+    """ 部署计划列表序列化类 """
+
+    class Meta:
+        """ 元数据 """
+        model = DeploymentPlan
+        fields = "__all__"
+
+
+class ExecutionRecordSerializer(ModelSerializer):
+    state_display = serializers.CharField(source="get_state_display")
+    can_rollback = serializers.SerializerMethodField()
+    duration = serializers.SerializerMethodField()
+
+    def get_can_rollback(self, obj):
+        if obj.module != "UpgradeHistory":
+            return False
+        module_obj = getattr(models, obj.module).objects.get(
+            id=int(obj.module_id)
+        )
+        return module_obj.can_roll_back
+
+    def get_duration(self, obj):
+        if not obj.end_time:
+            return "-"
+        return timedelta_strftime(obj.end_time - obj.created)
+
+    class Meta:
+        model = ExecutionRecord
+        fields = ("id", "operator", "count", "state", "state_display",
+                  "can_rollback", "duration", "created", "end_time",
+                  "module", "module_id")

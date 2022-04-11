@@ -4,6 +4,7 @@ import {
   SendOutlined,
   LoadingOutlined,
   CheckCircleFilled,
+  ScanOutlined,
 } from "@ant-design/icons";
 //import BMF from "browser-md5-file";
 import { fetchPost, fetchGet } from "@/utils/request";
@@ -114,11 +115,11 @@ const ScanServerModal = ({
 
   return (
     <Modal
-      zIndex={1}
+      zIndex={1000}
       title={
         <span>
           <span style={{ position: "relative", left: "-10px" }}>
-            <SendOutlined />
+            <ScanOutlined />
           </span>
           <span>
             {stepNum == 0 && "扫描服务端安装包"}
@@ -177,7 +178,14 @@ const ScanServerModal = ({
               <p style={{ textAlign: "center" }}>正在扫描服务端...</p>
             ) : (
               <p style={{ textAlign: "center" }}>
-                扫描结束，服务端暂无安装包！
+                <p>扫描结束，服务端暂无安装包！</p>
+                <p>
+                  请将安装包上传至{" "}
+                  <span style={{ fontWeight: 500, color: "rgba(0,0,0,0.8)" }}>
+                    omp/package_hub/back_end_verified/
+                  </span>{" "}
+                  目录后重新扫描
+                </p>
               </p>
             )}
           </div>
@@ -313,6 +321,12 @@ const ScanServerModal = ({
               </p>
             )}
             <p style={{ textAlign: "center" }}>{dataSource?.message}</p>
+            <p style={{ textAlign: "center" }}>
+              发布完成的安装包存放路径:{" "}
+              <span style={{ fontWeight: 500, color: "rgba(0,0,0,0.8)" }}>
+                omp/package_hub/verified/
+              </span>{" "}
+            </p>
           </div>
           <Table
             style={{ border: "1px solid #e3e3e3" }}

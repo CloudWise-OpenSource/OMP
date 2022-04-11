@@ -40,7 +40,7 @@ const MachineManagement = () => {
   const [batchImport, setBatchImport] = useState(false);
 
   //选中的数据
-  const [checkedList, setCheckedList] = useState({});
+  const [checkedList, setCheckedList] = useState([]);
 
   //table表格数据
   const [dataSource, setDataSource] = useState([]);
@@ -83,6 +83,13 @@ const MachineManagement = () => {
   // 重启监控agent
   const [restartMonterAgentModal, setRestartMonterAgentModal] = useState(false);
 
+  // 重装主机agent
+  const [reInstallHostAgentModal, setReInstallHostAgentModal] = useState(false);
+
+  // 重装监控agent
+  const [reInstallMonterAgentModal, setReInstallMonterAgentModal] =
+    useState(false);
+
   // 开启维护
   const [openMaintainModal, setOpenMaintainModal] = useState(false);
   // 关闭维护
@@ -92,6 +99,12 @@ const MachineManagement = () => {
   const [openMaintainOneModal, setOpenMaintainOneModal] = useState(false);
   // 关闭维护（单次）
   const [closeMaintainOneModal, setCloseMaintainOneModal] = useState(false);
+
+  // 初始化主机
+  const [ininHostModal, setIninHostModal] = useState(false);
+
+  // 删除主机
+  const [deleteHostModal, setDeleteHostModal] = useState(false);
 
   const [showIframe, setShowIframe] = useState({});
 
@@ -112,6 +125,7 @@ const MachineManagement = () => {
     })
       .then((res) => {
         handleResponse(res, (res) => {
+          console.log(res.data.results);
           setDataSource(res.data.results);
           setPagination({
             ...pagination,
@@ -150,6 +164,7 @@ const MachineManagement = () => {
     data.ip = data.IPtext;
     delete data.IPtext;
     data.port = `${data.port}`;
+    delete data.icon;
     fetchPost(apiRequest.machineManagement.hosts, {
       body: {
         ...data,
@@ -252,10 +267,7 @@ const MachineManagement = () => {
     setLoading(true);
     fetchPost(apiRequest.machineManagement.restartMonitorAgent, {
       body: {
-        host_ids: Object.keys(checkedList)
-          .map((k) => checkedList[k])
-          .flat(1)
-          .map((item) => item.id),
+        host_ids: checkedList.map((item) => item.id),
       },
     })
       .then((res) => {
@@ -272,7 +284,7 @@ const MachineManagement = () => {
       .finally(() => {
         setLoading(false);
         setRestartMonterAgentModal(false);
-        setCheckedList({});
+        setCheckedList([]);
         fetchData(
           { current: pagination.current, pageSize: pagination.pageSize },
           { ip: selectValue },
@@ -286,10 +298,7 @@ const MachineManagement = () => {
     setLoading(true);
     fetchPost(apiRequest.machineManagement.restartHostAgent, {
       body: {
-        host_ids: Object.keys(checkedList)
-          .map((k) => checkedList[k])
-          .flat(1)
-          .map((item) => item.id),
+        host_ids: checkedList.map((item) => item.id),
       },
     })
       .then((res) => {
@@ -306,7 +315,113 @@ const MachineManagement = () => {
       .finally(() => {
         setLoading(false);
         setRestartHostAgentModal(false);
-        setCheckedList({});
+        setCheckedList([]);
+        fetchData(
+          { current: pagination.current, pageSize: pagination.pageSize },
+          { ip: selectValue },
+          pagination.ordering
+        );
+      });
+  };
+
+  // 重装主机agent
+  const fetchInstallHostAgent = () => {
+    setLoading(true);
+    fetchPost(apiRequest.machineManagement.reInstallHostAgent, {
+      body: {
+        host_ids: checkedList.map((item) => item.id),
+      },
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          if (res.code == 0) {
+            message.success("重装主机Agent任务已下发");
+          }
+          if (res.code == 1) {
+            message.warning(res.message);
+          }
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setLoading(false);
+        setReInstallHostAgentModal(false);
+        setCheckedList([]);
+        fetchData(
+          { current: pagination.current, pageSize: pagination.pageSize },
+          { ip: selectValue },
+          pagination.ordering
+        );
+      });
+  };
+
+  // 重装监控agent
+  const fetchInstallMonitorAgent = () => {
+    setLoading(true);
+    fetchPost(apiRequest.machineManagement.reInstallMonitorAgent, {
+      body: {
+        host_ids: checkedList.map((item) => item.id),
+      },
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          if (res.code == 0) {
+            message.success("重装监控Agent任务已下发");
+          }
+          if (res.code == 1) {
+            message.warning(res.message);
+          }
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setLoading(false);
+        setReInstallMonterAgentModal(false);
+        setCheckedList([]);
+        fetchData(
+          { current: pagination.current, pageSize: pagination.pageSize },
+          { ip: selectValue },
+          pagination.ordering
+        );
+      });
+  };
+
+  // 初始化主机
+  const fetchInitHostAgent = () => {
+    setLoading(true);
+    let hostIdArr = [];
+    hostIdArr = checkedList
+      .filter((item) => {
+        return item.init_status === 1 || item.init_status === 3;
+      })
+      .map((item) => item.id);
+    if (hostIdArr.length === 0) {
+      setLoading(false);
+      setIninHostModal(false);
+      setCheckedList([]);
+      message.success("所选主机已经初始化完成");
+      return;
+    }
+    fetchPost(apiRequest.machineManagement.hostInit, {
+      body: {
+        host_ids: hostIdArr,
+      },
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          if (res.code == 0) {
+            message.success("初始化主机任务已下发");
+          }
+          if (res.code == 1) {
+            message.warning(res.message);
+          }
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setLoading(false);
+        setIninHostModal(false);
+        setCheckedList([]);
         fetchData(
           { current: pagination.current, pageSize: pagination.pageSize },
           { ip: selectValue },
@@ -319,19 +434,13 @@ const MachineManagement = () => {
   const fetchMaintainChange = (e, checkedList) => {
     let host_arr = [];
     if (e) {
-      host_arr = Object.keys(checkedList)
-        .map((k) => checkedList[k])
-        .flat(1)
-        .filter((item) => {
-          return !item.is_maintenance;
-        });
+      host_arr = checkedList.filter((item) => {
+        return !item.is_maintenance;
+      });
     } else {
-      host_arr = Object.keys(checkedList)
-        .map((k) => checkedList[k])
-        .flat(1)
-        .filter((item) => {
-          return item.is_maintenance;
-        });
+      host_arr = checkedList.filter((item) => {
+        return item.is_maintenance;
+      });
     }
     if (host_arr.length == 0) {
       setLoading(false);
@@ -339,7 +448,7 @@ const MachineManagement = () => {
       setCloseMaintainOneModal(false);
       setOpenMaintainModal(false);
       setCloseMaintainModal(false);
-      setCheckedList({});
+      setCheckedList([]);
       if (e) {
         message.success("主机开启维护模式成功");
       } else {
@@ -373,7 +482,38 @@ const MachineManagement = () => {
         setCloseMaintainOneModal(false);
         setOpenMaintainModal(false);
         setCloseMaintainModal(false);
-        setCheckedList({});
+        setCheckedList([]);
+        fetchData(
+          { current: pagination.current, pageSize: pagination.pageSize },
+          { ip: selectValue },
+          pagination.ordering
+        );
+      });
+  };
+
+  // 主机删除
+  const deleteHost = () => {
+    setLoading(true);
+    fetchPost(apiRequest.machineManagement.deleteHost, {
+      body: {
+        host_ids: checkedList.map((item) => item.id),
+      },
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          if (res.code == 0) {
+            message.success("删除主机任务已下发");
+          }
+          if (res.code == 1) {
+            message.warning(res.message);
+          }
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setLoading(false);
+        setDeleteHostModal(false);
+        setCheckedList([]);
         fetchData(
           { current: pagination.current, pageSize: pagination.pageSize },
           { ip: selectValue },
@@ -419,24 +559,14 @@ const MachineManagement = () => {
                 key="openMaintain"
                 style={{ textAlign: "center" }}
                 onClick={() => setOpenMaintainModal(true)}
-                disabled={
-                  Object.keys(checkedList)
-                    .map((k) => checkedList[k])
-                    .flat(1)
-                    .map((item) => item.id).length == 0
-                }
+                disabled={checkedList.map((item) => item.id).length == 0}
               >
                 开启维护模式
               </Menu.Item>
               <Menu.Item
                 key="closeMaintain"
                 style={{ textAlign: "center" }}
-                disabled={
-                  Object.keys(checkedList)
-                    .map((k) => checkedList[k])
-                    .flat(1)
-                    .map((item) => item.id).length == 0
-                }
+                disabled={checkedList.length == 0}
                 onClick={() => {
                   setCloseMaintainModal(true);
                 }}
@@ -446,12 +576,7 @@ const MachineManagement = () => {
               <Menu.Item
                 key="reStartHost"
                 style={{ textAlign: "center" }}
-                disabled={
-                  Object.keys(checkedList)
-                    .map((k) => checkedList[k])
-                    .flat(1)
-                    .map((item) => item.id).length == 0
-                }
+                disabled={checkedList.length == 0}
                 onClick={() => {
                   setRestartHostAgentModal(true);
                 }}
@@ -461,23 +586,58 @@ const MachineManagement = () => {
               <Menu.Item
                 key="reStartMonitor"
                 style={{ textAlign: "center" }}
-                disabled={
-                  Object.keys(checkedList)
-                    .map((k) => checkedList[k])
-                    .flat(1)
-                    .map((item) => item.id).length == 0
-                }
+                disabled={checkedList.length == 0}
                 onClick={() => {
                   setRestartMonterAgentModal(true);
                 }}
               >
                 重启监控Agent
               </Menu.Item>
+              <Menu.Item
+                key="reInstallHost"
+                style={{ textAlign: "center" }}
+                disabled={checkedList.length == 0}
+                onClick={() => {
+                  setReInstallHostAgentModal(true);
+                }}
+              >
+                重装主机Agent
+              </Menu.Item>
+              <Menu.Item
+                key="reInstallMonitor"
+                style={{ textAlign: "center" }}
+                disabled={checkedList.length == 0}
+                onClick={() => {
+                  setReInstallMonterAgentModal(true);
+                }}
+              >
+                重装监控Agent
+              </Menu.Item>
+              <Menu.Item
+                key="initHost"
+                style={{ textAlign: "center" }}
+                disabled={checkedList.map((item) => item.id).length == 0}
+                onClick={() => {
+                  setDeleteHostModal(true);
+                }}
+              >
+                删除主机
+              </Menu.Item>
+              {/* <Menu.Item
+                key="initHost"
+                style={{ textAlign: "center" }}
+                disabled={checkedList.map((item) => item.id).length == 0}
+                onClick={() => {
+                  setIninHostModal(true);
+                }}
+              >
+                初始化主机
+              </Menu.Item> */}
             </Menu>
           }
           placement="bottomCenter"
         >
-          <Button style={{ marginLeft: 10 }}>
+          <Button style={{ marginLeft: 10, paddingRight: 10, paddingLeft: 15 }}>
             更多
             <DownOutlined />
           </Button>
@@ -508,7 +668,7 @@ const MachineManagement = () => {
             onClick={() => {
               //location.state = {}
               dispatch(refreshTime());
-              setCheckedList({});
+              setCheckedList([]);
               fetchData(
                 { current: pagination.current, pageSize: pagination.pageSize },
                 { ip: selectValue },
@@ -548,10 +708,10 @@ const MachineManagement = () => {
             setShowIframe,
             history
           )}
-          notSelectable={(record) => ({
-            // 部署中的不能选中
-            disabled: record?.host_agent == 3 || record?.monitor_agent == 3,
-          })}
+          // notSelectable={(record) => ({
+          //   // 部署中的不能选中
+          //   disabled: record?.host_agent == 3 || record?.monitor_agent == 3,
+          // })}
           dataSource={dataSource}
           pagination={{
             showSizeChanger: true,
@@ -565,15 +725,7 @@ const MachineManagement = () => {
                   lineHeight: 2.8,
                 }}
               >
-                <p>
-                  已选中{" "}
-                  {
-                    Object.keys(checkedList)
-                      .map((k) => checkedList[k])
-                      .flat(1).length
-                  }{" "}
-                  条
-                </p>
+                <p>已选中 {checkedList.length} 条</p>
                 <p style={{ color: "rgb(152, 157, 171)" }}>
                   共计{" "}
                   <span style={{ color: "rgb(63, 64, 70)" }}>
@@ -648,15 +800,8 @@ const MachineManagement = () => {
       >
         <div style={{ padding: "20px" }}>
           确定要重启{" "}
-          <span style={{ fontWeight: 500 }}>
-            {
-              Object.keys(checkedList)
-                .map((k) => checkedList[k])
-                .flat(1).length
-            }
-            台
-          </span>{" "}
-          主机 <span style={{ fontWeight: 500 }}>主机Agent</span> ？
+          <span style={{ fontWeight: 500 }}>{checkedList.length}台</span> 主机{" "}
+          <span style={{ fontWeight: 500 }}>主机Agent</span> ？
         </div>
       </OmpMessageModal>
 
@@ -683,15 +828,67 @@ const MachineManagement = () => {
       >
         <div style={{ padding: "20px" }}>
           确定要重启{" "}
-          <span style={{ fontWeight: 500 }}>
-            {
-              Object.keys(checkedList)
-                .map((k) => checkedList[k])
-                .flat(1).length
-            }
-            台
-          </span>{" "}
-          主机 <span style={{ fontWeight: 500 }}>监控Agent</span> ？
+          <span style={{ fontWeight: 500 }}>{checkedList.length}台</span> 主机{" "}
+          <span style={{ fontWeight: 500 }}>监控Agent</span> ？
+        </div>
+      </OmpMessageModal>
+
+      <OmpMessageModal
+        visibleHandle={[reInstallHostAgentModal, setReInstallHostAgentModal]}
+        title={
+          <span>
+            <ExclamationCircleOutlined
+              style={{
+                fontSize: 20,
+                color: "#f0a441",
+                paddingRight: "10px",
+                position: "relative",
+                top: 2,
+              }}
+            />
+            提示
+          </span>
+        }
+        loading={loading}
+        onFinish={() => {
+          fetchInstallHostAgent();
+        }}
+      >
+        <div style={{ padding: "20px" }}>
+          确定要重装{" "}
+          <span style={{ fontWeight: 500 }}>{checkedList.length}台</span> 主机{" "}
+          <span style={{ fontWeight: 500 }}>主机Agent</span> ？
+        </div>
+      </OmpMessageModal>
+
+      <OmpMessageModal
+        visibleHandle={[
+          reInstallMonterAgentModal,
+          setReInstallMonterAgentModal,
+        ]}
+        title={
+          <span>
+            <ExclamationCircleOutlined
+              style={{
+                fontSize: 20,
+                color: "#f0a441",
+                paddingRight: "10px",
+                position: "relative",
+                top: 2,
+              }}
+            />
+            提示
+          </span>
+        }
+        loading={loading}
+        onFinish={() => {
+          fetchInstallMonitorAgent();
+        }}
+      >
+        <div style={{ padding: "20px" }}>
+          确定要重装{" "}
+          <span style={{ fontWeight: 500 }}>{checkedList.length}台</span> 主机{" "}
+          <span style={{ fontWeight: 500 }}>监控Agent</span> ？
         </div>
       </OmpMessageModal>
 
@@ -718,14 +915,7 @@ const MachineManagement = () => {
       >
         <div style={{ padding: "20px" }}>
           确定要对{" "}
-          <span style={{ fontWeight: 500 }}>
-            {
-              Object.keys(checkedList)
-                .map((k) => checkedList[k])
-                .flat(1).length
-            }
-            台
-          </span>{" "}
+          <span style={{ fontWeight: 500 }}>{checkedList.length}台</span>{" "}
           主机下发 <span style={{ fontWeight: 500 }}>开启维护模式</span> 操作？
         </div>
       </OmpMessageModal>
@@ -753,14 +943,7 @@ const MachineManagement = () => {
       >
         <div style={{ padding: "20px" }}>
           确定要对{" "}
-          <span style={{ fontWeight: 500 }}>
-            {
-              Object.keys(checkedList)
-                .map((k) => checkedList[k])
-                .flat(1).length
-            }
-            台
-          </span>{" "}
+          <span style={{ fontWeight: 500 }}>{checkedList.length}台</span>{" "}
           主机下发 <span style={{ fontWeight: 500 }}>关闭维护模式</span> 操作？
         </div>
       </OmpMessageModal>
@@ -818,6 +1001,63 @@ const MachineManagement = () => {
           <span style={{ fontWeight: 500 }}>关闭维护模式</span> 操作？
         </div>
       </OmpMessageModal>
+
+      <OmpMessageModal
+        visibleHandle={[ininHostModal, setIninHostModal]}
+        title={
+          <span>
+            <ExclamationCircleOutlined
+              style={{
+                fontSize: 20,
+                color: "#f0a441",
+                paddingRight: "10px",
+                position: "relative",
+                top: 2,
+              }}
+            />
+            提示
+          </span>
+        }
+        loading={loading}
+        onFinish={() => {
+          fetchInitHostAgent();
+        }}
+      >
+        <div style={{ padding: "20px" }}>
+          确定要对{" "}
+          <span style={{ fontWeight: 500 }}>{checkedList.length}台</span> 主机{" "}
+          <span style={{ fontWeight: 500 }}>执行初始化</span> ？
+        </div>
+      </OmpMessageModal>
+
+      <OmpMessageModal
+        visibleHandle={[deleteHostModal, setDeleteHostModal]}
+        title={
+          <span>
+            <ExclamationCircleOutlined
+              style={{
+                fontSize: 20,
+                color: "#f0a441",
+                paddingRight: "10px",
+                position: "relative",
+                top: 2,
+              }}
+            />
+            提示
+          </span>
+        }
+        loading={loading}
+        onFinish={() => {
+          deleteHost();
+        }}
+      >
+        <div style={{ padding: "20px" }}>
+          确定要对{" "}
+          <span style={{ fontWeight: 500 }}>{checkedList.length}台</span> 主机{" "}
+          <span style={{ fontWeight: 500 }}>执行删除命令</span> ？
+        </div>
+      </OmpMessageModal>
+
       <BatchImportMachineModal
         batchImport={batchImport}
         setBatchImport={setBatchImport}

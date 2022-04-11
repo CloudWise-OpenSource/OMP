@@ -1,7 +1,7 @@
 groups:
 - name: node data disk alert
   rules:
-  - alert: host disk_data_used alert
+  - alert: 主机数据分区磁盘使用率过高
     annotations:
       disk_data_path: ${DISK_DATA_PATH}
       consignee: ${EMAIL_ADDRESS}
@@ -14,7 +14,7 @@ groups:
     labels:
       job: nodeExporter
       severity: critical
-  - alert: host disk_data_used alert
+  - alert: 主机数据分区磁盘使用率过高
     annotations:
       disk_data_path: ${DISK_DATA_PATH}
       consignee: ${EMAIL_ADDRESS}

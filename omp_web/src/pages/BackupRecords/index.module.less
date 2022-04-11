@@ -1,0 +1,78 @@
+.machineManagement {
+    display: flex;
+  }
+
+  .subMenu {
+    width: 160px;
+  }
+
+  .warningSearch {
+    display: flex;
+    margin-top: 10px;
+    margin-bottom: 10px;
+
+    & > div:nth-child(1) {
+      margin-right: 10px;
+    }
+
+    & > div:last-child {
+      margin-left: auto;
+    }
+  }
+
+  .antdTableExpandedRow {
+    margin: 0;
+    padding: 0;
+    height: 20px;
+    display: flex;
+    span {
+      margin-left: 60px;
+    }
+  }
+
+  .redType {
+    background-color: #ff4d4f;
+    color: #fff;
+    border-color:#ff4d4f;
+  }
+
+  .formItem {
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    & > span:nth-child(1) {
+      display: inline-block;
+      width: 100px;
+      font-size: 14px;
+      //font-weight: 500;
+      color: #333;
+      text-align: right;
+    }
+
+    & > input:nth-child(2) {
+      width: 240px;
+    }
+  }
+  .machineTable {
+    //cursor: url('../../public/conf/logo.svg'),default;
+    cursor: pointer;
+  }
+.omp_spin_wrapper{
+  height: calc(100%);
+}
+:global {
+  .ant-dropdown-menu-item:hover, .ant-dropdown-menu-submenu-title:hover {
+    background-color:#e6f1f6;
+    color:#2e7cee
+  }
+  //悬停样式会覆盖disable样式，在这里把disable权限提高
+  .ant-dropdown-menu-item-disabled {
+    background-color: #fff!important;
+    color:rgba(0, 0, 0, 0.25)!important
+  }
+  // .ant-drawer .ant-drawer-content {
+  //   height: calc(100% - 80px);
+  // }
+}

@@ -21,10 +21,20 @@ class TengineUtils(BaseUtils):
         获取tengine的部署模式
         :return:
         """
-        return {
-            "default": 1,
-            "step": 0
-        }
+        # return {
+        #     "default": 1,
+        #     "step": 1
+        # }
+        return [
+            {
+                "key": "single",
+                "name": "单实例"
+            },
+            {
+                "key": "master-master",
+                "name": "主主(vip)"
+            }
+        ]
 
     def check(self, mode):
         """
@@ -33,6 +43,6 @@ class TengineUtils(BaseUtils):
         :type mode: int
         :return:
         """
-        if mode != 1:
-            return False
+        # if mode != 1:
+        #     return False
         return True

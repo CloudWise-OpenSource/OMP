@@ -78,8 +78,8 @@ class HostCrawl(Prometheus):
 
     def __init__(self, env, instance):
         self.ret = {}
-        self.env = env              # 环境
-        self.instance = instance    # 主机ip
+        self.env = env  # 环境
+        self.instance = instance  # 主机ip
         self._obj = SaltClient()
         Prometheus.__init__(self)
 
@@ -112,8 +112,15 @@ class HostCrawl(Prometheus):
         _ = float(_) if _ else 0
         minutes, seconds = divmod(_, 60)
         hours, minutes = divmod(minutes, 60)
-        self.ret['run_time'] = \
-            f"{int(hours)}小时{int(minutes)}分钟{int(seconds)}秒"
+        days, hours = divmod(hours, 24)
+        if int(days) > 0:
+            self.ret['run_time'] = \
+                f"{int(days)}天{int(hours)}小时{int(minutes)}分钟{int(seconds)}秒"
+        elif int(hours) > 0:
+            self.ret['run_time'] = \
+                f"{int(hours)}小时{int(minutes)}分钟{int(seconds)}秒"
+        else:
+            self.ret['run_time'] = f"{int(minutes)}分钟{int(seconds)}秒"
 
     def cpu_usage(self):
         """总cpu使用率"""

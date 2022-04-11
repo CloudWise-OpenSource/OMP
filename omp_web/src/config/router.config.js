@@ -16,7 +16,24 @@ import ApplicationInstallation from "@/pages/AppStore/config/ApplicationInstalla
 import Installation from "@/pages/AppStore/config/Installation";
 import EmailSettings from "src/pages/EmailSettings";
 import RuleCenter from "src/pages/RuleCenter";
-import InstallationRecord from "@/pages/InstallationRecord"
+import InstallationRecord from "@/pages/InstallationRecord";
+import Upgrade from "@/pages/AppStore/config/Upgrade";
+import Rollback from "@/pages/AppStore/config/Rollback";
+import DeploymentPlan from "@/pages/DeploymentPlan";
+import BackupRecords from "@/pages/BackupRecords";
+import BackupStrategy from "@/pages/BackupStrategy";
+import LoginLog from "@/pages/LoginLog";
+import SystemLog from "@/pages/SystemLog";
+import SelfHealingRecord from "@/pages/SelfHealingRecord";
+import SelfHealingStrategy from "@/pages/SelfHealingStrategy";
+import ToolManagement from "@/pages/ToolManagement";
+import TaskRecord from "@/pages/TaskRecord";
+import ToolDetails from "@/pages/ToolManagement/detail";
+import ToolExecution from "@/pages/ToolExecution";
+import ToolExecutionResults from "@/pages/ToolExecutionResults";
+import RuleIndicator from "@/pages/RuleIndicator";
+import RuleExtend from "@/pages/RuleExtend"
+
 import {
   DesktopOutlined,
   ClusterOutlined,
@@ -26,6 +43,10 @@ import {
   AppstoreOutlined,
   EyeOutlined,
   UnorderedListOutlined,
+  SaveOutlined,
+  SolutionOutlined,
+  InteractionOutlined,
+  ToolOutlined
 } from "@ant-design/icons";
 
 export default [
@@ -93,9 +114,26 @@ export default [
       //   component: Installation,
       // },
       {
-        title: "安装记录",
+        title: "执行记录",
         path: "/application_management/install-record",
         component: InstallationRecord,
+      },
+      {
+        title: "服务升级",
+        path: "/application_management/app_store/service_upgrade",
+        notInMenu: true,
+        component: Upgrade,
+      },
+      {
+        title: "服务回滚",
+        path: "/application_management/app_store/service_rollback",
+        notInMenu: true,
+        component: Rollback,
+      },
+      {
+        title: "部署模板",
+        path: "/application_management/deployment-plan",
+        component: DeploymentPlan,
       },
     ],
   },
@@ -118,6 +156,23 @@ export default [
         title: "监控设置",
         path: "/application-monitoring/monitoring-settings",
         component: MonitoringSettings,
+      },
+    ],
+  },
+  {
+    menuTitle: "故障自愈",
+    menuIcon: <InteractionOutlined />,
+    menuKey: "/fault-selfHealing",
+    children: [
+      {
+        title: "自愈记录",
+        path: "/fault-selfHealing/selfHealing-record",
+        component: SelfHealingRecord,
+      },
+      {
+        title: "自愈策略",
+        path: "/fault-selfHealing/selfHealing-strategy",
+        component: SelfHealingStrategy,
       },
     ],
   },
@@ -149,10 +204,89 @@ export default [
     menuIcon: <UnorderedListOutlined />,
     menuKey: "/rule-center",
     children: [
+      // {
+      //   title: "默认指标",
+      //   path: "/rule-center/default-rule",
+      //   component: RuleCenter,
+      // },
       {
-        title: "默认指标",
-        path: "/rule-center/default-rule",
-        component: RuleCenter,
+        title: "指标规则",
+        path: "/rule-center/indicator-rule",
+        component: RuleIndicator,
+      },
+      {
+        title: "扩展指标",
+        path: "/rule-center/extend-rule",
+        component: RuleExtend,
+      },
+    ],
+  },
+  {
+    menuTitle: "数据备份",
+    menuIcon: <SaveOutlined />,
+    menuKey: "/data-backup",
+    children: [
+      {
+        title: "备份记录",
+        path: "/data-backup/backup-record",
+        component: BackupRecords,
+      },
+      {
+        title: "备份策略",
+        path: "/data-backup/backup-strategy",
+        component: BackupStrategy,
+      },
+    ],
+  },
+  {
+    menuTitle: "实用工具",
+    menuIcon: <ToolOutlined />,
+    menuKey: "/utilitie",
+    children: [
+      {
+        title: "工具管理",
+        path: "/utilitie/tool-management",
+        component: ToolManagement,
+      },
+      {
+        title: "工具详情",
+        path: "/utilitie/tool-management/tool-management-detail/:id",
+        notInMenu: true,
+        component: ToolDetails,
+      },
+      {
+        title: "工具执行",
+        path: "/utilitie/tool-management/tool-execution/:id",
+        notInMenu: true,
+        component: ToolExecution,
+      },
+      {
+        title: "执行结果",
+        path: "/utilitie/tool-management/tool-execution-results/:id",
+        notInMenu: true,
+        component: ToolExecutionResults,
+      },
+      {
+        title: "任务记录",
+        path: "/utilitie/task-record",
+        component: TaskRecord,
+      },
+    ],
+  },
+  {
+    menuTitle: "操作记录",
+    menuIcon: <SolutionOutlined />,
+    menuKey: "/operation-record",
+    children: [
+      {
+        title: "登录日志",
+        path: "/operation-record/login-log",
+        component: LoginLog,
+      },
+      {
+        title: "系统记录",
+        path: "/operation-record/system-log",
+        component: SystemLog,
       },
     ],
   },

@@ -202,9 +202,13 @@ const AppStoreDetail = () => {
         })
         .catch((e) => console.log(e))
         .finally(() => {});
-      console.log("服务");
+      // console.log("服务");
     }
   };
+
+  let tableData = isAll
+    ? allInstancesInfo
+    : currentVersionDataSource[nameObj.instances_info];
 
   useEffect(() => {
     fetchData();
@@ -267,31 +271,53 @@ const AppStoreDetail = () => {
         <div className={styles.detailTitle}>
           <div
             style={{
-              width: 120,
+              width: 80,
               height: 80,
-              // borderRadius: "50%",
+              borderRadius: "50%",
               border: "1px solid #eaeaea",
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
               overflow: "hidden",
-              padding: 10,
+              //padding: 10,
             }}
           >
-            <div
-              style={{
-                width: 80,
-                height: 80,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-              dangerouslySetInnerHTML={{
-                __html:
-                  currentVersionDataSource[nameObj.logo] ||
-                  imgObj[keyTab ? "component" : "service"],
-              }}
-            ></div>
+            {currentVersionDataSource[nameObj.logo] ? (
+              <div
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: "50%",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  backgroundColor: "#fff",
+                }}
+                dangerouslySetInnerHTML={{
+                  __html: currentVersionDataSource[nameObj.logo],
+                }}
+              ></div>
+            ) : (
+              <div
+                style={{
+                  width: 80,
+                  height: 80,
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  fontSize: 30,
+                  backgroundImage:
+                    "linear-gradient(to right, #4f85f6, #669aee)",
+                  // backgroundColor:"#5c8df6",
+                  color: "#fff",
+                }}
+              >
+                <div style={{ textAlign: "center", position: "relative" }}>
+                  {dataSource[nameObj.name] &&
+                    dataSource[nameObj.name][0].toLocaleUpperCase()}
+                </div>
+              </div>
+            )}
           </div>
           <div className={styles.detailTitleDescribe}>
             <div className={styles.detailTitleDescribeText}>
@@ -379,7 +405,7 @@ const AppStoreDetail = () => {
             {currentVersionDataSource.pro_services ? (
               <div
                 className={styles.detailDependenceTable}
-                style={{ width: 800 }}
+                //style={{ width: 800 }}
               >
                 <Table
                   size="middle"
@@ -415,6 +441,57 @@ const AppStoreDetail = () => {
                       align: "center",
                       render: (text) => {
                         return text || "-";
+                      },
+                    },
+                    {
+                      title: "安装",
+                      key: "c",
+                      dataIndex: "c",
+                      align: "center",
+                      render: (text, record) => {
+                        return (
+                          <a
+                            onClick={() => {
+                              setLoading(true);
+                              fetchPost(
+                                apiRequest.appStore.createComponentInstallInfo,
+                                {
+                                  body: {
+                                    high_availability: false,
+                                    install_component: [{
+                                      name:record.name,
+                                      version:record.version
+                                    }],
+                                  },
+                                }
+                              )
+                                .then((res) => {
+                                  //console.log(operateObj[operateAciton])
+                                  handleResponse(res, (res) => {
+                                    if (res.data && res.data.data) {
+                                      dispatch(
+                                        getStep1ChangeAction(res.data.data)
+                                      );
+                                      dispatch(
+                                        getUniqueKeyChangeAction(
+                                          res.data.unique_key
+                                        )
+                                      );
+                                    }
+                                    history.push(
+                                      "/application_management/app_store/installation"
+                                    );
+                                  });
+                                })
+                                .catch((e) => console.log(e))
+                                .finally(() => {
+                                  setLoading(false);
+                                });
+                            }}
+                          >
+                            点击安装
+                          </a>
+                        );
                       },
                     },
                   ]}
@@ -453,67 +530,67 @@ const AppStoreDetail = () => {
                 )}
               </span>
             </div>
-            <div
-              className={styles.detailDependenceTable}
-              style={{ width: 800 }}
-            >
-              <Table
-                size="middle"
-                columns={[
-                  {
-                    title: "实例名称",
-                    key: "instance_name",
-                    dataIndex: "instance_name",
-                    align: "center",
-                  },
-                  {
-                    title: "主机IP",
-                    key: "host_ip",
-                    dataIndex: "host_ip",
-                    align: "center",
-                  },
-                  {
-                    title: "端口",
-                    key: "service_port",
-                    dataIndex: "service_port",
-                    align: "center",
-                    render: (text) => {
-                      if (!text) {
-                        return "-";
-                      }
-                      return text.map((i) => i.default).join(", ");
+            {tableData && tableData.length == 0 ? (
+              <p style={{ paddingTop: 10 }}>无</p>
+            ) : (
+              <div
+                className={styles.detailDependenceTable}
+                //style={{ width: 800 }}
+              >
+                <Table
+                  size="middle"
+                  columns={[
+                    {
+                      title: "实例名称",
+                      key: "instance_name",
+                      dataIndex: "instance_name",
+                      align: "center",
                     },
-                  },
-                  {
-                    title: "版本",
-                    key: "app_version",
-                    dataIndex: "app_version",
-                    align: "center",
-                  },
-                  {
-                    title: "模式",
-                    key: "mode",
-                    dataIndex: "mode",
-                    align: "center",
-                  },
-                  {
-                    title: "安装时间",
-                    key: "created",
-                    dataIndex: "created",
-                    align: "center",
-                    render: (text) => {
-                      return moment(text).format("YYYY-MM-DD HH:mm:ss");
+                    {
+                      title: "主机IP",
+                      key: "host_ip",
+                      dataIndex: "host_ip",
+                      align: "center",
                     },
-                  },
-                ]}
-                //pagination={false}
-                dataSource={
-                  isAll
-                    ? allInstancesInfo
-                    : currentVersionDataSource[nameObj.instances_info]
-                }
-              />
-            </div>
+                    {
+                      title: "端口",
+                      key: "service_port",
+                      dataIndex: "service_port",
+                      align: "center",
+                      render: (text) => {
+                        if (!text) {
+                          return "-";
+                        }
+                        return text.map((i) => i.default).join(", ");
+                      },
+                    },
+                    {
+                      title: "版本",
+                      key: "app_version",
+                      dataIndex: "app_version",
+                      align: "center",
+                    },
+                    {
+                      title: "模式",
+                      key: "mode",
+                      dataIndex: "mode",
+                      align: "center",
+                    },
+                    {
+                      title: "安装时间",
+                      key: "created",
+                      dataIndex: "created",
+                      align: "center",
+                      render: (text) => {
+                        return moment(text).format("YYYY-MM-DD HH:mm:ss");
+                      },
+                    },
+                  ]}
+                  //pagination={false}
+                  dataSource={tableData}
+                />
+              </div>
+            )}
           </div>
         ) : (
           <div className={styles.detailDependence}>
@@ -541,73 +618,73 @@ const AppStoreDetail = () => {
                 )}
               </span>
             </div>
-            <div
-              className={styles.detailDependenceTable}
-              style={{ width: 800 }}
-            >
-              <Table
-                size="middle"
-                columns={[
-                  {
-                    title: "实例名称",
-                    key: "instance_name",
-                    dataIndex: "instance_name",
-                    align: "center",
-                  },
-                  {
-                    title: "版本",
-                    key: "version",
-                    dataIndex: "version",
-                    align: "center",
-                  },
-                  {
-                    title: "服务名称",
-                    key: "app_name",
-                    dataIndex: "app_name",
-                    align: "center",
-                  },
-                  {
-                    title: "服务版本",
-                    key: "app_version",
-                    dataIndex: "app_version",
-                    align: "center",
-                  },
-                  {
-                    title: "主机IP",
-                    key: "host_ip",
-                    dataIndex: "host_ip",
-                    align: "center",
-                  },
-                  {
-                    title: "端口",
-                    key: "service_port",
-                    dataIndex: "service_port",
-                    align: "center",
-                    render: (text) => {
-                      if (!text) {
-                        return "-";
-                      }
-                      return text.map((i) => i.default).join(",");
+            {tableData && tableData.length == 0 ? (
+              <p style={{ paddingTop: 10 }}>无</p>
+            ) : (
+              <div
+                className={styles.detailDependenceTable}
+                //style={{ width: "100%" }}
+              >
+                <Table
+                  size="middle"
+                  columns={[
+                    {
+                      title: "实例名称",
+                      key: "instance_name",
+                      dataIndex: "instance_name",
+                      align: "center",
                     },
-                  },
-                  {
-                    title: "安装时间",
-                    key: "created",
-                    dataIndex: "created",
-                    align: "center",
-                    render: (text) => {
-                      return moment(text).format("YYYY-MM-DD HH:mm:ss");
+                    {
+                      title: "版本",
+                      key: "version",
+                      dataIndex: "version",
+                      align: "center",
                     },
-                  },
-                ]}
-                //pagination={false}
-                dataSource={
-                  isAll
-                    ? allInstancesInfo
-                    : currentVersionDataSource[nameObj.instances_info]
-                }
-              />
-            </div>
+                    {
+                      title: "服务名称",
+                      key: "app_name",
+                      dataIndex: "app_name",
+                      align: "center",
+                    },
+                    {
+                      title: "服务版本",
+                      key: "app_version",
+                      dataIndex: "app_version",
+                      align: "center",
+                    },
+                    {
+                      title: "主机IP",
+                      key: "host_ip",
+                      dataIndex: "host_ip",
+                      align: "center",
+                    },
+                    {
+                      title: "端口",
+                      key: "service_port",
+                      dataIndex: "service_port",
+                      align: "center",
+                      render: (text) => {
+                        if (!text) {
+                          return "-";
+                        }
+                        return text.map((i) => i.default).join(",");
+                      },
+                    },
+                    {
+                      title: "安装时间",
+                      key: "created",
+                      dataIndex: "created",
+                      align: "center",
+                      render: (text) => {
+                        return moment(text).format("YYYY-MM-DD HH:mm:ss");
+                      },
+                    },
+                  ]}
+                  //pagination={false}
+                  dataSource={tableData}
+                />
+              </div>
+            )}
           </div>
         )}
       </Spin>

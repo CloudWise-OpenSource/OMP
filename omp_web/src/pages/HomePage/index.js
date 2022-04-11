@@ -571,10 +571,11 @@ const Homepage = () => {
               // key={"serviceData"}
               // tag={"all"}
               link={(data) => {
+                console.log(data)
                 history.push({
                   pathname: "/application_management/service_management",
                   state: {
-                    ip: data.ip,
+                    ip: data?.info[0]?.ip,
                     app_type: "1",
                   },
                 });
@@ -583,7 +584,7 @@ const Homepage = () => {
                 history.push({
                   pathname: "/application-monitoring/exception-list",
                   state: {
-                    ip: data.ip,
+                    ip: data?.info[0]?.ip,
                     type: "service",
                   },
                 });
@@ -605,7 +606,7 @@ const Homepage = () => {
                 history.push({
                   pathname: "/application_management/service_management",
                   state: {
-                    ip: data.ip,
+                    ip: data?.info[0]?.ip,
                     app_type: "0",
                   },
                 });
@@ -614,7 +615,7 @@ const Homepage = () => {
                 history.push({
                   pathname: "/application-monitoring/exception-list",
                   state: {
-                    ip: data.ip,
+                    ip: data?.info[0]?.ip,
                     type: "service",
                   },
                 });
@@ -636,7 +637,7 @@ const Homepage = () => {
                 history.push({
                   pathname: "/application_management/service_management",
                   state: {
-                    ip: data.ip,
+                    ip: data?.info[0]?.ip,
                     label_name: "数据库",
                   },
                 });
@@ -645,7 +646,7 @@ const Homepage = () => {
                 history.push({
                   pathname: "/application-monitoring/exception-list",
                   state: {
-                    ip: data.ip,
+                    ip: data?.info[0]?.ip,
                     type: "service",
                   },
                 });
@@ -667,7 +668,7 @@ const Homepage = () => {
                 history.push({
                   pathname: "/resource-management/machine-management",
                   state: {
-                    ip: data.ip,
+                    ip: data?.info[0]?.ip,
                   },
                 });
               }}
@@ -675,7 +676,7 @@ const Homepage = () => {
                 history.push({
                   pathname: "/application-monitoring/exception-list",
                   state: {
-                    ip: data.ip,
+                    ip: data?.info[0]?.ip,
                     type: "host",
                   },
                 });

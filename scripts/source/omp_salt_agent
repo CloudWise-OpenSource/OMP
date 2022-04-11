@@ -125,12 +125,25 @@ function agent_start() {
   fi
 }
 
+#使用pid判断进程的方式
+#function agent_status() {
+#  if [ ! -f ${SALT_AGENT_PID_FILE} ]; then
+#    echo "not running"
+#    return 1
+#  fi
+#  kill -0 $(cat ${SALT_AGENT_PID_FILE}) >/dev/null 2>&1
+#  if [[ $? -eq 0 ]]; then
+#    echo "running"
+#    return 0
+#  else
+#    echo "not running"
+#    return 1
+#  fi
+#}
+
+# 使用进程判断状态的方式
 function agent_status() {
-  if [ ! -f ${SALT_AGENT_PID_FILE} ]; then
-    echo "not running"
-    return 1
-  fi
-  kill -0 $(cat ${SALT_AGENT_PID_FILE}) >/dev/null 2>&1
+  ps -ef | grep "${OMP_DIR}/env/bin/salt-minion" | grep -v grep >/dev/null 2>&1
   if [[ $? -eq 0 ]]; then
     echo "running"
     return 0
@@ -141,7 +154,7 @@ function agent_status() {
 }
 
 function agent_stop() {
-  ps -ef | grep "${OMP_DIR}/env/bin/salt-minion" | grep -v grep | cut -c 9-15 | xargs kill -9
+  ps -ef | grep "${OMP_DIR}/env/bin/salt-minion" | grep -v grep | awk '{print $2}' | xargs kill -9
   sleep 1
   agent_status
 }
@@ -168,10 +181,14 @@ function agent_init() {
     if [[ $? -eq 0 ]]; then
       exit 0
     else
-      echo "*/30 * * * * bash ${THIS_SCRIPT} alive &>/dev/null" >>/tmp/omp_agent_cron
+      echo "*/5 * * * * bash ${THIS_SCRIPT} alive &>/dev/null" >>/tmp/omp_agent_cron
       crontab /tmp/omp_agent_cron && rm -f /tmp/omp_agent_cron
     fi
   fi
+}
+
+function help() {
+  echo "bash omp_salt_agent [start|stop|status|restart|alive|init]"
 }
 
 function main() {
@@ -194,6 +211,9 @@ function main() {
     ;;
   init)
     agent_init
+    ;;
+  *)
+    help
     ;;
   esac
 }

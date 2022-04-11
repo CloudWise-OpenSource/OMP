@@ -1,0 +1,15 @@
+# 使用配置文件的方式更新产品的yaml，留出可更改接口
+# 更新安装参数，如下安装参数在安装过程中会进行更改替换
+install:
+  nacos:
+    - name: "租户类型1单2多3saas"
+      key: "deploy_type"
+      default: "1"
+      editable: true
+# 更新端口配置，如下端口在安装过程中会更新到端口中
+ports:
+  testService:
+    - name: 服务端口
+      protocol: TCP
+      key: service_port
+      default: 18125

@@ -512,11 +512,7 @@ function OverviewItem({ data, type, isHost = false }) {
             <div>
               {data?.host >= 0 && <div>主机个数：{data.host}台</div>}
               {/* {data?.component >= 0 && <div>组件个数：{data.component}个</div>} */}
-              {isHost ? (
-                <></>
-              ) : (
-                data?.service >= 0 && <div>服务个数：{data.service}个</div>
-              )}
+              {data?.service >= 0 && <div>服务个数：{data.service}个</div>}
             </div>
           </div>
         </div>

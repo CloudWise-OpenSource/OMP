@@ -5,6 +5,7 @@ import { useSelector, useDispatch } from "react-redux";
 import {
   getDataSourceChangeAction,
   getStep2ErrorLstChangeAction,
+  getIpListChangeAction,
 } from "../store/actionsCreators";
 import { fetchPost, fetchGet } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
@@ -81,14 +82,14 @@ const Step2 = ({ setStepNum }) => {
     console.log(data);
     let result = {};
     for (const key in data) {
-      if(data[key].length > 0){
+      if (data[key].length > 0) {
         result[key] = data[key].map((item) => {
           return item[1];
         });
       }
     }
 
-    console.log(result)
+    console.log(result);
     return result;
   };
 
@@ -129,6 +130,7 @@ const Step2 = ({ setStepNum }) => {
       // 销毁时去除error信息
       reduxDispatch(getStep2ErrorLstChangeAction([]));
       reduxDispatch(getDataSourceChangeAction([]));
+      reduxDispatch(getIpListChangeAction([]));
     };
   }, []);
 

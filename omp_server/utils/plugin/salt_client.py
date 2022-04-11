@@ -137,12 +137,13 @@ class SaltClient(object):
                 f"Execute by salt fun_for_multi with Exception: {traceback.format_exc()}")
             return False, f"执行{str(fun)}过程中出现错误: {str(e)}"
 
-    def cmd(self, target, command, timeout):
+    def cmd(self, target, command, timeout, real_timeout=None):
         """
         执行shell命令接口
         :param target: 目标agent的id，一般为ip
         :param command: 将要执行的shell命令
-        :param timeout: 超时时间
+        :param timeout: salt连接超时时间
+        :param real_timeout: cmd命令执行超时时间
         :return: 命令执行结果
         """
         try:
@@ -153,16 +154,21 @@ class SaltClient(object):
                 fun="cmd.run",
                 arg=(command,),
                 timeout=timeout,
-                full_return=True
+                full_return=True,
+                kwarg={"timeout": real_timeout}
             )
             logger.info(f"Execute by salt cmd res: {cmd_res}")
             if not isinstance(cmd_res, dict):
                 return False, SALT_ERROR_MSG
             if target not in cmd_res:
                 return False, AGENT_OFFLINE_MSG
+            if cmd_res[target] is False:
+                return False, AGENT_OFFLINE_MSG
             if 'retcode' not in cmd_res[target]:
                 return False, f"当前执行未出现预期结果，详情如下: {cmd_res[target]}"
             if cmd_res[target]["retcode"] != 0:
+                return False, cmd_res[target]["ret"]
+            if "Timed out after" in cmd_res[target]["ret"]:
                 return False, cmd_res[target]["ret"]
             return True, cmd_res[target]["ret"]
         except Exception as e:
@@ -204,3 +210,33 @@ class SaltClient(object):
             logger.error(
                 f"Execute by salt cp_file with Exception: {traceback.format_exc()}")
             return False, f"发送文件过程中出现错误: {str(e)}"
+
+    def cp_push(self, target, source_path, upload_path):
+        """
+        salt-master从目标服务器拉取文件
+        拉取过来的文件存放路径为：/data/omp/data/salt/var/cache/salt/master/minions/10.0.3.24/files
+        :param target: 目标主机
+        :param source_path: 目标主机上源文件路径，/data/backup
+        :param upload_path: 目标主机上文件名
+        :return:
+        """
+        try:
+            cmd_res = self.client.cmd(
+                tgt=target,
+                fun="cp.push",
+                arg=(source_path,),
+                kwarg={"upload_path": upload_path, "remove_source": True},
+                timeout=60 * 10
+            )
+            logger.info(f"执行拉取文件的接口，获取到的返回结果是: {cmd_res}")
+            if not isinstance(cmd_res, dict):
+                return False, "Salt 执行错误，请检查相关配置是否正确！"
+            if target not in cmd_res:
+                return False, "当前目标主机不在线或该目标主机未纳管！"
+            if cmd_res[target] is True:
+                return True, "success"
+            return False, f"当前出现未知错误: {cmd_res[target]}"
+        except Exception as e:
+            print(traceback.format_exc())
+            logger.error(f"拉取文件过程中程序出现错误: {traceback.format_exc()}")
+            return False, f"拉取文件过程中出现错误: {str(e)}"

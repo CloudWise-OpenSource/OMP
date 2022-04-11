@@ -19,8 +19,8 @@ const getColumnsConfig = (
       width: 200,
       ellipsis: true,
       fixed: "left",
-      sorter: (a, b) => a.alert_instance_name - b.alert_instance_name,
-      sortDirections: ["descend", "ascend"],
+      // sorter: (a, b) => a.alert_instance_name - b.alert_instance_name,
+      // sortDirections: ["descend", "ascend"],
       render: (text, record) => {
         return (
           <Tooltip title={text}>
@@ -97,18 +97,18 @@ const getColumnsConfig = (
       title: "告警类型",
       key: "alert_type",
       dataIndex: "alert_type",
-      usefilter: true,
-      queryRequest: queryRequest,
-      filterMenuList: [
-        {
-          value: "service",
-          text: "服务",
-        },
-        {
-          value: "host",
-          text: "主机",
-        },
-      ],
+      // usefilter: true,
+      // queryRequest: queryRequest,
+      // filterMenuList: [
+      //   {
+      //     value: "service",
+      //     text: "服务",
+      //   },
+      //   {
+      //     value: "host",
+      //     text: "主机",
+      //   },
+      // ],
       align: "center",
       //ellipsis: true,
       width: 150,
@@ -171,60 +171,66 @@ const getColumnsConfig = (
       fixed: "right",
       align: "center",
       render: function renderFunc(text, record, index) {
-        console.log(record);
+        //console.log(record);
         return (
           <div style={{ display: "flex", justifyContent: "space-around" }}>
-            {record.monitor_path ? (
-              <a
-                onClick={() => {
-                  record.is_read == 0 && updateAlertRead([record.id]);
-                  setShowIframe({
-                    isOpen: true,
-                    src: record.monitor_path,
-                    record: {
-                      ...record,
-                      ip: record.alert_host_ip,
-                    },
-                    isLog: false,
-                  });
-                }}
-              >
-                监控
-              </a>
-            ) : (
-              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
-            )}
+            <div style={{ margin: "auto" }}>
+              {record.monitor_path ? (
+                <a
+                  onClick={() => {
+                    record.is_read == 0 && updateAlertRead([record.id]);
+                    setShowIframe({
+                      isOpen: true,
+                      src: record.monitor_path,
+                      record: {
+                        ...record,
+                        ip: record.alert_host_ip,
+                      },
+                      isLog: false,
+                    });
+                  }}
+                >
+                  监控
+                </a>
+              ) : (
+                <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
+              )}
 
-            {record.alert_type == "host" ? (
-              <a
-                onClick={() =>
-                  history.push({
-                    pathname: "/status-patrol/patrol-inspection-record",
-                  })
-                }
-              >
-                分析
-              </a>
-            ) : record.monitor_log ? (
-              <a
-                onClick={() => {
-                  record.is_read == 0 && updateAlertRead([record.id]);
-                  setShowIframe({
-                    isOpen: true,
-                    src: record.monitor_log,
-                    record: {
-                      ...record,
-                      ip: record.alert_host_ip,
-                    },
-                    isLog: true,
-                  });
-                }}
-              >
-                日志
-              </a>
-            ) : (
-              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>日志</span>
-            )}
+              {record.alert_type == "host" ? (
+                <a
+                  style={{ marginLeft: 10 }}
+                  onClick={() =>
+                    history.push({
+                      pathname: "/status-patrol/patrol-inspection-record",
+                    })
+                  }
+                >
+                  分析
+                </a>
+              ) : record.monitor_log ? (
+                <a
+                  style={{ marginLeft: 10 }}
+                  onClick={() => {
+                    record.is_read == 0 && updateAlertRead([record.id]);
+                    setShowIframe({
+                      isOpen: true,
+                      src: record.monitor_log,
+                      record: {
+                        ...record,
+                        ip: record.alert_host_ip,
+                      },
+                      isLog: true,
+                    });
+                  }}
+                >
+                  日志
+                </a>
+              ) : (
+                <span style={{ color: "rgba(0, 0, 0, 0.25)", marginLeft: 10 }}>
+                  日志
+                </span>
+              )}
+            </div>
           </div>
         );
       },

@@ -173,7 +173,7 @@ const ReleaseModal = ({
   return (
     <>
       <Modal
-        zIndex={1}
+        zIndex={1000}
         title={
           <span>
             <span style={{ position: "relative", left: "-10px" }}>
@@ -252,21 +252,21 @@ const ReleaseModal = ({
 
                     if (fileList.length > 5) {
                       if (file == fileList[0]) {
-                        message.error("仅支持上传5个文件");
+                        message.error("单次发布操作，最多支持上传5个文件");
                       }
                       return Upload.LIST_IGNORE;
                     }
 
                     if (filesList.length + fileList.length > 5) {
                       if (file == fileList[0]) {
-                        message.error("仅支持上传5个文件");
+                        message.error("单次发布操作，最多支持上传5个文件");
                       }
                       return Upload.LIST_IGNORE;
                     }
 
                     if (filesList.length >= 5) {
                       if (file == fileList[0]) {
-                        message.error("仅支持上传5个文件");
+                        message.error("单次发布操作，最多支持上传5个文件");
                       }
                       return Upload.LIST_IGNORE;
                     }
@@ -323,7 +323,7 @@ const ReleaseModal = ({
                         paddingTop: 10,
                       }}
                     >
-                      支持扩展名: .tar .tar.gz 文件大小不超过4G
+                      支持扩展名: .tar 或 .tar.gz  文件大小不超过4G
                     </p>
                     <p
                       style={{
@@ -471,7 +471,8 @@ const ReleaseModal = ({
               <Button
                 type="primary"
                 disabled={
-                  dataSource.filter((i) => i.package_status == 0).length == 0
+                  dataSource.filter((i) => i.package_status == 0).length == 0 ||
+                  dataSource.filter((i) => i.package_status == 2).length !== 0
                 }
                 loading={loading}
                 onClick={() => {
@@ -531,6 +532,12 @@ const ReleaseModal = ({
                   本次成功发布{" "}
                   {dataSource.filter((item) => item.package_status == 3).length}
                   个 服务
+                </p>
+                <p style={{ textAlign: "center" }}>
+                  发布完成的安装包存放路径:{" "}
+                  <span style={{ fontWeight: 500, color: "rgba(0,0,0,0.8)" }}>
+                    omp/package_hub/verified/
+                  </span>{" "}
                 </p>
               </div>
             )}
@@ -653,7 +660,7 @@ const ReleaseModal = ({
         )}
       </Modal>
       <OmpMessageModal
-        zIndex={2}
+        zIndex={1100}
         style={{ top: 160 }}
         visibleHandle={[deleteModal, setDeleteModal]}
         title={

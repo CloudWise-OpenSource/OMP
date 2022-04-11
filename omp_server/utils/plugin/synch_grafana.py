@@ -1,10 +1,10 @@
 import json
 import time
+import traceback
 
 import requests
 
 from db_models.models import MonitorUrl, GrafanaMainPage
-from utils.parse_config import GRAFANA_API_KEY
 
 
 def make_request(url, headers, payload):
@@ -17,8 +17,8 @@ def make_request(url, headers, payload):
     """
     flag = 0
     while flag < 5:
-        response = requests.request(
-            "GET", url, headers=headers, data=payload)
+        response = requests.get(url=url, headers=headers,
+                                data=payload, auth=("admin", "admin"))
         r = json.loads(response.text)
         for url in r:
             if not isinstance(url, dict):
@@ -37,19 +37,27 @@ def synch_grafana_info():
     monitor_url = monitor_ip[0].monitor_url if len(
         monitor_ip) else "127.0.0.1:19014"
 
-    url = """http://{0}/proxy/v1/grafana/api/search?query=&
-          starred=false&skipRecent=false&
-          skipStarred=false&folderIds=0&layout=folders""".format(monitor_url)
+    url = "http://{0}/proxy/v1/grafana/api/search?" \
+          "query=&starred=false&skipRecent=false&skipStarred=false&" \
+          "folderIds=0&layout=folders".format(monitor_url)
     payload = {}
-    headers = {
-        'Authorization': f'Bearer {GRAFANA_API_KEY}'
-    }
-    try:
-        flag, r = make_request(url=url, headers=headers, payload=payload)
-        if not flag:
+    headers = {'Content-Type': 'application/json'}
+    try_times = 0
+    while try_times <= 3:
+        try:
+            try_times += 1
+            # print(f"start request to: {url}")
+            flag, r = make_request(url=url, headers=headers, payload=payload)
+            if not flag:
+                return
+            break
+        except requests.exceptions.MissingSchema as e:
+            print(f"grafana error: {str(e)}, try again after 10s!")
+        except Exception as e:
+            print(e)
+            print(traceback.format_exc())
             return
-    except Exception as e:
-        print(e)
+    else:
         return
     url_type = {"service": "fu", "node": "zhu", "log": "applogs"}
     url_dict = {}

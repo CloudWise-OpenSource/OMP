@@ -1,17 +1,17 @@
 groups:
 - name: node alert
   rules:
-  - alert: instance down
+  - alert: 实例宕机
     annotations:
       consignee: ${EMAIL_ADDRESS}
       description: 实例 {{ $labels.instance }} monitor_agent进程丢失或主机发生宕机已超过1分钟
-      summary: instance down alert({{ $labels.instance }})
+      summary: 实例宕机({{ $labels.instance }})
     expr: sum(up{job="nodeExporter", env="${ENV}"}) by (instance,env) < 1
     for: 1m
     labels:
       job: nodeExporter
       severity: critical
-  - alert: host cpu_used alert
+  - alert: 主机CPU使用率过高
     annotations:
       consignee: ${EMAIL_ADDRESS}
       description: 主机 {{ $labels.instance }} CPU使用率当前值为{{ $value | humanize }}%,高于阈值 90%
@@ -22,7 +22,7 @@ groups:
     labels:
       job: nodeExporter
       severity: critical
-  - alert: host cpu_used alert
+  - alert: 主机CPU使用率过高
     annotations:
       consignee: ${EMAIL_ADDRESS}
       description: 主机 {{ $labels.instance }} CPU使用率当前值为{{ $value | humanize }}%,高于阈值 80%
@@ -33,7 +33,7 @@ groups:
     labels:
       job: nodeExporter
       severity: warning
-  - alert: host memory_used alert
+  - alert: 主机内存使用率过高
     annotations:
       consignee: ${EMAIL_ADDRESS}
       description: 主机 {{ $labels.instance }} 内存使用率当前值为{{ $value | humanize }}%,高于阈值 90%
@@ -44,7 +44,7 @@ groups:
     labels:
       job: nodeExporter
       severity: critical
-  - alert: host memory_used alert
+  - alert: 主机内存使用率过高
     annotations:
       consignee: ${EMAIL_ADDRESS}
       description: 主机 {{ $labels.instance }} 内存使用率当前值为{{ $value | humanize }}%,高于阈值 80%
@@ -55,7 +55,7 @@ groups:
     labels:
       job: nodeExporter
       severity: warning
-  - alert: host disk_root_used alert
+  - alert: 主机根分区磁盘使用率过高
     annotations:
       consignee: ${EMAIL_ADDRESS}
       description: 主机 {{ $labels.instance }} 根分区使用率当前值为{{ $value | humanize }}%,高于阈值 90%
@@ -67,7 +67,7 @@ groups:
     labels:
       job: nodeExporter
       severity: critical
-  - alert: host disk_root_used alert
+  - alert: 主机根分区磁盘使用率过高
     annotations:
       consignee: ${EMAIL_ADDRESS}
       description: 主机 {{ $labels.instance }} 根分区使用率当前值为{{ $value | humanize }}%,高于阈值 80%

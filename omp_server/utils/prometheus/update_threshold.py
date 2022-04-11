@@ -8,12 +8,11 @@ import logging
 
 from omp_server.settings import PROJECT_DIR
 
-
 logger = logging.getLogger("server")
 
 description = {
-    "cpu_used": "主机 {{ $labels.instance }} CPU 使用率为 {{ $value | humanize }}%, 大于阈值 $condition_value$",
-    "memory_used": "主机 {{ $labels.instance }} 内存使用率高于 $condition_value$%，当前值为{{ $value | humanize }}%",
+    "cpu_used": "主机 {{ $labels.instance }} CPU 使用率为 {{ $value | humanize }}%, 大于阈值 $condition_value$%",
+    "memory_used": "主机 {{ $labels.instance }} 内存使用率为 {{ $value | humanize }}%，大于阈值 $condition_value$%",
     "disk_root_used": "主机 {{ $labels.instance }} 根分区使用率为 {{ $value | humanize }}%, 大于 阈值 $condition_value$%",
     "disk_data_used": "主机 {{ $labels.instance }} 数据分区使用率为 {{ $value | humanize }}%, 大于 阈值 $condition_value$%",
     "kafka_consumergroup_lag": "Kafka 消费组{{ $labels.consumergroup }}消息堆积数过多  {{ humanize $value }}"
@@ -67,16 +66,22 @@ def update_node_rule_yaml(quotes_info):
     """
     更新主机指标文件
     """
+    metric_en_cn_dict = {
+        "cpu_used": "CPU",
+        "memory_used": "内存",
+        "disk_root_used": "根分区磁盘",
+        "disk_data_used": "数据分区磁盘"
+    }
     env_name = quotes_info.get("env_name")
     node_rule_yml_path = os.path.join(PROJECT_DIR, 'component',
                                       'prometheus/conf/rules',
                                       '{}_node_rule.yml'.format(env_name))
     instance_alert = {
-        "alert": "instance down",
+        "alert": "实例宕机",
         "annotations": {
             "consignee": "{}".format(""),  # TODO
             "description": "实例 {{ $labels.instance }} monitor_agent进程丢失或主机发生宕机已超过1分钟",
-            "summary": "instance down alert({{ $labels.instance }})"
+            "summary": "实例宕机({{ $labels.instance }})"
         },
         "expr": "sum(up{job=\"nodeExporter\", env=\'%s\'}) by (instance) < 1" % env_name,
         "for": "1m",
@@ -100,7 +105,7 @@ def update_node_rule_yaml(quotes_info):
             condition_value = host_quote_info.get("condition_value")
             condition = host_quote_info.get("condition")
             quote_info = {
-                "alert": "host {} alert".format(index_type),
+                "alert": "主机 {} 使用率过高".format(metric_en_cn_dict.get(index_type)),
                 "annotations": {
                     "consignee": "{}".format(""),  # TODO
                     "description": replace_value(description.get(index_type), condition_value=condition_value),

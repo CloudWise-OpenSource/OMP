@@ -65,61 +65,73 @@ class FiledCheck(object):
         self.db_obj = db_obj
         self.yaml_dir = yaml_dir
 
-    def strong_check(self, settings, field=None, is_weak=False, ignore=None):
-        if is_weak:
-            if not self.weak_check(settings, field):
-                return False
-        if ignore:
-            field = field - ignore
-        if isinstance(settings, dict):
-            if not field:
-                field = set(settings.keys())
-            for i in field:
-                if settings.get(i) is None:
-                    self.db_obj.update_package_status(
-                        1,
-                        f"yml{i}缺乏值，检查yml文件{self.yaml_dir}")
+    def strong_check(self, settings, field=None, is_weak=False, ignore=None, attention=""):
+        try:
+            if is_weak:
+                if not self.weak_check(settings, field, attention=attention):
                     return False
-            return True
-        elif isinstance(settings, list):
-            if not field:
-                field = set(settings[0].keys())
-            for i in settings:
-                for j in field:
-                    if i.get(j) is None:
+            if ignore:
+                field = field - ignore
+            if isinstance(settings, dict):
+                if not field:
+                    field = set(settings.keys())
+                for i in field:
+                    if settings.get(i) is None:
                         self.db_obj.update_package_status(
                             1,
                             f"yml{i}缺乏值，检查yml文件{self.yaml_dir}")
                         return False
-            return True
-        else:
+                return True
+            elif isinstance(settings, list):
+                if not field:
+                    field = set(settings[0].keys())
+                for i in settings:
+                    for j in field:
+                        if i.get(j) is None:
+                            self.db_obj.update_package_status(
+                                1,
+                                f"yml{i}缺乏值，检查yml文件{self.yaml_dir}")
+                            return False
+                return True
+            else:
+                return False
+        except Exception as e:
+            self.db_obj.update_package_status(
+                1,
+                f"yml:{attention}异常，检查yml文件{self.yaml_dir}")
             return False
 
-    def weak_check(self, settings, field):
-        if isinstance(settings, dict):
-            # 以field为基准,settings多出的也不会显示,只要满足field即可
-            status = field - set(settings.keys())
-            if status:
-                self.db_obj.update_package_status(
-                    1,
-                    f"yml{str(status)}字段和预期不符，检查yml文件{self.yaml_dir}")
-                return False
-            return True
-        elif isinstance(settings, list):
-            for i in settings:
-                status = field - set(i.keys())
+    def weak_check(self, settings, field, attention=""):
+        try:
+            if isinstance(settings, dict):
+                # 以field为基准,settings多出的也不会显示,只要满足field即可
+                status = field - set(settings.keys())
                 if status:
                     self.db_obj.update_package_status(
                         1,
                         f"yml{str(status)}字段和预期不符，检查yml文件{self.yaml_dir}")
                     return False
-            return True
-        else:
+                return True
+            elif isinstance(settings, list):
+                for i in settings:
+                    status = field - set(i.keys())
+                    if status:
+                        self.db_obj.update_package_status(
+                            1,
+                            f"yml{str(status)}字段和预期不符，检查yml文件{self.yaml_dir}")
+                        return False
+                return True
+            else:
+                return False
+        except Exception as e:
+            self.db_obj.update_package_status(
+                1,
+                f"yml:{attention}异常，检查yml文件{self.yaml_dir}")
             return False
 
 
 @shared_task
-def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_dir, upload_obj):
+def front_end_verified(uuid, operation_user, package_name, random_str, ver_dir, upload_obj):
     """
      前端发布界面校验逻辑及后端校验逻辑公共类
      params
@@ -152,7 +164,7 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
     tmp_dir = os.path.join(package_path, touch_name + random_str)
     # 创建临时校验路径
     os.mkdir(tmp_dir)
-    tar_out = public_utils.local_cmd(f'tar -xvf {file_name} -C {tmp_dir}')
+    tar_out = public_utils.local_cmd(f'tar -xmf {file_name} -C {tmp_dir}')
     if tar_out[2] != 0:
         return public_action.update_package_status(
             1,
@@ -176,7 +188,7 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
     pro_name = f"{name}-{versions}"
     # 校验图片
     image = None
-    if kind == 'product' or 'component':
+    if kind == 'product' or kind == 'component':
         try:
             image_dir = os.path.join(tmp_dir, f'{app_name}.svg')
             if os.path.exists(image_dir):
@@ -229,6 +241,11 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
             service_pk = service_package.get(ser_name)
             if not service_pk:
                 continue
+            ser_kind = explain_service_yml[1].get("kind", "")
+            if ser_kind != "service":
+                return public_action.update_package_status(
+                    1,
+                    f"安装包{package_name}类型错误，请解压后将服务单独发布服务")
             # 校验服务是否唯一,无安装包跳过逻辑后
             count = ApplicationHub.objects.filter(app_version=ser_name,
                                                   app_name=i.get("version")).count()
@@ -262,6 +279,41 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
         explain_yml[1]['product_service'] = explain_service_list
         explain_yml[1]['service'] = name_version
         tmp_dir = [tmp_dir, versions]
+    elif kind == 'service':
+        dependence_product = explain_yml[1].get(
+            "extend_fields", {}).get("product")
+        if not dependence_product:
+            return public_action.update_package_status(
+                1,
+                f"安装包{package_name}不能无依赖产品上传")
+        product_version = dependence_product.get("version", "")
+        if not product_version:
+            product_obj = ProductHub.objects.filter(pro_name=dependence_product.get("name")
+                                                    ).last()
+
+        else:
+            product_obj = ProductHub.objects.filter(pro_name=dependence_product.get("name"),
+                                                    pro_version=product_version).last()
+        if not product_obj:
+            return public_action.update_package_status(
+                1,
+                f"安装包{package_name}依赖的产品包不存在")
+        # 将版本追加至最新版本
+        dependence_product["version"] = product_obj.pro_version
+        app_obj = ApplicationHub.objects.filter(product=product_obj)
+        for obj in app_obj:
+            if obj.app_name == explain_yml[1]['name'] and \
+                    obj.app_version == explain_yml[1]['version']:
+                return public_action.update_package_status(
+                    1,
+                    f"安装包{package_name}依赖的产品包存在同服务同版本的服务包")
+        upload_obj.package_status = 0
+        upload_obj.package_path = os.path.join(
+            package_dir.get("verified"),
+            f"{product_obj.pro_name}-{product_obj.pro_version}"
+        )
+        upload_obj.save()
+        tmp_dir = [file_name, versions, tmp_dir]
     else:
         count = ApplicationHub.objects.filter(app_version=versions,
                                               app_name=name).count()
@@ -269,7 +321,7 @@ def front_end_verified(uuid, operation_user, package_name, md5, random_str, ver_
             return public_action.update_package_status(
                 1,
                 f"安装包{package_name}已存在:请确保name联合version唯一")
-        tmp_dir = [file_name]
+        tmp_dir = [file_name, versions, tmp_dir]
     explain_yml[1]['image'] = image
     explain_yml[1]['package_name'] = package_name
     explain_yml[1]['tmp_dir'] = tmp_dir
@@ -371,8 +423,7 @@ class ExplainYml:
         # 对剩余字段进行自定义校验
         yml = getattr(self, kind)(settings)
         if isinstance(yml, bool):
-            if not yml:
-                return False
+            return False
         db_filed = {
             "kind": kind,
             "name": name,
@@ -424,85 +475,52 @@ class ExplainYml:
         """校验kind为service"""
         # service骨架弱校验
         db_filed = {}
-        first_check = {"auto_launch", "monitor", "ports", "install",
-                       "control", "base_env", "affinity",
-                       "post_action"
-                       }
-        if not self.check_obj.weak_check(settings, first_check):
+        # post_action affinity base_env auto_launch不再校验
+        # level 默认0 monitor不做校验
+        first_check = {"ports", "install",
+                       "control"}
+        if not self.check_obj.weak_check(settings, first_check, attention=str(first_check)):
             return False
-        # auto_launch 校验
-        first_strong_check = {"auto_launch"}
-        if not self.check_obj.strong_check(settings, first_strong_check) \
-                or self.check_book_tools("auto_launch", settings.get("auto_launch")):
-            return False
-        # base_env 校验
-        base_env_strong_check = {"base_env"}
-        if not self.check_obj.strong_check(settings, base_env_strong_check) \
-                or self.check_book_tools("base_env", settings.get("base_env")):
-            return False
-        db_filed['base_env'] = settings.pop('base_env')
+        # auto_launch 校验 不填写默认给true
+        settings["auto_launch"] = settings.get("auto_launch", "true")
+        # base_env 校验 不填写True true 全部按照false处理
+        db_filed['base_env'] = settings.pop('base_env', "")
         # ports 校验
         ports = settings.pop('ports')
         ports_strong_check = {"name", "protocol", "default", "key"}
         port = self.check_obj.strong_check(
             ports, ports_strong_check,
             is_weak=True,
-            ignore={"key"}) if ports else 1
+            ignore={"key"},
+            attention="ports") if ports else 1
         if not port:
             return False
         db_filed['ports'] = ports
         #  control校验
         control = settings.pop('control')
-        control_weak_check = {"start", "stop", "restart", "reload", "install",
+        control_weak_check = {"start", "stop", "restart", "install",
                               "init"}
         control_check = self.check_obj.weak_check(
             control,
-            control_weak_check) if control else 1
+            control_weak_check,
+            attention=str(control_weak_check)) if control else 1
         if not control_check:
             return False
         control_strong_check = self.check_obj.strong_check(
             control,
-            {"install"})
+            {"install"},
+            attention="control")
         if not control_strong_check:
             return False
         db_filed['control'] = control
-        # deploy校验
-        deploy = settings.get('deploy')
-        deploy_weak_check = {"single", "complex"}
-        deploy_check = self.check_obj.weak_check(
-            deploy,
-            deploy_weak_check) if deploy else 1
-        if not deploy_check:
-            return False
-        if deploy_check != 1:
-            single = deploy.get('single')
-            single_strong_check = {"name", "key"}
-            single_check = self.check_obj.strong_check(
-                single,
-                single_strong_check,
-                is_weak=True)
-            if not single_check:
-                return False
-            complex_list = deploy.get('complex')
-            complex_strong_check = {'name', 'key', 'nodes'}
-            complex_check = self.check_obj.strong_check(
-                complex_list,
-                complex_strong_check,
-                is_weak=True)
-            if not complex_check:
-                return False
-        # resources 校验
-        # deploy = settings.get('resources')
-        # deploy_check = self.check_obj.strong_check(deploy) if deploy else 1
-        # if not deploy_check:
-        #    return False
         # install 校验
         install = settings.pop('install')
         single_strong_install = {"name", "key", "default"}
         install_check = self.check_obj.strong_check(
             install,
             single_strong_install,
-            is_weak=True) if install else 1
+            is_weak=True,
+            attention="install") if install else 1
         if not install_check:
             return False
         db_filed['install'] = install
@@ -510,7 +528,8 @@ class ExplainYml:
         monitor = settings.pop('monitor', None)
         monitor_weak_check = {"process_name", "metric_port", "type"}
         monitor_check = self.check_obj.weak_check(
-            monitor, monitor_weak_check) if monitor else 1
+            monitor, monitor_weak_check,
+            attention=str(monitor_weak_check)) if monitor else 1
         if not monitor_check:
             return False
         db_filed['monitor'] = monitor
@@ -522,10 +541,7 @@ class ExplainYml:
         """
         level = settings.pop('level', -1)
         if level == -1:
-            self.db_obj.update_package_status(
-                1,
-                f"level，检查yml文件{self.yaml_dir}")
-            return False
+            level = 0
         result = self.service_component(settings)
         if isinstance(result, bool):
             return False
@@ -577,9 +593,27 @@ def exec_clear(clear_dir):
         return None
     if online == 0 or 'back_end_verified' in clear_dir:
         clear_out = public_utils.local_cmd(
-            f'rm -rf {clear_dir} && mkdir {clear_dir}')
+            f'rm -rf {clear_dir}')
+        logger.info(clear_dir)
         if clear_out[2] != 0:
             logger.error('清理环境失败')
+
+
+def clear_check(need_rm):
+    """
+    梳理要删除的包
+    """
+    result = []
+    for tmp_dir in need_rm:
+        if ".tar" in tmp_dir[0]:
+            result.append(tmp_dir[0])
+            result.append(tmp_dir[2].rsplit('/', 1)[0])
+        else:
+            rm_dir = tmp_dir[0].rsplit('/', 1)[0]
+            result.append(rm_dir)
+            result.append(f"{rm_dir[:-10]}*")
+    logger.info("需要删除的目录:" + " ".join(result))
+    return " ".join(result)
 
 
 @shared_task
@@ -612,8 +646,8 @@ def publish_bak_end(uuid, exc_len):
                 if valid_uuids.count() != 0 and valid_success != 0:
                     publish_entry(uuid)
                 else:
-                    exec_clear(os.path.join(
-                        package_hub, package_dir.get('back_end_verified')))
+                    exec_clear("{0}/*".format(os.path.join(
+                        package_hub, package_dir.get('back_end_verified'))))
                 exc_task = False
     finally:
         re = redis.Redis(host=OMP_REDIS_HOST, port=OMP_REDIS_PORT, db=9,
@@ -655,16 +689,36 @@ def publish_entry(uuid):
     for line in lines:
         json_line = json.loads(line)
         valid_obj = valid_packages.get(json_line.get('package_name'))
-
-        if valid_obj:
+        if json_line.get("extend_fields").get("product"):
+            valid_info.append(json_line)
+        # 升级包单独逻辑
+        elif valid_obj:
             json_line['package_name'] = valid_obj
             valid_info.append(json_line)
     valid_packages_obj = []
     valid_dir = None
     # 中间结果转入创表函数
+    product_obj = None
+    tmp_dir = []
+    front_dir = []
     for line in valid_info:
         if line.get('kind') == 'product':
             CreateDatabase(line).create_product()
+        elif line.get('kind') == 'service':
+            product = line.get("extend_fields").get("product")
+            product_obj = ProductHub.objects.filter(pro_name=product.get("name"),
+                                                    pro_version=product.get(
+                                                        "version")
+                                                    ).last()
+            upload_history_obj = None
+            for j in valid_uuids:
+                if j.package_name == line.get('package_name'):
+                    upload_history_obj = j
+            # 更新服务的upload历史状态和已有服务关联
+            upload_history_obj.package_parent = product_obj.pro_package
+            upload_history_obj.save()
+            CreateDatabase(line).create_service([line], product_obj)
+            line['package_name'] = upload_history_obj
         else:
             CreateDatabase(line).create_component()
         tmp_dir = line.get('tmp_dir')
@@ -678,9 +732,13 @@ def publish_entry(uuid):
         # 组件路径   package_hub/xxx/app.tar.gz
         # 产品目标路径   verified/product_name-version/xxx
         # 组件目标路径   verified/app.tar.gz
+
         valid_name = tmp_dir[0].rsplit('/', 1)
         valid_pk = f"{valid_name[1]}-{tmp_dir[1]}" if len(
             tmp_dir) == 2 else valid_name[1]
+        if product_obj and line.get('kind') == 'service':
+            valid_pk = f"{product_obj.pro_name}-{product_obj.pro_version}/{valid_name[1]}"
+
         valid_dir = os.path.join(project_dir, 'package_hub',
                                  'verified', valid_pk)
         move_tmp = "/".join(valid_name)
@@ -690,63 +748,169 @@ def publish_entry(uuid):
             line['package_name'].package_status = 4
             line['package_name'].save()
             logger.error('移动或删除失败')
-            return None
         valid_packages_obj.append(line['package_name'].id)
+        if "front_end_verified" in tmp_dir[0]:
+            front_dir.append(tmp_dir)
     clear_dir = os.path.dirname(tmp_dir[0]) if os.path.isfile(valid_dir) else \
         os.path.dirname(os.path.dirname(tmp_dir[0]))
     UploadPackageHistory.objects.filter(id__in=valid_packages_obj).update(
         package_status=3)
-    exec_clear(clear_dir)
+    need_rm = clear_check(front_dir)
+    if not need_rm:
+        need_rm = f"{clear_dir}/*"
+    exec_clear(need_rm)
 
 
-def add_prometheus(main_history_id):
+def check_monitor_data(detail_obj):
+    """
+    根据部署详情信息，确认该服务的要监控的方式，并返回监控处理结果
+    {
+        "type": "JavaSpringBoot",
+        "metric_port": "{service_port}",
+        "process_name": ""
+    }
+    :param detail_obj: 部署详情对象
+    :type detail_obj: DetailInstallHistory
+    :return: (bool, _ret_dic)
+    """
+
+    def get_port(keyword):
+        """
+        根据关键字获取端口值
+        :param keyword:
+        :return:
+        """
+        service_port_ls = json.loads(detail_obj.service.service_port)
+        for item in service_port_ls:
+            if item.get("key") == keyword:
+                return item.get("default")
+        return None
+
+    _ret_dic = {
+        "listen_port": get_port("service_port"),
+        "metric_port": None,
+        "only_process": False,
+        "process_key_word": None,
+        "type": None
+    }
+    app_monitor = detail_obj.service.service.app_monitor
+    if not app_monitor:
+        return False, _ret_dic
+    _ret_dic["type"] = app_monitor.get("type")
+    _ret_dic["process_key_word"] = app_monitor.get("process_name")
+
+    if isinstance(app_monitor.get("metric_port"), str):
+        _metric_port_key = app_monitor.get(
+            "metric_port", "").replace("{", "").replace("}", "")
+    elif isinstance(app_monitor.get("metric_port"), dict):
+        _metric_port_key = list(app_monitor.get("metric_port", {}).keys())[0]
+    else:
+        _metric_port_key = None
+    if detail_obj.service.service_port is not None:
+        _ret_dic["listen_port"] = get_port("service_port")
+        _ret_dic["metric_port"] = get_port(_metric_port_key)
+    if _ret_dic["metric_port"]:
+        return True, _ret_dic
+    if _ret_dic["process_key_word"]:
+        _ret_dic["only_process"] = True
+        return True, _ret_dic
+    return False, _ret_dic
+
+
+def add_prometheus(main_history_id, queryset=None):
     """ 添加服务到 Prometheus """
     logger.info("Add Prometheus Begin")
     prometheus = PrometheusUtils()
     # TODO 不同类型服务添加监控方式不同，后续版本优化
-    queryset = DetailInstallHistory.objects.filter(
-        main_install_history_id=main_history_id)
+    # 仅更新已经安装完成的最新服务
+    # 给monitor_agent刷新使用，提供detail_obj list。
+    queryset = queryset if queryset else DetailInstallHistory.objects.filter(
+        main_install_history_id=main_history_id,
+        install_step_status=DetailInstallHistory.INSTALL_STATUS_SUCCESS
+    )
     for detail_obj in queryset:
+        try:
+            _flag, _monitor_dic = check_monitor_data(detail_obj=detail_obj)
+            logger.info(
+                f"Add Prometheus get monitor_dic for "
+                f"{detail_obj}: {_monitor_dic}")
+        except Exception as e:
+            logger.info(
+                f"Add Prometheus get monitor_dic Failed: "
+                f"{detail_obj}; {str(e)}")
+            continue
+        if not _flag:
+            continue
         # TODO 已是否具有端口作为是否需要添加监控的依据，后续版本优化
         instance_name = detail_obj.service.service_instance_name
-        service_port = None
-        if detail_obj.service.service_port is not None:
-            service_port_ls = json.loads(detail_obj.service.service_port)
-            if len(service_port_ls) > 0:
-                service_port = service_port_ls[0].get("default", "")
-        if service_port is not None:
-            # 获取数据目录、日志目录
-            app_install_args = detail_obj.install_detail_args.get(
-                "install_args", [])
-            data_dir = log_dir = ""
-            username = password = ""
-            for info in app_install_args:
-                if info.get("key", "") == "data_dir":
-                    data_dir = info.get("default", "")
-                if info.get("key", "") == "log_dir":
-                    log_dir = info.get("default", "")
-                if info.get("key", "") == "username":
-                    username = info.get("default", "")
-                if info.get("key", "") == "password":
-                    password = info.get("default", "")
-            # 添加服务到 prometheus
-            is_success, message = prometheus.add_service({
-                "service_name": detail_obj.service.service.app_name,
-                "instance_name": instance_name,
-                "data_path": data_dir,
-                "log_path": log_dir,
-                "env": "default",
-                "ip": detail_obj.service.ip,
-                "listen_port": service_port,
-                "username": username,
-                "password": password,
-            })
-            if not is_success:
-                logger.error(
-                    f"Add Prometheus Failed {instance_name}, error: {message}")
-                continue
+        service_port = _monitor_dic.get("listen_port")
+        # 获取数据目录、日志目录
+        app_install_args = detail_obj.install_detail_args.get(
+            "install_args", [])
+        data_dir = log_dir = ""
+        username = password = ""
+        for info in app_install_args:
+            if info.get("key", "") == "data_dir":
+                data_dir = info.get("default", "")
+            if info.get("key", "") == "log_dir":
+                log_dir = info.get("default", "")
+            if info.get("key", "") == "username":
+                username = info.get("default", "")
+            if info.get("key", "") == "password":
+                password = info.get("default", "")
+        # TODO 后期优化
+        ser_name = detail_obj.service.service.app_name
+        if ser_name == "hadoop":
+            ser_name = instance_name.split("_", 1)[0]
+        # 添加服务到 prometheus
+        is_success, message = prometheus.add_service({
+            "service_name": ser_name,
+            "instance_name": instance_name,
+            "data_path": data_dir,
+            "log_path": log_dir,
+            "env": "default",
+            "ip": detail_obj.service.ip,
+            "listen_port": service_port,
+            "metric_port": _monitor_dic.get("metric_port"),
+            "only_process": _monitor_dic.get("only_process"),
+            "process_key_word": _monitor_dic.get("process_key_word"),
+            "username": username,
+            "password": password,
+        })
+        if not is_success:
+            logger.error(
+                f"Add Prometheus Failed {instance_name}, error: {message}")
+            continue
         logger.info(f"Add Prometheus Success {instance_name}")
     logger.info("Add Prometheus End")
+
+
+def make_inspection(username):
+    """
+    触发巡检任务
+    :param username:
+    :return:
+    """
+    logger.info("安装成功后触发巡检任务")
+    from rest_framework.test import APIClient
+    from rest_framework.reverse import reverse
+    from db_models.models import UserProfile
+    from db_models.models import Env
+    data = {
+        "inspection_name": "mock", "inspection_type": "deep",
+        "inspection_status": "1", "execute_type": "man",
+        "inspection_operator": username, "env": Env.objects.last().id
+    }
+    user = UserProfile.objects.filter(username=username).last()
+    client = APIClient()
+    client.force_authenticate(user)
+    res = client.post(
+        path=reverse("history-list"),
+        data=json.dumps(data),
+        content_type="application/json"
+    ).json()
+    logger.info(f"安装成功后触发巡检任务的结果为: {res}")
+    return res
 
 
 @shared_task
@@ -758,11 +922,19 @@ def install_service(main_history_id, username="admin"):
     :return:
     """
     try:
+        # 为防止批量安装时数据库写入数据过多，这里采用循环的方式判断main_history_id
+        try_times = 0
+        while try_times < 3:
+            if MainInstallHistory.objects.filter(id=main_history_id).exists():
+                break
+            time.sleep(5)
+        else:
+            logger.error(
+                "Install Service Task Failed: can not find {main_history_id}")
         executor = InstallServiceExecutor(main_history_id, username)
-        is_err = executor.main()
+        executor.main()
         logger.error(f"Install Service Task Success [{main_history_id}]")
     except Exception as err:
-        is_err = True
         import traceback
         logger.error(f"Install Service Task Failed [{main_history_id}], "
                      f"err: {err}")
@@ -773,5 +945,11 @@ def install_service(main_history_id, username="admin"):
             install_status=MainInstallHistory.INSTALL_STATUS_FAILED)
 
     # 安装成功，则注册服务至监控
-    if not is_err:
-        add_prometheus(main_history_id)
+    add_prometheus(main_history_id)
+
+    # 安装成功，触发巡检任务
+    if MainInstallHistory.objects.filter(
+            id=main_history_id,
+            install_status=MainInstallHistory.INSTALL_STATUS_SUCCESS
+    ).exists():
+        make_inspection(username=username)

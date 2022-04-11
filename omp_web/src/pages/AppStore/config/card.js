@@ -25,15 +25,15 @@ const Card = ({ idx, history, info, tabKey, installOperation }) => {
     },
   };
 
-  const [isHover, setIsHover] = useState(false)
+  const [isHover, setIsHover] = useState(false);
 
   return (
     <div
       className={styles.cardContainer}
       style={{
         transition: "all .2s ease-in-out",
-        width: "calc(94% / 4)",
-        marginLeft: (idx - 1) % 4 !== 0 && "2%",
+        width: "calc(97.7% / 4)",
+        marginLeft: (idx - 1) % 4 !== 0 && "0.75%",
         height: 200,
         boxSizing: "border-box",
         //border: "1px solid #000",
@@ -44,32 +44,59 @@ const Card = ({ idx, history, info, tabKey, installOperation }) => {
         paddingLeft: 10,
         paddingRight: 10,
       }}
-      onMouseEnter={()=>{
-        setIsHover(true)
+      onMouseEnter={() => {
+        setIsHover(true);
       }}
-      onMouseLeave={()=>{
-        setIsHover(false)
+      onMouseLeave={() => {
+        setIsHover(false);
       }}
     >
       <div className={styles.cardContent}>
         <div style={{ width: 80, paddingTop: 10 }}>
-          <div
-            style={{
-              width: 50,
-              height: 50,
-              borderRadius: "50%",
-              border: "1px solid #a8d0f8",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              marginLeft: 10,
-              marginRight: 10,
-              overflow: "hidden",
-            }}
-            dangerouslySetInnerHTML={{
-              __html: info[nameObj[tabKey].logo] || imgObj[tabKey],
-            }}
-          ></div>
+          {info[nameObj[tabKey].logo] ? (
+            <div
+              style={{
+                width: 50,
+                height: 50,
+                borderRadius: "50%",
+                border: "1px solid #a8d0f8",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                marginLeft: 10,
+                marginRight: 10,
+                overflow: "hidden",
+              }}
+              dangerouslySetInnerHTML={{
+                __html: info[nameObj[tabKey].logo],
+              }}
+            ></div>
+          ) : (
+            <div
+              style={{
+                width: 50,
+                height: 50,
+                borderRadius: "50%",
+                border: "1px solid #a8d0f8",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                marginLeft: 10,
+                marginRight: 10,
+                overflow: "hidden",
+                fontSize: 22,
+                backgroundImage: "linear-gradient(to right, #4f85f6, #669aee)",
+                // backgroundColor:"#5c8df6",
+                color:"#fff",
+              }}
+            >
+              <div
+                style={{ textAlign: "center", position: "relative" }}
+              >
+                {info[nameObj[tabKey].name] && info[nameObj[tabKey].name][0].toLocaleUpperCase()}
+              </div>
+            </div>
+          )}
         </div>
         <div
           style={{
@@ -87,7 +114,7 @@ const Card = ({ idx, history, info, tabKey, installOperation }) => {
             });
           }}
         >
-          <div style={{ fontSize: 14, color: isHover?"#247fe6":"#222222", }}>
+          <div style={{ fontSize: 14, color: isHover ? "#247fe6" : "#222222" }}>
             {info[nameObj[tabKey].name]}
           </div>
           <div
@@ -95,7 +122,7 @@ const Card = ({ idx, history, info, tabKey, installOperation }) => {
               display: "flex",
               justifyContent: "space-between",
               fontSize: 12,
-              padding:"8px 10px 10px 0px",
+              padding: "8px 10px 10px 0px",
               //fontSize:12
             }}
           >
@@ -104,7 +131,7 @@ const Card = ({ idx, history, info, tabKey, installOperation }) => {
           </div>
           <p className={styles.text}>
             {/* <Tooltip placement="top" title={info[nameObj[tabKey].description]}> */}
-              {info[nameObj[tabKey].description]}
+            {info[nameObj[tabKey].description]}
             {/* </Tooltip> */}
           </p>
           <span
@@ -120,7 +147,10 @@ const Card = ({ idx, history, info, tabKey, installOperation }) => {
           </span>
         </div>
       </div>
-      <div className={styles.cardBtn} style={{color: isHover?"#247fe6":"rgba(0,0,0,0.65)", }}>
+      <div
+        className={styles.cardBtn}
+        style={{ color: isHover ? "#247fe6" : "rgba(0,0,0,0.65)" }}
+      >
         <div
           style={{ borderRight: "1px solid #e7e7e7" }}
           onClick={() => {
@@ -136,9 +166,9 @@ const Card = ({ idx, history, info, tabKey, installOperation }) => {
         <div
           onClick={() => {
             if (tabKey == "service") {
-              installOperation({ product_name: info.pro_name}, "服务");
+              installOperation({ product_name: info.pro_name }, "服务");
             } else {
-              installOperation({ app_name: info.app_name}, "组件");
+              installOperation({ app_name: info.app_name }, "组件");
               // history?.push({
               //   pathname: `${nameObj[tabKey].install_url}/${
               //     info[nameObj[tabKey].name]
