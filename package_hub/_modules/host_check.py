@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # encoding: utf-8
-# Auther: Darren Liu
+# Author: Darren Liu
 # Description: get host Inspection data
 
 import datetime
@@ -21,7 +21,8 @@ def run_cmd(cmd):
     :param cmd:
     :return:
     """
-    p = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    p = subprocess.run(
+        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     cmd_stdout = bytes.decode(p.stdout)
     if cmd_stdout.endswith('\n'):
         cmd_stdout = cmd_stdout.strip()
@@ -49,7 +50,7 @@ def GetHostname_Info():
     try:
         host_name = socket.gethostname()
         return host_name
-    except:
+    except Exception:
         return None
 
 
@@ -61,7 +62,7 @@ def GetRelease_Version():
                     return line.strip('\n')
         else:
             return None
-    except:
+    except Exception:
         return None
 
 
@@ -75,7 +76,7 @@ def GetKernel_Version():
         release_version_line = release_version_list.split('-with-')
         release_version = release_version_line[0]
         return release_version
-    except:
+    except Exception:
         return None
 
 
@@ -88,7 +89,7 @@ def GetSelinux_Status():
         cmd = 'getenforce'
         selinux_status = run_cmd(cmd)
         return selinux_status
-    except:
+    except Exception:
         return None
 
 
@@ -99,7 +100,7 @@ def GetUmask_Status():
         cmd = 'umask'
         umask_status = run_cmd(cmd)
         return {"user": user, "umask": umask_status}
-    except:
+    except Exception:
         return None
 
 
@@ -108,7 +109,7 @@ def GetUlimit_Num():
         cmd = 'ulimit -n'
         ulimit_num = run_cmd(cmd)
         return ulimit_num
-    except:
+    except Exception:
         return None
 
 
@@ -118,9 +119,10 @@ def GetTimeNow_Info():
     :return:
     """
     try:
-        time_now = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S')
+        time_now = datetime.datetime.strftime(
+            datetime.datetime.now(), '%Y-%m-%d %H:%M:%S')
         return time_now
-    except:
+    except Exception:
         return None
 
 
@@ -138,7 +140,7 @@ def GetRunTime_Info():
         else:
             time = run_time[0] + run_time[1]
         return time
-    except:
+    except Exception:
         return None
 
 
@@ -146,7 +148,7 @@ def GetCpu_Total():
     try:
         cpu_count = str(psutil.cpu_count()) + "C"
         return cpu_count
-    except:
+    except Exception:
         return None
 
 
@@ -163,7 +165,7 @@ def GetMemory_Total():
         else:
             mem = str(mem) + 'MB'
         return mem
-    except:
+    except Exception:
         return None
 
 
@@ -176,7 +178,8 @@ def GetDisk_Total():
             total = total_list.split()
             if 'T' in total[1]:
                 total_tb = total[1].replace('T', '')
-                total_mb += int('%.f' % (int(float(total_tb)) * 1024.0 * 1024.0))
+                total_mb += int('%.f' %
+                                (int(float(total_tb)) * 1024.0 * 1024.0))
             if 'G' in total[1]:
                 total_gb = total[1].replace('G', '')
                 total_mb += int('%.f' % (int(float(total_gb)) * 1024.0))
@@ -189,7 +192,7 @@ def GetDisk_Total():
         else:
             disk_total = str(total_mb) + 'MB'
         return disk_total
-    except:
+    except Exception:
         return None
 
 
@@ -202,7 +205,7 @@ def GetMemory_Usage():
         svmem = psutil.virtual_memory()
         mem_usage = str(svmem.percent) + '%'
         return mem_usage
-    except:
+    except Exception:
         return None
 
 
@@ -214,7 +217,7 @@ def GetCpu_Usage():
     try:
         cpu_usage = str(psutil.cpu_percent()) + '%'
         return cpu_usage
-    except:
+    except Exception:
         return None
 
 
@@ -234,7 +237,7 @@ def GetDisk_Info(data_path):
             if total[-1] == data_path:
                 disk_usage_json[total[-1]] = total[-2]
         return disk_usage_json
-    except:
+    except Exception:
         return None
 
 
@@ -254,7 +257,7 @@ def GetInode_Info(data_path):
             if total[-1] == data_path:
                 inode_usage_json[total[-1]] = total[-2]
         return inode_usage_json
-    except:
+    except Exception:
         return None
 
 
@@ -271,7 +274,7 @@ def GetSysLoad_Average():
         load_average_dict.update({'m15_average_load': load_average_info[2]})
         load_average_json = load_average_dict
         return load_average_json
-    except:
+    except Exception:
         return None
 
 
@@ -289,7 +292,7 @@ def GetServicesPort_Connectivity(port_list):
             return port_json
         else:
             return 'Ture'
-    except socket.error as e:
+    except socket.error:
         return None
     sk.close()
 
@@ -299,12 +302,14 @@ def GetServer_Bandwidth():
         bandwidth_1 = psutil.net_io_counters()
         time.sleep(1)
         bandwidth_2 = psutil.net_io_counters()
-        bandwidth_sent = '%.f' % ((bandwidth_2.bytes_sent - bandwidth_1.bytes_sent) / 1024)
-        bandwidth_recv = '%.f' % ((bandwidth_2.bytes_recv - bandwidth_1.bytes_recv) / 1024)
+        bandwidth_sent = '%.f' % (
+            (bandwidth_2.bytes_sent - bandwidth_1.bytes_sent) / 1024)
+        bandwidth_recv = '%.f' % (
+            (bandwidth_2.bytes_recv - bandwidth_1.bytes_recv) / 1024)
         sent = bandwidth_sent + "KB/s"
         receive = bandwidth_recv + "KB/s"
         return {"sent": sent, "receive": receive}
-    except:
+    except Exception:
         return None
 
 
@@ -318,7 +323,7 @@ def GetDisK_ReadWrite():
         read = disk_read + "KB/s"
         write = disk_write + "KB/s"
         return {"read": read, "write": write}
-    except:
+    except Exception:
         return None
 
 
@@ -334,7 +339,7 @@ def GetDisk_IoWait():
                 disk_iowait += int(iowait.split()[-2])
         disk = disk_iowait / 10
         return disk
-    except:
+    except Exception:
         return None
 
 
@@ -418,7 +423,7 @@ def GetKernel_Info():
             return sysctl
         else:
             return None
-    except:
+    except Exception:
         return None
 
 
@@ -435,7 +440,7 @@ def GetBoot_Start():
             line = line_list.split()
             boot_start.append(line[0])
         return boot_start
-    except:
+    except Exception:
         return None
 
 
@@ -447,7 +452,7 @@ def GetZombies_Status():
             return zombies_status_list
         else:
             return None
-    except:
+    except Exception:
         return None
 
 
@@ -459,7 +464,7 @@ def GatRun_Process():
     try:
         all_process_num = len(psutil.pids())
         return all_process_num
-    except:
+    except Exception:
         return None
 
 
@@ -492,12 +497,12 @@ def GetFirewall_Info():
                 firewall_dict.update({fw_title: block_rules_list})
         firewall_json = firewall_dict
         return firewall_json
-    except:
+    except Exception:
         return None
 
 
 def main(data_path='/data', port_list=[{"name": "ssh", "ip": "127.0.0.1", "port": "36000"}], **kwargs):
-    process_message = {}
+    process_message = dict()
     # process_message["IP"] = GetLocal_Ip()
     # process_message["hostname"] = GetHostname_Info()
     process_message["release_version"] = GetRelease_Version()

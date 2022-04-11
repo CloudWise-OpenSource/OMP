@@ -27,6 +27,11 @@ class OddNumUtils(BaseUtils):
                 "default": 1,
                 "step": 0
             }
+        if not self.high_availability:
+            return {
+                "default": 1,
+                "step": 2
+            }
         return {
             "default": 3,
             "step": 2

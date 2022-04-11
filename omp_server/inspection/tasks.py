@@ -13,7 +13,7 @@ from inspection.inspection_utils import send_email
 from utils.prometheus.thread import MyThread
 from celery.utils.log import get_task_logger
 from db_models.models import Host, Env, Service, ModuleSendEmailSetting
-from db_models.models import InspectionHistory, InspectionReport, ApplicationHub
+from db_models.models import InspectionHistory, InspectionReport
 from utils.prometheus.prometheus import back_fill
 from utils.prometheus.target_host import target_host_thread
 from utils.prometheus.target_service import target_service_run
@@ -100,7 +100,6 @@ def get_prometheus_data(env_id, hosts, services, history_id, report_id, handle):
 
             # 组件巡检
             _ = Service.objects.filter(
-                service__app_type=ApplicationHub.APP_TYPE_COMPONENT,
                 service__is_base_env=False).exclude(
                 service_status__in=[5, 6, 7])
             services = list(_.values_list('id', flat=True))
@@ -137,9 +136,15 @@ def get_prometheus_data(env_id, hosts, services, history_id, report_id, handle):
         ret = joint_json_data(_h.inspection_type, _r, _h)
         create_html_tar(file_name, ret)
         if _h.inspection_status == 2:
-            email_users = ModuleSendEmailSetting.get_email_settings(
-                env_id, "inspection").to_users.split(",")
-            send_email(_h, email_users)
+            mses = ModuleSendEmailSetting.get_email_settings(
+                env_id, "inspection")
+            if not mses:
+                return
+            if mses.send_email == 0:
+                return
+            email_users = mses.to_users.split(",")
+            if len(email_users) > 0:
+                send_email(_h, email_users)
     except Exception as e:
         logger.error(
             f"Inspection man task failed with error: {traceback.format_exc(e)}")
@@ -172,7 +177,6 @@ def inspection_crontab(**kwargs):
             if job_type in [0, 2]:
                 # 2、查询环境下组件信息
                 _ = Service.objects.filter(
-                    service__app_type=ApplicationHub.APP_TYPE_COMPONENT,
                     service__is_base_env=False
                 ).exclude(service_status__in=[5, 6, 7])
                 services = list(_.values_list('id', flat=True))

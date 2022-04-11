@@ -14,10 +14,10 @@ const path = require("path");
 // 跨域配置
 const devServerConfig = () => (config) => {
   return {
-    ...config,
+    ...config,  
     proxy: {
       "/api": {
-        target: "http://10.0.14.234:19001/", //"http://10.0.14.234:19001/",  //"http://10.0.9.168:19001/" //服务器地址 Xd8r$3jz //http://10.0.22.86:8000/
+        target: "http://10.0.9.19:19001/", //"http://10.0.14.234:19001/",  //"http://10.0.9.168:19001/" //服务器地址 Xd8r$3jz //http://10.0.22.86:8000/
         changeOrigin: true,
       },
     },
@@ -34,8 +34,11 @@ module.exports = {
     // 使用less-loader对源码重的less的变量进行重新制定，设置antd自定义主题
     addLessLoader({
       javascriptEnabled: true,
-      modifyVars: { "@primary-color": "#4986f7",
-    "@text-color":"rgba(0,0,0,0.65)" },
+      modifyVars: {
+        "@primary-color": "#4986f7",
+        "@text-color": "rgba(0,0,0,0.65)",
+        // "@border-radius-base": "4px"
+      },
     }),
     // addPostcssPlugins([require("postcss-px2rem-exclude")({
     //     remUnit: 16,

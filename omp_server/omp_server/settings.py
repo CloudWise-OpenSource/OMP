@@ -13,12 +13,12 @@ import os
 import random
 import datetime
 from pathlib import Path
-from utils.parse_config import OMP_MYSQL_HOST
-from utils.parse_config import OMP_MYSQL_PORT
-from utils.parse_config import OMP_MYSQL_USERNAME
-from utils.parse_config import OMP_MYSQL_PASSWORD
-from utils.parse_config import TOKEN_EXPIRATION
+from utils.parse_config import OMP_MYSQL_HOST, OMP_MYSQL_PORT, \
+    OMP_MYSQL_USERNAME, OMP_MYSQL_PASSWORD, TOKEN_EXPIRATION, \
+    SSH_CMD_TIMEOUT, PRIVATE_KEY
 
+SSH_CMD_TIMEOUT = SSH_CMD_TIMEOUT
+PRIVATE_KEY = PRIVATE_KEY
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 PROJECT_DIR = os.path.dirname(BASE_DIR)
@@ -30,7 +30,7 @@ PROJECT_DIR = os.path.dirname(BASE_DIR)
 SECRET_KEY = 'rofvdj3gbyg0(vb-ck=d(*1o=jx=l2_%c0*ox^rv%2s36(u3-@'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 # 允许所有
 ALLOWED_HOSTS = ["*"]
@@ -51,6 +51,8 @@ INSTALLED_APPS = [
     'users',
     'tests',
     'inspection',
+    'service_upgrade',
+    'tool',
 ]
 
 MIDDLEWARE = [
@@ -99,6 +101,9 @@ DATABASES = {
             'CHARSET': 'utf8',
             'COLLATION': 'utf8_general_ci',
             "NAME": f"test_omp_{random.randint(100, 200)}"
+        },
+        'OPTIONS': {
+            'init_command': 'SET sql_mode=STRICT_TRANS_TABLES',
         }
     }
 }
@@ -244,3 +249,65 @@ EMAIL_USE_SSL = True
 CUSTOM_THRESHOLD_SERVICES = {
     "kafka": {"kafka_consumergroup_lag"}
 }
+
+# 备份相关配置
+# 可备份的组件
+BACKUP_SERVICE = {"mysql", "arangodb", "postgreSql"}
+BACKUP_DEFAULT_PATH = os.path.join(PROJECT_DIR, "data/backup/")
+
+SCAN_TOOL_LOCK_KEY = "tool_package_verify"
+
+INTERFACE_KINDS = {"/api/appStore/upload/": "修改",
+                   "/api/appStore/remove/": "删除",
+                   "/api/appStore/publish/": "修改",
+                   "/api/appStore/executeLocalPackageScan/": "修改",
+                   "/api/appStore/deploymentPlanValidate/": "查看",
+                   "/api/appStore/deploymentPlanImport/": "增加",
+                   "/api/appStore/createInstallInfo/": "增加",
+                   "/api/appStore/executeInstall/": "增加",
+                   "/api/appStore/checkInstallInfo/": "查看",
+                   "/api/appStore/createServiceDistribution/": "增加",
+                   "/api/appStore/checkServiceDistribution/": "查看",
+                   "/api/appStore/createInstallPlan/": "新增",
+                   "/api/appStore/createComponentInstallInfo/": "新增",
+                   "/api/appStore/retryInstall/": "修改",
+                   "/api/backups/backupSettings/": "修改",
+                   "/api/backups/backupOnce/": "新增",
+                   "/api/backups/backupHistory/": "删除",
+                   "/api/backups/backupSendEmail/": "新增",
+                   "/api/hosts/hosts/": "修改",
+                   "/api/hosts/fields/": "查看",
+                   "/api/hosts/maintain/": "修改",
+                   "/api/hosts/restartHostAgent/": "修改",
+                   "/api/hosts/batchValidate/": "查看",
+                   "/api/hosts/batchImport/": "新增",
+                   "/api/hosts/hostInit/": "修改",
+                   "/api/hosts/hostsAgentStatus/": "查询",
+                   "/api/hosts/hostReinstall/": "修改",
+                   "/api/hosts/monitorReinstall/": "修改",
+                   "/api/inspection/history/": "查询",
+                   "/api/inspection/crontab/": "新增",
+                   "/api/inspection/inspectionSendEmailSetting/": "修改",
+                   "/api/inspection/inspectionSendEmail/": "查询",
+                   "/api/promemonitor/monitorurl/": "修改",
+                   "/api/promemonitor/updateAlert/": "修改",
+                   "/api/promemonitor/restartMonitorAgent/": "修改",
+                   "/api/promemonitor/globalMaintain/": "修改",
+                   "/api/promemonitor/receiveAlert/": "新增",
+                   "/api/promemonitor/updateSendEmailConfig/": "修改",
+                   "/api/promemonitor/updateSendAlertSetting/": "新增",
+                   "/api/promemonitor/hostThreshold/": "修改",
+                   "/api/promemonitor/serviceThreshold/": "修改",
+                   "/api/promemonitor/customThreshold/": "修改",
+                   "/api/upgrade/do-upgrade/": "修改",
+                   "/api/rollback/do-rollback/": "修改",
+                   "/api/services/action/": "修改",
+                   "/api/services/delete/": "查询",
+                   "/api/services/SelfHealingSetting/": "修改",
+                   "/api/services/UpdateSelfHealingHistory/": "修改",
+                   "/api/users/users/": "新增",
+                   "/api/users/updatePassword/": "修改"
+                   }
+
+# for automated testing
+DATA_JSON_SECRET = "Yunweiguanli@OMP_123"

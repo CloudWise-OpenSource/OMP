@@ -33,26 +33,23 @@ start() {
 
 stop() {
   real_status
-  if [ $? -eq 1 ]; then
+  if [ $? -eq 0 ]; then
+    ps -ef | grep "${PROJECT_FOLDER}/component/env/bin/salt-master" | grep -v grep | awk '{print $2}' | xargs kill -9
+  fi
+  sleep 3
+  real_status
+  if [ $? -eq 0 ]; then
+    echo "${APP_NAME} [running]"
+    return 1
+  else
     echo "${APP_NAME} [not running]"
     return 0
-  else
-    ps -ef | grep "${PROJECT_FOLDER}/component/env/bin/salt-master" | grep -v grep | cut -c 9-15 | xargs kill -9
-    sleep 3
-    real_status
-    if [ $? -eq 0 ]; then
-      echo "${APP_NAME} [running]"
-      return 1
-    else
-      echo "${APP_NAME} [not running]"
-      return 0
-    fi
   fi
 }
 
 real_status() {
   salt_master_num=$(ps -ef | grep ${PROJECT_FOLDER}/component/env/bin/salt-master | grep -v grep | wc -l)
-  if [ $salt_master_num -gt 10 ]; then
+  if [ $salt_master_num -gt 12 ]; then
     return 0
   else
     return 1

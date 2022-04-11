@@ -6,6 +6,7 @@ import pytz
 import datetime
 import traceback
 from omp_server.settings import TIME_ZONE
+from utils.parse_config import PROMETHEUS_AUTH
 
 logger = logging.getLogger('server')
 
@@ -16,12 +17,15 @@ class CurlPrometheus(object):
         """
           请求prometheus接口返回相应json
         """
+        prometheus_auth = (PROMETHEUS_AUTH.get("username"),
+                           PROMETHEUS_AUTH.get("plaintext_password"))
         monitor_ip = MonitorUrl.objects.filter(name="prometheus")
         monitor_url = monitor_ip[0].monitor_url if len(
             monitor_ip) else "127.0.0.1:19013"
         try:
             url = f"http://{monitor_url}/api/v1/alerts"
-            response = requests.request("GET", url, headers={}, data="")
+            response = requests.request(
+                "GET", url, headers={}, data="", auth=prometheus_auth)
             return json.loads(response.text)
         except Exception as e:
             logger.error("prometheus请求alerts失败：" + str(e))
@@ -60,7 +64,7 @@ def explain_prometheus(params):
     if r.get('status') == 'success':
         prometheus_info = []
         compare_list = []
-        alerts = r.get('data').get('alerts')
+        alerts = r.get('data', {}).get('alerts')
         prometheus_alerts = sorted(
             alerts, key=lambda e: e.get('labels').__getitem__('severity'), reverse=False)
         for lab in prometheus_alerts:
@@ -69,7 +73,7 @@ def explain_prometheus(params):
             tmp_dict = {}
             label = lab.get('labels')
             tmp_list = [label.get('alertname'), label.get(
-                'instance'), label.get('job')]
+                'instance_name'), label.get('job')]
             if tmp_list in compare_list:
                 continue
             compare_list.append(tmp_list)
@@ -106,8 +110,6 @@ def explain_filter(prometheus_json, params):
         value = j.get(fil_filed[0])
         if value and fil_filed[1].lower() in value.lower():
             fil_info.append(j)
-    # fil_info = filter(lambda x: fil_filed[1].lower()
-    # in x.get(fil_filed[0]).lower(), prometheus_json)
     return explain_filter(fil_info, params)
 
 
@@ -130,32 +132,43 @@ def explain_url(explain_info, is_service=None):
             service_name = instance_info.get('app_name')
         else:
             service_name = instance_info.get('instance_name')
+        if instance_info.get('is_web'):
+            instance_info['monitor_url'] = None
+            instance_info['log_url'] = None
+            continue
         service_ip = instance_info.get('ip')
         if instance_info.get('type') == 'service' \
                 or is_service:
             monitor_url = url_dict.get(service_name)
             if monitor_url:
                 instance_info['monitor_url'] = grafana_url + \
-                    monitor_url + f"?var-instance={service_ip}"
+                    monitor_url + f"?var-instance={service_ip}&kiosk=tv"
             else:
                 try:
                     if service_name and ApplicationHub.objects.filter(
                             app_name=service_name
+                    ).first() and ApplicationHub.objects.filter(
+                            app_name=service_name
                     ).first().app_monitor.get("type") == "JavaSpringBoot":
                         instance_info['monitor_url'] = grafana_url + url_dict.get(
-                            'javaspringboot', 'nojavaspringboot') + f"?var-ip={service_ip}&var-app={service_name}"
+                            'javaspringboot',
+                            'nojavaspringboot') + \
+                            f"?var-env=default&var-ip={service_ip}" \
+                            f"&var-app={service_name}&var-job={service_name}Exporter&kiosk=tv"
                     else:
                         instance_info['monitor_url'] = grafana_url + url_dict.get(
-                            'service', 'noservice') + f"?var-ip={service_ip}&var-app={service_name}"
+                            'service', 'noservice') + f"?var-ip={service_ip}&var-app={service_name}&kiosk=tv"
                 except Exception as e:
                     logger.error(e)
                     instance_info['monitor_url'] = grafana_url + url_dict.get(
-                        'service', 'noservice') + f"?var-ip={service_ip}&var-app={service_name}"
+                        'service', 'noservice') + f"?var-ip={service_ip}&var-app={service_name}&kiosk=tv"
             instance_info['log_url'] = grafana_url + \
-                url_dict.get('log', 'nolog') + f"?var-app={service_name}"
+                url_dict.get(
+                    'log', 'nolog') + f"?var-app={service_name}" + f"&var-instance={service_ip}"
         else:
             instance_info['monitor_url'] = grafana_url + \
-                url_dict.get('node', 'nohosts') + f"?var-node={service_ip}"
+                url_dict.get('node', 'nohosts') + \
+                f"?var-node={service_ip}&kiosk=tv"
             instance_info['log_url'] = None
         instance_info['monitor_url'] = instance_info['monitor_url'] + "&kiosk"
     return explain_info

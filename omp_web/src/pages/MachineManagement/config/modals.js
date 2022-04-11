@@ -13,6 +13,7 @@ import {
   Modal,
   Steps,
   Upload,
+  Switch,
 } from "antd";
 import {
   PlusSquareOutlined,
@@ -55,6 +56,8 @@ export const AddMachineModal = ({
 }) => {
   const [modalForm] = Form.useForm();
   const [modalLoading, setmodalLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
+
   const timer = useRef(null);
   const timer2 = useRef(null);
   return (
@@ -81,6 +84,7 @@ export const AddMachineModal = ({
         port: 22,
         operate_system: "CentOS",
         username: "root",
+        use_ntpd: true,
       }}
     >
       <MessageTip
@@ -322,6 +326,37 @@ export const AddMachineModal = ({
           label="用户名"
           name="username"
           key="username"
+          extra={
+            <span style={{ fontSize: 10 }}>
+              使用
+              <strong
+                style={{
+                  fontWeight: 700,
+                  color: "#595959",
+                  margin: "0 1px 0 1px",
+                }}
+              >
+                普通用户
+              </strong>
+              纳管主机时，为确保正常安装服务，请
+              <a
+                style={{
+                  fontWeight: 700,
+                  margin: "0 1px 0 1px",
+                }}
+                onClick={() => {
+                  let a = document.createElement("a");
+                  a.href = apiRequest.machineManagement.downInitScript;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                }}
+              >
+                下载
+              </a>
+              主机初始化脚本，并手动执行
+            </span>
+          }
           rules={[
             {
               required: true,
@@ -356,11 +391,11 @@ export const AddMachineModal = ({
           ]}
         >
           <Input
-            suffix={
-              <Tooltip title="请使用root或具有sudo免密码权限的用户">
-                <InfoCircleOutlined style={{ color: "rgba(0,0,0,.45)" }} />
-              </Tooltip>
-            }
+            // suffix={
+            //   <Tooltip title="请使用root或具有sudo免密码权限的用户">
+            //     <InfoCircleOutlined style={{ color: "rgba(0,0,0,.45)" }} />
+            //   </Tooltip>
+            // }
             maxLength={16}
             placeholder={"请输入用户名"}
           />
@@ -383,7 +418,7 @@ export const AddMachineModal = ({
                       return Promise.reject("密码不支持中文");
                     } else {
                       if (value.length < 8) {
-                        return Promise.reject("密码长度为8到16位");
+                        return Promise.reject("密码长度为8到64位");
                       } else {
                         if (isSpace(value)) {
                           return Promise.reject("密码不支持空格");
@@ -401,8 +436,52 @@ export const AddMachineModal = ({
             },
           ]}
         >
-          <Input.Password maxLength={16} placeholder={"请输入密码"} />
+          <Input.Password maxLength={64} placeholder={"请输入密码"} />
         </Form.Item>
+        <Form.Item
+          label="安装时间同步服务"
+          name="use_ntpd"
+          key="use_ntpd"
+          valuePropName="checked"
+          extra={
+            <span style={{ fontSize: 10 }}>
+              开启后，将对纳管主机安装ntpdate服务
+            </span>
+          }
+        >
+          <Switch
+            style={{ borderRadius: "10px" }}
+            onChange={(e) => setIsOpen(e)}
+          />
+        </Form.Item>
+        {isOpen && (
+          <Form.Item
+            label="时间同步服务器"
+            name="ntpd_server"
+            key="ntpd_server"
+            rules={[
+              {
+                required: true,
+                message: "请输入时间同步服务器",
+              },
+              {
+                validator: (rule, value, callback) => {
+                  if (value) {
+                    if (isValidIpChar(value)) {
+                      return Promise.resolve("success");
+                    } else {
+                      return Promise.reject("请输入正确格式的IP地址");
+                    }
+                  } else {
+                    return Promise.resolve("success");
+                  }
+                },
+              },
+            ]}
+          >
+            <Input placeholder={"例如: 192.168.10.10"} />
+          </Form.Item>
+        )}
       </div>
     </OmpModal>
   );
@@ -449,7 +528,7 @@ export const UpDateMachineModal = ({
         operate_system: row.operate_system,
         username: row.username,
         ip: row.ip,
-        password:row.password && window.atob(row.password),
+        password: row.password && window.atob(row.password),
       }}
     >
       <MessageTip
@@ -739,7 +818,7 @@ export const UpDateMachineModal = ({
                       return Promise.reject("密码不支持中文");
                     } else {
                       if (value.length < 8) {
-                        return Promise.reject("密码长度为8到16位");
+                        return Promise.reject("密码长度为8到64位");
                       } else {
                         if (isSpace(value)) {
                           return Promise.reject("密码不支持空格");
@@ -757,7 +836,7 @@ export const UpDateMachineModal = ({
             },
           ]}
         >
-          <Input.Password maxLength={16} placeholder={"请输入密码"} />
+          <Input.Password maxLength={64} placeholder={"请输入密码"} />
         </Form.Item>
       </div>
     </OmpModal>
@@ -794,8 +873,8 @@ class UploadExcelComponent extends React.Component {
       accept: ".xlsx",
       maxCount: 1,
       onRemove() {
-        _this.props.onRemove()
-        return true
+        _this.props.onRemove();
+        return true;
       },
       onChange(info) {
         const { status } = info.file;
@@ -896,7 +975,11 @@ class UploadExcelComponent extends React.Component {
 }
 
 /* 批量导入主机 */
-export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshData }) => {
+export const BatchImportMachineModal = ({
+  batchImport,
+  setBatchImport,
+  refreshData,
+}) => {
   const [dataSource, setDataSource] = useState([]);
   const [columns, setColumns] = useState([]);
 
@@ -982,6 +1065,34 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
       // sortDirections: ["descend", "ascend"],
       align: "center",
       width: 180,
+      render: (text) => {
+        return (
+          <Tooltip title={text}>
+            <span>{text ? text : "-"}</span>
+          </Tooltip>
+        );
+      },
+      ellipsis: true,
+    },
+    {
+      title: "是否安装时间同步",
+      key: "use_ntpd",
+      dataIndex: "use_ntpd",
+      align: "center",
+      width: 120,
+      render: (text) => {
+        return (
+          <span>{text === false ? "否" : text === true ? "是" : "-"}</span>
+        );
+      },
+      ellipsis: true,
+    },
+    {
+      title: "时间同步服务器",
+      key: "ntpd_server",
+      dataIndex: "ntpd_server",
+      align: "center",
+      width: 120,
       render: (text) => {
         return (
           <Tooltip title={text}>
@@ -1105,6 +1216,34 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
       ellipsis: true,
     },
     {
+      title: "是否安装时间同步",
+      key: "use_ntpd",
+      dataIndex: "use_ntpd",
+      align: "center",
+      width: 120,
+      render: (text) => {
+        return (
+          <span>{text === false ? "否" : text === true ? "是" : "-"}</span>
+        );
+      },
+      ellipsis: true,
+    },
+    {
+      title: "时间同步服务器",
+      key: "ntpd_server",
+      dataIndex: "ntpd_server",
+      align: "center",
+      width: 120,
+      render: (text) => {
+        return (
+          <Tooltip title={text}>
+            <span>{text ? text : "-"}</span>
+          </Tooltip>
+        );
+      },
+      ellipsis: true,
+    },
+    {
       title: "系统",
       key: "operate_system",
       dataIndex: "operate_system",
@@ -1124,9 +1263,11 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
 
   // 校验数据接口
   const fetchBatchValidate = () => {
-    if(dataSource.length == 0){
-      message.warning("解析结果中无有效数据，请确保文件内容格式符合规范后重新上传")
-      return
+    if (dataSource.length == 0) {
+      message.warning(
+        "解析结果中无有效数据，请确保文件内容格式符合规范后重新上传"
+      );
+      return;
     }
     setLoading(true);
     setTableCorrectData([]);
@@ -1156,13 +1297,20 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
           case "端口[必填]":
             result.port = item[key];
             break;
+          case "时间同步服务器":
+            result.use_ntpd = true;
+            result.ntpd_server = item[key];
+            break;
           default:
             break;
         }
       }
+      if (!result.use_ntpd) {
+        result.use_ntpd = false;
+      }
       return {
         ...result,
-        row:item.key
+        row: item.key,
       };
     });
     // console.log(queryBody)
@@ -1175,7 +1323,7 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
       .then((res) => {
         handleResponse(res, (res) => {
           if (res.code == 0) {
-            if (res.data && (res.data.error?.length)>0) {
+            if (res.data && res.data.error?.length > 0) {
               setTableErrorData(
                 res.data.error?.map((item, idx) => {
                   return {
@@ -1206,14 +1354,14 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
       });
   };
 
-   // 主机创建操作
-   const fetchBatchImport = () => {
-     let queryBody = tableCorrectData.map(item=>{
-       delete item.key
-       return {
-        ...item
-       }
-     })
+  // 主机创建操作
+  const fetchBatchImport = () => {
+    let queryBody = tableCorrectData.map((item) => {
+      delete item.key;
+      return {
+        ...item,
+      };
+    });
     setLoading(true);
     fetchPost(apiRequest.machineManagement.batchImport, {
       body: {
@@ -1265,7 +1413,7 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
         setTableColumns([]);
         setStepNum(0);
         setColumns([]);
-        refreshData()
+        refreshData();
       }}
       destroyOnClose
     >
@@ -1306,7 +1454,7 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
             <div style={{ flex: 10, paddingLeft: 20 }}>
               {batchImport && (
                 <UploadExcelComponent
-                  onRemove={()=>{
+                  onRemove={() => {
                     setDataSource([]);
                     setColumns([]);
                     setTableCorrectData([]);
@@ -1381,7 +1529,7 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
                     display: "flex",
                     alignItems: "center",
                     fontSize: 20,
-                    color: "#f73136"
+                    color: "#f73136",
                   }}
                 >
                   <CloseCircleFilled
@@ -1419,7 +1567,9 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
               bordered
               scroll={{ x: 700 }}
               columns={tableColumns}
-              dataSource={tableErrorData.length > 0 ? tableErrorData : tableCorrectData}
+              dataSource={
+                tableErrorData.length > 0 ? tableErrorData : tableCorrectData
+              }
               pagination={{
                 pageSize: 5,
               }}
@@ -1445,7 +1595,7 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
                 type="primary"
                 htmlType="submit"
                 onClick={() => {
-                  fetchBatchImport()
+                  fetchBatchImport();
                 }}
                 disabled={tableErrorData.length > 0}
               >
@@ -1474,7 +1624,9 @@ export const BatchImportMachineModal = ({ batchImport, setBatchImport, refreshDa
                 主机创建完成 !
               </p>
             </div>
-            <p style={{ textAlign: "center" }}>本次共创建 {tableCorrectData.length} 台主机</p>
+            <p style={{ textAlign: "center" }}>
+              本次共创建 {tableCorrectData.length} 台主机
+            </p>
             <div
               style={{
                 display: "inline-block",

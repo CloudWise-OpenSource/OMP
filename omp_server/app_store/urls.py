@@ -14,8 +14,10 @@ from app_store.views import (
     ComponentDetailView, ServiceDetailView,
     ServicePackPageVerificationView, PublishViewSet,
     ExecuteLocalPackageScanView, LocalPackageScanResultView,
-    ApplicationTemplateView
-)
+    ApplicationTemplateView, DeploymentPlanValidateView,
+    DeploymentPlanImportView, DeploymentPlanListView,
+    DeploymentOperableView, DeploymentTemplateView,
+    ExecutionRecordAPIView)
 from app_store.views_for_install import (
     ComponentEntranceView,
     ProductEntranceView,
@@ -67,6 +69,26 @@ router.register(
 router.register(
     "applicationTemplate", ApplicationTemplateView,
     basename='applicationTemplate')
+router.register(
+    "deploymentPlanValidate", DeploymentPlanValidateView,
+    basename="deploymentPlanValidate"
+)
+router.register(
+    "deploymentPlanImport", DeploymentPlanImportView,
+    basename="deploymentPlanImport"
+)
+router.register(
+    "deploymentPlanList", DeploymentPlanListView,
+    basename="deploymentPlanList"
+)
+router.register(
+    "deploymentOperable", DeploymentOperableView,
+    basename="deploymentOperable"
+)
+router.register(
+    "deploymentTemplate", DeploymentTemplateView,
+    basename="deploymentTemplate"
+)
 
 # 安装部分使用路由
 router.register(
@@ -155,4 +177,10 @@ router.register(
     "retryInstall",
     RetryInstallView,
     basename="retryInstall"
+)
+
+router.register(
+    "executionRecord",
+    ExecutionRecordAPIView,
+    basename="ExecutionRecord"
 )

@@ -38,7 +38,7 @@ class RocketmqUtils(BaseUtils):
             }
         return {
             "default": 1,
-            "step": 0
+            "step": 1
         }
 
     def check(self, mode):

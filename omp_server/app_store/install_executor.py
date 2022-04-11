@@ -31,8 +31,7 @@ class InstallServiceExecutor:
 
     @staticmethod
     def now_time():
-        return time.strftime(time.strftime(
-            "%Y-%m-%d %H:%M:%S", time.localtime()))
+        return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
     def create_history(self, detail_obj, is_success=True):
         """ 创建历史记录 """
@@ -166,13 +165,13 @@ class InstallServiceExecutor:
             if path_ls[1] == app_name:
                 _target_path = path_ls[0]
                 test_path_cmd_str = f"(test -d {_target_path} || mkdir -p {_target_path}) && " \
-                                    f"tar -xf {package_path} -C {_target_path}"
+                                    f"tar -xmf {package_path} -C {_target_path}"
             else:
                 # 当路径结尾与服务名不一致时
                 _target_path = path_ls[0]
                 real_path = os.path.join(_target_path, app_name)
                 test_path_cmd_str = f"(test -d {_target_path} || mkdir -p {_target_path}) && " \
-                                    f"tar -xf {package_path} -C {_target_path} && mv {real_path} {target_path}/"
+                                    f"tar -xmf {package_path} -C {_target_path} && mv {real_path} {target_path}/"
             is_success, message = salt_client.cmd(
                 target=target_ip,
                 command=test_path_cmd_str,
@@ -366,8 +365,9 @@ class InstallServiceExecutor:
                 detail_obj.service.save()
                 detail_obj.save()
                 return True, "Start Un Do"
-
-            cmd_str = f"bash {start_script_path} start"
+            if "start" not in start_script_path:
+                start_script_path += " start"
+            cmd_str = f"bash {start_script_path}"
 
             # 执行启动
             is_success, message = salt_client.cmd(

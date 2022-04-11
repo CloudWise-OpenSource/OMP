@@ -1,49 +1,68 @@
-import { OmpContentWrapper, OmpTable, OmpModal } from "@/components";
-import { Button, Input, Form, message, Menu } from "antd";
-import { useState, useEffect, useRef } from "react";
+import { OmpContentWrapper, OmpContentNav, OmpTable } from "@/components";
+import { useState, useEffect } from "react";
+import { useHistory, useLocation } from "react-router-dom";
+import { fetchGet, fetchPost } from "@/utils/request";
+import { apiRequest } from "@/config/requestApi";
+import { Button } from "antd";
 import {
   handleResponse,
   _idxInit,
-  refreshTime,
-  MessageTip,
   nonEmptyProcessing,
-  logout,
-  isPassword,
-  renderDisc
+  renderDisc,
 } from "@/utils/utils";
-import { fetchGet, fetchPost } from "@/utils/request";
-import { apiRequest } from "@/config/requestApi";
-//import updata from "@/store_global/globalStore";
 import moment from "moment";
-import { useHistory } from "react-router-dom";
+import ServiceRollbackModal from "../AppStore/config/ServiceRollbackModal";
 
-// const renderStatus = {
-//   0: "等待安装",
-//   1: "安装中",
-//   2: "安装成功",
-//   3: <span style={{ color: "#da4e48" }}>安装失败</span>,
-// };
-
-const renderStatus = (text) => {
-  switch (text) {
-    case 0:
-      return <span>{renderDisc("warning", 7, -1)}等待安装</span>;
-    case 1:
-      return <span>{renderDisc("warning", 7, -1)}正在安装</span>;
-    case 2:
-      return <span>{renderDisc("normal", 7, -1)}成功</span>;
-    case 3:
-      return <span>{renderDisc("critical", 7, -1)}失败</span>;
-    default:
-      return "-";
+const renderStatus = (record) => {
+  let text = record.state;
+  if (text.includes("SUCCESS")) {
+    return (
+      <span>
+        {renderDisc("normal", 7, -1)}
+        {record.state_display}
+      </span>
+    );
   }
+  if (text.includes("FAIL")) {
+    return (
+      <span>
+        {renderDisc("critical", 7, -1)}
+        {record.state_display}
+      </span>
+    );
+  }
+  if (text.includes("WAIT") || text.includes("ING")) {
+    return (
+      <span>
+        {renderDisc("warning", 7, -1)}
+        {record.state_display}
+      </span>
+    );
+  }
+  return "-";
+};
+
+const typeMap = {
+  MainInstallHistory: "安装",
+  RollbackHistory: "回滚",
+  UpgradeHistory: "升级",
+};
+
+const notProhibit = {
+  cursor: "not-allowed",
+  color: "#bbbbbb",
 };
 
 const InstallationRecord = () => {
-  const [loading, setLoading] = useState(false);
   const history = useHistory();
+
+  const [loading, setLoading] = useState(false);
   //table表格数据
   const [dataSource, setDataSource] = useState([]);
+
+  const [vfModalVisibility, setVfModalVisibility] = useState(false);
+
+  const [rowId, setRowId] = useState("");
 
   const [pagination, setPagination] = useState({
     current: 1,
@@ -55,17 +74,32 @@ const InstallationRecord = () => {
 
   const columns = [
     {
-      title: "编号",
-      width: 40,
-      key: "_idx",
-      dataIndex: "_idx",
+      title: "类型",
+      width: 80,
+      key: "module",
+      dataIndex: "module",
       //sorter: (a, b) => a.username - b.username,
       // sortDirections: ["descend", "ascend"],
+      usefilter: true,
+      queryRequest: (params) => {
+        fetchData(
+          { current: 1, pageSize: pagination.pageSize },
+          pagination.ordering,
+          { ...pagination.searchParams, ...params }
+        );
+      },
+      // initfilter: initfilterAppType,
+      filterMenuList: Object.keys(typeMap).map((k) => {
+        return {
+          value: k,
+          text: typeMap[k],
+        };
+      }),
       align: "center",
       fixed: "left",
       render: (text, record, idx) => {
         //history.push()
-        return idx + 1 + (pagination.current - 1) * pagination.pageSize;
+        return typeMap[text];
       },
     },
     {
@@ -86,37 +120,26 @@ const InstallationRecord = () => {
       //sorter: (a, b) => a.is_superuser - b.is_superuser,
       //sortDirections: ["descend", "ascend"],
       align: "center",
-      render: (text) => {
-        return renderStatus(text);
+      render: (text, record) => {
+        return renderStatus(record);
       },
-      // render: (text) => {
-      //   if (text) {
-      //     return "普通管理员";
-      //   } else {
-      //     return "超级管理员";
-      //   }
-      // },
     },
-    // {
-    //   title: "用户状态",
-    //   key: "is_active",
-    //   dataIndex: "is_active",
-    //   align: "center",
-    //   width: 100,
-    //   render: (text) => {
-    //     if (text) {
-    //       return "正常";
-    //     } else {
-    //       return "停用";
-    //     }
-    //   },
-    // },
+    {
+      title: "服务数量",
+      key: "count",
+      dataIndex: "count",
+      width: 60,
+      align: "center",
+      render: nonEmptyProcessing,
+    },
     {
       title: "开始时间",
       key: "created",
       dataIndex: "created",
       align: "center",
       width: 120,
+      sorter: (a, b) => a.created - b.created,
+      sortDirections: ["descend", "ascend"],
       render: (text) => {
         if (text) {
           return moment(text).format("YYYY-MM-DD HH:mm:ss");
@@ -125,48 +148,140 @@ const InstallationRecord = () => {
         }
       },
     },
-    // {
-    //   title: "描述",
-    //   key: "describe",
-    //   dataIndex: "describe",
-    //   align: "center",
-    //   render: nonEmptyProcessing,
-    // },
+    {
+      title: "结束时间",
+      key: "end_time",
+      dataIndex: "end_time",
+      align: "center",
+      width: 120,
+      render: (text, record) => {
+        if (record.install_status == 1) {
+          return "-";
+        }
+        if (text) {
+          return moment(text).format("YYYY-MM-DD HH:mm:ss");
+        } else {
+          return "-";
+        }
+      },
+    },
+    {
+      title: "用时",
+      key: "duration",
+      dataIndex: "duration",
+      align: "center",
+      width: 120,
+      render: nonEmptyProcessing,
+    },
     {
       title: "操作",
       key: "1",
-      width: 50,
+      width: 58,
       dataIndex: "1",
       align: "center",
       fixed: "right",
       render: function renderFunc(text, record, index) {
-        return (
-          <div
-            onClick={() => {
-              history.push({
-                pathname: "/application_management/app_store/installation",
-                state: {
-                  uniqueKey: record.operation_uuid,
-                  step:3
-                },
-              });
-            }}
-            style={{ display: "flex", justifyContent: "space-around" }}
-          >
-            <a>查看</a>
-          </div>
-        );
+        switch (record.module) {
+          case "MainInstallHistory":
+            return (
+              <div style={{ display: "flex", justifyContent: "space-around" }}>
+                <div
+                  onClick={() => {
+                    history.push({
+                      pathname:
+                        "/application_management/app_store/installation",
+                      state: {
+                        uniqueKey: record.module_id,
+                        step: 3,
+                      },
+                    });
+                  }}
+                  style={{ display: "flex", justifyContent: "space-around" }}
+                >
+                  <a>查看</a>
+                </div>
+              </div>
+            );
+            break;
+          case "RollbackHistory":
+            return (
+              <div style={{ display: "flex", justifyContent: "space-around" }}>
+                <div
+                  onClick={() => {
+                    history.push({
+                      pathname:
+                        "/application_management/app_store/service_rollback",
+                      state: {
+                        history: record.module_id,
+                      },
+                    });
+                  }}
+                >
+                  <a>查看</a>
+                </div>
+              </div>
+            );
+            break;
+          case "UpgradeHistory":
+            return (
+              <div style={{ display: "flex", justifyContent: "space-around" }}>
+                <div style={{ margin: "auto" }}>
+                  <a
+                    onClick={() => {
+                      history.push({
+                        pathname:
+                          "/application_management/app_store/service_upgrade",
+                        state: {
+                          history: record.module_id,
+                        },
+                      });
+                    }}
+                  >
+                    查看
+                  </a>
+                  <a
+                    style={
+                      record.can_rollback
+                        ? { marginLeft: 10 }
+                        : {
+                            marginLeft: 10,
+                            ...notProhibit,
+                          }
+                    }
+                    onClick={() => {
+                      if (record.can_rollback) {
+                        setRowId(record.module_id);
+                        setVfModalVisibility(true);
+                      }
+                    }}
+                  >
+                    回滚
+                  </a>
+                </div>
+              </div>
+            );
+            break;
+          default:
+            return "-";
+            break;
+        }
       },
     },
   ];
 
-  //auth/users
-  function fetchData(pageParams = { current: 1, pageSize: 10 }) {
+  function fetchData(
+    pageParams = { current: 1, pageSize: 10 },
+    ordering,
+    searchParams
+  ) {
+    console.log(searchParams)
     setLoading(true);
-    fetchGet(apiRequest.installHistoryPage.queryInstallHistoryList, {
+    fetchGet(apiRequest.installHistoryPage.queryAllList, {
       params: {
         page: pageParams.current,
         size: pageParams.pageSize,
+        ordering: ordering ? ordering : null,
+        search: searchParams?.module,
       },
     })
       .then((res) => {
@@ -178,6 +293,8 @@ const InstallationRecord = () => {
             total: res.data.count,
             pageSize: pageParams.pageSize,
             current: pageParams.current,
+            ordering: ordering,
+            searchParams: searchParams,
           });
         });
       })
@@ -192,17 +309,21 @@ const InstallationRecord = () => {
   }, []);
 
   return (
-    <OmpContentWrapper>
+    <OmpContentWrapper wrapperStyle={{ paddingBottom: 0 }}>
       <div style={{ display: "flex" }}>
         <div style={{ display: "flex", marginLeft: "auto" }}>
           <Button
             style={{ marginLeft: 10 }}
             onClick={() => {
               // console.log(pagination, "hosts/hosts/?page=1&size=10");
-              fetchData({
-                current: pagination.current,
-                pageSize: pagination.pageSize,
-              });
+              fetchData(
+                {
+                  current: pagination.current,
+                  pageSize: pagination.pageSize,
+                },
+                pagination.ordering,
+                pagination.searchParams
+              );
             }}
           >
             刷新
@@ -220,8 +341,11 @@ const InstallationRecord = () => {
           noScroll={true}
           loading={loading}
           onChange={(e, filters, sorter) => {
+            let ordering = sorter.order
+              ? `${sorter.order == "descend" ? "" : "-"}${sorter.columnKey}`
+              : null;
             setTimeout(() => {
-              fetchData(e);
+              fetchData(e, ordering, pagination.searchParams);
             }, 200);
           }}
           columns={columns}
@@ -252,6 +376,12 @@ const InstallationRecord = () => {
           rowKey={(record) => record.id}
         />
       </div>
+      <ServiceRollbackModal
+        sRModalVisibility={vfModalVisibility}
+        setSRModalVisibility={setVfModalVisibility}
+        initLoading={loading}
+        fixedParams={`?history_id=${rowId}`}
+      />
     </OmpContentWrapper>
   );
 };

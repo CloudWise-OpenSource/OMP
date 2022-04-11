@@ -89,3 +89,69 @@ def check_ip_port(ip, port):
         return_tuple = (False, "failed")
     sock_obj.close()
     return return_tuple
+
+
+class DurationTime:
+
+    def __init__(self, seconds):
+        self.second = seconds
+        self.minute = self.hour = self.day = 0
+
+    def analysis_day(self):
+        day, hour = divmod(self.hour, 24)
+        setattr(self, "hour", hour)
+        setattr(self, "day", day)
+
+    def analysis_hour(self):
+        hour, minute = divmod(self.minute, 60)
+        setattr(self, "minute", minute)
+        setattr(self, "hour", hour)
+
+    def analysis_minute(self):
+        minute, second = divmod(self.second, 60)
+        setattr(self, "second", second)
+        setattr(self, "minute", minute)
+
+    def __call__(self, *args, **kwargs):
+        for key in ["minute", "hour", "day"]:
+            getattr(self, f"analysis_{key}")()
+            if not getattr(self, key):
+                return self
+        return self
+
+
+def timedelta_strftime(timedelta):
+    """
+    四舍五入格式化timedelta
+    :param timedelta: <class datetime.timedelta>
+    :return: "XX天XX时XX分XX秒"
+    """
+    seconds = round(timedelta.total_seconds())
+    duration = DurationTime(seconds)()
+    en_zh = [("day", "天"), ("hour", "时"), ("minute", "分"), ("second", "秒")]
+    strftime = ""
+    for en, zh in en_zh:
+        if strftime:
+            strftime += f"{getattr(duration, en)}{zh}"
+        elif not strftime and getattr(duration, en):
+            strftime += f"{getattr(duration, en)}{zh}"
+    return strftime
+
+
+def file_md5(file_path):
+    # md5校验生成
+    md5_out = local_cmd(f'md5sum {file_path}')
+
+    if md5_out[2] != 0:
+        return None
+    return md5_out[0].split()[0]
+
+
+def format_location_size(size):
+    # 格式化文件大小
+    if int(size/1024) < 100:
+        return "%.3f" % (size / 1024) + "K"
+    size = size/1024
+    if int(size/1024) < 100:
+        return "%.3f" % (size / 1024) + "M"
+    return "%.3f" % (size/1024/1024) + "G"

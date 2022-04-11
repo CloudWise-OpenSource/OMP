@@ -10,28 +10,15 @@ class ServiceBase(Prometheus):
     """
     查询 prometheus java 指标,基类
     """
+
     def __init__(self, env, instance, job):
         self.ret = {}
         self.basic = []
-        self.job = job              # Exporter类型
-        self.env = env              # 环境
-        self.instance = instance    # 主机ip
+        self.job = job  # Exporter类型
+        self.env = env  # 环境
+        self.instance = instance  # 主机ip
+        self.metric_num = 10
         Prometheus.__init__(self)
-
-    @staticmethod
-    def unified_job(is_success, ret):
-        """
-        实例方法 返回值统一处理
-        :ret: 返回值
-        :is_success: 请求是否成功
-        """
-        if is_success:
-            if ret.get('result'):
-                return ret['result'][0].get('value')[1]
-            else:
-                return 0
-        else:
-            return 0
 
     def service_status(self):
         """运行状态"""
@@ -48,15 +35,23 @@ class ServiceBase(Prometheus):
         _ = float(_) if _ else 0
         minutes, seconds = divmod(_, 60)
         hours, minutes = divmod(minutes, 60)
-        self.ret['run_time'] = f"{int(hours)}小时{int(minutes)}分钟{int(seconds)}秒"
+        days, hours = divmod(hours, 24)
+        if int(days) > 0:
+            self.ret['run_time'] = \
+                f"{int(days)}天{int(hours)}小时{int(minutes)}分钟{int(seconds)}秒"
+        elif int(hours) > 0:
+            self.ret['run_time'] = \
+                f"{int(hours)}小时{int(minutes)}分钟{int(seconds)}秒"
+        else:
+            self.ret['run_time'] = f"{int(minutes)}分钟{int(seconds)}秒"
 
     def cpu_usage(self):
         """cpu使用率"""
-        expr = f"system_cpu_usage{{env=~'{self.env}'," \
+        expr = f"process_cpu_usage{{env=~'{self.env}'," \
                f"instance=~'{self.instance}', " \
                f"job='{self.job}'}} * 100"
         val = self.unified_job(*self.query(expr))
-        val = round(float(val), 2) if val else 0
+        val = round(float(val), 2) if val else '0.00'
         self.ret['cpu_usage'] = f"{val}%"
 
     def mem_usage(self):
@@ -68,7 +63,7 @@ class ServiceBase(Prometheus):
                f"instance=~'{self.instance}'," \
                f"job='{self.job}'}}) * 100"
         val = self.unified_job(*self.query(expr))
-        val = round(float(val), 2) if val else 0
+        val = round(float(val), 2) if val else '0.00'
         self.ret['mem_usage'] = f"{val}%"
 
     def thread_num(self):

@@ -41,13 +41,13 @@ const Step1 = ({ setStepNum }) => {
         let kArr = k.split("=");
         if (kArr.length == 1) {
           // 长度为1 说明当前key就是实例名称
-          console.log(k, formBasicData[k]);
+          // console.log(k, formBasicData[k]);
           if (k == item.name) {
             cluster_name = formBasicData[k];
           }
         } else if (kArr.length == 2) {
           services_list = services_list.map((i) => {
-            console.log(i);
+            // console.log(i);
             if (i.name == kArr[1]) {
               return {
                 name: i.name,
@@ -133,6 +133,140 @@ const Step1 = ({ setStepNum }) => {
       dependence: dependent,
     };
   };
+
+  // const reduxDataProcessing = () => {
+  //   let formBasicData = basicForm.getFieldsValue();
+  //   let formDependentData = dependentForm.getFieldsValue();
+  //   //setStepNum(1);
+  //   let basic = JSON.parse(JSON.stringify(data.basic));
+  //   let dependent = JSON.parse(JSON.stringify(data.dependence));
+
+  //   basic = basic.map((item) => {
+  //     let services_list = item.services_list;
+  //     let cluster_name = "";
+
+  //     Object.keys(formBasicData).map((k) => {
+  //       let kArr = k.split("=");
+  //       if (kArr.length == 1) {
+  //         // 长度为1 说明当前key就是实例名称
+  //         // console.log(k, formBasicData[k]);
+  //         if (k == item.name) {
+  //           cluster_name = formBasicData[k];
+  //         }
+  //       } else if (kArr.length == 2) {
+  //         services_list = services_list.map((i) => {
+  //           // console.log(i);
+  //           if (i.name == kArr[1]) {
+  //             return {
+  //               name: i.name,
+  //               version: i.version,
+  //               deploy_mode: {
+  //                 ...i.deploy_mode,
+  //                 default: Number(formBasicData[k]),
+  //               }
+  //             };
+  //           } else {
+  //             return {
+  //               ...i,
+  //             };
+  //           }
+  //         });
+  //       }
+  //     });
+  //     return {
+  //       name: item.name,
+  //       version: item.version,
+  //       cluster_name: cluster_name,
+  //       services_list: services_list,
+  //     };
+  //   });
+
+  //   console.log(data.dependence)
+  //   dependent = dependent.map((item) => {
+  //     if (item.is_base_env) {
+  //       // jdk
+  //       return {
+  //         ...item,
+  //       };
+  //     } else {
+  //       //if(item.is_use_exist){
+  //       // deployInstanceRow
+  //       let exist_instance = item.exist_instance;
+  //       let deploy_mode = item.deploy_mode;
+  //       let cluster_name = "";
+  //       let vip = "";
+  //       let is_use_exist = false;
+
+  //       Object.keys(formDependentData).map((k) => {
+  //         let kArr = k.split("=");
+  //         if (kArr[0] == item.name) {
+  //           if (kArr.length == 1) {
+  //             // 选中了勾选了说明当前为选择实例信息
+  //             //console.log(formDependentData[k])
+  //             exist_instance = JSON.parse(formDependentData[k]);
+  //             is_use_exist = true;
+  //           } else {
+  //             // 取消了选中，当前为部署数量信息
+  //             // 判断部署数量是否是数字
+  //             if (kArr[1] == "num") {
+  //               // deploy_mode = formDependentData[k];
+  //               cluster_name = formDependentData[`${item.name}=name`];
+  //               vip = formDependentData[`${item.name}=vip`];
+  //               if (isNaN(Number(formDependentData[k]))) {
+  //                 // 非数字代表单实例，主从，主主
+  //                 console.log("非数字", formDependentData[k],item)
+  //                 deploy_mode = formDependentData[k];
+  //               } else {
+  //                 console.log("数字", formDependentData[k])
+  //                 // 数字代表部署数量
+  //                 deploy_mode = Number(formDependentData[k]);
+  //                 // 数量
+  //                 //cluster_name
+  //               }
+  //             }
+  //           }
+  //         }
+  //       });
+  //       console.log(exist_instance, deploy_mode, cluster_name, vip, is_use_exist,)
+  //       console.log(item.exist_instance)
+  //       let processedExistInstance = []
+  //       if(typeof exist_instance == "object"){
+  //         processedExistInstance = item.exist_instance.map(m=>{
+  //           if(m.id == exist_instance){
+  //             return {
+  //               ...exist_instance,
+  //               isCheck: true
+  //             }
+  //           }else{
+  //             return m
+  //           }
+  //         })
+  //       }
+
+  //       return {
+  //         ...item,
+  //         exist_instance: processedExistInstance,
+  //         deploy_mode: {
+  //           ...item.deploy_mode,
+  //           default:deploy_mode && typeof deploy_mode == "number"? deploy_mode:deploy_mode.default,
+  //         },
+  //         cluster_name: cluster_name,
+  //         vip: vip,
+  //         is_use_exist: is_use_exist,
+  //       };
+  //     }
+
+  //     return {
+  //       ...item,
+  //     };
+  //   });
+
+  //   return {
+  //     basic: basic,
+  //     dependence: dependent,
+  //     is_continue: true
+  //   };
+  // };
 
   // checkInstallInfo 基本信息提交操作，决定是否跳转服务分布以及数据校验回显
   const checkInstallInfo = (queryData) => {
@@ -483,6 +617,11 @@ const Step1 = ({ setStepNum }) => {
               loading={loading}
               disabled={!isContinue}
               onClick={() => {
+                // console.log(data, dependentForm.getFieldValue(), basicForm.getFieldValue())
+                // console.log(dataProcessing())
+                // console.log(reduxDataProcessing())
+                // reduxDispatch(getStep1ChangeAction(reduxDataProcessing()))
+                // return
                 Promise.all([
                   dependentForm.validateFields(),
                   basicForm.validateFields(),

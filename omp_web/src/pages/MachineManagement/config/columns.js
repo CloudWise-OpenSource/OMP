@@ -36,12 +36,15 @@ export const DetailHost = ({
           </span>
         </div>
       }
+      headerStyle={{
+        padding: "19px 24px",
+      }}
       placement="right"
       closable={true}
       width={`calc(100% - 200px)`}
       style={{
         height: "calc(100%)",
-        paddingTop: "60px",
+        // paddingTop: "60px",
       }}
       onClose={() => {
         setIsShowDrawer({
@@ -59,7 +62,7 @@ export const DetailHost = ({
       destroyOnClose={true}
     >
       <div
-        style={{ height: "calc(100% - 65px)", width: "100%", display: "flex" }}
+        style={{ height: "calc(100% - 15px)", width: "100%", display: "flex" }}
       >
         <div
           style={{
@@ -223,6 +226,19 @@ export const DetailHost = ({
             <div style={{ flex: 1 }}>维护模式</div>
             <div style={{ flex: 1 }}>
               {isShowDrawer.record.is_maintenance ? "是" : "否"}
+            </div>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              paddingTop: 15,
+              paddingBottom: 5,
+              borderBottom: "solid 1px rgb(220,220,220)",
+            }}
+          >
+            <div style={{ flex: 1 }}>主机初始化</div>
+            <div style={{ flex: 1 }}>
+              {renderInitStatue(isShowDrawer.record.init_status)}
             </div>
           </div>
         </div>
@@ -423,6 +439,19 @@ const renderStatus = (text) => {
   }
 };
 
+const renderInitStatue = (text) => {
+  switch (text) {
+    case 0:
+      return <span>{renderDisc("normal", 7, -1)}成功</span>;
+    case 1:
+      return <span>{renderDisc("notMonitored", 7, -1)}未执行</span>;
+    case 2:
+      return <span>{renderDisc("warning", 7, -1)}执行中</span>;
+    case 3:
+      return <span>{renderDisc("critical", 7, -1)}失败</span>;
+  }
+};
+
 const getColumnsConfig = (
   setIsShowDrawer,
   setRow,
@@ -578,9 +607,19 @@ const getColumnsConfig = (
       //ellipsis: true,
       render: (text) => {
         if (nonEmptyProcessing(text) == "-") return "-";
-        return text ? "是" : "否";
+        return text ? "开" : "关";
       },
     },
+    // {
+    //   title: "主机初始化",
+    //   key: "init_status",
+    //   dataIndex: "init_status",
+    //   align: "center",
+    //   //ellipsis: true,
+    //   render: (text) => {
+    //     return renderInitStatue(text);
+    //   },
+    // },
     {
       title: "主机Agent",
       key: "host_agent",
@@ -688,10 +727,12 @@ const getColumnsConfig = (
               }}
               style={{ display: "flex", justifyContent: "space-around" }}
             >
-              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
-              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>
-                更多 <DownOutlined style={{ position: "relative", top: 1 }} />
-              </span>
+              <div style={{ margin: "auto" }}>
+                <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
+                <span style={{ color: "rgba(0, 0, 0, 0.25)", marginLeft: 10 }}>
+                  更多
+                </span>
+              </div>
             </div>
           );
         }
@@ -700,38 +741,39 @@ const getColumnsConfig = (
             onClick={() => {
               setRow(record);
             }}
-            style={{ display: "flex", justifyContent: "space-around" }}
+            style={{ display: "flex" }}
           >
-            {record.monitor_url ? (
-              <a
-                onClick={() => {
-                  setShowIframe({
-                    isOpen: true,
-                    src: record.monitor_url,
-                    record: record,
-                    isLog: false,
-                  });
-                }}
-              >
-                监控
-              </a>
-            ) : (
-              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
-            )}
-
-            <Dropdown
-              arrow
-              overlay={renderMenu(
-                setUpdateMoadlVisible,
-                setCloseMaintainModal,
-                setOpenMaintainModal,
-                record
+            <div style={{ margin: "auto" }}>
+              {record.monitor_url ? (
+                <a
+                  onClick={() => {
+                    setShowIframe({
+                      isOpen: true,
+                      src: record.monitor_url,
+                      record: record,
+                      isLog: false,
+                    });
+                  }}
+                >
+                  监控
+                </a>
+              ) : (
+                <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>监控</span>
               )}
-            >
-              <a>
-                更多 <DownOutlined style={{ position: "relative", top: 1 }} />
-              </a>
-            </Dropdown>
+
+              <Dropdown
+                arrow
+                placement="bottomCenter"
+                overlay={renderMenu(
+                  setUpdateMoadlVisible,
+                  setCloseMaintainModal,
+                  setOpenMaintainModal,
+                  record
+                )}
+              >
+                <a style={{ marginLeft: 10 }}>更多</a>
+              </Dropdown>
+            </div>
           </div>
         );
       },

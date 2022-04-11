@@ -25,6 +25,7 @@ const BatchInstallationModal = ({
   setBIModalVisibility,
   dataSource,
   installTitle,
+  initLoading
 }) => {
   const uniqueKey = useSelector((state) => state.appStore.uniqueKey);
 
@@ -35,7 +36,7 @@ const BatchInstallationModal = ({
   const history = useHistory();
 
   //选中的数据
-  const [checkedList, setCheckedList] = useState({});
+  const [checkedList, setCheckedList] = useState([]);
   // console.log(checkedList)
   //应用服务选择的版本号
   const versionInfo = useRef({});
@@ -136,9 +137,9 @@ const BatchInstallationModal = ({
   };
 
   useEffect(() => {
-    setCheckedList({
-      data: dataSource.filter(item=>item.is_continue),
-    });
+    // 选中全部
+    setCheckedList(dataSource.filter(item=>item.is_continue),
+  );
   }, [dataSource]);
   // console.log(checkedList)
   return (
@@ -158,7 +159,7 @@ const BatchInstallationModal = ({
         </span>
       }
       afterClose={() => {
-        setCheckedList({});
+        setCheckedList([]);
         setHighAvailabilityCheck(false)
       }}
       onCancel={() => {
@@ -179,7 +180,7 @@ const BatchInstallationModal = ({
           <OmpTable
             size="small"
             scroll={{ y: 270 }}
-            loading={loading}
+            loading={loading || initLoading}
             //scroll={{ x: 1900 }}
             columns={columns}
             dataSource={dataSource}
@@ -193,10 +194,7 @@ const BatchInstallationModal = ({
               disabled: !record.is_continue,
             })}
             rowSelection={{
-              selectedRowKeys: Object.keys(checkedList)
-                .map((k) => checkedList[k])
-                .flat(1)
-                .map((item) => item?.name),
+              selectedRowKeys: checkedList?.map((item) => item?.name),
             }}
           />
         </div>
@@ -222,9 +220,7 @@ const BatchInstallationModal = ({
             <div style={{ marginRight: 15 }}>
               已选择{" "}
               {
-                Object.keys(checkedList)
-                  .map((k) => checkedList[k])
-                  .flat(1).length
+                checkedList.length
               }{" "}
               个
             </div>
@@ -245,15 +241,13 @@ const BatchInstallationModal = ({
             <Button
               type="primary"
               style={{ marginLeft: 16 }}
-              loading={loading}
+              loading={loading || initLoading}
               disabled={
-                Object.keys(checkedList)
-                  .map((k) => checkedList[k])
-                  .flat(1).length == 0
+                checkedList.length == 0
               }
               onClick={() => {
                 if (installTitle == "组件") {
-                  let install_product = checkedList.data.map((item) => {
+                  let install_product = checkedList.map((item) => {
                     return {
                       name: item.name,
                       version:
@@ -262,7 +256,7 @@ const BatchInstallationModal = ({
                   });
                   createComponentInstallInfo(install_product);
                 } else {
-                  let install_product = checkedList.data.map((item) => {
+                  let install_product = checkedList.map((item) => {
                     return {
                       name: item.name,
                       version:

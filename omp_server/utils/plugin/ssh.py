@@ -124,8 +124,13 @@ class SSH(object):
         if self.username == "root":
             command = "test -d {0} || mkdir -p {0}".format(remote_path)
         else:
-            command = f"sudo mkdir -p {remote_path} && " \
-                      f"sudo chown -R {self.username}.{self.username} {remote_path}"
+            is_sudo_flag, _ = self.is_sudo()
+            if is_sudo_flag:
+                command = f"sudo mkdir -p {remote_path} && " \
+                          f"sudo chown -R {self.username}.{self.username} {remote_path}"
+            else:
+                # 普通用户仅尝试创建文件夹
+                command = "test -d {0} || mkdir -p {0}".format(remote_path)
         self.cmd(command)
 
     def file_push(self, file, remote_path="/tmp"):

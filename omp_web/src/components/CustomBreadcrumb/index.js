@@ -42,11 +42,28 @@ const breadcrumbNameMap = {
   "email-settings": "邮件管理",
   "rule-center": "指标中心",
   "default-rule": "默认指标",
-  "install-record": "安装记录",
+  "install-record": "执行记录",
+  service_upgrade: "服务升级",
+  "deployment-plan": "部署模板",
+  "data-backup": "数据备份",
+  "backup-record": "备份记录",
+  "operation-record": "操作记录",
+  "login-log": "登录日志",
+  "system-log": "系统记录",
+  "fault-selfHealing":"故障自愈",
+  "selfHealing-record":"自愈记录",
+  "selfHealing-strategy":"自愈策略",
+  "utilitie":"实用工具",
+  "tool-management":"工具管理",
+  "tool-management-detail": "工具详情",
+  "task-record":"任务记录",
+  "tool-execution-results":"执行结果",
+  "indicator-rule": "指标规则",
+  "extend-rule": "扩展指标"
 };
 
 // 基于面包屑组件的一层封装，用于匹配当前路由地址，动态展示页面路径
-const CustomBreadcrumb = withRouter(({ location }) => {
+const CustomBreadcrumb = withRouter(({ location, collapsed }) => {
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   //是否展示维护模式提示词
@@ -176,7 +193,10 @@ const CustomBreadcrumb = withRouter(({ location }) => {
   };
 
   return (
-    <div className={styles.customNav}>
+    <div
+      className={styles.customNav}
+      style={{ marginLeft: collapsed ? 50 : 200 }}
+    >
       {/* <div> */}
       <Breadcrumb>{extraBreadcrumbItems()}</Breadcrumb>
       {/* </div> */}

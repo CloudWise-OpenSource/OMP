@@ -41,9 +41,8 @@ class InspectionServiceView(ListModelMixin, GenericViewSet):
     def list(self, request, *args, **kwargs):
         # 只能是安装成功的组件
         rets = list()
-        _ = Service.objects.filter(
-            service__app_type=0, service__is_base_env=False
-        ).exclude(service_status__in=[5, 6, 7])
+        _ = Service.objects.filter(service__is_base_env=False).exclude(service__app_port=None).exclude(
+            service_status__in=[5, 6, 7])
         for i in _:
             rets.append({'service__id': i.id,
                          'service__app_name': i.service_instance_name})
@@ -65,6 +64,7 @@ class InspectionHistoryView(ListModelMixin, GenericViewSet, CreateModelMixin):
     dynamic_fields = ("start_time",)
     # 操作描述信息
     get_description = "查询巡检历史记录列表"
+    post_description = "查询巡检历史记录列表"
 
     def list(self, request, *args, **kwargs):
         # 获取序列化数据列表
@@ -147,6 +147,21 @@ class InspectionCrontabView(RetrieveModelMixin, ListModelMixin, GenericViewSet,
     post_description = "新建巡检任务配置列表"
     put_description = "更新巡检任务配置列表"
 
+    @staticmethod
+    def transfer_week(request):
+        """
+        因前端day_of_week参数传递 不符合规范，只能适配了呗
+        """
+        day_of_week = request.data.get('crontab_detail').get('day_of_week')
+        if day_of_week == '6':
+            day_of_week = '0'
+        elif day_of_week == '*':
+            pass
+        else:
+            day_of_week = str(int(day_of_week) + 1)
+
+        return day_of_week
+
     def create(self, request, *args, **kwargs):
         # 判断是否需要下发任务到celery：0-开启，1-关闭
         is_success = True
@@ -164,8 +179,7 @@ class InspectionCrontabView(RetrieveModelMixin, ListModelMixin, GenericViewSet,
                 'day_of_month': request.data.get('crontab_detail').get('day'),
                 'month_of_year':
                     request.data.get('crontab_detail').get('month'),
-                'day_of_week':
-                    request.data.get('crontab_detail').get('day_of_week')
+                'day_of_week': self.transfer_week(request)
             }
             is_success, job_name = cron_obj.create_crontab_job(**cron_args)
         else:
@@ -195,8 +209,7 @@ class InspectionCrontabView(RetrieveModelMixin, ListModelMixin, GenericViewSet,
                 'day_of_month': request.data.get('crontab_detail').get('day'),
                 'month_of_year':
                     request.data.get('crontab_detail').get('month'),
-                'day_of_week':
-                    request.data.get('crontab_detail').get('day_of_week')
+                'day_of_week': self.transfer_week(request)
             }
             # 删除定时任务
             cron_obj.delete_job()

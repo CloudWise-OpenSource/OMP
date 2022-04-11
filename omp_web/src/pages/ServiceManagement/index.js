@@ -5,7 +5,7 @@ import {
   OmpSelect,
   OmpDrawer,
 } from "@/components";
-import { Button, message, Menu, Dropdown, Input, Select } from "antd";
+import { Button, message, Menu, Dropdown, Input, Select, Checkbox } from "antd";
 import { useState, useEffect, useRef } from "react";
 import { handleResponse, _idxInit, refreshTime } from "@/utils/utils";
 import { fetchGet, fetchPost, fetchPatch } from "@/utils/request";
@@ -22,6 +22,10 @@ import { useHistory, useLocation } from "react-router-dom";
 const ServiceManagement = () => {
   const location = useLocation();
 
+  const initIp = location.state?.ip
+
+  console.log(initIp)
+
   const history = useHistory();
 
   const dispatch = useDispatch();
@@ -31,18 +35,18 @@ const ServiceManagement = () => {
   const [searchLoading, setSearchLoading] = useState(false);
 
   //选中的数据
-  const [checkedList, setCheckedList] = useState({});
+  const [checkedList, setCheckedList] = useState([]);
 
   //table表格数据
   const [dataSource, setDataSource] = useState([]);
   const [ipListSource, setIpListSource] = useState([]);
-  const [selectValue, setSelectValue] = useState(location.state?.ip);
+  const [selectValue, setSelectValue] = useState(initIp);
 
   const [labelsData, setLabelsData] = useState([]);
 
   const [instanceSelectValue, setInstanceSelectValue] = useState("");
 
-  const [labelControl, setLabelControl] = useState("ip");
+  const [labelControl, setLabelControl] = useState(initIp ? "ip" : "instance_name");
 
   const [installationRecordModal, setInstallationRecordModal] = useState(false);
 
@@ -87,6 +91,12 @@ const ServiceManagement = () => {
 
   // 删除操作的提示语
   const [deleteMsg, setDeleteMsg] = useState("");
+
+  // 删除操作的再次确认
+  const [confirmDeletion, setConfirmDeletion] = useState(false);
+
+  // 确认删除的维度
+  const [deleteDimension, setDeleteDimension] = useState(false);
 
   // 列表查询
   function fetchData(
@@ -176,13 +186,14 @@ const ServiceManagement = () => {
   const t = useRef(null);
 
   // 服务的启动｜停止｜重启
-  const operateService = (data, operate) => {
+  const operateService = (data, operate, del_file) => {
     setLoading(true);
     fetchPost(apiRequest.appStore.servicesAction, {
       body: {
         data: data.map((i) => ({
           action: operate,
           id: i.id,
+          del_file: del_file || null,
           operation_user: localStorage.getItem("username"),
         })),
       },
@@ -199,7 +210,7 @@ const ServiceManagement = () => {
         setServiceAcitonModal(false);
         setCurrentSerAcitonModal(false);
         // setRestartHostAgentModal(false);
-        setCheckedList({});
+        setCheckedList([]);
         setRow({});
         setLoading(true);
         t.current = setTimeout(() => {
@@ -254,14 +265,32 @@ const ServiceManagement = () => {
         data: data.map((i) => ({
           id: i.id,
           action: "4",
-          operation_user:localStorage.getItem("username")
+          operation_user: localStorage.getItem("username"),
         })),
       },
     })
       .then((res) => {
         //console.log(operateObj[operateAciton])
         handleResponse(res, (res) => {
-          setDeleteMsg(res.data);
+          if (res && res.data) {
+            let key = res.data?.split(":")[0];
+            let values = res.data?.split(":")[1];
+            let arr = values?.split(",");
+            let dom = (
+              <div>
+                <div>{key}</div>
+                <div
+                  style={{
+                    overflow: "auto",
+                    maxHeight: "240px",
+                  }}
+                >
+                  <ExpandCollapseMsg length={6} all={arr} />
+                </div>
+              </div>
+            );
+            setDeleteMsg(dom);
+          }
         });
       })
       .catch((e) => console.log(e))
@@ -295,12 +324,23 @@ const ServiceManagement = () => {
         >
           安装
         </Button>
+        <Button
+          type="primary"
+          style={{ marginLeft: 10 }}
+          disabled={checkedList.length == 0}
+          onClick={() => {
+            setOperateAciton(1);
+            setServiceAcitonModal(true);
+          }}
+        >
+          启动
+        </Button>
 
         <Dropdown
           //placement="bottomLeft"
           overlay={
             <Menu>
-              <Menu.Item
+              {/* <Menu.Item
                 key="openMaintain"
                 style={{ textAlign: "center" }}
                 onClick={() => {
@@ -308,22 +348,20 @@ const ServiceManagement = () => {
                   setServiceAcitonModal(true);
                 }}
                 disabled={
-                  Object.keys(checkedList)
-                    .map((k) => checkedList[k])
-                    .flat(1)
-                    .map((item) => item.id).length == 0
+                  checkedList.filter((e) => {
+                    return e.operable;
+                  }).length == 0
                 }
               >
                 启动
-              </Menu.Item>
+              </Menu.Item> */}
               <Menu.Item
                 key="closeMaintain"
                 style={{ textAlign: "center" }}
                 disabled={
-                  Object.keys(checkedList)
-                    .map((k) => checkedList[k])
-                    .flat(1)
-                    .map((item) => item.id).length == 0
+                  checkedList.filter((e) => {
+                    return e.operable;
+                  }).length == 0
                 }
                 onClick={() => {
                   setOperateAciton(2);
@@ -336,10 +374,9 @@ const ServiceManagement = () => {
                 key="reStartHost"
                 style={{ textAlign: "center" }}
                 disabled={
-                  Object.keys(checkedList)
-                    .map((k) => checkedList[k])
-                    .flat(1)
-                    .map((item) => item.id).length == 0
+                  checkedList.filter((e) => {
+                    return e.operable;
+                  }).length == 0
                 }
                 onClick={() => {
                   setOperateAciton(3);
@@ -351,20 +388,13 @@ const ServiceManagement = () => {
               <Menu.Item
                 key="reStartMonitor"
                 style={{ textAlign: "center" }}
-                disabled={
-                  Object.keys(checkedList)
-                    .map((k) => checkedList[k])
-                    .flat(1)
-                    .map((item) => item.id).length == 0
-                }
+                disabled={checkedList.length == 0}
                 onClick={() => {
-                  queryDeleteMsg(
-                    Object.keys(checkedList)
-                      .map((k) => checkedList[k])
-                      .flat(1)
-                  );
+                  queryDeleteMsg(checkedList);
                   setOperateAciton(4);
                   setServiceAcitonModal(true);
+                  setConfirmDeletion(true);
+                  setDeleteDimension(false);
                 }}
               >
                 删除
@@ -373,7 +403,7 @@ const ServiceManagement = () => {
           }
           placement="bottomCenter"
         >
-          <Button style={{ marginLeft: 10 }}>
+          <Button style={{ marginLeft: 10, paddingRight:10, paddingLeft:15 }}>
             更多
             <DownOutlined />
           </Button>
@@ -485,7 +515,7 @@ const ServiceManagement = () => {
             onClick={() => {
               //location.state = {}
               dispatch(refreshTime());
-              setCheckedList({});
+              setCheckedList([]);
               fetchData(
                 { current: pagination.current, pageSize: pagination.pageSize },
                 {
@@ -537,11 +567,19 @@ const ServiceManagement = () => {
             setShowIframe,
             setOperateAciton,
             setCurrentSerAcitonModal,
-            queryDeleteMsg
+            queryDeleteMsg,
+            () => {
+              setConfirmDeletion(true);
+              setDeleteDimension(false);
+            }
           )}
           notSelectable={(record) => ({
             // 部署中的不能选中
-            disabled: !record?.operable,
+            disabled: !(
+              record.service_status === "正常" ||
+              record.service_status === "停止" ||
+              record.service_status === "未监控"
+            ),
           })}
           dataSource={dataSource}
           pagination={{
@@ -556,15 +594,7 @@ const ServiceManagement = () => {
                   lineHeight: 2.8,
                 }}
               >
-                <p>
-                  已选中{" "}
-                  {
-                    Object.keys(checkedList)
-                      .map((k) => checkedList[k])
-                      .flat(1).length
-                  }{" "}
-                  条
-                </p>
+                <p>已选中 {checkedList.length} 条</p>
                 <p style={{ color: "rgb(152, 157, 171)" }}>
                   共计{" "}
                   <span style={{ color: "rgb(63, 64, 70)" }}>
@@ -593,6 +623,7 @@ const ServiceManagement = () => {
       />
       <OmpMessageModal
         visibleHandle={[serviceAcitonModal, setServiceAcitonModal]}
+        // disabled={operateAciton == 4 ? confirmDeletion:false}
         title={
           <span>
             <ExclamationCircleOutlined
@@ -609,32 +640,50 @@ const ServiceManagement = () => {
         }
         loading={loading}
         onFinish={() => {
-          operateService(
-            Object.keys(checkedList)
-              .map((k) => checkedList[k])
-              .flat(1),
-            operateAciton
-          );
-          //fetchMaintainChange(false, [row]);
+          let data = null;
+          if (operateAciton === 4) {
+            data = checkedList;
+          } else {
+            data = checkedList.filter((e) => {
+              return e.operable;
+            });
+          }
+          operateService(data, operateAciton, deleteDimension);
+          // fetchMaintainChange(false, [row]);
         }}
       >
         <div style={{ padding: "20px", paddingBottom: "10px" }}>
           确定要对{" "}
-          <span style={{ fontWeight: 500 }}>
-            {" "}
-            {
-              Object.keys(checkedList)
-                .map((k) => checkedList[k])
-                .flat(1).length
-            }
-          </span>{" "}
-          个 服务下发{" "}
+          <span style={{ fontWeight: 500 }}> {checkedList.length}</span> 个
+          服务下发{" "}
           <span style={{ fontWeight: 500 }}>{operateObj[operateAciton]}</span>{" "}
           操作？
-          {deleteMsg && <div style={{ paddingTop: 10 }}>{deleteMsg}</div>}
+          {operateAciton == 4 && deleteMsg && (
+            <>
+              <div style={{ paddingTop: 10 }}>{deleteMsg}</div>
+              <div style={{ position: "relative", top: 15 }}>
+                <Checkbox
+                  checked={deleteDimension}
+                  onChange={(e) => {
+                    setDeleteDimension(e.target.checked);
+                  }}
+                >
+                  <span style={{ fontSize: 14 }}>同时卸载服务</span>
+                </Checkbox>
+              </div>
+              {/* <div style={{ position:"relative", top:15, display:"flex", justifyContent:"center" }}>
+                <Checkbox checked={!confirmDeletion}
+                  onChange={(e)=>{
+                    setConfirmDeletion(!e.target.checked)
+                  }}
+                ><span style={{fontSize:14}}>确认删除</span></Checkbox>
+              </div> */}
+            </>
+          )}
         </div>
       </OmpMessageModal>
       <OmpMessageModal
+        // disabled={operateAciton == 4 ? confirmDeletion:false}
         visibleHandle={[currentSerAcitonModal, setCurrentSerAcitonModal]}
         title={
           <span>
@@ -652,13 +701,35 @@ const ServiceManagement = () => {
         }
         loading={loading}
         onFinish={() => {
-          operateService([row], operateAciton);
+          operateService([row], operateAciton, deleteDimension);
         }}
       >
         <div style={{ padding: "20px" }}>
           确定要对 <span style={{ fontWeight: 500 }}>当前</span> 服务下发{" "}
           <span style={{ fontWeight: 500 }}>{operateObj[operateAciton]}</span>{" "}
           操作？
+          {operateAciton == 4 && deleteMsg && (
+            <>
+              <div style={{ paddingTop: 10 }}>{deleteMsg}</div>
+              <div style={{ position: "relative", top: 15 }}>
+                <Checkbox
+                  checked={deleteDimension}
+                  onChange={(e) => {
+                    setDeleteDimension(e.target.checked);
+                  }}
+                >
+                  <span style={{ fontSize: 14 }}>同时卸载服务</span>
+                </Checkbox>
+              </div>
+              {/* <div style={{ position:"relative", top:15, display:"flex", justifyContent:"center" }}>
+              <Checkbox checked={!confirmDeletion}
+                onChange={(e)=>{
+                  setConfirmDeletion(!e.target.checked)
+                }}
+              ><span style={{fontSize:14}}>确认删除</span></Checkbox>
+            </div> */}
+            </>
+          )}
         </div>
       </OmpMessageModal>
       <OmpMessageModal
@@ -703,6 +774,32 @@ const ServiceManagement = () => {
       </OmpMessageModal>
     </OmpContentWrapper>
   );
+};
+
+const ExpandCollapseMsg = ({ length, all }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  if (!all) {
+    return <></>;
+  }
+  if (isOpen) {
+    return (
+      <>
+        {all.map((item) => {
+          return <div key={item}>{item}</div>;
+        })}
+        <a onClick={() => setIsOpen(false)}>收起</a>
+      </>
+    );
+  } else {
+    return (
+      <>
+        {all?.slice(0, length).map((item) => {
+          return <div key={item}>{item}</div>;
+        })}
+        {all.length > length && <a onClick={() => setIsOpen(true)}>...展开</a>}
+      </>
+    );
+  }
 };
 
 export default ServiceManagement;

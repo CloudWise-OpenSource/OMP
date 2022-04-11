@@ -2,6 +2,8 @@
 主机序列化器
 """
 import logging
+import socket
+import struct
 from concurrent.futures import (
     ThreadPoolExecutor, as_completed
 )
@@ -16,7 +18,10 @@ from db_models.models import (
     Host, Env, HostOperateLog, Service
 )
 from hosts.tasks import (
-    deploy_agent, host_agent_restart
+    host_agent_restart, init_host,
+    insert_host_celery_task, deploy_agent,
+    reinstall_monitor_celery_task,
+    delete_hosts
 )
 
 from utils.plugin.ssh import SSH
@@ -30,6 +35,38 @@ from utils.parse_config import THREAD_POOL_MAX_WORKERS
 from promemonitor.alertmanager import Alertmanager
 
 logger = logging.getLogger("server")
+
+
+class HostUninstallSerializer(ModelSerializer):
+    class Meta:
+        """ 元数据 """
+        model = Host
+        fields = ('id',)
+
+    def validate(self, attrs):
+        """ 校验主机是否存在服务 """
+
+        request_data = self.context.get('request').data
+        host_list = request_data.get("host_ids", [])
+        host_ls = list(Host.objects.filter(
+            id__in=host_list).values_list('ip', flat=True))
+        service_obj = Service.objects.filter(ip__in=host_ls).exclude(
+            service__is_base_env=True
+        )
+        if service_obj.count() != 0:
+            ip_str = ",".join(set(service_obj.values_list('ip', flat=True)))
+            raise ValidationError(f"IP存在相关的服务:{ip_str}")
+        attrs['host_ls'] = host_ls
+        return attrs
+
+    def create(self, validated_data):
+        """ 删除主机 """
+        host_ls = validated_data.get("host_ls")
+        agent_status = {"host_agent": Host.AGENT_DEPLOY_DELETE,
+                        "monitor_agent": Host.AGENT_DEPLOY_DELETE}
+        Host.objects.filter(ip__in=host_ls).update(**agent_status)
+        delete_hosts.delay(host_ls)
+        return "任务下发成功"
 
 
 class HostSerializer(ModelSerializer):
@@ -74,7 +111,8 @@ class HostSerializer(ModelSerializer):
         ])
     password = serializers.CharField(
         help_text="密码",
-        required=True, min_length=8, max_length=16,
+        required=True,
+        min_length=8, max_length=64,
         error_messages={
             "required": "必须包含[password]字段",
             "min_length": "密码长度需大于{min_length}",
@@ -99,6 +137,28 @@ class HostSerializer(ModelSerializer):
         required=False,
         queryset=Env.objects.all(),
         error_messages={"does_not_exist": "未找到对应环境"})
+    run_user = serializers.CharField(
+        help_text="运行用户",
+        required=False, default="",
+        max_length=16, write_only=True,
+        error_messages={
+            "max_length": "运行用户长度需小于{max_length}"},
+        validators=[
+            ReValidator(regex=r"^[_a-zA-Z0-9][-_a-zA-Z0-9]+$"),
+        ])
+    use_ntpd = serializers.BooleanField(
+        help_text="是否开启时钟同步",
+        required=True,
+        error_messages={"required": "必须包含[use_ntpd]字段"}
+
+    )
+    ntpd_server = serializers.IPAddressField(
+        help_text="时间同步服务器IP地址",
+        required=False,
+        error_messages={
+            "invalid": "ntpd_server格式不合法"
+        }
+    )
 
     class Meta:
         """ 元数据 """
@@ -108,7 +168,17 @@ class HostSerializer(ModelSerializer):
             "service_num", "alert_num", "host_name", "operate_system",
             "memory", "cpu", "disk", "is_maintenance", "host_agent",
             "monitor_agent", "host_agent_error", "monitor_agent_error",
+            "init_status"
         )
+
+    # def get_service_num(self, obj):
+    #     """
+    #     获取主机上的
+    #     :param obj:
+    #     :return:
+    #     """
+    #     return Service.objects.filter(
+    #         ip=obj.ip, service__is_base_env=False).count()
 
     def validate_instance_name(self, instance_name):
         """ 校验实例名是否重复 """
@@ -150,7 +220,15 @@ class HostSerializer(ModelSerializer):
         port = attrs.get("port")
         username = attrs.get("username")
         password = attrs.get("password")
-        data_folder = attrs.get('data_folder')
+        data_folder = attrs.get("data_folder")
+        run_user = attrs.get("run_user")
+        use_ntpd = attrs.get("use_ntpd")
+        # 默认主机初始化标记为 False
+        attrs["init_host"] = False
+
+        # 如果提供 run_user，需确保用户为 root
+        if run_user and username != "root":
+            raise ValidationError({"username": "运行用户仅在用户名为root时可用"})
 
         # 校验主机 SSH 连通性
         ssh = SSH(ip, port, username, password)
@@ -159,22 +237,20 @@ class HostSerializer(ModelSerializer):
             logger.info(f"host ssh connection failed: ip-{ip},port-{port},"
                         f"username-{username},password-{password}")
             raise ValidationError({"ip": "SSH登录失败"})
-        # 校验用户是否具有 sudo 权限
-        is_sudo, _ = ssh.is_sudo()
-        if not is_sudo:
-            logger.info(f"host ssh username permission failed: ip-{ip},port-{port},"
-                        f"username-{username},password-{password}")
-            raise ValidationError({
-                "username": "用户权限错误，请使用root或具备sudo免密用户"})
 
         # 如果数据分区不存在，则创建数据分区
-        success, _ = ssh.cmd(
+        success, msg = ssh.cmd(
             f"test -d {data_folder} || mkdir -p {data_folder}")
-        if not success:
+        if not success or msg.strip():
             logger.info(f"host create data folder failed: ip-{ip},port-{port},"
                         f"username-{username},password-{password},"
                         f"data_folder-{data_folder}")
-            ValidationError({"data_folder": "创建数据分区操作失败"})
+            raise ValidationError({"data_folder": "创建数据分区操作失败"})
+
+        # 当用户为 root 或具有 sudo 权限时，自动进行初始化
+        is_sudo, _ = ssh.is_sudo()
+        if is_sudo or username == "root":
+            attrs["init_host"] = True
 
         # 如果未传递 env，则指定默认环境
         if not attrs.get("env") and not self.instance:
@@ -182,13 +258,38 @@ class HostSerializer(ModelSerializer):
         # 主机密码加密处理
         if attrs.get("password"):
             attrs["password"] = AESCryptor().encode(attrs.get("password"))
+        # 启用ntpd，验证ntpd服务器是否可用
+        if use_ntpd:
+            ntpd_server = attrs.get("ntpd_server")
+            # udp 检测ip:port是否可用
+            REF_TIME_1970 = 2208988800
+            client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            data = b'\x1b' + 47 * b'\0'
+            ip_port = (ntpd_server, 123)
+            client.sendto(data, ip_port)
+            client.settimeout(20)
+            try:
+                data, address = client.recvfrom(1024)
+            except socket.timeout as e:
+                logger.info(f"ntpd服务端不可用:{e}")
+                data = bytes('', encoding='utf-8')
+            t = 0
+            if data:
+                t = struct.unpack('!12I', data)[10]
+                t -= REF_TIME_1970
+            if t == 0:
+                raise ValidationError(f"{ntpd_server}上的ntpd服务端不可用")
         return attrs
 
     def create(self, validated_data):
         """ 创建主机 """
-        ip = validated_data.get('ip')
+        ip = validated_data.get("ip")
+        init_flag = validated_data.pop("init_host", False)
+        # 如果 run_user 存在，则删除
+        if "run_user" in validated_data:
+            validated_data.pop("run_user")
         # 指定 Agent 安装目录为 data_folder
-        validated_data['agent_dir'] = validated_data.get("data_folder")
+        validated_data["agent_dir"] = validated_data.get("data_folder")
         instance = super(HostSerializer, self).create(validated_data)
         logger.info(f"host[{ip}] - create success")
         # 写入操作记录
@@ -196,13 +297,19 @@ class HostSerializer(ModelSerializer):
             username=self.context["request"].user.username,
             description="创建主机",
             host=instance)
-        # 异步下发 Agent
-        logger.info(f"host[{ip}] - celery deploy agent")
-        deploy_agent.delay(instance.id)
+        # 下发异步任务: 初始化主机、安装 Agent
+        logger.info(f"host[{ip}] - ADD celery task")
+        insert_host_celery_task.delay(
+            instance.id, init=init_flag)
+        # deploy_agent.delay(instance.id)
         return instance
 
     def update(self, instance, validated_data):
         """ 更新主机 """
+        validated_data.pop("init_host")
+        # 如果 run_user 存在，则删除
+        if "run_user" in validated_data:
+            validated_data.pop("run_user")
         log_ls = []
         username = self.context["request"].user.username
 
@@ -250,9 +357,18 @@ class HostDetailSerializer(ModelSerializer):
         result_ls = []
         base_env_queryset = Service.objects.filter(
             ip=obj.ip, service__is_base_env=True)
+        host_env_queryset = Host.objects.filter(ip=obj.ip).exclude(
+            ntpdate_install_status=Host.NTPDATE_NOT_INSTALL)
         if base_env_queryset.exists():
             result_ls = list(base_env_queryset.values(
                 "service__app_name", "service__app_version", "service__app_logo"))
+        if host_env_queryset.exists():
+            result_ls.append(
+                {"service__app_name": "ntpdate",
+                 "service__app_version": "4.2.8",
+                 "service__app_logo": ""
+                 }
+            )
         return result_ls
 
 
@@ -362,12 +478,23 @@ class HostAgentRestartSerializer(HostIdsSerializer):
 
     def create(self, validated_data):
         """ 主机Agent重启 """
-        for item in validated_data.get("host_ids", []):
+        host_ids = validated_data.get("host_ids", [])
+        filter_host_ids = list(
+            Host.objects.filter(
+                id__in=host_ids,
+                host_agent__in=[
+                    str(Host.AGENT_RUNNING),
+                    str(Host.AGENT_RESTART),
+                    str(Host.AGENT_START_ERROR)
+                ]
+            ).values_list("id", flat=True)
+        )
+        for item in filter_host_ids:
             host_agent_restart.delay(item)
         # 下发任务后批量更新重启主机状态
         Host.objects.filter(
-            id__in=validated_data.get("host_ids", [])
-        ).update(host_agent=1)
+            id__in=filter_host_ids
+        ).update(host_agent=Host.AGENT_RESTART)
         return validated_data
 
 
@@ -385,13 +512,15 @@ class HostBatchValidateSerializer(Serializer):
         """ 单个主机信息验证 """
         host_serializer = HostSerializer(data=host_data)
         if host_serializer.is_valid():
+            host_data["init_host"] = \
+                host_serializer.validated_data.get("init_host")
             return "correct", host_data
         err_ls = []
-        for k, v in host_serializer.errors.items():
-            err_ls.extend(v)
         ip_err = "Enter a valid IPv4 or IPv6 address."
-        if ip_err in err_ls:
-            err_ls[err_ls.index(ip_err)] = "IP格式不合法"
+        for k, v in host_serializer.errors.items():
+            if ip_err in v:
+                v = [f"{k} 格式不合法"]
+            err_ls.extend(v)
         host_data["validate_error"] = "; ".join(err_ls)
         return "error", host_data
 
@@ -451,3 +580,59 @@ class HostBatchImportSerializer(Serializer):
         required=True, allow_empty=False,
         error_messages={"required": "必须包含[host_list]字段"}
     )
+
+
+class HostInitSerializer(HostIdsSerializer):
+    """ 主机初始化序列化类 """
+
+    def create(self, validated_data):
+        """ 主机初始化 """
+        host_ids = validated_data.get("host_ids", [])
+        for host_id in host_ids:
+            init_host.delay(host_id)
+        # 下发任务后批量更新主机初始化状态
+        Host.objects.filter(
+            id__in=host_ids
+        ).update(init_status=Host.INIT_EXECUTING)
+        return validated_data
+
+
+class HostsAgentStatusSerializer(Serializer):
+    """ 主机 agent 状态序列化类 """
+
+    ip_list = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="主机ip列表",
+        required=True, allow_empty=False,
+        error_messages={"required": "必须包含[ip_list]字段"}
+    )
+
+
+class HostReinstallSerializer(HostIdsSerializer):
+    """ 主机重新安装序列化类 """
+
+    def create(self, validated_data):
+        """ 主机重装 """
+        host_ids = validated_data.get("host_ids", [])
+        # 不重装监控agent
+        for host_id in host_ids:
+            deploy_agent.delay(host_id, need_monitor=False)
+        Host.objects.filter(
+            id__in=host_ids
+        ).update(host_agent=Host.AGENT_DEPLOY_ING)
+        return validated_data
+
+
+class MonitorReinstallSerializer(HostIdsSerializer):
+    """ 监控重新安装序列化类 """
+
+    def create(self, validated_data):
+        """ 监控重装 """
+        host_ids = validated_data.get("host_ids", [])
+        user_name = self.context["request"].user.username
+        for host_id in host_ids:
+            reinstall_monitor_celery_task.delay(host_id, user_name)
+        Host.objects.filter(
+            id__in=host_ids
+        ).update(monitor_agent=Host.AGENT_DEPLOY_ING)
+        return validated_data

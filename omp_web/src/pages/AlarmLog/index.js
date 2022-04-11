@@ -21,20 +21,28 @@ const AlarmLog = () => {
 
   const location = useLocation();
 
+  const initTime = location.state?.time;
+
+  const [time, setTime] = useState([]);
+
+  const initIp = location.state?.ip;
+
   const [loading, setLoading] = useState(false);
 
   const [searchLoading, setSearchLoading] = useState(false);
 
   //选中的数据
-  const [checkedList, setCheckedList] = useState({});
+  const [checkedList, setCheckedList] = useState([]);
 
   //table表格数据
   const [dataSource, setDataSource] = useState([]);
   const [ipListSource, setIpListSource] = useState([]);
 
-  const [selectValue, setSelectValue] = useState(location.state?.ip);
+  const [selectValue, setSelectValue] = useState(initIp);
 
-  const [instanceSelectValue, setInstanceSelectValue] = useState();
+  const [instanceSelectValue, setInstanceSelectValue] = useState(
+    location.state?.alert_instance_name
+  );
 
   const [pagination, setPagination] = useState({
     current: 1,
@@ -45,7 +53,9 @@ const AlarmLog = () => {
   });
 
   // 筛选label
-  const [labelControl, setLabelControl] = useState("ip");
+  const [labelControl, setLabelControl] = useState(
+    initIp ? "ip" : "instance_name"
+  );
 
   const [showIframe, setShowIframe] = useState({});
 
@@ -114,7 +124,7 @@ const AlarmLog = () => {
       })
       .catch((e) => console.log(e))
       .finally(() => {
-        setCheckedList({});
+        setCheckedList([]);
         setLoading(false);
         fetchData(
           { current: pagination.current, pageSize: pagination.pageSize },
@@ -125,7 +135,26 @@ const AlarmLog = () => {
   };
 
   useEffect(() => {
-    fetchData(pagination, { alert_host_ip: location.state?.ip });
+    if (initTime) {
+      setTime([moment(initTime), moment(initTime)]);
+      fetchData(pagination, {
+        alert_host_ip: location.state?.ip,
+        alert_instance_name: location.state?.alert_instance_name,
+        start_alert_time: moment(initTime).format("YYYY-MM-DD HH:mm:ss"),
+        end_alert_time: moment(initTime).format("YYYY-MM-DD HH:mm:ss"),
+      });
+    } else {
+      let currentTime = moment();
+      let aMonthAgoTime = moment().subtract(1, "months");
+      console.log(currentTime, aMonthAgoTime);
+      setTime([aMonthAgoTime, currentTime]);
+      fetchData(pagination, {
+        alert_host_ip: location.state?.ip,
+        alert_instance_name: location.state?.alert_instance_name,
+        start_alert_time: aMonthAgoTime.format("YYYY-MM-DD HH:mm:ss"),
+        end_alert_time: currentTime.format("YYYY-MM-DD HH:mm:ss"),
+      });
+    }
   }, []);
 
   return (
@@ -133,17 +162,9 @@ const AlarmLog = () => {
       <div style={{ display: "flex", justifyContent: "space-between" }}>
         <Button
           type="primary"
-          disabled={
-            Object.keys(checkedList)
-              .map((k) => checkedList[k])
-              .flat(1)
-              .map((item) => item.id).length == 0
-          }
+          disabled={checkedList.length == 0}
           onClick={() => {
-            let ids = Object.keys(checkedList)
-              .map((k) => checkedList[k])
-              .flat(1)
-              .map((item) => item.id);
+            let ids = checkedList.map((item) => item.id);
             updateAlertRead(ids);
           }}
         >
@@ -153,6 +174,7 @@ const AlarmLog = () => {
           <OmpDatePicker
             onChange={(e) => {
               if (!e) {
+                setTime([]);
                 fetchData(
                   {
                     current: 1,
@@ -168,6 +190,7 @@ const AlarmLog = () => {
               } else {
                 let result = e.filter((item) => item);
                 if (result.length == 2) {
+                  setTime([moment(e[0]), moment(e[1])]);
                   fetchData(
                     {
                       current: 1,
@@ -187,6 +210,7 @@ const AlarmLog = () => {
                 }
               }
             }}
+            value={time}
           />
           <div style={{ display: "flex", marginLeft: "10px" }}>
             <Input.Group compact style={{ display: "flex" }}>
@@ -333,7 +357,7 @@ const AlarmLog = () => {
             (params) => {
               // console.log(pagination.searchParams)
               fetchData(
-                { current: 1, pageSize: pagination.pageSize, },
+                { current: 1, pageSize: pagination.pageSize },
                 { ...pagination.searchParams, ...params },
                 pagination.ordering
               );
@@ -355,15 +379,7 @@ const AlarmLog = () => {
                   lineHeight: 2.8,
                 }}
               >
-                <p>
-                  已选中{" "}
-                  {
-                    Object.keys(checkedList)
-                      .map((k) => checkedList[k])
-                      .flat(1).length
-                  }{" "}
-                  条
-                </p>
+                <p>已选中 {checkedList.length} 条</p>
                 <p style={{ color: "rgb(152, 157, 171)" }}>
                   共计{" "}
                   <span style={{ color: "rgb(63, 64, 70)" }}>

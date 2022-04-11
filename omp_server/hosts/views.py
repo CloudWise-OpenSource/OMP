@@ -1,10 +1,7 @@
 """
 主机相关视图
 """
-import os
 import logging
-from django.http import FileResponse
-from django.conf import settings
 from django.db import transaction
 
 from rest_framework.viewsets import GenericViewSet
@@ -21,17 +18,21 @@ from django_filters.rest_framework.backends import DjangoFilterBackend
 from db_models.models import (Env, Host, HostOperateLog)
 from utils.plugin.crypto import AESCryptor
 from utils.common.paginations import PageNumberPager
-from hosts.tasks import deploy_agent
+from hosts.tasks import insert_host_celery_task
 from hosts.hosts_filters import (HostFilter, HostOperateFilter)
 from hosts.hosts_serializers import (
     HostSerializer, HostMaintenanceSerializer,
     HostFieldCheckSerializer, HostAgentRestartSerializer,
     HostOperateLogSerializer, HostBatchValidateSerializer,
-    HostBatchImportSerializer, HostDetailSerializer
+    HostBatchImportSerializer, HostDetailSerializer,
+    HostInitSerializer, HostsAgentStatusSerializer,
+    MonitorReinstallSerializer, HostUninstallSerializer,
+    HostReinstallSerializer
 )
 from promemonitor.prometheus import Prometheus
 from promemonitor.grafana_url import explain_url
 from utils.common.exceptions import OperateError
+from utils.common.views import BaseDownLoadTemplateView
 
 logger = logging.getLogger("server")
 
@@ -101,6 +102,39 @@ class HostListView(GenericViewSet, ListModelMixin, CreateModelMixin):
         exists_ls.extend(none_ls)
 
         return self.get_paginated_response(exists_ls)
+
+
+class HostReinstallView(GenericViewSet, CreateModelMixin):
+    """
+        create:
+        重装主机Agent接口
+    """
+    queryset = Host.objects.filter(is_deleted=False)
+    serializer_class = HostReinstallSerializer
+    # 操作信息描述
+    post_description = "重装主机Agent"
+
+
+class MonitorReinstallView(GenericViewSet, CreateModelMixin):
+    """
+        create:
+        重装监控Agent接口
+    """
+    queryset = Host.objects.filter(is_deleted=False)
+    serializer_class = MonitorReinstallSerializer
+    # 操作信息描述
+    post_description = "重装监控Agent"
+
+
+class HostUninstallView(GenericViewSet, CreateModelMixin):
+    """
+        create:
+        卸载Agent接口
+    """
+    queryset = Host.objects.filter(is_deleted=False)
+    serializer_class = HostUninstallSerializer
+    # 操作信息描述
+    post_description = "卸载主机agent"
 
 
 class HostDetailView(GenericViewSet, RetrieveModelMixin):
@@ -193,7 +227,7 @@ class HostOperateLogView(GenericViewSet, ListModelMixin):
     get_description = "查询主机操作记录"
 
 
-class HostBatchValidateView(GenericViewSet, ListModelMixin, CreateModelMixin):
+class HostBatchValidateView(BaseDownLoadTemplateView, CreateModelMixin):
     """
         list:
         获取主机批量导入模板
@@ -208,25 +242,28 @@ class HostBatchValidateView(GenericViewSet, ListModelMixin, CreateModelMixin):
     post_description = "主机数据批量验证"
 
     def list(self, request, *args, **kwargs):
-        template_file_name = "import_hosts_template.xlsx"
-        template_path = os.path.join(
-            settings.BASE_DIR.parent,
-            "package_hub", "template", template_file_name)
-        try:
-            file = open(template_path, 'rb')
-            response = FileResponse(file)
-            response["Content-Type"] = "application/octet-stream"
-            response["Content-Disposition"] = f"attachment;filename={template_file_name}"
-        except FileNotFoundError:
-            logger.error("import_hosts_template.xlsx file not found")
-            raise OperateError("模板文件缺失")
-        return response
+        return super(HostBatchValidateView, self).list(
+            request, template_file_name="import_hosts_template.xlsx",
+            *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        ips = Host.objects.all().values_list("ip", flat=True)
+        request_data = {"host_list": []}
+        repeat_data = []
+        for host in request.data.get("host_list"):
+            if not host.get("ip") in ips:
+                request_data["host_list"].append(host)
+            else:
+                host["init_host"] = True
+                repeat_data.append(host)
+        if len(request_data["host_list"]) == 0:
+            return Response({"correct": repeat_data, "error": []})
+        serializer = self.get_serializer(data=request_data)
         if not serializer.is_valid():
             logger.error(f"host batch validate failed:{request.data}")
             raise ValidationError("数据格式错误")
+        serializer.validated_data.get("result_dict", {}).get(
+            "correct", []).extend(repeat_data)
         return Response(serializer.validated_data.get("result_dict"))
 
 
@@ -245,35 +282,91 @@ class HostBatchImportView(GenericViewSet, CreateModelMixin):
         if not serializer.is_valid():
             logger.error(f"host batch import failed:{request.data}")
             raise ValidationError("数据格式错误")
-        # 主机、操作记录数据入库
-        default_env = Env.objects.filter(id=1).first()
-        with transaction.atomic():
-            host_objs = []
-            for host in serializer.data.get("host_list"):
-                # 若存在行号 row 则删除
-                if "row" in host:
-                    host.pop("row")
-                password = host.pop("password")
-                host_objs.append(Host(
-                    password=AESCryptor().encode(password),
-                    agent_dir=host.get("data_folder"),
-                    env=default_env,
-                    **host,
-                ))
-            Host.objects.bulk_create(host_objs)
-            # bulk_create 不返回 id，需重查获取
-            instance_name_list = list(
-                map(lambda x: x.instance_name, host_objs))
-            host_instances = Host.objects.filter(
-                instance_name__in=instance_name_list)
-            operate_log_objs = []
-            for instance in host_instances:
-                operate_log_objs.append(HostOperateLog(
-                    username=request.user.username,
-                    description="创建主机",
-                    host=instance,
-                ))
-                # 异步下发 agent 任务
-                deploy_agent.delay(instance.id)
-            HostOperateLog.objects.bulk_create(operate_log_objs)
+        try:
+            # 主机、操作记录数据入库
+            default_env = Env.objects.filter(id=1).first()
+            with transaction.atomic():
+                # 主机初始化信息，批量创建过程中无 id，故以 ip 作为键
+                host_init_info = {}
+                host_objs = []
+                ips = Host.objects.all().values_list("ip", flat=True)
+                for host in serializer.data.get("host_list"):
+                    if host.get("ip") in ips:
+                        continue
+                    # 若存在行号、运行用户则删除
+                    if "row" in host:
+                        host.pop("row")
+                    if "run_user" in host:
+                        host.pop("run_user")
+                    host_init_info[host.get("ip")] = host.pop(
+                        "init_host", False)
+                    password = host.pop("password")
+                    host_objs.append(Host(
+                        password=AESCryptor().encode(password),
+                        agent_dir=host.get("data_folder"),
+                        env=default_env,
+                        **host,
+                    ))
+                Host.objects.bulk_create(host_objs)
+                # bulk_create 不返回 id，需重查获取
+                instance_name_list = list(
+                    map(lambda x: x.instance_name, host_objs))
+                host_instances = Host.objects.filter(
+                    instance_name__in=instance_name_list)
+                operate_log_objs = []
+                for instance in host_instances:
+                    operate_log_objs.append(HostOperateLog(
+                        username=request.user.username,
+                        description="创建主机",
+                        host=instance,
+                    ))
+                    # 下发异步 celery 任务
+                    insert_host_celery_task.delay(
+                        instance.id, init=host_init_info.get(instance.ip))
+                HostOperateLog.objects.bulk_create(operate_log_objs)
+        except Exception as err:
+            logger.error(f"batch import host err: {err}")
+            import traceback
+            logger.error(traceback.print_exc())
+            raise OperateError("批量导入主机失败")
         return Response("添加成功")
+
+
+class HostInitView(BaseDownLoadTemplateView, CreateModelMixin):
+    """
+        create:
+        主机初始化
+    """
+    queryset = Host.objects.filter(is_deleted=False)
+    serializer_class = HostInitSerializer
+    # 操作描述信息
+    get_description = "应用商店下载组件模板"
+    # 操作信息描述
+    post_description = "主机初始化"
+
+    def list(self, request, *args, **kwargs):
+        return super(HostInitView, self).list(
+            request, template_file_name="init_host.py",
+            parent_path="_modules", *args, **kwargs)
+
+
+class HostsAgentStatusView(GenericViewSet, CreateModelMixin):
+    """
+        create:
+        主机agent状态查询
+    """
+    queryset = Host.objects.filter(is_deleted=False)
+    serializer_class = HostsAgentStatusSerializer
+    # 操作信息描述
+    post_description = "主机agent状态查询"
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            logger.error(f"hosts agent status failed:{request.data}")
+            raise ValidationError("数据格式错误")
+        ip_set = set(serializer.data.get("ip_list"))
+        agent_online_ip_set = set(self.get_queryset().filter(
+            ip__in=ip_set, host_agent=Host.AGENT_RUNNING
+        ).values_list("ip", flat=True))
+        return Response(ip_set == agent_online_ip_set)

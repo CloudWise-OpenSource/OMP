@@ -29,8 +29,18 @@ export const apiRequest = {
     restartHostAgent: "/api/hosts/restartHostAgent/",
     // 重启监控agent
     restartMonitorAgent: "/api/promemonitor/restartMonitorAgent/",
+    // 重装主机agent
+    reInstallHostAgent: "/api/hosts/hostReinstall/",
+    // 重装监控agent
+    reInstallMonitorAgent: "/api/hosts/monitorReinstall/",
     // 主机进入退出维护模式
     hostsMaintain: "/api/hosts/maintain/",
+    // 主机初始化脚本下载地址
+    downInitScript: "/api/hosts/hostInit/",
+    // 主机初始化
+    hostInit: "/api/hosts/hostInit/",
+    // 主机agent状态查询
+    hostsAgentStatus: "/api/hosts/hostsAgentStatus/",
 
     // 主机批量导入模版下载地址
     downTemplate: "/api/hosts/batchValidate/",
@@ -38,6 +48,9 @@ export const apiRequest = {
     batchValidate: "/api/hosts/batchValidate/",
     // 主机批量导入创建主机
     batchImport: "/api/hosts/batchImport/",
+
+    // 主机删除
+    deleteHost: "/api/hosts/hostUninstall/",
   },
   MonitoringSettings: {
     // 配置初始查询监控
@@ -135,9 +148,28 @@ export const apiRequest = {
 
     // 批量安装-安装重试操作
     retryInstall: "/api/appStore/retryInstall/",
+
+    // 服务升级选择应用服务列表
+    canUpgrade: "/api/upgrade/can-upgrade",
+
+    // 服务升级动作下发
+    doUpgrade: "/api/upgrade/do-upgrade",
+    // 服务升级页面列表进度查询
+    queryUpgradeProcess: "/api/upgrade/history",
+
+    // 服务回退选择应用服务列表
+    canRollback: "/api/rollback/can-rollback",
+
+    // 服务回退动作下发
+    doRollback: "/api/rollback/do-rollback",
+    // 服务回退页面列表进度查询
+    queryRollbackProcess: "/api/rollback/history",
   },
   installHistoryPage: {
     queryInstallHistoryList: "/api/appStore/mainInstallHistory",
+    queryUpgradeHistoryList: "/api/upgrade/history",
+    queryRollbackHistoryList: "/api/rollback/history",
+    queryAllList: "/api/appStore/executionRecord/",
   },
   inspection: {
     inspectionList: "/api/inspection/history/",
@@ -168,9 +200,92 @@ export const apiRequest = {
     // 更新邮件全局设置
     updateSetting: "/api/promemonitor/updateSendEmailConfig/",
   },
+  // 指标中心
   ruleCenter: {
+    // 主机指标
     hostThreshold: "/api/promemonitor/hostThreshold/",
+    // 服务指标
     serviceThreshold: "/api/promemonitor/serviceThreshold/",
+    // 定制化指标
     queryCustomThreshold: "/api/promemonitor/customThreshold/",
+
+    // 请求指标规则列表
+    queryPromemonitor: "/api/promemonitor/quota/",
+    // 内置指标
+    queryBuiltinsQuota: "/api/promemonitor/builtinRule/",
+
+    // 添加，修改规则
+    addQuota: "/api/promemonitor/quota/",
+
+    // 测试
+    testPromSql: "/api/promemonitor/testPromSql/",
+
+    // 删除
+    deleteQuota: "/api/promemonitor/quota/",
+
+    // 启动，停用
+    batchUpdateRule: "/api/promemonitor/batchUpdateRule/",
+
+    // 扩展指标列表查询
+    queryExtendRuleList: "/api/promemonitor/customScript/",
+
+    // 扩展指标详情查询
+    queryDetail: "/api/promemonitor/customScriptJobInfo/"
+  },
+  // 部署计划
+  deloymentPlan: {
+    // 服务验证
+    serviceValidate: "/api/appStore/deploymentPlanValidate/",
+    // 部署计划导入
+    serviceImport: "/api/appStore/deploymentPlanImport/",
+    // 部署计划列表
+    deploymentList: "/api/appStore/deploymentPlanList/",
+    // 部署是否可用
+    deploymentOperable: "/api/appStore/deploymentOperable",
+    // 下载部署计划模板
+    deploymentTemplate: "/api/appStore/deploymentTemplate/",
+  },
+  // 数据备份
+  dataBackup: {
+    // 查询备份历史记录
+    queryBackupHistory: "/api/backups/backupHistory/",
+    // 备份设置初始值查询
+    queryBackupSettingData: "/api/backups/backupSettings/",
+    // 更新备份策略
+    updateBackupSetting: "/api/backups/backupSettings/",
+    // 获取可备份实例列表
+    queryCanBackup: "/api/backups/canBackupInstances/",
+    // 单次备份
+    backupOnce: "/api/backups/backupOnce/",
+    // 删除备份文件
+    deleteBackupFile: "/api/backups/backupHistory/",
+    // 推送备份记录
+    pushEmail: "/api/backups/backupSendEmail/",
+  },
+  operationRecord: {
+    // 登录日志
+    queryLoginLog: "/api/users/UserLoginLog/",
+    // 系统记录
+    querySystemLog: "/api/users/operateLog/",
+  },
+  faultSelfHealing: {
+    // 自愈记录
+    querySelfHealingList: "/api/services/ListSelfHealingHistory/",
+    // "/api/services/ListSelfHealingHistory/",
+    // 自愈已读
+    selfHeadlingIsRead: "/api/services/UpdateSelfHealingHistory/",
+    // 自愈策略查询
+    querySelfHealingStrategy: "/api/services/SelfHealingSetting/",
+    // 自愈策略修改
+    setSelfHealingSetting: "/api/services/SelfHealingSetting/",
+  },
+  // 实用工具
+  utilitie: {
+    queryList: "/api/tool/toolList/",
+    queryFormConf: "/api/tool/form/",
+    uploadFile: "/api/common/upload_file/",
+    queryResult: "/api/tool/result/",
+    queryHistory: "/api/tool/execute-history",
+    queryBuiltinsQuota: "/api/promemonitor/builtinRule/",
   },
 };

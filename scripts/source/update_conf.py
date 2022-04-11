@@ -30,7 +30,7 @@ import django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "omp_server.settings")
 django.setup()
 
-from utils.parse_config import MONITOR_PORT
+from utils.parse_config import MONITOR_PORT, PROMETHEUS_AUTH
 
 
 def get_config_dic():
@@ -190,6 +190,12 @@ server {
     location /download-backup/ {
         alias %s/data/backup/;
     }
+    location /tool/ {
+        alias %s/package_hub/tool/;
+    }
+    location /custom_scripts/ {
+        alias %s/package_hub/custom_scripts/;
+    }
     location /download/ {
         alias %s/tmp/;
     }
@@ -211,6 +217,8 @@ server {
     }
 }
 """ % (
+    PROJECT_FOLDER,
+    PROJECT_FOLDER,
     PROJECT_FOLDER,
     PROJECT_FOLDER,
     PROJECT_FOLDER,
@@ -402,8 +410,12 @@ def update_prometheus():
     MONITOR_PORT.get("prometheus", '19011')
     CW_PROMETHEUS_PORT = MONITOR_PORT.get("prometheus")
     CW_ALERTMANAGER_PORT = MONITOR_PORT.get("alertmanager")
+    PROMETHEUS_USERNAME = PROMETHEUS_AUTH.get("username", "omp")
+    PROMETHEUS_CIPHERTEXT_PASSWORD = PROMETHEUS_AUTH.get("ciphertext_password")
     prometheus_yml_file = os.path.join(
         prometheus_path, 'conf', 'prometheus.yml')
+    prometheus_web_yml_file = os.path.join(
+        prometheus_path, 'conf', 'web.yml')
     # 如果没有占位符的话，则不更新
     with open(prometheus_yml_file, "r") as fp:
         content = fp.read()
@@ -431,6 +443,13 @@ def update_prometheus():
         os.makedirs(omp_prometheus_log_path)
     sl_file = os.path.join(prometheus_path, 'scripts', 'prometheus')
     replace_placeholder(sl_file, sp_placeholder_script)
+
+    # 修改 conf/web.yml
+    cwy_placeholder_script = [
+        {'PROMETHEUS_USERNAME': PROMETHEUS_USERNAME},
+        {'PROMETHEUS_CIPHERTEXT_PASSWORD': PROMETHEUS_CIPHERTEXT_PASSWORD}
+    ]
+    replace_placeholder(prometheus_web_yml_file, cwy_placeholder_script)
 
 
 def update_grafana():
