@@ -38,6 +38,10 @@ OMP（Operation Management Platform）是云智慧公司自主设计、研发的
 - Saltstack 3002.2
 - Uwsgi 2.0.19.1
 
+## 数据库:
+- mysql 5.7.37
+- redis 5.0.12
+
 ## 前端技术栈：
 - Tengine 2.3.2
 - React 17.0.1
@@ -51,41 +55,34 @@ OMP（Operation Management Platform）是云智慧公司自主设计、研发的
 
 # 安装部署
 ## CentOS环境部署：
-OMP安装包内部包含了其使用的绝大部分组件，但是缺少MySQL和redis，当前版本需要用户自行配置使用，建议将OMP部署在 /data/ 下，当前版本部署流程如下：   \
+当前OMP安装包内部包含了其使用的所有组件，建议将OMP部署在 /data/ 下，当前版本部署流程如下：   \
 step0：下载/解压安装包
 ```shell
-# omp_open-0.1.tar.gz  omp_monitor_agent-0.1.tar.gz
-tar -xmf omp_open-0.1.tar.gz -C /data && mv omp_monitor_agent-0.1.tar.gz /data/omp/package_hub/
+# omp_open-0.5.tar.gz
+tar -xmf omp_open-0.5.tar.gz -C /data
 ```
 
 step1：依赖环境配置
 编辑文件vim /data/omp/config/omp.yaml
-# 当前版本需要自行安装MySQL及Redis环境，安装方式请自行解决，配置信息如下：
+# 当前版本已携带mysql、redis安装，配置信息如下，如需修改请在安装前修改
 ```yaml
 # redis相关配置
 redis:
   host: 127.0.0.1
-  port: 6379
+  port: 6380
   password: common123
 # mysql相关配置
 mysql:
   host: 127.0.0.1
-  port: 3306
+  port: 3307
   username: common
   password: Common@123
 ```
 
-# mysql在安装配置完成后，需要登录mysql客户端创建初始化数据库，命令如下：
-```shell
-create database omp default charset utf8 collate utf8_general_ci;
-grant all privileges on `omp`.* to 'common'@'%' identified by 'Common@123' with grant option;
-flush privileges;
-```
-
 step2：执行安装脚本
 ```shell
-cd /data/omp && bash scripts/install.sh local_ip
-# 注意1：local_ip为当前主机的ip地址，如主机上存在多网卡多IP情况，需要根据业务需求自行判断使用哪个ip地址
+cd /data/omp && bash scripts/install.sh
+# 注意1：执行后根据提示选择本机ip，如主机上存在多网卡多IP情况，需要根据业务需求自行判断使用哪个ip地址
 # 注意2：当前执行操作的用户即为OMP中各个服务进程的运行用户，在以后的维护中，也应使用此用户进行操作
 ```
 
@@ -111,16 +108,12 @@ Type "help", "copyright", "credits" or "license" for more information.
 ## Web 访问
 通过浏览器访问页面，访问入口为：http://omp.cloudwise.com/#/login    \
 默认用户名：admin     \
-默认密码：Common@123   \
+默认密码：Yunweiguanli@OMP_123   \
 每晚 00:00 将重置数据
 ## 卸载OMP
-自行安装的MySQL和redis可按需进行卸载操作
 omp节点上卸载操作如下：
 ```shell
-# 停止所有服务
-bash /data/omp/scripts/omp all stop
-# 删除文件
-rm -rf /data/omp
+bash /data/omp/scripts/uninstall.sh
 ```
 
 ## OMP脚本功能说明
@@ -151,30 +144,68 @@ bash omp loki [status|start|stop|restart]
 
 更新日志
 V0.1.0 (2021.11.30)
-- 新增功能:
-【仪表盘】
+新增功能:   
+- 【仪表盘】   
   - 全局状态概览
   - 当前异常信息展示
-  - 各模块状态展示
-【主机管理】
+  - 各模块状态展示   
+- 【主机管理】
   - 主机纳管（添加、导入、编辑、维护、删除）
-  - 主机自动监控、告警
-【应用商店】
+  - 主机自动监控、告警   
+- 【应用商店】
   - 组件、应用WEB发布、服务端自动发现
-  - 组件、应用部署，自动编排解决依赖
-【服务管理】
+  - 组件、应用部署，自动编排解决依赖   
+- 【服务管理】
   - 服务管理（启动、停止、重启、删除）
   - 服务监控（监控、日志、告警、自愈）
-【应用监控】
+- 【应用监控】
   - 实时展示处于异常的主机、服务信息，呼应仪表盘的异常清单
   - 告警历史记录查看，未读提醒，按添加检索
-  - 支持监控组件地址自定义，便于对接现有监控平台
-【状态巡检】
+  - 支持监控组件地址自定义，便于对接现有监控平台   
+- 【状态巡检】
   - 支持主机巡检、组件巡检、深度分析，且支持导出
   - 支持定时自动执行巡检任务
-【 系统管理】
+- 【系统管理】
   - 用户账户管理
   - 支持全局维护模式，避免人为操作时误报
+
+
+更新日志   
+V0.5.0 (2022.4.11)   
+新增功能:   
+- 【应用商店】 
+  - 组件、应用服务的升级及回滚
+  - 应用服务的增量安装
+- 【部署模板】
+  - 支持通过部署模版实现批量部署
+- 【应用监控】
+  - 支持告警邮件配置，将告警信息发送至指定邮箱
+- 【故障自愈】
+  - 展示故障自愈记录
+  - 支持监控到服务状态异常后自动进行重启
+  - 支持设置服务自愈尝试次数
+- 【指标中心】
+  - 支持添加自定义告警指标规则
+  - 添加自定义扩展采集指标
+- 【数据备份】
+  - 支持mysql、arangodb、postgreSql数据备份
+  - 备份记录展示、下载、删除
+  - 支持自定义保存路径、定时备份策略及邮件推送备份内容
+- 【实用工具】
+  - 内置部分运维实用小工具
+  - 展示小工具执行过程、输出展示及生成文件下载
+- 【系统管理】
+  - 增加邮件管理，支持设置smtp邮件服务器作为全局邮件发件箱
+
+功能优化：
+- 【平台优化】
+  - 优化主机纳管逻辑，增加纳管成功率，支持删除主机
+  - 优化应用安装服务逻辑代码
+  - 优化巡检逻辑
+  - 优化部分前端页面显示及交互效果 
+- 【其他】
+  - 修复已知bug
+
 
 欢迎加入
 获取更多关于OMP的技术资料，或加入OMP开发者交流群，可扫描下方二维码咨询
