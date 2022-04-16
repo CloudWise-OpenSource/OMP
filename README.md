@@ -28,7 +28,7 @@ OMP（Operation Management Platform）是云智慧公司自主设计、研发的
 - **批量处理、流水线**：<待定>
 
 # 架构设计
-![img.png](img.png)
+![./doc/architecture.png](./doc/architecture.png)
 
 # 环境依赖
 
@@ -210,4 +210,4 @@ V0.5.0 (2022.4.11)
 欢迎加入
 获取更多关于OMP的技术资料，或加入OMP开发者交流群，可扫描下方二维码咨询
 
-<img src="./wechat.png" width="600px" height="400px" />
+<img src="./doc/contact-us.png" width="600px" height="400px" />
