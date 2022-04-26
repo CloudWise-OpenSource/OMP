@@ -59,6 +59,7 @@ OMP（Operation Management Platform）是云智慧公司自主设计、研发的
 step0：下载/解压安装包
 ```shell
 # omp_open-0.5.tar.gz
+wget -c https://github.com/CloudWise-OpenSource/OMP/releases/download/Release-v0.5.0/omp_open-0.5.tar.gz
 tar -xmf omp_open-0.5.tar.gz -C /data
 ```
 
