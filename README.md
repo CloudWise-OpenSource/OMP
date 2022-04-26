@@ -116,6 +116,12 @@ omp节点上卸载操作如下：
 ```shell
 bash /data/omp/scripts/uninstall.sh
 ```
+## 如何制作一个OMP应用商店中的应用
+[OMP 社区版-应用商店发布说明文档](./doc/app_publish.md)
+> 内含
+ - 基础组件打包规范
+ - 应用服务打包规范
+ - 目录和配置说明
 
 ## OMP脚本功能说明
 omp的控制脚本位于 omp/scripts/omp 其具体使用方式如下：
