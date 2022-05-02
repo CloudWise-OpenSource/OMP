@@ -122,6 +122,7 @@ bash /data/omp/scripts/uninstall.sh
  - 基础组件打包规范
  - 应用服务打包规范
  - 目录和配置说明
+ - postgreSql、redis、rocketmq等应用Demo
 
 ## OMP脚本功能说明
 omp的控制脚本位于 omp/scripts/omp 其具体使用方式如下：

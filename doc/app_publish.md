@@ -282,6 +282,16 @@ data.json示例:
 ]
 ```
 
+### 2.5 打包好的应用Demo
+查看目录： omp/package_hub/back_end_verified
+```shell
+filebeat-7.12.0-20220311171107-3e85bed.tar.gz
+httpd-2.4.46-20220120145141-b1a6fa6.tar.gz
+keepalived-2.1.5-20220120145217-8c6aaf7.tar.gz
+postgreSql-13.5.0-20220411212618-6fabab8.tar.gz
+redis-5.0.14-20220411212556-6eb6e28.tar.gz
+rocketmq-4.8.0-20220410214539-74feff6.tar.gz
+```
 
 
 ## 3. 应用服务打包规范
