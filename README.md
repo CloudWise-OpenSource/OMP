@@ -109,7 +109,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 ## Demo
 通过浏览器访问页面，访问入口为：http://omp.cloudwise.com/#/login    \
 默认用户名：admin     \
-默认密码：Common@123   \
+默认密码：Yunweiguanli@OMP  \
 每晚 00:00 将重置数据
 ## 卸载OMP
 omp节点上卸载操作如下：
