@@ -1,4 +1,5 @@
 import axios from "axios";
+import { logout } from "./utils"
 
 const getBaseUrl = (env) => {
   let base;
@@ -11,7 +12,7 @@ const getBaseUrl = (env) => {
 class NewAxios {
   constructor() {
     this.baseURL = getBaseUrl(process.env.NODE_ENV);
-    this.timeout = 10000;
+    this.timeout = 150000;
     this.withCredentials = true;
   }
 
@@ -34,8 +35,14 @@ class NewAxios {
       (err) => {
         if (err.response) {
           // 响应错误码处理
+          console.log(err.response)
           switch (err.response.status) {
-            case "403":
+           
+            case 403:
+              // todo: handler server forbidden error
+              break;
+            case 401:
+              logout()
               // todo: handler server forbidden error
               break;
             // todo: handler other status code
@@ -105,5 +112,14 @@ export const fetchDelete = (url, params) =>
     method: "Delete",
     params: {
       ...params?.params,
+    },
+  });
+
+  export const fetchPatch = (url, params) =>
+  new NewAxios().request({
+    url: url,
+    method: "Patch",
+    data: {
+      ...params?.body,
     },
   });

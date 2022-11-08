@@ -6,6 +6,9 @@ CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 THIS_SCRIPT="${CURRENT_DIR}/$(basename $0)"
 PROJECT_FOLDER="$(dirname $(dirname ${CURRENT_DIR}))"
 
+# 解决python的ssl依赖问题
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PROJECT_FOLDER}/component/env/lib/
+
 APP_NAME="worker"
 
 start() {
@@ -16,7 +19,7 @@ start() {
   else
     cd $PROJECT_FOLDER/omp_server
     nohup $PROJECT_FOLDER/component/env/bin/python3 $PROJECT_FOLDER/component/env/bin/celery \
-    -A omp_server worker --loglevel=ERROR >$PROJECT_FOLDER/logs/celery_worker.log  2>&1 &
+    -A omp_server worker -c 10 --loglevel=INFO -f $PROJECT_FOLDER/logs/celery.log >$PROJECT_FOLDER/logs/celery_worker.log  2>&1 &
     echo "${APP_NAME} [running]"
   fi
 }
@@ -27,7 +30,7 @@ stop() {
     echo "${APP_NAME} [not running]"
     return 0
   else
-    ps -ef | grep "${PROJECT_FOLDER}/component/env/bin/celery" |grep -v scheduler | grep -v grep | cut -c 9-15 | xargs kill -9
+    ps -ef | grep "${PROJECT_FOLDER}/component/env/bin/celery" |grep -v scheduler | grep -v grep | awk '{print $2}' | xargs kill -9
     sleep 3
     real_status
     if [ $? -eq 0 ]; then

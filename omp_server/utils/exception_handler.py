@@ -10,72 +10,54 @@
 整个项目内的异常处理方法
 """
 
+import logging
+import traceback
+
 from rest_framework.views import exception_handler
 from rest_framework.response import Response
-from django.db import DatabaseError
+
+from utils.common.exceptions import (
+    GeneralError,
+    FORMAT_ERRORS, ERROR_MESSAGE, CODE_MESSAGE
+)
+
+logger = logging.getLogger("server")
 
 
-def res_is_none(exc, context):
-    """
-    当响应是None时
-    :param exc:
-    :param context:
-    :return:
-    """
-    view = context["view"]
-    print("res is none")
-    print("[%s]: %s" % (view, exc))
-    response = Response()
-    response.data = dict()
-    response.data["code"] = 1
-    print(type(exc))
-    if isinstance(exc, DatabaseError):
-        response.data["message"] = "数据库错误"
-    elif isinstance(exc, NameError):
-        response.data["message"] = "变量未定义被引用"
-    else:
-        response.data["message"] = "后端程序错误"
-    return response
+class ExceptionResponse:
+    def __init__(self, exc, context):
+        self.exc = exc
+        self.context = context
 
-
-def res_is_not_none(exc, context, response):
-    """
-    当响应有值时
-    :param exc:
-    :param context:
-    :param response:
-    :return:
-    """
-    response.data["code"] = 1
-    if response.status_code == 404:
-        try:
-            response.data["message"] = response.data.pop("detail")
-        except KeyError:
-            response.data["message"] = "未找到"
-    elif response.status_code == 400:
-        error_message = ""
-        for key, value in response.data.items():
-            if not isinstance(value, list):
-                continue
-            error_message += f"{key}: "
-            for el in value:
-                error_message += f"{str(el)};"
-            error_message += " "
-        response.data["message"] = error_message.strip()
-        response.data["data"] = None
-    elif response.status_code == 401:
-        response.data["message"] = "未认证"
-    elif response.status_code >= 500:
-        response.data["message"] = "服务器错误"
-    elif response.status_code == 403:
-        response.data["message"] = "无访问权限"
-    elif response.status_code == 405:
-        response.data["message"] = "暂不支持此请求"
-    else:
-        response.data["data"] = None
-        response.data["message"] = "未知错误"
-    response.status_code = 200
-    return response
+    def err_response(self):
+        logger.error(f"ExceptionResponse: {str(self.exc)}; {self.context}")
+        logger.error(f"ExceptionResponse: {traceback.format_exc()};")
+        response = exception_handler(self.exc, self.context)
+        response_status_code = 200
+        if response:
+            response_status_code = response.status_code
+        message = "后端程序错误"
+        error_response = Response(
+            status=200,
+            data={
+                "code": 1,
+                "data": None
+            })
+        # GeneralError 异常实例
+        if isinstance(self.exc, GeneralError):
+            message = str(self.exc)
+        # 自定义格式化函数处理的错误
+        elif type(self.exc) in FORMAT_ERRORS:
+            error_format_fun = FORMAT_ERRORS.get(type(self.exc))
+            message = error_format_fun(self.exc, response)
+        # 含描述信息的错误
+        elif type(self.exc) in ERROR_MESSAGE:
+            message = ERROR_MESSAGE.get(type(self.exc))
+        # 含描述信息的状态码
+        elif response_status_code in CODE_MESSAGE:
+            message = CODE_MESSAGE.get(response_status_code)
+        error_response.data["message"] = message
+        return error_response
 
 
 def common_exception_handler(exc, context):
@@ -85,8 +67,4 @@ def common_exception_handler(exc, context):
     :param context:
     :return:
     """
-    response = exception_handler(exc, context)
-    # 在此处补充自定义的异常处理
-    if response is None:
-        return res_is_none(exc, context)
-    return res_is_not_none(exc, context, response)
+    return ExceptionResponse(exc, context).err_response()

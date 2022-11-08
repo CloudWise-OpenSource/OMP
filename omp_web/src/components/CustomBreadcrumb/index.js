@@ -1,113 +1,154 @@
-import { Breadcrumb, Icon } from "antd";
+import { Breadcrumb, Icon, message } from "antd";
 import React, { useState, useEffect, useContext, useLayoutEffect } from "react";
 import { Link, withRouter } from "react-router-dom";
 import styles from "./index.module.less";
-import moment from "moment";
 import OmpMaintenanceModal from "@/components/OmpMaintenanceModal";
-import { context } from "@/layouts";
-import { fetchGet } from "@/utils/request";
+//import { context } from "@/layouts";
+import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-import { handleResponse } from "@/utils/utils";
+import { handleResponse, refreshTime } from "@/utils/utils";
 import { useSelector, useDispatch } from "react-redux";
-import { getMaintenanceChangeAction } from "./store/actionsCreators";
+import { AlertFilled } from "@ant-design/icons";
+import { OmpMessageModal } from "@/components";
+import { ExclamationCircleOutlined } from "@ant-design/icons";
+import { getMaintenanceChangeAction } from "@/pages/SystemManagement/store/actionsCreators";
 /*eslint-disable*/
 //跟路由路径保持一致
 const breadcrumbNameMap = {
-  "/404": "404",
+  404: "404",
   //"/":"仪表盘",
-  "/homepage": "仪表盘",
-  "/machine-management": "主机管理",
-  "/machine-management/list": "主机列表",
-  // "/machine-management/used": "已使用",
-  // "/machine-management/unused": "未使用",
-
-  "/products-management": "产品管理",
-  "/products-management/service": "服务管理",
-  "/products-management/version": "版本管理",
-  "/products-management/version/upload": "环境纳管",
-  "/products-management/version/rapidDeployment": "快速部署",
-  "/products-management/ProductWarehouse": "产品仓库",
-
-  "/operation-management": "运维管理",
-  "/operation-management/warnings": "异常清单",
-  "/operation-management/waring-records": "告警记录",
-  "/operation-management/self-healing": "自愈记录",
-  "/operation-management/trend-analyze": "趋势分析",
-  "/operation-management/report": "巡检报告",
-  "/operation-management/report/deep": "深度分析",
-  "/operation-management/report/business": "业务巡检",
-  "/operation-management/report/overall": "综合巡检",
-  "/operation-management/report/machine": "主机巡检",
-  "/operation-management/report/component": "组件巡检",
-
-  "/actions-record": "操作记录",
-  "/actions-record/login": "登录日志",
-  "/actions-record/system": "系统记录",
-
-  "/product-settings": "产品设置",
-  "/product-settings/upload": "数据上传",
-
-  "/system-settings": "系统设置",
-  "/system-settings/users": "用户管理",
-  "/system-settings/users/users": "用户管理",
-  "/system-settings/users/roles": "角色管理",
-
-  "/system-settings/system": "系统设置",
-  "/system-settings/system/patrol": "巡检设置",
-  "/system-settings/system/warnings": "告警阀值",
+  homepage: "仪表盘",
+  "resource-management": "资源管理",
+  "machine-management": "主机管理",
+  "system-settings": "系统管理",
+  "user-management": "用户管理",
+  "monitoring-settings": "监控设置",
+  "system-management": "系统管理",
+  "alarm-log": "告警记录",
+  "exception-list": "异常清单",
+  "application-monitoring": "应用监控",
+  application_management: "应用管理",
+  app_store: "应用商店",
+  "app-service-detail": "服务详情",
+  "app-component-detail": "组件详情",
+  "status-patrol": "状态巡检",
+  "patrol-inspection-record": "巡检记录",
+  "patrol-strategy": "巡检策略",
+  "status-patrol-detail": "分析报告",
+  service_management: "服务管理",
+  application_installation: "应用安装",
+  component_installation: "组件安装",
+  installation: "安装",
+  "email-settings": "邮件管理",
+  "rule-center": "指标中心",
+  "default-rule": "默认指标",
+  "install-record": "执行记录",
+  service_upgrade: "服务升级",
+  "deployment-plan": "部署模板",
+  "data-backup": "数据备份",
+  "backup-record": "备份记录",
+  "operation-record": "操作记录",
+  "login-log": "登录日志",
+  "system-log": "系统记录",
+  "fault-selfHealing":"故障自愈",
+  "selfHealing-record":"自愈记录",
+  "selfHealing-strategy":"自愈策略",
+  "utilitie":"实用工具",
+  "tool-management":"工具管理",
+  "tool-management-detail": "工具详情",
+  "task-record":"任务记录",
+  "tool-execution-results":"执行结果",
+  "indicator-rule": "指标规则",
+  "extend-rule": "扩展指标"
 };
 
 // 基于面包屑组件的一层封装，用于匹配当前路由地址，动态展示页面路径
-const CustomBreadcrumb = withRouter(({ location }) => {
+const CustomBreadcrumb = withRouter(({ location, collapsed }) => {
   const dispatch = useDispatch();
-
+  const [loading, setLoading] = useState(false);
   //是否展示维护模式提示词
-  const isMaintenance = useSelector(state => state.customBreadcrumb.isMaintenance);
+  const time = useSelector((state) => state.customBreadcrumb.time);
 
-  const appContext = useContext(context);
+  const isMaintenance = useSelector(
+    (state) => state.systemManagement.isMaintenance
+  );
+
+  const [closeMaintenanceModal, setCloseMaintenanceModal] = useState(false);
+
+  //const appContext = useContext(context);
 
   //定义在首页时当前组件展示的时间
   const [curentTime, setCurentTime] = useState("");
 
-  //维护模式modal显示隐藏state
-  const [maintainModal, setMaintainModal] = useState(false);
+  const pathSnippets = location.pathname;
 
-  const pathSnippets = location.pathname//location.pathname.split("/").filter((i) => i);
-
-  // 之前的面包屑显示逻辑
-  // const extraBreadcrumbItems = pathSnippets.map((_, index) => {
-  //   const url = `/${pathSnippets.slice(0, index + 1).join("/")}`;
-  //   return (
-  //     <Breadcrumb.Item
-  //       style={
-  //         index === pathSnippets.length - 1
-  //           ? { color: "#1A90FF" }
-  //           : { color: "#555A79" }
-  //       }
-  //       key={url}
-  //     >
-  //       {breadcrumbNameMap[url]}
-  //     </Breadcrumb.Item>
-  //   );
-  // });
-
-  const extraBreadcrumbItems = (_,index) => {
+  const extraBreadcrumbItems = (_, index) => {
     //console.log(pathSnippets);
-    const url = pathSnippets//`/${pathSnippets.slice(0, index + 1).join("/")}`
+    const url = pathSnippets.split("/"); //`/${pathSnippets.slice(0, index + 1).join("/")}`
+
     return (
-      <Breadcrumb.Item
-        style={{
-          color:"black",
-          fontSize:14
-        }
-          // index === pathSnippets.length - 1
-          //   ? { color: "#1A90FF" }
-          //   : { color: "#555A79" }
-        }
-        key={url}
-      >
-        {breadcrumbNameMap[url]}
-      </Breadcrumb.Item>
+      <>
+        {url.map((i, idx) => {
+          if (idx == url.length - 3) {
+            if (!breadcrumbNameMap[url[url.length - 2]]) {
+              return (
+                <Breadcrumb.Item
+                  style={{
+                    color: "#2e7cee",
+                    fontSize: 14,
+                  }}
+                  key={i}
+                >
+                  {breadcrumbNameMap[i]}
+                </Breadcrumb.Item>
+              );
+            }
+          }
+
+          if (idx == url.length - 2) {
+            // 动态路由的时候url的最后一项不一定能体现当前页面，也有可能是动态参数
+            if (!breadcrumbNameMap[url[url.length - 1]]) {
+              return (
+                <Breadcrumb.Item
+                  style={{
+                    color: "#2e7cee",
+                    fontSize: 14,
+                  }}
+                  key={i}
+                >
+                  {breadcrumbNameMap[i]}
+                </Breadcrumb.Item>
+              );
+            }
+          }
+
+          if (idx == url.length - 1) {
+            return (
+              <Breadcrumb.Item
+                style={{
+                  color: "#2e7cee",
+                  fontSize: 14,
+                }}
+                key={i}
+              >
+                {breadcrumbNameMap[i]}
+              </Breadcrumb.Item>
+            );
+          } else {
+            return (
+              <Breadcrumb.Item
+                style={{
+                  color: "#8b8b8b",
+                  fontSize: 14,
+                }}
+                key={i}
+              >
+                {breadcrumbNameMap[i]}
+              </Breadcrumb.Item>
+            );
+          }
+        })}
+      </>
     );
   };
 
@@ -115,77 +156,98 @@ const CustomBreadcrumb = withRouter(({ location }) => {
   useEffect(() => {
     //console.log(extraBreadcrumbItems);
     //因为在首页才会有时间展示，添加判断
-    setCurentTime(moment().format("YYYY-MM-DD HH:mm:ss"));
+    dispatch(refreshTime());
   }, []);
 
-  // useLayoutEffect(() => {
-  //   if(appContext.state.value){
-  //   fetchGet(apiRequest.systemSettings.modeInfoChange).then((res) => {
-  //     res = res.data
-  //     handleResponse(res, () => {
-  //       if (res.code === 0) {
-  //         dispatch(getMaintenanceChangeAction(res.data.used))
-  //       }
-  //     });
-  //   });
-  //   }
-  // }, [appContext.state.value]);
+  // 更改维护模式
+  const changeMaintain = (e) => {
+    setLoading(true);
+    fetchPost(apiRequest.environment.queryMaintainState, {
+      body: {
+        matcher_name: "env",
+        matcher_value: "default",
+      },
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          //console.log(res)
+          if (res.code == 0) {
+            if (e) {
+              message.success("已进入全局维护模式");
+              dispatch(getMaintenanceChangeAction(true));
+            } else {
+              message.success("已退出全局维护模式");
+              dispatch(getMaintenanceChangeAction(false));
+            }
+          }
+          if (res.code == 1) {
+            message.warning(res.message);
+          }
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setLoading(false);
+        setCloseMaintenanceModal(false);
+      });
+  };
 
   return (
-    <div className={styles.customNav}>
+    <div
+      className={styles.customNav}
+      style={{ marginLeft: collapsed ? 50 : 200 }}
+    >
+      {/* <div> */}
       <Breadcrumb>{extraBreadcrumbItems()}</Breadcrumb>
-      <div />
-      {location.pathname?.includes("/homepage") ? (
-        <>
-          {isMaintenance && (
-            <span
-              className={styles.timeStampContainer}
-              style={{ paddingRight: 20, position: "relative", left: -75 }}
-            >
-              <Icon style={{ fontSize: "14px" }} type="alert" theme="filled" />{" "}
-              当前处于维护模式, 退出维护模式请点击
-              <span
-                onClick={() => {
-                  setMaintainModal(true);
-                }}
-                style={{ color: "#3e91f7", cursor: "pointer" }}
-              >
-                {" "}
-                这里
-              </span>
-            </span>
-          )}
+      {/* </div> */}
+      {isMaintenance ? (
+        <span className={styles.timeStampContainer}>
+          <AlertFilled
+            style={{ fontSize: "14px", color: "rgba(247, 207, 54)" }}
+            type="alert"
+            theme="filled"
+          />{" "}
+          当前处于维护模式, 退出维护模式请点击
           <span
-            className={styles.timeStampContainer}
-            style={{ paddingRight: 20 }}
+            onClick={() => {
+              setCloseMaintenanceModal(true);
+            }}
+            style={{ color: "#2e7cee", cursor: "pointer" }}
           >
-            刷新时间: {curentTime}
+            {" "}
+            这里
           </span>
-        </>
+        </span>
       ) : (
-        isMaintenance && (
-          <span
-            className={styles.timeStampContainer}
-            style={{ paddingRight: 20 }}
-          >
-            <Icon style={{ fontSize: "14px" }} type="alert" theme="filled" />{" "}
-            当前处于维护模式, 退出维护模式请点击
-            <span
-              onClick={() => {
-                setMaintainModal(true);
-              }}
-              style={{ color: "#3e91f7", cursor: "pointer" }}
-            >
-              {" "}
-              这里
-            </span>
-          </span>
-        )
+        <span />
       )}
-      {/* <OmpMaintenanceModal
-        control={[maintainModal, setMaintainModal]}
-        used = {false}
-      /> */}
+      {/* <span /> */}
+      {/* <span className={styles.timeStampContainer} style={{ paddingRight: 0 }}>
+        刷新时间: {time}
+      </span> */}
+      <OmpMessageModal
+        visibleHandle={[closeMaintenanceModal, setCloseMaintenanceModal]}
+        title={
+          <span>
+            <ExclamationCircleOutlined
+              style={{
+                fontSize: 20,
+                color: "#f0a441",
+                paddingRight: "10px",
+                position: "relative",
+                top: 2,
+              }}
+            />
+            提示
+          </span>
+        }
+        loading={loading}
+        onFinish={() => {
+          changeMaintain(false);
+        }}
+      >
+        <div style={{ padding: "20px" }}>确定退出全局维护模式 ？</div>
+      </OmpMessageModal>
     </div>
   );
 });

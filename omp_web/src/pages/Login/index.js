@@ -1,5 +1,5 @@
 import { Input, Checkbox, Button, Form, message } from "antd";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import styles from "./index.module.less";
 import img from "@/config/logo/logo.svg";
 import {
@@ -10,7 +10,7 @@ import {
 import { OmpContentWrapper } from "@/components";
 import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-import { handleResponse } from "@/utils/utils";
+import { handleResponse, logout, encrypt } from "@/utils/utils";
 import { withRouter } from "react-router";
 
 const Login = withRouter(({ history }) => {
@@ -26,7 +26,8 @@ const Login = withRouter(({ history }) => {
     setLoading(true);
     fetchPost(apiRequest.auth.login, {
       body: {
-        ...data,
+        username: encrypt(data.username),
+        password: encrypt(data.password),
         remember: isAutoLogin,
       },
     })
@@ -34,63 +35,25 @@ const Login = withRouter(({ history }) => {
         if (res.data && res.data.code == 1) {
           setMsgShow(true);
         } else if (res.data.code == 0) {
-          //history.replace({pathname:"/homepage"})
           history.replace({
             pathname: "/homepage",
             state: {
               data: {},
             },
           });
+          //console.log(data)
+          localStorage.setItem("username", data.username);
         }
       })
       .catch((e) => {
         console.log(e);
       })
       .finally(() => setLoading(false));
-    // setMsgShow(true);
-    //return
-    // const hide = message.loading("登录中", 0);
-    // fetchPost(apiRequest.auth.login, {
-    //   body: { username:"admin", password:"Xd8r$3jz" },
-    // })
-    //   .then((res) => {
-    //     console.log("2222")
-    //       console.log("1111")
-    //       localStorage.setItem("username", res.data.username);
-    //       console.log(123213123)
-    //       history.replace({
-    //         pathname: "/homepage",
-    //         state: {
-    //           data:{
-    //             //...res.data.license_info,
-    //             // service_info:[
-    //             //   ...result
-    //             // ]
-    //           }
-    //         },
-    //       });
-    //       localStorage.setItem("role", "超级管理员");
-    //       fetchGet(apiRequest.userManagement.user, {
-    //         params: {
-    //           username: res.data.username,
-    //         },
-    //         // eslint-disable-next-line max-nested-callbacks
-    //       }).then((res) => {
-    //         localStorage.removeItem("defaultEnvID");
-    //         // eslint-disable-next-line max-nested-callbacks
-    //         handleResponse(res, () => {
-    //           const { username, role } = res.data;
-    //           localStorage.setItem("username", username);
-    //           localStorage.setItem("role", role);
-    //         });
-    //       });
-    //     })
-    //   .catch((e) => {
-    //     console.log(e);
-    //     message.error(e.message);
-    //   })
-    //   .finally(() => hide());
   }
+
+  useEffect(() => {
+    logout("loginPage");
+  }, []);
 
   return (
     <OmpContentWrapper
@@ -101,7 +64,8 @@ const Login = withRouter(({ history }) => {
           <header className={styles.loginTitle}>
             <img className={styles.loginLogo} src={img} />
             <span className={styles.loginOMP}>
-              OMP<span className={styles.loginOpenText}>open source</span>
+              {/* OMP<span className={styles.loginOpenText}>运维管理平台</span> */}
+              运维工具包
             </span>
           </header>
           <p className={styles.loginInputTitle}>用户名密码登录</p>
@@ -181,7 +145,7 @@ const Login = withRouter(({ history }) => {
                     height: 40,
                     marginTop: 10,
                   }}
-                  placeholder="请输入密码"
+                  placeholder="密码"
                 />
               </Form.Item>
               <div className={styles.loginAuto}>
@@ -206,7 +170,7 @@ const Login = withRouter(({ history }) => {
               </Form.Item>
             </Form>
           </main>
-          <p className={styles.loginFooter}>一站式运维管理平台</p>
+          {/* <p className={styles.loginFooter}>一站式运维管理平台</p> */}
         </div>
       </div>
     </OmpContentWrapper>

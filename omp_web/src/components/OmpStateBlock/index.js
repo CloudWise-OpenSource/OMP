@@ -4,200 +4,198 @@ import { Button, Checkbox, Popover } from "antd";
 import styles from "./index.module.less";
 import * as R from "ramda";
 
+const colorObj = {
+  normal: {
+    background: "#eefaf4",
+    borderColor: "#54bba6",
+  },
+  abnormal: {
+    background: "#fbe7e6",
+    borderColor: "#da4e48",
+  },
+  noMonitored: {
+    background: "#e5e5e5",
+    borderColor: "#aaaaaa",
+  },
+  warning: {
+    background: "rgba(247, 231, 24, 0.2)",
+    borderColor: "rgb(245, 199, 115)",
+  },
+};
+
 function OmpStateBlock(props) {
   const history = useHistory();
   const { title, data = [] } = props;
+  const [allData, setAllData] = useState([]);
+  //console.log(data)
   const [currentData, setCurrentData] = useState([]);
 
   const [isShowAll, setIsShowAll] = useState(false);
 
   useEffect(() => {
     if (data && data.length > 0) {
-      const normal = data.filter((item) => item.is_ok);
-      const abnormal = data.filter((item) => !item.is_ok);
-      setCurrentData(abnormal.concat(normal));
+      let handleData = data.map((item) => {
+        //后端的critical和warning都渲染成红色，在前端对数据进行处理 noMonitored:"未监控" abnormal:"异常" normal:"正常"
+        // let status = "noMonitored";
+        // if (item.severity == "warning" || item.severity == "critical") {
+        //   status = "abnormal";
+        // } else if (item.severity == "normal") {
+        //   status = "normal";
+        // }
+        // return {
+        //   ...item,
+        //   frontendStatus: status,
+        // };
+
+        let status = "noMonitored";
+        if (item.severity == "critical") {
+          status = "abnormal";
+        } else if (item.severity == "normal") {
+          status = "normal";
+        } else if (item.severity == "warning") {
+          status = "warning";
+        }
+        return {
+          ...item,
+          frontendStatus: status,
+        };
+      });
+      setCurrentData(sortData(handleData));
+      setAllData(sortData(handleData));
     }
   }, [data]);
 
+  const sortData = (data) => {
+    let normalArr = data.filter((i) => i.frontendStatus == "normal");
+    let noMonitoredArr = data.filter((i) => i.frontendStatus == "noMonitored");
+    let abnormalArr = data.filter((i) => i.frontendStatus == "abnormal");
+    let warningArr = data.filter((i) => i.frontendStatus == "warning");
+
+    let result = abnormalArr
+      .concat(normalArr)
+      .concat(noMonitoredArr)
+      .concat(warningArr);
+    return result;
+  };
+
   return (
-    <div
-      className={styles.blockContent}
-    > 
+    <div className={styles.blockContent}>
       <div className={styles.checkboxGroup}>
         <span className={styles.blockTitle}>{title}</span>
         <div>
           <Checkbox
-          defaultChecked={true}
-          onChange={(e) => {
-            if (e.target.checked) {
-              setCurrentData(
-                R.defaultTo(
-                  [],
-                  data.filter((item) => !item.is_ok)
-                ).concat(currentData)
-              );
-            } else {
-              setCurrentData(currentData.filter((item) => item.is_ok));
-            }
-          }}
-        >
-          异常
-        </Checkbox>
-        <Checkbox
-          defaultChecked={true}
-          onChange={(e) => {
-            if (e.target.checked) {
-              setCurrentData(
-                currentData.concat(data.filter((item) => item.is_ok))
-              );
-            } else {
-              setCurrentData(currentData.filter((item) => !item.is_ok));
-            }
-          }}
-        >
-          正常
-        </Checkbox>
+            defaultChecked={true}
+            onChange={(e) => {
+              if (e.target.checked) {
+                setCurrentData(
+                  sortData(
+                    currentData.concat(
+                      allData.filter(
+                        (i) =>
+                          i.frontendStatus == "abnormal" ||
+                          i.frontendStatus == "warning"
+                      )
+                    )
+                  )
+                );
+              } else {
+                setCurrentData(
+                  sortData(
+                    currentData.filter(
+                      (i) =>
+                        i.frontendStatus !== "abnormal" ||
+                        i.frontendStatus == "warning"
+                    )
+                  )
+                );
+              }
+            }}
+          >
+            异常
+          </Checkbox>
+          <Checkbox
+            defaultChecked={true}
+            onChange={(e) => {
+              if (e.target.checked) {
+                setCurrentData(
+                  sortData(
+                    currentData.concat(
+                      allData.filter((i) => i.frontendStatus == "normal")
+                    )
+                  )
+                );
+              } else {
+                setCurrentData(
+                  sortData(
+                    currentData.filter((i) => i.frontendStatus !== "normal")
+                  )
+                );
+              }
+            }}
+          >
+            正常
+          </Checkbox>
 
-        <Button
-          className={styles.dropBtn}
-          size={"small"}
-          onClick={() => setIsShowAll(!isShowAll)}
-        >
-          {isShowAll ? "收起" : "展开"}
-        </Button></div>
-        
+          <Checkbox
+            defaultChecked={true}
+            onChange={(e) => {
+              if (e.target.checked) {
+                setCurrentData(
+                  sortData(
+                    currentData.concat(
+                      allData.filter((i) => i.frontendStatus == "noMonitored")
+                    )
+                  )
+                );
+              } else {
+                setCurrentData(
+                  sortData(
+                    currentData.filter(
+                      (i) => i.frontendStatus !== "noMonitored"
+                    )
+                  )
+                );
+              }
+            }}
+          >
+            未监控
+          </Checkbox>
+
+          <Button
+            className={styles.dropBtn}
+            size={"small"}
+            onClick={() => setIsShowAll(!isShowAll)}
+          >
+            {isShowAll ? "收起" : "展开"}
+          </Button>
+        </div>
       </div>
       {currentData.length > 0 ? (
-        <div style={isShowAll ? {} : { maxHeight: 170, overflowY: "scroll" }}
-             className={styles.blockItemWrapper}>
-          {
-            // currentData.length > 0 ? (
-            currentData.map((item, idx) => {
-              return (
-                <div
-                  key={`${title}-${idx}`}
-                  onClick={() => {
-                    if (item.service_info && item.is_ok) {
-                      history.push({
-                        pathname: "/products-management/service",
-                        state: {
-                          service_name: item.name,
-                          key: props.tag,
-                        },
-                      });
-                    } else if (item.service_info) {
-                      // if(props.tag=="thirdParty"){
-                      //   history.push({
-                      //     pathname: "/operation-management/warnings",
-                      //     state: {
-                      //       host_ip: item.service_info[0].ip,
-                      //       key:props.tag
-                      //     },
-                      //   });
-                      // }else{
-                      history.push({
-                        pathname: "/operation-management/warnings",
-                        state: {
-                          service_name: item.name,
-                          key: props.tag,
-                        },
-                      });
-                      //}
-                    } else {
-                      if (item.is_ok) {
-                        history.push({
-                          pathname: "/machine-management/list",
-                          state: {
-                            host_ip: item.host_ip,
-                            key: props.tag,
-                          },
-                        });
-                      } else {
-                        history.push({
-                          pathname: "/operation-management/warnings",
-                          state: {
-                            host_ip: item.host_ip,
-                            key: props.tag,
-                          },
-                        });
-                      }
-                    }
-                  }}
-                >
-                  {item.service_info ? (
-                    <Popover
-                      content={popContent(
-                        R.sortWith([R.ascend(R.prop("is_ok"))])(
-                          item.service_info
-                        )
-                      )}
-                      title={(props.tag=="basic"||props.tag=="thirdParty")?"组件信息":"服务信息"}
-                    >
-                      <Button
-                        className={styles.stateButton}
-                        style={
-                          item.is_ok
-                            ? {
-                                background: "#eefaf4",
-                                borderColor: "#54bba6",
-                              }
-                            : {
-                                background: "#fbe7e6",
-                                borderColor: "#da4e48",
-                              }
-                        }
-                        //type={"danger"}
-                      >
-                        <div>{item.name}</div>
-                      </Button>
-                    </Popover>
-                  ) : item.describe && item.describe.length > 0 ? (
-                    // 主机有错误信息时才提示
-                    <Popover
-                      content={popContent(item.describe)}
-                      title="主机信息"
-                    >
-                      <Button
-                        className={styles.stateButton}
-                        style={
-                          item.is_ok
-                            ? {
-                                background: "#54bba6",
-                                borderColor: "#54bba6",
-                              }
-                            : {
-                                background: "#fbe7e6",
-                                borderColor: "#da4e48",
-                              }
-                        }
-                        //type={"danger"}
-                      >
-                        {item.host_ip}
-                      </Button>
-                    </Popover>
-                  ) : (
-                    <Button
-                      className={styles.stateButton}
-                      style={
-                        item.is_ok
-                          ? {
-                              background: "#eefaf4",
-                              borderColor: "#54bba6",
-                            }
-                          : {
-                              background: "#fbe7e6",
-                              borderColor: "#da4e48",
-                            }
-                      }
-                      //type={"danger"}
-                    >
-                      {item.host_ip}
-                    </Button>
-                  )}
-                </div>
-              );
-            })
-          }
+        <div
+          style={isShowAll ? {} : { maxHeight: 170, overflowY: "scroll" }}
+          className={styles.blockItemWrapper}
+        >
+          {currentData.map((item, idx) => {
+            return (
+              <div
+                key={`${title}-${idx}`}
+                onClick={() => {
+                  item.frontendStatus == "abnormal"
+                    ? props.criticalLink(item)
+                    : props.link(item);
+                }}
+              >
+                <Popover content={popContent(item || {})} title={"相关信息"}>
+                  <Button
+                    className={styles.stateButton}
+                    style={colorObj[item.frontendStatus]}
+                  >
+                    <div>{item.instance_name || item.ip}</div>
+                  </Button>
+                </Popover>
+              </div>
+            );
+          })}
         </div>
       ) : (
         <div className={styles.emptyTable}>暂无数据</div>
@@ -208,25 +206,35 @@ function OmpStateBlock(props) {
 
 export default OmpStateBlock;
 
-function popContent(info) {
+function popContent(item) {
   return (
     <div>
-      {info.map((item, idx) => (
-        <div className={styles.popContent} key={idx}>
-          {item.ip && (
+      {item.info.map((i) => (
+        <div className={styles.popContent}>
+          {i.ip && (
             <span
               className={styles.ip}
-              style={item.is_ok ? { color: "#54bba6" } : { color: "#df7071" }}
+              style={{ color: colorObj[item.frontendStatus]?.borderColor }}
             >
-              {item.ip}
+              {i.ip}
             </span>
           )}
-          <span>{item.time}</span>
-          {item.describe && (
+          <span>
+            {i.date ? (
+              <span>{i.date}</span>
+            ) : (
+              <span
+                style={{ color: colorObj[item.frontendStatus]?.borderColor }}
+              >
+                {item.frontendStatus === "noMonitored" ? "未监控" : "正常"}
+              </span>
+            )}
+          </span>
+          {i.describe && (
             <span>
-              {item.describe.length > 100
-                ? item.describe.slice(0, 100) + "..."
-                : item.describe.slice(0, 100)}
+              {i.describe.length > 100
+                ? i.describe.slice(0, 100) + "..."
+                : i.describe.slice(0, 100)}
             </span>
           )}
         </div>

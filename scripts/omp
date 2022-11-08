@@ -6,6 +6,26 @@ CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 THIS_SCRIPT="${CURRENT_DIR}/$(basename $0)"
 PROJECT_FOLDER="$(dirname ${CURRENT_DIR})"
 
+function check_user() {
+  CONF_PATH="${PROJECT_FOLDER}/config/omp.yaml"
+  user_flag=$(cat ${CONF_PATH} |grep 'global_user: ')
+  user=${user_flag#*: }
+  if [ `whoami` != "${user}" ];then
+    echo "You must use *** ${user} *** to execute this script!"
+    exit 1
+  fi
+}
+
+function mysql() {
+  test -d $PROJECT_FOLDER/component/mysql || return 0
+  bash $PROJECT_FOLDER/component/mysql/scripts/mysql $1
+}
+
+function redis() {
+  test -d $PROJECT_FOLDER/component/redis || return 0
+  bash $PROJECT_FOLDER/component/redis/scripts/redis $1
+}
+
 function tengine() {
   bash $PROJECT_FOLDER/scripts/source/tengine $1
 }
@@ -43,6 +63,8 @@ function loki() {
 }
 
 function all() {
+  mysql $1
+  redis $1
   tengine $1
   uwsgi $1
   worker $1
@@ -54,13 +76,23 @@ function all() {
   prometheus $1
 }
 
+check_user
+
 if [[ $# -eq 0 ]]; then
-  echo "bash omp [all|tengine|uwsgi|worker|cron|salt|prometheus|alertmanager|grafana|loki] [status|start|stop|restart]"
+  echo "bash omp [all|mysql|redis|tengine|uwsgi|worker|cron|salt|prometheus|alertmanager|grafana|loki] [status|start|stop|restart]"
 else
   case $1 in
   all)
     shift
     all "$@"
+    ;;
+  mysql)
+    shift
+    mysql "$@"
+    ;;
+  redis)
+    shift
+    redis "$@"
     ;;
   tengine)
     shift

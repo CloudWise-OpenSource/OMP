@@ -6,6 +6,9 @@ CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 THIS_SCRIPT="${CURRENT_DIR}/$(basename $0)"
 PROJECT_FOLDER="$(dirname $(dirname ${CURRENT_DIR}))"
 
+# 解决python的ssl依赖问题
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PROJECT_FOLDER}/component/env/lib/
+
 APP_NAME="salt"
 PYTHON3="${PROJECT_FOLDER}/component/env/bin/python3"
 SALT_CONFIG_DIR="${PROJECT_FOLDER}/config/salt"
@@ -30,26 +33,23 @@ start() {
 
 stop() {
   real_status
-  if [ $? -eq 1 ]; then
+  if [ $? -eq 0 ]; then
+    ps -ef | grep "${PROJECT_FOLDER}/component/env/bin/salt-master" | grep -v grep | awk '{print $2}' | xargs kill -9
+  fi
+  sleep 3
+  real_status
+  if [ $? -eq 0 ]; then
+    echo "${APP_NAME} [running]"
+    return 1
+  else
     echo "${APP_NAME} [not running]"
     return 0
-  else
-    ps -ef | grep "${PROJECT_FOLDER}/component/env/bin/salt-master" | grep -v grep | cut -c 9-15 | xargs kill -9
-    sleep 3
-    real_status
-    if [ $? -eq 0 ]; then
-      echo "${APP_NAME} [running]"
-      return 1
-    else
-      echo "${APP_NAME} [not running]"
-      return 0
-    fi
   fi
 }
 
 real_status() {
   salt_master_num=$(ps -ef | grep ${PROJECT_FOLDER}/component/env/bin/salt-master | grep -v grep | wc -l)
-  if [ $salt_master_num -gt 10 ]; then
+  if [ $salt_master_num -gt 12 ]; then
     return 0
   else
     return 1

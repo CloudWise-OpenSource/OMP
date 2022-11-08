@@ -1,0 +1,29 @@
+groups:
+- name: node data disk alert
+  rules:
+  - alert: 主机数据分区磁盘使用率过高
+    annotations:
+      disk_data_path: ${DISK_DATA_PATH}
+      consignee: ${EMAIL_ADDRESS}
+      description: 主机 {{ $labels.instance }} 数据分区使用率当前值为{{ $value | humanize }}%,高于阈值 90%
+      summary: disk_data_used (instance {{ $labels.instance }})
+    expr: max((node_filesystem_size_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"})
+      *100/(node_filesystem_avail_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"}+(node_filesystem_size_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"})))by(instance,env)
+      >= 90
+    for: 1m
+    labels:
+      job: nodeExporter
+      severity: critical
+  - alert: 主机数据分区磁盘使用率过高
+    annotations:
+      disk_data_path: ${DISK_DATA_PATH}
+      consignee: ${EMAIL_ADDRESS}
+      description: 主机 {{ $labels.instance }} 数据分区使用率当前值为{{ $value | humanize }}%,高于阈值 80%
+      summary: disk_data_used (instance {{ $labels.instance }})
+    expr: max((node_filesystem_size_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"})
+      *100/(node_filesystem_avail_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"}+(node_filesystem_size_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="${DISK_DATA_PATH}"})))by(instance,env)
+      >= 80
+    for: 1m
+    labels:
+      job: nodeExporter
+      severity: warning

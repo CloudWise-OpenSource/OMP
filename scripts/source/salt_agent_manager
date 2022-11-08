@@ -1,0 +1,70 @@
+#!/bin/bash
+
+# salt管理脚本
+CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+THIS_SCRIPT="${CURRENT_DIR}/$(basename $0)"
+PROJECT_FOLDER="$(dirname $(dirname ${CURRENT_DIR}))"
+
+# 解决python的ssl依赖问题
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PROJECT_FOLDER}/component/env/lib/
+
+PYTHON3="${PROJECT_FOLDER}/component/env/bin/python3"
+SALT="${PROJECT_FOLDER}/component/env/bin/salt"
+SALT_KEY="${PROJECT_FOLDER}/component/env/bin/salt-key"
+SALT_CONFIG_DIR="${PROJECT_FOLDER}/config/salt"
+
+# 列出当前salt管理的key
+function list_salt_keys() {
+  $PYTHON3 $SALT_KEY -L -c $SALT_CONFIG_DIR
+}
+
+function delete_all_keys() {
+  $PYTHON3 $SALT_KEY -D -c $SALT_CONFIG_DIR
+}
+
+function delete_one_key() {
+  $PYTHON3 $SALT_KEY -d $1 -c $SALT_CONFIG_DIR
+}
+
+function cmd() {
+  # $1为ip地址 $2为要执行的命令
+  $PYTHON3 $SALT "$1" cmd.run "$2" -c $SALT_CONFIG_DIR
+}
+
+function ping() {
+  $PYTHON3 $SALT "$1" test.ping -c $SALT_CONFIG_DIR
+}
+
+function echo_help() {
+  echo "bash salt_agent_manager [ping|cmd|delete_one_key|delete_all_keys|list_salt_keys]"
+}
+
+if [[ $# -eq 0 ]]; then
+  echo_help
+else
+  case $1 in
+  ping)
+    shift
+    ping "$@"
+    ;;
+  cmd)
+    shift
+    cmd "$@"
+    ;;
+  delete_one_key)
+    shift
+    delete_one_key "$@"
+    ;;
+  delete_all_keys)
+    shift
+    delete_all_keys "$@"
+    ;;
+  list_salt_keys)
+    shift
+    list_salt_keys "$@"
+    ;;
+  *)
+    echo_help
+    ;;
+  esac
+fi

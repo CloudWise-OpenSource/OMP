@@ -1,0 +1,113 @@
+#!/bin/bash
+
+HELP_MSG="
+此脚本具体使用命令如下:\n
+1. 删除已纳管的主机及服务操作:\n
+\t bash cmd_manager uninstall\n
+2. 产品安装操作(使用excel模板进行安装)\n
+\t bash cmd_manager install [excel的绝对路径(不填写默认寻找与OMP同级目录下的deployment.xlsx)]\n
+3. 产品的升级(仅升级单个服务)\n
+\t bash cmd_manager upgrade [服务安装包(如: mysql-xxxxx.tar.gz)] [服务所在ip(不填默认升级该服务所有实例)]\n
+4. 产品的回滚(仅回滚单个服务最近一次升级记录)\n
+\t bash cmd_manager rollback [服务名(如: mysql)] [服务所在ip(不填默认回滚该服务所有实例)]\n
+5. 产品的服务管理(仅支持非中间态服务（安装中，删除中，升级中，会滚中均为中间态）状态管理)\n
+\t bash cmd_manager service [执行动作如:（'start','stop','status'）] [执行ip:(选填)] [执行服务名: (选填)]\n
+6. 产品上传安装包(需要将安装包上传至omp/package_hub/tmp_end_verified,建议并发数小于3)\n
+\t bash cmd_manager scan
+"
+
+CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+THIS_SCRIPT="${CURRENT_DIR}/$(basename $0)"
+PROJECT_FOLDER="$(dirname ${CURRENT_DIR})"
+
+# 解决openssl依赖的问题
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PROJECT_FOLDER}/component/env/lib/
+
+PYTHON3="${PROJECT_FOLDER}/component/env/bin/python3"
+UNINSTALL_SERVICE_PATH="${PROJECT_FOLDER}/scripts/source/uninstall_services.py"
+INSTALL_SERVICE_PATH="${PROJECT_FOLDER}/scripts/source/cmd_install_entrance.py"
+UPGRADE_SERVICE_PATH="${PROJECT_FOLDER}/scripts/source/upgrade_service.py"
+ROLLBACK_SERVICE_PATH="${PROJECT_FOLDER}/scripts/source/rollback_service.py"
+SERVICE_MANAGER_PATH="${PROJECT_FOLDER}/scripts/source/service_manager.py"
+SCAN_TAR_FILE_PATH="${PROJECT_FOLDER}/scripts/source/scan_tar_file.py"
+
+
+function help() {
+  echo -e $HELP_MSG
+}
+
+function install() {
+  $PYTHON3 $INSTALL_SERVICE_PATH --excel_path=$1
+}
+
+function upgrade() {
+  $PYTHON3 $UPGRADE_SERVICE_PATH upgrade $1
+}
+
+function rollback() {
+  $PYTHON3 $UPGRADE_SERVICE_PATH rollback $1
+}
+
+function service() {
+  $PYTHON3 $SERVICE_MANAGER_PATH $@
+}
+
+function scan() {
+  $PYTHON3 $SCAN_TAR_FILE_PATH
+}
+
+function uninstall_all_service_and_host() {
+  for i in $(seq 1 3)
+  do
+    read -p "删除已部署的服务?确认请第${i}请再次输入delete or DELETE > " ask
+    if [[ "$ask" == "delete" ]] || [[ "$ask" == "DELETE" ]];then
+      continue
+    fi
+    exit 1
+  done
+  $PYTHON3 $UNINSTALL_SERVICE_PATH
+  if [[ $? -ne 0 ]];then
+    echo "卸载已部署的服务失败"
+    exit 1
+  fi
+  echo "卸载已部署的服务成功"
+}
+
+if [[ $# -eq 0 ]]; then
+  # echo "bash cmd_manager [uninstall|install|upgrade|rollback] [...]"
+  help
+else
+  case $1 in
+  help)
+    shift
+    help "$@"
+    ;;
+  uninstall)
+    shift
+    uninstall_all_service_and_host "$@"
+    ;;
+  install)
+    shift
+    install "$@"
+    ;;
+  upgrade)
+    shift
+    upgrade "$@"
+    ;;
+  rollback)
+    shift
+    rollback "$@"
+    ;;
+  service)
+    shift
+    service "$@"
+    ;;
+  scan)
+    shift
+    scan "$@"
+    ;;
+  *)
+    shift
+    help "#@"
+  esac
+fi

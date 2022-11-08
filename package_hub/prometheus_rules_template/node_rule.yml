@@ -1,0 +1,81 @@
+groups:
+- name: node alert
+  rules:
+  - alert: 实例宕机
+    annotations:
+      consignee: ${EMAIL_ADDRESS}
+      description: 实例 {{ $labels.instance }} monitor_agent进程丢失或主机发生宕机已超过1分钟
+      summary: 实例宕机({{ $labels.instance }})
+    expr: sum(up{job="nodeExporter", env="${ENV}"}) by (instance,env) < 1
+    for: 1m
+    labels:
+      job: nodeExporter
+      severity: critical
+  - alert: 主机CPU使用率过高
+    annotations:
+      consignee: ${EMAIL_ADDRESS}
+      description: 主机 {{ $labels.instance }} CPU使用率当前值为{{ $value | humanize }}%,高于阈值 90%
+      summary: cpu_used (instance {{ $labels.instance }})
+    expr: (100 - sum(avg without (cpu)(irate(node_cpu_seconds_total{mode='idle', env="${ENV}"}[2m])))
+      by (instance,env) * 100) >= 90
+    for: 1m
+    labels:
+      job: nodeExporter
+      severity: critical
+  - alert: 主机CPU使用率过高
+    annotations:
+      consignee: ${EMAIL_ADDRESS}
+      description: 主机 {{ $labels.instance }} CPU使用率当前值为{{ $value | humanize }}%,高于阈值 80%
+      summary: cpu_used (instance {{ $labels.instance }})
+    expr: (100 - sum(avg without (cpu)(irate(node_cpu_seconds_total{mode='idle', env="${ENV}"}[2m])))
+      by (instance,env) * 100) >= 80
+    for: 1m
+    labels:
+      job: nodeExporter
+      severity: warning
+  - alert: 主机内存使用率过高
+    annotations:
+      consignee: ${EMAIL_ADDRESS}
+      description: 主机 {{ $labels.instance }} 内存使用率当前值为{{ $value | humanize }}%,高于阈值 90%
+      summary: memory_used (instance {{ $labels.instance }})
+    expr: (1 - (node_memory_MemAvailable_bytes{env="${ENV}"} / (node_memory_MemTotal_bytes{env="${ENV}"})))
+      * 100 >= 90
+    for: 1m
+    labels:
+      job: nodeExporter
+      severity: critical
+  - alert: 主机内存使用率过高
+    annotations:
+      consignee: ${EMAIL_ADDRESS}
+      description: 主机 {{ $labels.instance }} 内存使用率当前值为{{ $value | humanize }}%,高于阈值 80%
+      summary: memory_used (instance {{ $labels.instance }})
+    expr: (1 - (node_memory_MemAvailable_bytes{env="${ENV}"} / (node_memory_MemTotal_bytes{env="${ENV}"})))
+      * 100 >= 80
+    for: 1m
+    labels:
+      job: nodeExporter
+      severity: warning
+  - alert: 主机根分区磁盘使用率过高
+    annotations:
+      consignee: ${EMAIL_ADDRESS}
+      description: 主机 {{ $labels.instance }} 根分区使用率当前值为{{ $value | humanize }}%,高于阈值 90%
+      summary: disk_root_used (instance {{ $labels.instance }})
+    expr: max((node_filesystem_size_bytes{env="${ENV}",mountpoint="/"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="/"})
+      *100/(node_filesystem_avail_bytes{env="${ENV}",mountpoint="/"}+(node_filesystem_size_bytes{env="${ENV}",mountpoint="/"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="/"})))by(instance,env)
+      >= 90
+    for: 1m
+    labels:
+      job: nodeExporter
+      severity: critical
+  - alert: 主机根分区磁盘使用率过高
+    annotations:
+      consignee: ${EMAIL_ADDRESS}
+      description: 主机 {{ $labels.instance }} 根分区使用率当前值为{{ $value | humanize }}%,高于阈值 80%
+      summary: disk_root_used (instance {{ $labels.instance }})
+    expr: max((node_filesystem_size_bytes{env="${ENV}",mountpoint="/"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="/"})
+      *100/(node_filesystem_avail_bytes{env="${ENV}",mountpoint="/"}+(node_filesystem_size_bytes{env="${ENV}",mountpoint="/"}-node_filesystem_free_bytes{env="${ENV}",mountpoint="/"})))by(instance,env)
+      >= 80
+    for: 1m
+    labels:
+      job: nodeExporter
+      severity: warning

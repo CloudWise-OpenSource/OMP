@@ -12,9 +12,14 @@
 
 from rest_framework.routers import DefaultRouter
 
-from users.views import UsersView
-from users.views import OperateLogView
+from users.views import (
+    UsersView, OperateLogView, UserUpdatePasswordView,
+    UserLoginOperateView
+)
 
 router = DefaultRouter()
 router.register("users", UsersView, basename="users")
-router.register("operate-log", OperateLogView, basename="operate-log")
+router.register("operateLog", OperateLogView, basename="operateLog")
+router.register("UserLoginLog", UserLoginOperateView, basename="operateLog")
+router.register("updatePassword", UserUpdatePasswordView,
+                basename="updatePassword")

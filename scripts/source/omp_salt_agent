@@ -1,0 +1,221 @@
+#!/bin/bash
+# Author: jon.liu@yunzhihui.com
+# Date: 2021-05-10
+
+# 加载环境变量
+test -f ~/.bash_profile && . ~/.bash_profile 2>/dev/null
+test -f /etc/profile && . /etc/profile 2>/dev/null
+test -f ~/.bashrc && . ~/.bashrc 2>/dev/null
+
+# 解决java服务启动后页面环境乱码问题
+export LC_ALL="en_US.UTF-8"
+
+# 如果是手动安装的agent，那么需要判断UNIQUE_INSTALL_DIR_FLAG这个是否已经被替换
+# 正常UNIQUE_INSTALL_DIR_FLAG应该为产品安装目录，对标/data/app
+test -f UNIQUE_INSTALL_DIR_FLAG/bash_profile && . UNIQUE_INSTALL_DIR_FLAG/bash_profile
+
+CURRENT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
+THIS_SCRIPT="${CURRENT_DIR}/$(basename $0)"
+
+OMP_DIR=$(cd ${CURRENT_DIR}/.. && pwd)
+OMP_PYTHON_BIN_DIR=${OMP_DIR}/env/bin
+SALT_MINION_PATH=${OMP_DIR}/env/bin/salt-minion
+PYTHON3=${OMP_DIR}/env/bin/python3
+
+######### 执行脚本用户判断
+user_id=$(id -u)
+if [ ${user_id} -eq 0 ]; then
+  runUser=RUNUSER
+fi
+######### END
+
+# 解决openssl错误
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${OMP_DIR}/env/lib/
+
+SALT_AGENT_LOG_LEVEL=error
+SALT_CONFIG_DIR=${OMP_DIR}/conf
+SALT_AGENT_LOG_FILE=${OMP_DIR}/logs/salt-minion.log
+SALT_AGENT_PID_FILE=${OMP_DIR}/pid/salt-minion.pid
+
+# 执行命令的拼接
+START_COMMAND="${PYTHON3} ${SALT_MINION_PATH} \
+    -c ${SALT_CONFIG_DIR} \
+    --pid-file ${SALT_AGENT_PID_FILE} \
+    --log-file=${SALT_AGENT_LOG_FILE} \
+    --log-file-level=${SALT_AGENT_LOG_LEVEL} \
+    -d"
+
+function check_key_file() {
+  MINION_KEY_FILE="${OMP_DIR}/data/etc/salt/pki/minion/minion_master.pub"
+  if [ -f $MINION_KEY_FILE ]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+function clean_and_restart() {
+  echo "agent clean and restart"
+  agent_stop
+  sleep 1
+  rm -rf ${OMP_DIR}/data/*
+  echo "" >${SALT_AGENT_LOG_FILE}
+  if [ ${user_id} -eq 0 ]; then
+    su $runUser -c "${START_COMMAND}"
+  else
+    ${START_COMMAND}
+  fi
+  sleep 5
+}
+
+function recheck_agent() {
+  sleep 20
+  num=1
+  while (($num < 10)); do
+    let "num++"
+    check_key_file
+    if [ $? -eq 0 ]; then
+      cat ${SALT_AGENT_LOG_FILE} | grep 'ValueError: RSA key format is not supported' >/dev/null
+      if [ $? -eq 0 ]; then
+        clean_and_restart
+        continue
+      fi
+      return 0
+    fi
+    clean_and_restart
+    sleep 20
+  done
+  return 1
+}
+
+function check_master_port_access() {
+  master_ip_flag=$(cat ${OMP_DIR}/conf/minion | grep 'master:' | tr "master:" " ")
+  master_ip=${master_ip_flag// /}
+  master_port_flag=$(cat ${OMP_DIR}/conf/minion | grep 'master_port:' | tr "master_port:" " ")
+  master_port=${master_port_flag// /}
+  </dev/tcp/${master_ip}/${master_port}
+  return $?
+}
+
+function agent_start() {
+  check_master_port_access
+  if [ $? -ne 0 ]; then
+    echo "Can not connect master, please check master_service or firewalld"
+    exit 1
+  fi
+  agent_status
+  if [ $? -eq 0 ]; then
+    exit 0
+  fi
+  if [ ${user_id} -eq 0 ]; then
+    chown -R ${runUser}.${runUser} ${OMP_DIR}
+    su $runUser -c "${START_COMMAND}"
+  else
+    ${START_COMMAND}
+  fi
+  sleep 10
+  agent_status
+  if [ "$1" == "init" ]; then
+    recheck_agent
+    if [ $? -ne 0 ]; then
+      echo "init agent failed, please check manual."
+      exit 1
+    fi
+    echo "INIT_OMP_SALT_AGENT_SUCCESS"
+  fi
+}
+
+#使用pid判断进程的方式
+#function agent_status() {
+#  if [ ! -f ${SALT_AGENT_PID_FILE} ]; then
+#    echo "not running"
+#    return 1
+#  fi
+#  kill -0 $(cat ${SALT_AGENT_PID_FILE}) >/dev/null 2>&1
+#  if [[ $? -eq 0 ]]; then
+#    echo "running"
+#    return 0
+#  else
+#    echo "not running"
+#    return 1
+#  fi
+#}
+
+# 使用进程判断状态的方式
+function agent_status() {
+  ps -ef | grep "${OMP_DIR}/env/bin/salt-minion" | grep -v grep >/dev/null 2>&1
+  if [[ $? -eq 0 ]]; then
+    echo "running"
+    return 0
+  else
+    echo "not running"
+    return 1
+  fi
+}
+
+function agent_stop() {
+  ps -ef | grep "${OMP_DIR}/env/bin/salt-minion" | grep -v grep | awk '{print $2}' | xargs kill -9
+  sleep 1
+  agent_status
+}
+
+function agent_alive() {
+  agent_status
+  if [[ $? -eq 0 ]]; then
+    exit 0
+  else
+    agent_start
+  fi
+}
+
+function agent_init() {
+  # 部署初始化时删除data数据，安装报错
+  rm -rf ${OMP_DIR}/data/*
+  agent_start "init"
+  crontab -l 2>/dev/null | grep ${THIS_SCRIPT} >/dev/null
+  if [[ $? -eq 0 ]]; then
+    exit 0
+  else
+    crontab -l 2>/dev/null >/tmp/omp_agent_cron
+    grep ${THIS_SCRIPT} /tmp/omp_agent_cron
+    if [[ $? -eq 0 ]]; then
+      exit 0
+    else
+      echo "*/5 * * * * bash ${THIS_SCRIPT} alive &>/dev/null" >>/tmp/omp_agent_cron
+      crontab /tmp/omp_agent_cron && rm -f /tmp/omp_agent_cron
+    fi
+  fi
+}
+
+function help() {
+  echo "bash omp_salt_agent [start|stop|status|restart|alive|init]"
+}
+
+function main() {
+  case $1 in
+  start)
+    agent_start
+    ;;
+  status)
+    agent_status
+    ;;
+  stop)
+    agent_stop
+    ;;
+  restart)
+    agent_stop
+    agent_start
+    ;;
+  alive)
+    agent_alive
+    ;;
+  init)
+    agent_init
+    ;;
+  *)
+    help
+    ;;
+  esac
+}
+
+main $@

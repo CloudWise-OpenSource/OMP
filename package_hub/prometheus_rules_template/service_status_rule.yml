@@ -1,0 +1,30 @@
+groups:
+- name: App state
+  rules:
+  - alert: app state
+    annotations:
+      consignee: ${EMAIL_ADDRESS}
+      description: 主机 {{ $labels.instance }} 中的 服务 {{ $labels.app }} 已经down掉超过一分钟.
+      summary: app state(instance {{ $labels.instance }})
+    expr: probe_success{env="${ENV}"} == 0
+    for: 1m
+    labels:
+      severity: critical
+  - alert: kafka kafka_consumergroup_lag alert
+    annotations:
+      consignee: 987654321@qq.com
+      description:  Kafka 消费组{{ $labels.consumergroup }}消息堆积数过多  {{ humanize $value }}
+      summary: kafka_consumergroup_lag (instance {{ $labels.instance }})
+    expr: sum(kafka_consumergroup_lag{env="${ENV}"}) by (consumergroup,instance,job,env) > 3000
+    for: 1m
+    labels:
+      severity: warning
+  - alert: kafka kafka_consumergroup_lag alert
+    annotations:
+      consignee: 987654321@qq.com
+      description: Kafka 消费组{{ $labels.consumergroup }}消息堆积数过多  {{ humanize $value }}
+      summary: kafka_consumergroup_lag (instance {{ $labels.instance }})
+    expr: sum(kafka_consumergroup_lag{env="${ENV}"}) by (consumergroup,instance,job,env) > 5000
+    for: 1m
+    labels:
+      severity: critical

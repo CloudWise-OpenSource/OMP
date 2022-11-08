@@ -1,77 +1,42 @@
-import { useState, useEffect, createContext, useReducer } from "react";
-import { Layout, Menu, Dropdown, message, Form, Input, Button } from "antd";
-import { fetchGet, fetchDelete, fetchPost } from "@/utils/request";
-import { handleResponse } from "@/utils/utils";
+import { Layout, Menu, Dropdown, message, Form, Input } from "antd";
+import {
+  MenuUnfoldOutlined,
+  MenuFoldOutlined,
+  DashboardOutlined,
+  CaretDownOutlined,
+  QuestionCircleOutlined,
+  CaretUpOutlined,
+} from "@ant-design/icons";
+import React, { useState, useEffect, useRef } from "react";
+import img from "@/config/logo/logo.svg";
+import styles from "./index.module.less";
+import routerConfig from "@/config/router.config";
+import { useHistory, useLocation } from "react-router-dom";
+import { CustomBreadcrumb, OmpModal } from "@/components";
+import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import {
-  DashboardOutlined,
-  QuestionCircleFilled,
-  CaretDownOutlined,
-  QuestionCircleOutlined
-} from "@ant-design/icons";
-import { useHistory, useLocation } from "react-router-dom";
-import img from "@/config/logo/logo.svg";
-import routerConfig from "@/config/router.config";
-import { CustomBreadcrumb, OmpModal } from "@/components";
-import styles from "./index.module.less";
-//import defaultState, { reducer } from "@/store_global";
+  handleResponse,
+  _idxInit,
+  logout,
+  isPassword,
+  encrypt,
+} from "@/utils/utils";
+import { useDispatch } from "react-redux";
 import { getSetViewSizeAction } from "./store/actionsCreators";
-import { useSelector, useDispatch } from "react-redux";
+import { getMaintenanceChangeAction } from "@/pages/SystemManagement/store/actionsCreators";
 
+const { Header, Content, Footer, Sider } = Layout;
 const { SubMenu } = Menu;
-const { Header, Content, Sider } = Layout;
-
-export const context = createContext(null);
 
 const OmpLayout = (props) => {
   const reduxDispatch = useDispatch();
-
-  const viewWidth = useSelector((state) => state.layouts.viewSize.width);
-
-  // const [state, dispatch] = useReducer(reducer, defaultState);
-
   const history = useHistory();
   const location = useLocation();
-  //是否禁用
-  //console.log(props);
   //不可用状态是一个全局状态，放在layout
   const [disabled, setDisabled] = useState(false);
   const [isLoading, setLoading] = useState(false);
-  
-  const [currentOpenedKeys, setCurrentOpenedKeys] = useState([]);
-  const [selectedKeys, setSelectedKeys] = useState([]);
-
-  function delCookie(name){
-    var exp = new Date();
-    exp.setTime(exp.getTime() - 1);
-    var cval = getCookie(name);
-    //console.log(cval)
-    if (cval != null) document.cookie = name + "=" + cval + ';domin="localhost"'+";expires=" + exp.toGMTString();
-  }
-  function getCookie(name){
-    //console.log(document.cookie)
-    let arr = document.cookie.match(new RegExp("(^| )" + name + "=([^;]*)(;|$)"));
-    if (arr != null) return unescape(arr[2]); 
-    return null;
-  }
-
-  const logout = () => {
-    delCookie("jwtToken")
-    history.replace("/login");
-    return 
-    fetchDelete(apiRequest.auth.logout).then((data) => {
-      data = data.data;
-      if ([0, 3].includes(data.code)) {
-        data.code == 0 && message.success(data.message);
-        localStorage.clear();
-        history.replace("/login");
-      }
-      if (data.code === 1) {
-        message.error(data.message);
-      }
-    });
-  };
-
+  const [collapsed, setCollapsed] = useState(false);
   const rootSubmenuKeys = [
     "/machine-management",
     "/products-management",
@@ -82,30 +47,41 @@ const OmpLayout = (props) => {
   ];
 
   const headerLink = [
-    { title: "仪表盘", path: "/homepage" },
-    { title: "快速部署", path: "/products-management/version/rapidDeployment" },
-    { title: "深度分析", path: "/operation-management/report" },
+    // { title: "仪表盘", path: "/homepage" },
+    // { title: "应用商店", path: "/application_management/app_store" },
+    { title: "快速部署", path: "/application_management/deployment-plan" },
+    // { title: "数据上传", path: "/products-management/version/upload" },
+    // { title: "深度分析", path: "/operation-management/report" },
     {
       title: "监控平台",
       path: "/proxy/v1/grafana/d/XrwAXz_Mz/mian-ban-lie-biao",
     },
   ];
 
+  const [currentOpenedKeys, setCurrentOpenedKeys] = useState([]);
+  const [selectedKeys, setSelectedKeys] = useState([]);
   //修改密码弹框
   const [showModal, setShowModal] = useState(false);
+  //用户相关信息
+  const [userInfo, setUserInfo] = useState({});
 
   const menu = (
     <Menu className="menu">
       <Menu.Item key="changePass" onClick={() => setShowModal(true)}>
         修改密码
       </Menu.Item>
-      <Menu.Item key="logout">
-        <span onClick={() => logout()}>退出登录</span>
+      <Menu.Item key="logout" onClick={() => logout()}>
+        <span>退出登录</span>
       </Menu.Item>
     </Menu>
   );
 
+  const toggle = () => {
+    setCollapsed(!collapsed);
+  };
+
   const onPathChange = (e) => {
+    //console.log(e);
     if (e.key === history.location.pathname) {
       return;
     }
@@ -130,18 +106,24 @@ const OmpLayout = (props) => {
 
   const onPassWordChange = (data) => {
     setLoading(true);
-    fetchPost(apiRequest.auth.password, {
+    fetchPost(apiRequest.auth.changePassword, {
       body: {
-        ...data,
+        username: encrypt(localStorage.getItem("username")),
+        old_password: encrypt(data.old_password),
+        new_password: encrypt(data.new_password2),
       },
     })
       .then((res) => {
-        res = res.data;
-        handleResponse(res);
-        if (res.code == 0) {
-          setShowModal(false);
-          logout();
-        }
+        handleResponse(res, (res) => {
+          console.log(res);
+          if (res.code == 0) {
+            message.success("修改密码成功, 请重新登录");
+            setShowModal(false);
+            setTimeout(() => {
+              logout();
+            }, 1000);
+          }
+        });
       })
       .catch((e) => console.log(e))
       .finally(() => {
@@ -149,28 +131,16 @@ const OmpLayout = (props) => {
       });
   };
 
-  //校验是否已登录
-  useEffect(() => {
-    window.__history__ = history;
-    if (!localStorage.getItem("username")) {
-      return 
-      history.replace("/login");
-    }
-  }, []);
-
   // 相应路由跳转，submenu打开
   useEffect(() => {
     try {
-      if (
-        location.pathname == "/products-management/version/rapidDeployment" ||
-        location.pathname == "/products-management/version/upload" ||
-        location.pathname == "/products-management/version/installationDetails"
-      ) {
-        setSelectedKeys(["/products-management/version"]);
-      } else {
-        setSelectedKeys([location.pathname]);
-      }
       let pathArr = location.pathname.split("/");
+      console.log(pathArr);
+      if (pathArr[1] == "homepage") {
+        setSelectedKeys(["/homepage"]);
+      } else {
+        setSelectedKeys([`/${pathArr[1]}/${pathArr[2]}`]);
+      }
       let newPath = `/${pathArr[1]}`;
       setCurrentOpenedKeys([newPath]);
     } catch (e) {
@@ -178,82 +148,223 @@ const OmpLayout = (props) => {
     }
   }, [location]);
 
-  // 这里做一个视口查询，存入store, 其他组件可以根据视口大小进行自适应
-  reduxDispatch(
-    getSetViewSizeAction({
-      height: document.documentElement.clientHeight,
-      width: document.documentElement.clientWidth,
-    })
-  );
-
-  useEffect(()=>{
+  useEffect(() => {
+    window.__history__ = history;
     fetchGet(apiRequest.auth.users)
       .then((res) => {
-        if(res && res.data.code == 1 && res.data.message == "未认证"){
-          message.warning("登录失效,请重新登录")
-          history.replace("/login");
+        if (res && res.data.code == 1 && res.data.message == "未认证") {
         }
-        console.log(res)
+        res.data && res.data.data && setUserInfo(res.data.data[0]);
       })
       .catch((e) => {
         console.log(e);
       })
       .finally(() => setLoading(false));
-  },[])
+  }, []);
+
+  const antiShakeRef = useRef(null);
+
+  const getViewSize = () => {
+    reduxDispatch(
+      // 这里做一个视口查询，存入store, 其他组件可以根据视口大小进行自适应
+      getSetViewSizeAction({
+        height: document.documentElement.clientHeight,
+        width: document.documentElement.clientWidth,
+      })
+    );
+  };
+
+  getViewSize();
+
+  useEffect(() => {
+    window.onresize = () => {
+      if (!antiShakeRef.current) {
+        antiShakeRef.current = true;
+        setTimeout(() => {
+          getViewSize();
+          antiShakeRef.current = false;
+        }, 300);
+      }
+    };
+  }, []);
+
+  // 防止在校验进入死循环
+  const flag = useRef(null);
+
+  // 查询全局维护模式状态
+  const queryMaintainState = () => {
+    fetchGet(apiRequest.environment.queryMaintainState)
+      .then((res) => {
+        handleResponse(res, (res) => {
+          //console.log(res)
+          if (res.data) {
+            reduxDispatch(getMaintenanceChangeAction(res.data.length !== 0));
+          }
+        });
+      })
+      .catch((e) => {
+        console.log(e);
+      })
+      .finally();
+  };
+
+  useEffect(() => {
+    queryMaintainState();
+  }, []);
 
   return (
-    // <context.Provider value={{ state, dispatch }}>
-      <Layout className={styles.OmpLayoutContainer}>
-        <Header className={styles.OmpHeader}>
+    <Layout style={{ minHeight: "100vh" }}>
+      <Sider
+        trigger={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+        collapsible
+        collapsed={collapsed}
+        onCollapse={toggle}
+        collapsedWidth={50}
+      >
+        <div
+          style={{
+            position: "relative",
+            left: collapsed ? 0 : -15,
+            display: "flex",
+            height: 60,
+            color: "white",
+            justifyContent: "center",
+            // /marginBottom:10,
+            backgroundColor: "#151a21",
+          }}
+        >
           <div className={styles.headerLogo}>
             <img src={img} />
           </div>
-          <div
-            style={{ cursor: "pointer", position:"relative",top:1 }}
-            onClick={() => history.push("/homepage")}
-          >
-            运维管理平台
-          </div>
-          {headerLink.map((item, idx) => {
+          {!collapsed && (
+            <div
+              style={{
+                cursor: "pointer",
+                position: "relative",
+                top: 1,
+                fontSize: 18,
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+              }}
+              onClick={() => history.push("/homepage")}
+            >
+              {/* 运维管理平台 */}
+              运维工具包
+            </div>
+          )}
+        </div>
+        <Menu
+          mode="inline"
+          style={{
+            height: "calc(100% - 60px)",
+            //paddingTop:3,
+            // borderRight: "1px solid #d7d9e1",
+            color: "rgba(0,0,0,0.65)",
+            overflowY: "auto",
+            // position:"fixed",
+            // zIndex:1000,
+          }}
+          //theme="dark"
+          onClick={onPathChange}
+          onOpenChange={onOpenChange}
+          openKeys={currentOpenedKeys}
+          selectedKeys={selectedKeys}
+          //theme="red"
+          expandIcon={(e) => {
+            if (e.isOpen) {
+              return <CaretUpOutlined />;
+            } else {
+              return (
+                <CaretDownOutlined style={{ color: "rgba(0,0,0,0.65)" }} />
+              );
+            }
+          }}
+        >
+          <Menu.Item key="/homepage" icon={<DashboardOutlined />}>
+            仪表盘
+          </Menu.Item>
+          {routerConfig.map((item) => {
             return (
-              <div
-                style={
-                  window.location.hash.includes(item.path)
-                    ? { fontSize: 14, background: "#31405e", color: "#fff" }
-                    : { fontSize: 14, cursor: disabled ? "not-allowed" : null }
-                }
-                className={
-                  !disabled || item.title === "快速部署"
-                    ? styles.headerLink
-                    : styles.headerLinkNohover
-                }
-                key={idx}
-                onClick={() => {
-                  if (!disabled || item.title === "快速部署") {
-                    if (item.title === "监控平台") {
-                      window.open(
-                        "/proxy/v1/grafana/d/XrwAXz_Mz/mian-ban-lie-biao"
-                      );
-                    } else {
-                      history.push(item.path);
-                    }
-                  }
-                }}
+              <SubMenu
+                key={item.menuKey}
+                icon={item.menuIcon}
+                title={item.menuTitle}
               >
-                <span style={{position:"relative",top:1}}>{item.title}</span>
-              </div>
+                {item.children.map((i) => {
+                  if (!i.notInMenu) {
+                    return <Menu.Item key={i.path}>{i.title}</Menu.Item>;
+                  }
+                })}
+              </SubMenu>
             );
           })}
-          <Button onClick={()=>{
-            reduxDispatch({
-              type: "c",
-            })
-          }}>点击</Button>
-          <div className={styles.userAvatar}>
+        </Menu>
+      </Sider>
+      <Layout className="site-layout" style={{ width: "100%" }}>
+        <Header
+          className="site-layout-background"
+          style={{
+            padding: 0,
+            display: "flex",
+            justifyContent: "space-between",
+            position: "fixed",
+            zIndex: 1000,
+            transition: collapsed ? "all 0.1s ease-out" : "all 0.4s ease-out",
+            width: collapsed ? "calc(100% - 49px)" : "calc(100% - 199px)",
+            marginLeft: collapsed ? 49 : 199,
+          }}
+        >
+          <div style={{ display: "flex" }}>
+            {headerLink.map((item, idx) => {
+              return (
+                <div
+                  style={
+                    window.location.hash.includes(item.path)
+                      ? { background: "#0C1423", color: "#fff" }
+                      : { cursor: disabled ? "not-allowed" : null }
+                  }
+                  className={
+                    !disabled || item.title === "快速部署"
+                      ? styles.headerLink
+                      : styles.headerLinkNohover
+                  }
+                  key={idx}
+                  onClick={() => {
+                    if (!disabled || item.title === "快速部署") {
+                      if (item.title === "监控平台") {
+                        window.open(
+                          "/proxy/v1/grafana/d/XrwAXz_Mz/mian-ban-lie-biao"
+                        );
+                      } else {
+                        history.push(item.path);
+                      }
+                    }
+                  }}
+                >
+                  {item.title}
+                </div>
+              );
+            })}
+          </div>
+          <div
+            className={styles.userAvatar}
+            style={{ display: "flex", position: "relative", top: 2 }}
+          >
             <Dropdown overlay={menu} trigger={["click"]}>
-              <div style={{ fontWeight: 500, fontSize: 14, cursor: "pointer" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  fontWeight: 500,
+                  fontSize: 14,
+                  cursor: "pointer",
+                }}
+              >
                 {localStorage.getItem("username")}{" "}
-                <CaretDownOutlined className={styles.userAvatarIcon} />
+                <CaretDownOutlined
+                  style={{ position: "relative", top: 1, left: 3 }}
+                />
               </div>
             </Dropdown>
             <Dropdown
@@ -261,13 +372,13 @@ const OmpLayout = (props) => {
               placement="bottomCenter"
               overlay={
                 <Menu className="menu">
-                  <Menu.Item>版本信息：V1.5.0</Menu.Item>
+                  <Menu.Item>版本信息：V1.7.0</Menu.Item>
                 </Menu>
               }
             >
               <div
                 style={{
-                  margin: "0 5px 0 22px",
+                  margin: "0 25px 0 22px",
                   display: "flex",
                   alignItems: "center",
                   fontSize: 14,
@@ -278,120 +389,165 @@ const OmpLayout = (props) => {
             </Dropdown>
           </div>
         </Header>
-        <Layout>
-          <Sider width={240} className={styles.siteLayoutBackground}>
-            {/* <div className={styles.MenuTop}>
-              <OmpEnvSelect />
-            </div> */}
-            <Menu
-              mode="inline"
-              style={{ height:"100%",//"calc(100% - 52px)", 
-              //paddingTop:3,
-              borderRight: 0 }}
-              theme="dark"
-              onClick={onPathChange}
-              onOpenChange={onOpenChange}
-              openKeys={currentOpenedKeys}
-              selectedKeys={selectedKeys}
-            >
-              <Menu.Item key="/homepage" icon={<DashboardOutlined />}>
-                仪表盘
-              </Menu.Item>
-              {routerConfig.map((item) => {
-                return (
-                  <SubMenu
-                    key={item.menuKey}
-                    icon={item.menuIcon}
-                    title={item.menuTitle}
-                  >
-                    {item.children.map((i) => {
-                      return <Menu.Item key={i.path}>{i.title}</Menu.Item>;
-                    })}
-                  </SubMenu>
-                );
-              })}
-            </Menu>
-          </Sider>
-          <Layout style={{ padding: "0 24px 24px" }}>
-            <CustomBreadcrumb />
-            <div
-              style={{
-                //padding: 20,
-                paddingTop: 0,
-                margin: 10,
-                marginRight:0,
-                paddingRight:10,
-                height: "100%",
-                overflowY: "auto",
-                //backgroundColor:"#fff"
-              }}
-            >
-              {props.children}
-            </div>
-        {/* <Layout.Footer style={{ textAlign: 'center' }}>Operation Management Platform. 为智能业务运维平台保驾护航</Layout.Footer> */}
-          </Layout>
-        </Layout>
-        <OmpModal
-          loading={isLoading}
-          onFinish={onPassWordChange}
-          visibleHandle={[showModal, setShowModal]}
-          title="修改密码"
+        <CustomBreadcrumb collapsed={collapsed} />
+        <Content style={{ margin: "0 16px", color: "rgba(0,0,0,0.65)" }}>
+          <div
+            style={{
+              transition: "all 0.2s ease-in-out",
+              marginTop: 120,
+              marginLeft: collapsed ? 50 : 200,
+              padding: 0,
+              paddingBottom: 30,
+              height: "calc(100% - 130px)",
+              // 应用商店content大背景不是白色，特殊处理
+              backgroundColor:
+                location.pathname == "/application_management/app_store" ||
+                location.pathname.includes("installation") ||
+                location.pathname.includes("service_upgrade") ||
+                location.pathname.includes("service_rollback") ||
+                (location.pathname.includes("tool-management") &&
+                  !location.pathname.includes("tool-execution")) ||
+                location.pathname.includes("/homepage")
+                  ? undefined
+                  : "#fff",
+            }}
+          >
+            {props.children}
+          </div>
+        </Content>
+        <Footer
+          style={{
+            backgroundColor: "rgba(0,0,0,0)",
+            textAlign: "center",
+            height: 30,
+            padding: 0,
+            paddingTop: 0,
+            paddingLeft: 195,
+          }}
         >
-          <Form.Item
-            label="当前密码"
-            name="old_password"
-            key="old_password"
-            rules={[
-              {
-                required: true,
-                message: "请输入当前用户密码",
-              },
-            ]}
-          >
-            <Input.Password placeholder="请输入当前密码" />
-          </Form.Item>
-          <Form.Item
-            label="新密码"
-            name="new_password1"
-            key="new_password1"
-            rules={[
-              {
-                required: true,
-                message: "请输入新密码",
-              },
-            ]}
-          >
-            <Input.Password placeholder="请设置新密码" />
-          </Form.Item>
-          <Form.Item
-            label="确认密码"
-            name="new_password2"
-            key="new_password2"
-            useforminstanceinvalidator="true"
-            rules={[
-              {
-                required: true,
-                message: "请再次输入新密码",
-              },
-              {
-                validator: (rule, value, callback, passwordModalForm) => {
-                  if (
-                    passwordModalForm.getFieldValue().new_password1 === value ||
-                    !value
-                  ) {
+          Copyright © 2020-2022 Cloudwise.All Rights Reserved{" "}
+        </Footer>
+      </Layout>
+      <OmpModal
+        loading={isLoading}
+        onFinish={onPassWordChange}
+        visibleHandle={[showModal, setShowModal]}
+        title="修改密码"
+        beForeOk={() => {
+          flag.current = true;
+        }}
+        afterClose={() => {
+          flag.current = null;
+        }}
+      >
+        <Form.Item
+          label="当前密码"
+          name="old_password"
+          key="old_password"
+          rules={[
+            {
+              required: true,
+              message: "请输入当前用户密码",
+            },
+            {
+              validator: (rule, value, callback) => {
+                if (value) {
+                  if (!isPassword(value)) {
+                    if (value.length < 8) {
+                      return Promise.reject("密码长度为8到16位");
+                    }
                     return Promise.resolve("success");
                   } else {
-                    return Promise.reject("两次密码输入不一致");
+                    return Promise.reject(
+                      `密码只支持数字、字母以及常用英文符号`
+                    );
                   }
-                },
+                } else {
+                  return Promise.resolve("success");
+                }
               },
-            ]}
-          >
-            <Input.Password placeholder="请再次输入新密码" />
-          </Form.Item>
-        </OmpModal>
-      </Layout>
-    // </context.Provider>
+            },
+          ]}
+        >
+          <Input.Password maxLength={16} placeholder="请输入当前密码" />
+        </Form.Item>
+        <Form.Item
+          label="新密码"
+          name="new_password1"
+          key="new_password1"
+          useforminstanceinvalidator="true"
+          rules={[
+            {
+              required: true,
+              message: "请输入新密码",
+            },
+            {
+              validator: (rule, value, callback, passwordModalForm) => {
+                if (value) {
+                  if (!flag.current) {
+                    passwordModalForm.validateFields(["new_password2"]);
+                  }
+                  if (!isPassword(value)) {
+                    if (value.length < 8) {
+                      return Promise.reject("密码长度为8到16位");
+                    }
+                    return Promise.resolve("success");
+                  } else {
+                    return Promise.reject(
+                      `密码只支持数字、字母以及常用英文符号`
+                    );
+                  }
+                } else {
+                  return Promise.resolve("success");
+                }
+              },
+            },
+          ]}
+        >
+          <Input.Password maxLength={16} placeholder="请设置新密码" />
+        </Form.Item>
+        <Form.Item
+          label="确认密码"
+          name="new_password2"
+          key="new_password2"
+          useforminstanceinvalidator="true"
+          rules={[
+            {
+              required: true,
+              message: "请再次输入新密码",
+            },
+            {
+              validator: (rule, value, callback, passwordModalForm) => {
+                if (value) {
+                  if (!isPassword(value)) {
+                    if (value.length < 8) {
+                      return Promise.reject("密码长度为8到16位");
+                    }
+                    if (
+                      passwordModalForm.getFieldValue().new_password1 ===
+                        value ||
+                      !value
+                    ) {
+                      return Promise.resolve("success");
+                    } else {
+                      return Promise.reject("两次密码输入不一致");
+                    }
+                  } else {
+                    return Promise.reject(
+                      `密码只支持数字、字母以及常用英文符号`
+                    );
+                  }
+                } else {
+                  return Promise.resolve("success");
+                }
+              },
+            },
+          ]}
+        >
+          <Input.Password maxLength={16} placeholder="请再次输入新密码" />
+        </Form.Item>
+      </OmpModal>
+    </Layout>
   );
 };
 
