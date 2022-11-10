@@ -6,7 +6,8 @@ import logging
 import os
 import time
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed, wait, \
+    ALL_COMPLETED
 from django.utils import timezone
 
 from celery import shared_task
@@ -25,21 +26,10 @@ logger = get_task_logger("celery_log")
 
 class ThreadUtils:
     def __init__(self):
-        self.error = False
         self.timeout = 10
         self.salt = SaltClient()
         self.salt_data = self.salt.client.opts.get("root_dir")
         self.count = 0
-
-    def check_result(self, future_list):
-        """
-        查看线程结果
-        """
-        for future in as_completed(future_list):
-            is_success, message = future.result()
-            if not is_success:
-                self.error = True
-            self.count += 1
 
     @staticmethod
     def send_message(tool_detail_obj, index=None, message=None):
@@ -82,7 +72,7 @@ class ThreadUtils:
                 return False
         return True
 
-    def single_tool_executor(self, tool_detail_obj):
+    def __call__(self, tool_detail_obj, *args, **kwargs):
         """
         执行单个工具任务函数
         """
@@ -156,17 +146,19 @@ def exec_tools_main(tool_main_id):
     tool_detail_objs = tool_main_obj.first().toolexecutedetailhistory_set.all()
     # tool_detail_objs = ToolExecuteMainHistory.objects.filter(
     #    tool=tool_main_obj)
-    thread_obj = ThreadUtils()
     with ThreadPoolExecutor(THREAD_POOL_MAX_WORKERS) as executor:
         future_list = []
         for obj in tool_detail_objs:
-            future_obj = executor.submit(
-                thread_obj.single_tool_executor, obj
-            )
+            future_obj = executor.submit(ThreadUtils(), obj)
             future_list.append(future_obj)
-        thread_obj.check_result(future_list)
+        wait(future_list, return_when=ALL_COMPLETED)
+        success = True
+        for future in as_completed(future_list):
+            if not future.result():
+                success = False
+                break
     # 查看各个任务执行状态，修改主状态页。
-    exec_ed_status = ToolExecuteMainHistory.STATUS_FAILED if thread_obj.error \
+    exec_ed_status = ToolExecuteMainHistory.STATUS_FAILED if not success \
         else ToolExecuteMainHistory.STATUS_SUCCESS
     exec_ed_dc = {
         "status": exec_ed_status,
