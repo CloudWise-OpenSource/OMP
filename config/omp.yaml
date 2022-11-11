@@ -102,26 +102,37 @@ loki_config:
 basic_order:
   0:
     - jdk
-  1:
+    - safeRM
     - tengine
     - mysql
+    - comLib
     - redis
     - arangodb
     - minio
-    - httpd
-    - elasticsearch
-    - ignite
-    - zookeeper
-    - rocketmq
     - postgreSql
     - prometheus
     - pushgateway
+    - mongodb
+    - nodejs
+    - beanstalk
+  1:
+    - keepalived
+    - httpd
+    - elasticsearch
+    - zookeeper
+    - rocketmq
     - wkhtmltox
     - tomcat
+    - jkbPhp
   2:
     - nacos
     - xxlJob
     - kafka
     - clickhouse
     - hadoop
+  3:
     - flink
+    - aopsUtils
+    - filebeat
+    - victoriaMetrics
+    - sentinel
