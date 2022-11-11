@@ -112,6 +112,7 @@ tengine_nginx_conf = """
 error_log %s;
 pid %s;
 
+worker_processes  10;
 worker_rlimit_nofile 102400;
 
 events {
@@ -138,8 +139,8 @@ http {
     keepalive_timeout 30;
     underscores_in_headers on;
 
-    limit_req_zone $binary_remote_addr zone=one:3m rate=1r/s;
-    limit_req_zone $binary_remote_addr $uri zone=two:3m rate=1r/s;
+    # limit_req_zone $binary_remote_addr zone=one:3m rate=1r/s;
+    # imit_req_zone $binary_remote_addr $uri zone=two:3m rate=1r/s;
 
     gzip on;
     gzip_min_length 1k;
