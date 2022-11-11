@@ -468,11 +468,11 @@ class PrometheusUtils(object):
             for sd in services_data:
                 json_content.append(sd.get('service_name'))
 
-        json_dict['services'] = json.dumps(json_content)
+        json_dict['services'] = json_content
         try:
             logger.info(f'向agent发送数据{json_dict}')
             result = requests.post(
-                dest_url, headers=headers, data=json_dict).json()
+                dest_url, headers=headers, data=json.dumps(json_dict)).json()
             if result.get('return_code') == 0:
                 logger.info('向{}更新服务{}配置成功！'.format(
                     dest_ip, services_data[0].get('service_name')))
@@ -491,7 +491,6 @@ class PrometheusUtils(object):
             update_agent_promtail_url = f'http://{dest_ip}:{self.monitor_port}/update/promtail/add'  # NOQA
             host_agent_dir = Host.objects.filter(
                 ip=dest_ip).values_list('agent_dir', flat=True)[0]
-            json_dict["services"] = json.loads(json_dict["services"])
             json_dict['promtail_config'] = {
                 'http_listen_port': MONITOR_PORT.get('promtail'),
                 'loki_url': f'http://{LOCAL_IP}:{MONITOR_PORT.get("loki")}/loki/api/v1/push'  # NOQA
