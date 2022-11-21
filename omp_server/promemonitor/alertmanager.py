@@ -2,7 +2,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 from db_models.models import MonitorUrl
-from utils.parse_config import MONITOR_PORT
+from utils.parse_config import MONITOR_PORT, PROMETHEUS_AUTH
 from db_models.models import Maintain
 
 import pytz
@@ -18,6 +18,7 @@ class Alertmanager:
 
     def __init__(self):
         self.basic_url = self.get_alertmanager_config()
+        self.basic_auth = (PROMETHEUS_AUTH.get("username", "omp"), PROMETHEUS_AUTH.get("plaintext_password", ""))
         self.headers = {'Content-Type': 'application/json'}
         self.add_url = f'http://{self.basic_url}/api/v1/silences'  # NOQA
         self.delete_url = f'http://{self.basic_url}/api/v1/silence'  # NOQA
@@ -81,7 +82,7 @@ class Alertmanager:
             logger.info(data)
             resp = requests.post(
                 self.add_url, data=json.dumps(data),
-                headers=self.headers, timeout=5
+                headers=self.headers, timeout=5, auth=self.basic_auth
             ).json()
             if resp.get("status") == "success":
                 logger.info(resp)
@@ -98,7 +99,7 @@ class Alertmanager:
         """
         try:
             resp = requests.delete(
-                f"{self.delete_url}/{silence_id}", timeout=5).json()
+                f"{self.delete_url}/{silence_id}", timeout=5, auth=self.basic_auth).json()
         except Exception as e:
             logger.error(str(e))
             return False
@@ -149,7 +150,7 @@ class Alertmanager:
             if not delete_setting_result:
                 try:
                     resp = requests.get(
-                        f"{self.select_url}/{maintain_id}", timeout=5).json()
+                        f"{self.select_url}/{maintain_id}", timeout=5, auth=self.basic_auth).json()
                     if resp.get("status") == "success" and resp.get("data").get("status").get("state") == "expired":
                         Maintain.objects.filter(
                             maintain_id=maintain_id).delete()
