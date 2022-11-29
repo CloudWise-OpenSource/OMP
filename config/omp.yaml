@@ -59,6 +59,11 @@ alert_manager:
   EMAIL_ADDRESS: <收件人邮箱>
   # webhook地址，仅在手动维护OMP各个组件时才可能用到，其他情况下不建议修改
   WEBHOOK_URL: http://127.0.0.1:19001/api/promemonitor/receiveAlert/
+# prometheus basic auth
+prometheus_auth:
+  username: omp
+  plaintext_password: Yunweiguanli@OMP_123
+  ciphertext_password: $2b$12$R8WlKOEV2M9iBjEhnWQORepigbQoD1D/rAyEXwIu/aS5t94deTVDu
 # 监控使用相关端口配置
 monitor_port:
   # server各个端口
@@ -86,6 +91,10 @@ monitor_port:
   arangodbExporter: 18119
   nacosExporter: 18117
   monitorAgent: 19031
+# Loki相关配置
+loki_config:
+  # promtail采集日志文件名等级过滤 [debug, info, warn, error, all]
+  scrape_log_level: error
 
 # 基础及公共组件间的等级划分，不要将自研服务类的服务放入下面的配置
 # 用于控制服务安装过程中的执行顺序、服务的启停控制顺序
@@ -93,26 +102,37 @@ monitor_port:
 basic_order:
   0:
     - jdk
-  1:
+    - safeRM
     - tengine
     - mysql
+    - comLib
     - redis
     - arangodb
     - minio
-    - httpd
-    - elasticsearch
-    - ignite
-    - zookeeper
-    - rocketmq
     - postgreSql
     - prometheus
     - pushgateway
+    - mongodb
+    - nodejs
+    - beanstalk
+  1:
+    - keepalived
+    - httpd
+    - elasticsearch
+    - zookeeper
+    - rocketmq
     - wkhtmltox
     - tomcat
+    - jkbPhp
   2:
     - nacos
     - xxlJob
     - kafka
     - clickhouse
     - hadoop
+  3:
     - flink
+    - aopsUtils
+    - filebeat
+    - victoriaMetrics
+    - sentinel
