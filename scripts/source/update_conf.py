@@ -112,6 +112,7 @@ tengine_nginx_conf = """
 error_log %s;
 pid %s;
 
+worker_processes  10;
 worker_rlimit_nofile 102400;
 
 events {
@@ -138,8 +139,8 @@ http {
     keepalive_timeout 30;
     underscores_in_headers on;
 
-    limit_req_zone $binary_remote_addr zone=one:3m rate=1r/s;
-    limit_req_zone $binary_remote_addr $uri zone=two:3m rate=1r/s;
+    # limit_req_zone $binary_remote_addr zone=one:3m rate=1r/s;
+    # imit_req_zone $binary_remote_addr $uri zone=two:3m rate=1r/s;
 
     gzip on;
     gzip_min_length 1k;
@@ -412,6 +413,7 @@ def update_prometheus():
     CW_ALERTMANAGER_PORT = MONITOR_PORT.get("alertmanager")
     PROMETHEUS_USERNAME = PROMETHEUS_AUTH.get("username", "omp")
     PROMETHEUS_CIPHERTEXT_PASSWORD = PROMETHEUS_AUTH.get("ciphertext_password")
+    PROMETHEUS_PLAINTEXT_PASSWORD = PROMETHEUS_AUTH.get("plaintext_password")
     prometheus_yml_file = os.path.join(
         prometheus_path, 'conf', 'prometheus.yml')
     prometheus_web_yml_file = os.path.join(
@@ -427,6 +429,8 @@ def update_prometheus():
     cpy_placeholder_script = [
         {'CW_PROMETHEUS_PORT': CW_PROMETHEUS_PORT},
         {'CW_ALERTMANAGER_PORT': CW_ALERTMANAGER_PORT},
+        {'CW_ALERTMANAGER_USERNAME': PROMETHEUS_USERNAME},
+        {'CW_ALERTMANAGER_PASSWORD': PROMETHEUS_PLAINTEXT_PASSWORD},
     ]
 
     replace_placeholder(prometheus_yml_file, cpy_placeholder_script)
@@ -497,6 +501,10 @@ def update_alertmanager():
     EMAIL_SEND_INTERVAL = MONITOR_PORT.get('test', '30m')
     WEBHOOK_URL = MONITOR_PORT.get(
         'test', 'http://127.0.0.1:19001/api/promemonitor/receiveAlert/')
+    PROMETHEUS_USERNAME = PROMETHEUS_AUTH.get("username", "omp")
+    PROMETHEUS_CIPHERTEXT_PASSWORD = PROMETHEUS_AUTH.get("ciphertext_password")
+    alertmanager_web_yml_file = os.path.join(
+        alertmanager_path, 'conf', 'web.yml')
 
     alertmanager_yml_file = os.path.join(
         alertmanager_path, 'conf', 'alertmanager.yml')
@@ -525,6 +533,12 @@ def update_alertmanager():
         os.makedirs(omp_alertmanager_log_path)
     sa_file = os.path.join(alertmanager_path, 'scripts', 'alertmanager')
     replace_placeholder(sa_file, sa_placeholder_script)
+    # 修改 conf/web.yml
+    cwy_placeholder_script = [
+        {'PROMETHEUS_USERNAME': PROMETHEUS_USERNAME},
+        {'PROMETHEUS_CIPHERTEXT_PASSWORD': PROMETHEUS_CIPHERTEXT_PASSWORD}
+    ]
+    replace_placeholder(alertmanager_web_yml_file, cwy_placeholder_script)
 
 
 def update_loki():
@@ -535,7 +549,7 @@ def update_loki():
     loki_path = os.path.join(PROJECT_FOLDER, "component/loki")
     omp_loki_log_path = os.path.join(PROJECT_LOG_PATH, "loki")
     omp_loki_data_path = os.path.join(PROJECT_DATA_PATH, "loki")
-    loki_retention_period = MONITOR_PORT.get('test', '168h')
+    loki_retention_period = MONITOR_PORT.get('test', '24h')
 
     # 修改 conf/loki.yml
     CW_LOKI_PORT = MONITOR_PORT.get('loki', 19012)
