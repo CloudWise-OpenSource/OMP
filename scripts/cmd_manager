@@ -13,7 +13,11 @@ HELP_MSG="
 5. 产品的服务管理(仅支持非中间态服务（安装中，删除中，升级中，会滚中均为中间态）状态管理)\n
 \t bash cmd_manager service [执行动作如:（'start','stop','status'）] [执行ip:(选填)] [执行服务名: (选填)]\n
 6. 产品上传安装包(需要将安装包上传至omp/package_hub/tmp_end_verified,建议并发数小于3)\n
-\t bash cmd_manager scan
+\t bash cmd_manager scan \n
+7. omp自身服务升级 \n
+\t bash cmd_manager omp_upgrade [必填参数：升级目标路径(如:/data/omp，注意此处路径末尾无/)] [选填参数:从某个断点处升级,默认开头] \n
+8. omp自身回滚 \n
+\t bash cmd_manager omp_rollback [必填参数：升级目标路径(如:/data/omp，注意此处路径末尾无/)] [选填参数:从某个断点处升级,默认开头]
 "
 
 CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
@@ -22,6 +26,7 @@ PROJECT_FOLDER="$(dirname ${CURRENT_DIR})"
 
 # 解决openssl依赖的问题
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${PROJECT_FOLDER}/component/env/lib/
+cd ${PROJECT_FOLDER}
 
 PYTHON3="${PROJECT_FOLDER}/component/env/bin/python3"
 UNINSTALL_SERVICE_PATH="${PROJECT_FOLDER}/scripts/source/uninstall_services.py"
@@ -55,6 +60,15 @@ function service() {
 function scan() {
   $PYTHON3 $SCAN_TAR_FILE_PATH
 }
+
+function omp_upgrade() {
+  $PYTHON3 $OMP_UPGRADE_FILE_PATH $@
+}
+
+function omp_rollback() {
+  $PYTHON3 $OMP_ROLLBACK_FILE_PATH $@
+}
+
 
 function uninstall_all_service_and_host() {
   for i in $(seq 1 3)
@@ -105,6 +119,14 @@ else
   scan)
     shift
     scan "$@"
+    ;;
+  omp_upgrade)
+    shift
+    omp_upgrade "$@"
+    ;;
+  omp_rollback)
+    shift
+    omp_rollback "$@"
     ;;
   *)
     shift
