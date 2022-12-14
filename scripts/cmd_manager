@@ -35,6 +35,8 @@ UPGRADE_SERVICE_PATH="${PROJECT_FOLDER}/scripts/source/upgrade_service.py"
 ROLLBACK_SERVICE_PATH="${PROJECT_FOLDER}/scripts/source/rollback_service.py"
 SERVICE_MANAGER_PATH="${PROJECT_FOLDER}/scripts/source/service_manager.py"
 SCAN_TAR_FILE_PATH="${PROJECT_FOLDER}/scripts/source/scan_tar_file.py"
+OMP_UPGRADE_FILE_PATH="${PROJECT_FOLDER}/scripts/source/omp_upgrade.py"
+OMP_ROLLBACK_FILE_PATH="${PROJECT_FOLDER}/scripts/source/omp_rollback.py"
 
 
 function help() {
