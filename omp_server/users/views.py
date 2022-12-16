@@ -3,8 +3,9 @@
 """
 import re
 import datetime
+from io import BytesIO
 
-from django.contrib.auth import authenticate, login
+from django.http import HttpResponse
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
@@ -39,6 +40,7 @@ import logging
 from django.utils import timezone
 
 from utils.plugin.crypto import decrypt_rsa
+from utils.plugin.captcha import check_code
 
 logger = logging.getLogger("server")
 
@@ -155,6 +157,10 @@ class JwtAPIView(JSONWebTokenAPIView):
             logger.error("Create login log error: {}".format(e))
 
     def post(self, request, *args, **kwargs):
+        code = request.data.get("code", "")
+        if code.lower() != request.session.get("valid_code", "").lower():
+            raise ValidationError("code error")
+
         # django authenticate 缺陷，验证 username 大小写不敏感
         username = decrypt_rsa(request.data.get("username", ""))
         password = decrypt_rsa(request.data.get("password", ""))
@@ -205,3 +211,24 @@ class UserUpdatePasswordView(GenericViewSet, CreateModelMixin):
     serializer_class = UserUpdatePasswordSerializer
     # 操作描述
     post_description = "更新用户密码"
+
+
+class CaptchaView(GenericViewSet, ListModelMixin):
+    """
+        list:
+        获取图形验证码
+    """
+    authentication_classes = ()
+    permission_classes = ()
+
+    def list(self, request, *args, **kwargs):
+        # 调用函数生成图片验证码
+        image_obj, code = check_code()
+        # 将验证码字符存入session
+        request.session["valid_code"] = code
+        request.session.set_expiry(60)
+
+        stream = BytesIO()
+        image_obj.save(stream, "png")
+        # 将从内存空间获取的图片验证码传给前端
+        return HttpResponse(stream.getvalue())
