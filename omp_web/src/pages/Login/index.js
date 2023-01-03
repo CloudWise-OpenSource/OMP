@@ -6,6 +6,7 @@ import {
   LockOutlined,
   UserOutlined,
   CloseCircleFilled,
+  SafetyCertificateOutlined,
 } from "@ant-design/icons";
 import { OmpContentWrapper } from "@/components";
 import { fetchGet, fetchPost } from "@/utils/request";
@@ -15,8 +16,10 @@ import { withRouter } from "react-router";
 
 const Login = withRouter(({ history }) => {
   const [msgShow, setMsgShow] = useState(false);
+  const [codeError, setCodeError] = useState(false);
   const [isAutoLogin, setIsAutoLogin] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [image, setImage] = useState(`/api/users/captcha/?${Math.random()}`);
   const [form] = Form.useForm();
   const onCheckboxChange = (e) => {
     setIsAutoLogin(e.target.checked);
@@ -29,11 +32,13 @@ const Login = withRouter(({ history }) => {
         username: encrypt(data.username),
         password: encrypt(data.password),
         remember: isAutoLogin,
+        code: data.code,
       },
     })
       .then((res) => {
         if (res.data && res.data.code == 1) {
           setMsgShow(true);
+          setCodeError(res.data.message === "code error");
         } else if (res.data.code == 0) {
           history.replace({
             pathname: "/homepage",
@@ -86,7 +91,7 @@ const Login = withRouter(({ history }) => {
             }
             onClick={() => setMsgShow(false)}
           >
-            用户名或密码错误
+            {codeError ? "验证码错误" : "用户名或密码错误"}
             <CloseCircleFilled
               style={{ color: "#fff", fontSize: 20, marginLeft: "auto" }}
             />
@@ -146,6 +151,49 @@ const Login = withRouter(({ history }) => {
                     marginTop: 10,
                   }}
                   placeholder="密码"
+                />
+              </Form.Item>
+              <Form.Item
+                label=""
+                name="code"
+                key="code"
+                rules={[
+                  {
+                    required: true,
+                    message: "请输入验证码",
+                  },
+                ]}
+              >
+                <Input
+                  prefix={
+                    <SafetyCertificateOutlined
+                      style={{ color: "#b8b8b8", paddingRight: 10 }}
+                    />
+                  }
+                  suffix={
+                    <img
+                      src={image}
+                      style={{
+                        width: 120,
+                        height: 38,
+                        borderLeft: "1px solid #d9d9d9",
+                        marginRight: -8,
+                        paddingLeft: 6,
+                        cursor: "pointer",
+                      }}
+                      alt="无法正常显示"
+                      onClick={() => {
+                        setImage(`/api/users/captcha/?${Math.random()}`);
+                      }}
+                    />
+                  }
+                  style={{
+                    paddingLeft: 10,
+                    width: 360,
+                    height: 40,
+                    marginTop: 10,
+                  }}
+                  placeholder="验证码"
                 />
               </Form.Item>
               <div className={styles.loginAuto}>

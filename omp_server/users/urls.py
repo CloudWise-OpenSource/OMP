@@ -14,7 +14,7 @@ from rest_framework.routers import DefaultRouter
 
 from users.views import (
     UsersView, OperateLogView, UserUpdatePasswordView,
-    UserLoginOperateView
+    UserLoginOperateView, CaptchaView
 )
 
 router = DefaultRouter()
@@ -23,3 +23,4 @@ router.register("operateLog", OperateLogView, basename="operateLog")
 router.register("UserLoginLog", UserLoginOperateView, basename="operateLog")
 router.register("updatePassword", UserUpdatePasswordView,
                 basename="updatePassword")
+router.register("captcha", CaptchaView, basename="captcha")

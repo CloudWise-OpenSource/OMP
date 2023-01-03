@@ -40,15 +40,15 @@ OMP（Operation Management Platform）是云智慧公司自主设计、研发的
 
 ## 数据库:
 - mysql 5.7.37
-- redis 5.0.12
+- redis 6.2.7
 
 ## 前端技术栈：
-- Tengine 2.3.2
+- Tengine 1.22.0
 - React 17.0.1
 
 ## 监控技术栈：
 - Prometheus 2.25.1
-- Alertmanager 0.21.0
+- Alertmanager 0.24.0
 - Grafana  7.4.3
 - Loki 2.1.0
 - Promtail 2.2.0
@@ -65,7 +65,9 @@ tar -xmf omp_open-0.5.tar.gz -C /data
 
 step1：依赖环境配置
 编辑文件vim /data/omp/config/omp.yaml
-# 当前版本已携带mysql、redis安装，配置信息如下，如需修改请在安装前修改
+
+注意：当前版本已携带mysql、redis安装，配置信息如下，如需修改请在安装前修改
+
 ```yaml
 # redis相关配置
 redis:
@@ -107,6 +109,7 @@ Type "help", "copyright", "credits" or "license" for more information.
 ```
 
 ## Demo
+
 通过浏览器访问页面，访问入口为：http://omp.cloudwise.com/#/login    \
 默认用户名：admin     \
 默认密码：Yunweiguanli@OMP  \
@@ -116,7 +119,39 @@ omp节点上卸载操作如下：
 ```shell
 bash /data/omp/scripts/uninstall.sh
 ```
+# 升级回滚
+
+## OMP 自身升级、回滚
+
+```shell
+# 升级命令
+bash cmd_manager omp_upgrade [必填参数：升级目标路径(如:/data/omp，注意此处路径末尾无/)] [选填参数:从某个断点处升级,默认开头]
+# 例如
+bash 升级包路径/scripts/cmd_manager omp_upgrade /data/omp(当前正在运行的旧安装路径) 
+
+# 回滚命令
+bash cmd_manager omp_upgrade [必填参数：升级目标路径(如:/data/omp，注意此处路径末尾无/)] [选填参数:从某个断点处升级,默认开头]
+# 例如
+bash 升级包路径/scripts/cmd_manager omp_rollback /data/omp(当前正在运行的旧安装路径)
+```
+
+## 断点执行
+
+常用于执行过程中某一步骤失败时，期望从失败步骤处再次执行时使用，正常情况无需考虑此参数，参数默认下标为0
+
+升级回滚可以理解成为jenkins的pipliene 是分步骤执行的，当我们在某一个位置出现异常时，手动修复后通过错误节点再次进行时使用，而跳过之前已经升级（回滚）正确的步骤
+
+```shell
+# 升级流程顺序如下：
+# PreUpdate, Mysql, Redis, Grafana, Tengine, OmpWeb, OmpServer, Python, PostUpdate
+```
+
+
+
+# 应用商店
+
 ## 如何制作一个OMP应用商店中的应用
+
 [OMP 社区版-应用商店发布说明文档](./doc/app_publish.md)
 > 内含
  - 基础组件打包规范
@@ -124,7 +159,27 @@ bash /data/omp/scripts/uninstall.sh
  - 目录和配置说明
  - postgreSql、redis、rocketmq等应用Demo
 
+## 卸载应用商店中已经发布的应用
+
+命令行方式如下（未来会支持界面化方式，请关注后续版本）
+
+```shell
+export LD_LIBRARY_PATH=/data/omp/component/env/lib && /data/omp/component/env/bin/python3.8 /data/omp/scripts/source/uninstall_app_store.py --product 产品名称 --app_name 组件/服务名称 --version 版本
+```
+
+ 已经部署服务实例的安装包，无法卸载
+
+ 参数说明：
+
+1.  ***--version*** 缺省时，卸载所有版本
+2.  卸载基础组件 ***--app_name 基础组件名称***
+3.  卸载应用/产品  ***--product 应用/产品名称***
+4.  卸载应用下指定服务 ***--product 应用/产品名称 --app_name 服务名称***
+
+
+
 ## OMP脚本功能说明
+
 omp的控制脚本位于 omp/scripts/omp 其具体使用方式如下：
 ```shell
 bash omp [all|tengine|uwsgi|worker|cron|salt|prometheus|alertmanager|grafana|loki] [status|start|stop|restart]
@@ -226,6 +281,14 @@ V0.6.0 (2022.11.29)
 - 修复 grafana 面板中 mysql 显示异常问题
 - 补充应用商店基础组件包：mysq、elasticsearch
 - 组件包从代码库抽离，减少源码 & 包体量
+
+V0.7.0 (2022.12.30) 
+- 完善 OMP 管理脚本功能
+  - 支持升级、回滚，支持断点重试
+  - 支持命令行卸载应用商店已发布服务
+- 内置 Redis 5.0.37 升级至 6.2.7
+- 验证码登陆
+- 修改密码长度异常问题
 
 欢迎加入
 获取更多关于OMP的技术资料，或加入OMP开发者交流群，可扫描下方二维码咨询

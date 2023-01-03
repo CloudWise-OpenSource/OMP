@@ -1,8 +1,3 @@
-# -*- coding:utf-8 -*-
-# Project: uninstall_app_store
-# Author:Jerry.zhang@yunzhihui.com
-# Create time: 2022/3/13 11:23 上午
-
 import os
 import sys
 import time
@@ -25,7 +20,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "omp_server.settings")
 django.setup()
 
 import logging
-from db_models.models import (ApplicationHub, ProductHub, Service)
+from db_models.models import (ApplicationHub, ProductHub, Service, UpgradeDetail)
 
 
 class UninstallServices(object):
@@ -39,7 +34,7 @@ class UninstallServices(object):
 
     def check_database(self):
         """
-        支持服务开头匹配,服务版本开头匹配，但不支持产品开头匹配，测试中产品暂时不存在多版本情况
+        支持服务开头匹配,服务版本开头匹配，删除产品版本必须完全匹配，且只支持一个一个产品卸载
         """
         if not self.app_name and not self.product:
             print("请输入卸载产品名或服务名称")
@@ -59,22 +54,29 @@ class UninstallServices(object):
             self.product_all = True
         # 产品服务均存在
         if self.app_name and self.product:
-            app_obj = ApplicationHub.objects.filter(app_name__startswith=self.app_name,
-                                                    product__pro_name=self.product)
+            app_obj = ApplicationHub.objects.filter(
+                app_name__startswith=self.app_name, product__pro_name=self.product)
             if not app_obj:
                 print(f"{self.product}产品下无此服务")
                 sys.exit(1)
             self._app_obj = app_obj
         # 版本筛选
-        if self.version and self._app_obj:
-            self._app_obj = self._app_obj.filter(app_version__startswith=self.version)
+        if self.version:
+            if self._app_obj and self.app_name:
+                self._app_obj = self._app_obj.filter(app_version__startswith=self.version)
+            if self._app_obj and not self.app_name:
+                self._app_obj = self._app_obj.filter(product__pro_version=self.version)
         # 检查是否存在已安装的应用
         have_app = False
         serivce_instance_name = []
+        # error_status = UpgradeDetail.objects.filter(upgrade_state__in=[0, 1, 2]).values_list("target_app", flat=True)
         for obj in self._app_obj:
             if obj.service_set.count() != 0:
                 serivce_instance_name.append(obj.service_set.values_list('service_instance_name', flat=True))
                 have_app = True
+            # if obj.id in error_status:
+            #    print("存在升级中使用的升级包外键，不可删除")
+            #    exit(1)
         if serivce_instance_name:
             list_str = ""
             for _ in serivce_instance_name:
@@ -110,15 +112,20 @@ class UninstallServices(object):
                 upload_obj = obj.app_package
                 if self.product_all:
                     self.del_dir.add(os.path.join(PACKAGE_DIR, upload_obj.package_path))
-                    pro_obj = ProductHub.objects.filter(pro_name=self.product).first()
-                    ApplicationHub.objects.filter(product=pro_obj).delete()
+                    pro_obj = ProductHub.objects.filter(pro_name=self.product, pro_version=self.version)
+                    if len(pro_obj) == 1:
+                        pro_ser_obj = ApplicationHub.objects.filter(product=pro_obj.first())
+                        pro_ser_obj.delete()
+                    else:
+                        print("要删除的版本可能存在风险")
+                        sys.exit(1)
                     pro_obj.delete()
                     break
                 else:
                     self.del_dir.add(os.path.join(PACKAGE_DIR, upload_obj.package_path, upload_obj.package_name))
                     obj.delete()
-            if not self._app_obj and self.product and not self.app_name:
-                pro_obj = ProductHub.objects.filter(pro_name=self.product).first()
+            if self._app_obj and self.product and not self.app_name:
+                pro_obj = ProductHub.objects.filter(pro_name=self.product, pro_version=self.version).first()
                 if pro_obj:
                     self.del_dir.add(os.path.join(PACKAGE_DIR, "verified", f"{pro_obj.pro_name}-{pro_obj.pro_version}"))
                     pro_obj.delete()
@@ -149,10 +156,11 @@ def parameters():
 
 if __name__ == '__main__':
     para = parameters()
-    uninstall_obj = UninstallServices(app_name=para.app_name,
-                                      product=para.product,
-                                      version=para.version
-                                      )
+    uninstall_obj = UninstallServices(
+        app_name=para.app_name,
+        product=para.product,
+        version=para.version
+    )
     result = uninstall_obj.check_database()
     if result:
         sys.exit(1)
