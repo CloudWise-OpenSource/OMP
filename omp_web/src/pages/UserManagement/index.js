@@ -386,7 +386,7 @@ const UserManagement = () => {
                 if (value) {
                   if (!isPassword(value)) {
                     if (value.length < 8) {
-                      return Promise.reject("密码长度为8到16位");
+                      return Promise.reject("密码长度需大于8位");
                     }
                     return Promise.resolve("success");
                   } else {
@@ -401,7 +401,7 @@ const UserManagement = () => {
             },
           ]}
         >
-          <Input.Password maxLength={16} placeholder="请输入当前密码" />
+          <Input.Password placeholder="请输入当前密码" />
         </Form.Item>
         <Form.Item
           label="新密码"
@@ -421,7 +421,7 @@ const UserManagement = () => {
                   }
                   if (!isPassword(value)) {
                     if (value.length < 8) {
-                      return Promise.reject("密码长度为8到16位");
+                      return Promise.reject("密码长度需大于8位");
                     }
                     return Promise.resolve("success");
                   } else {
@@ -436,7 +436,7 @@ const UserManagement = () => {
             },
           ]}
         >
-          <Input.Password maxLength={16} placeholder="请设置新密码" />
+          <Input.Password placeholder="请设置新密码" />
         </Form.Item>
         <Form.Item
           label="确认密码"
@@ -453,7 +453,7 @@ const UserManagement = () => {
                 if (value) {
                   if (!isPassword(value)) {
                     if (value.length < 8) {
-                      return Promise.reject("密码长度为8到16位");
+                      return Promise.reject("密码长度需大于8位");
                     }
                     if (
                       passwordModalForm.getFieldValue().new_password1 ===
@@ -476,7 +476,7 @@ const UserManagement = () => {
             },
           ]}
         >
-          <Input.Password maxLength={16} placeholder="请再次输入新密码" />
+          <Input.Password placeholder="请再次输入新密码" />
         </Form.Item>
       </OmpModal>
     </OmpContentWrapper>
