@@ -72,11 +72,14 @@ const UserManagement = () => {
       //sorter: (a, b) => a.is_superuser - b.is_superuser,
       //sortDirections: ["descend", "ascend"],
       align: "center",
-      render: (text) => {
+      render: (text, record) => {
         if (text) {
           return "普通管理员";
         } else {
-          return "超级管理员";
+          if (record.username == "omp") {
+            return "只读用户";
+          }
+          return "普通用户";
         }
       },
     },
@@ -245,7 +248,7 @@ const UserManagement = () => {
                 {username:e},
                 pagination.ordering
               );
-          }} 
+          }}
           style={{ width: 200 }} /> */}
           <Input
             placeholder="请输入用户名"

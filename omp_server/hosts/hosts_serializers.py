@@ -384,7 +384,7 @@ class HostFieldCheckSerializer(ModelSerializer):
         validators=[
             NoEmojiValidator(),
             NoChineseValidator(),
-            ReValidator(regex=r"^[-a-z0-9].*$"),
+            ReValidator(regex=r"^[-a-zA-Z0-9].*$"),
         ])
 
     ip = serializers.IPAddressField(

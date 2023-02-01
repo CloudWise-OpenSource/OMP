@@ -26,7 +26,7 @@ from db_models.models import UserProfile
 from db_models.models import MonitorUrl
 from utils.parse_config import MONITOR_PORT
 from db_models.models import Env
-from db_models.models import AlertRule,Rule
+from db_models.models import AlertRule, Rule
 from db_models.models import SelfHealingSetting
 
 
@@ -35,15 +35,24 @@ def create_default_user():
     创建基础用户
     :return:
     """
-    username = "admin"
-    password = "Yunweiguanli@OMP_123"
-    if UserProfile.objects.filter(username=username).count() != 0:
-        return
-    UserProfile.objects.create_superuser(
-        username=username,
-        password=password,
-        email="omp@cloudwise.com"
-    )
+    TO_CREATE_USER_LIST = [
+        {"username": "admin", "password": "Yunweiguanli@OMP_123", "email": "omp@cloudwise.com", "role": "SuperUser"},
+        {"username": "omp", "password": "Yunweiguanli@OMP_123", "email": "omp@cloudwise.com", "role": "ReadOnlyUser"}
+    ]
+    username = password = email = role = ""
+    for user_dict in TO_CREATE_USER_LIST:
+        username = user_dict.get("username")
+        password = user_dict.get("password")
+        email = user_dict.get("email")
+        role = user_dict.get("role")
+        if UserProfile.objects.filter(username=username).count() != 0:
+            continue
+        UserProfile.objects.create_user(
+            username=username,
+            password=password,
+            email=email,
+            role=role
+        )
 
 
 def create_default_monitor_url():
@@ -83,6 +92,7 @@ def get_hash_value(expr, severity):
     hash_data = hashlib.md5(data.encode(encoding='UTF-8')).hexdigest()
     return hash_data
 
+
 def create_threshold():
     """
     为告警添加默认的告警阈值规则
@@ -112,12 +122,11 @@ def create_threshold():
                 "job": "nodeExporter",
                 "severity": "critical"
             },
-            "name":"实例宕机",
+            "name": "实例宕机",
             "quota_type": 0,
             "status": 1,
             "service": "node",
             "forbidden": 2,
-
 
         },
         {
@@ -146,7 +155,7 @@ def create_threshold():
         {
             "alert": "主机 CPU 使用率过高",
             "description": '主机 {{ $labels.instance }} CPU 使用率为 {{ $value | '
-                           'humanize }}%, 大于阈值 5%',
+                           'humanize }}%, 大于阈值 80%',
             "expr": '(100 - sum(avg without (cpu)(irate('
                     'node_cpu_seconds_total{mode="idle", env="default"}['
                     '2m])))by (instance) * 100)',
@@ -332,13 +341,49 @@ def create_threshold():
             "labels": {
                 "severity": "critical"
             },
-            "name":"服务状态",
+            "name": "服务状态",
             "quota_type": 0,
             "status": 1,
             "service": "service",
             "forbidden": 2
         },
-
+        {
+            "alert": "jvm 文件句柄使用率过高",
+            "description": '主机 {{ $labels.instance }}中的服务 {{ $labels.instance_name }} jvm 文件句柄使用率是{{ $value | '
+                           'humanize }}%， 大于阈值 80%',
+            "expr": '(process_files_open_files)*100/process_files_max_files',
+            "summary": "-",
+            "compare_str": ">",
+            "threshold_value": 80,
+            "for_time": "60s",
+            "severity": "critical",
+            "labels": {
+                "severity": "critical"
+            },
+            "name": "jvm 文件句柄使用率",
+            "quota_type": 0,
+            "status": 1,
+            "service": "service",
+            "forbidden": 2
+        },
+        {
+            "alert": "产品http请求 5XX 错误",
+            "description": '主机 {{ $labels.instance }}中的服务 {{ $labels.instance_name }} ,请求方法是：{{ $labels.method }}，请求uri是 {{ $labels.uri }}发生http请求 status: {{ $labels.status }} 错误',
+            "expr": 'http_server_requests_seconds_count{status=~\"5..\"}',
+            "summary": "-",
+            "compare_str": ">",
+            "threshold_value": 0,
+            "for_time": "60s",
+            "severity": "critical",
+            "labels": {
+                "severity": "critical"
+            },
+            "name": "产品http请求 5XX 错误",
+            "quota_type": 0,
+            "status": 1,
+            "service": "service",
+            "forbidden": 2
+        },
     ]
     rule = [
         {
@@ -377,7 +422,7 @@ def create_threshold():
             "service": "node",
         },
         {
-            "name":"根分区使用率",
+            "name": "根分区使用率",
             "description": '主机 {{ $labels.instance }} 根分区使用率为 {{ $value | '
                            'humanize }}%, $compare_str$阈值 $threshold_value$%',
             "expr": 'max((node_filesystem_size_bytes{env="$env$",'
@@ -404,13 +449,24 @@ def create_threshold():
             "expr": 'max((node_filesystem_size_bytes{env="$env$",mountpoint="$data_dir$"}-node_filesystem_free_bytes{env="$env$",mountpoint="$data_dir$"})*100/(node_filesystem_avail_bytes{env="$env$",mountpoint="$data_dir$"}+(node_filesystem_size_bytes{env="$env$",mountpoint="$data_dir$"}-node_filesystem_free_bytes{env="$env$",mountpoint="$data_dir$"}))) by (instance,env)',
             "service": "node",
         },
-
-
+        {
+            "name": "jvm 文件句柄使用率",
+            "description": '主机 {{ $labels.instance }} jvm 文件句柄使用率为 {{ $value | humanize }}%, $compare_str$阈值 $threshold_value$%',
+            "expr": '(process_files_open_files)*100/process_files_max_files',
+            "service": "node",
+        },
+        {
+            "name": "产品http请求 5XX 错误",
+            "description": '主机 {{ $labels.instance }}中的服务 {{ $labels.instance_name }} ,请求方法是：{{ $labels.method }}，请求uri是 {{ $labels.uri }}发生http请求 status: {{ $labels.status }} 错误',
+            "expr": 'http_server_requests_seconds_count{status=~\"5..\"}',
+            "service": "node",
+        },
     ]
     try:
         for info in builtins_rules:
             hash_value = get_hash_value(info.get("expr"), info.get("severity"))
-            alert = AlertRule.objects.filter(expr=info.get("expr"), severity=info.get("severity"),service=info.get("service"))
+            alert = AlertRule.objects.filter(expr=info.get("expr"), severity=info.get("severity"),
+                                             service=info.get("service"))
             info.update(hash_data=hash_value)
             if alert:
                 alert.update(**info)
@@ -422,6 +478,7 @@ def create_threshold():
         if Rule.objects.filter(name=rule_info.get("name")).exists():
             continue
         Rule(**rule_info).save()
+
 
 def create_self_healing_setting():
     """添加默认自愈策略"""
