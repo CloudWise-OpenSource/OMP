@@ -946,10 +946,15 @@ class QuotaView(ListModelMixin, GenericViewSet, CreateModelMixin,DestroyModelMix
             else:
                 return Response(
                     data={"code": 1, "message": f"创建指标规则过程中出错: 未识别的规则类型"})
-            request.data["labels"] = {
-                "job": '{}Exporter'.format(request.data["service"]),
-                "severity": severity
-            }
+            if request.data["service"] != "service":
+                request.data["labels"] = {
+                    "job": '{}Exporter'.format(request.data["service"]),
+                    "severity": severity
+                }
+            else:
+                request.data["labels"] = {
+                    "severity": severity
+                }
             if id != 0:
                 if AlertRule.objects.filter(expr=request.data["expr"],
                                             severity=severity).exclude(id=id).exists():

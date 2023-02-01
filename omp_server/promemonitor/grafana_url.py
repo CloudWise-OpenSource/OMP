@@ -79,9 +79,11 @@ def explain_prometheus(params):
             compare_list.append(tmp_list)
             tmp_dict['type'] = "host" if label.get(
                 'job') == 'nodeExporter' else "service"
-            tmp_dict['ip'] = label.get('instance').split(":")[0]
+            tmp_dict['ip'] = label.get('instance').split(":")[0] if label.get('instance') else ''
             tmp_dict['instance_name'] = label.get('app') if label.get(
                 'app') else host_list.get(tmp_dict.get('ip'))
+            if not tmp_dict['instance_name']:
+                tmp_dict['instance_name'] = label.get("job", "").split("Exporter")[0]
             tmp_dict['severity'] = label.get('severity')
             annotation = lab.get('annotations')
             tmp_dict['description'] = annotation.get('description')

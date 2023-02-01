@@ -4,6 +4,7 @@ from django.db import models
 
 class UserProfile(AbstractUser):
     """ 自定义用户表 """
+    role = models.CharField("用户角色", max_length=128, null=True, blank=True, help_text="用户角色")
 
     class Meta:
         """ 元数据 """

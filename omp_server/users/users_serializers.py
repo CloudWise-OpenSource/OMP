@@ -52,7 +52,7 @@ class UserSerializer(ModelSerializer):
         """ 元数据 """
         model = UserProfile
         fields = ("id", "username", "password", "email", "re_password",
-                  "date_joined", "is_active", "is_superuser")
+                  "date_joined", "is_active", "is_superuser", "role")
         read_only_fields = ("date_joined", "is_active", "is_superuser")
 
     def validate_username(self, username):

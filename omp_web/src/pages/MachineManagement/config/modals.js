@@ -146,7 +146,7 @@ export const AddMachineModal = ({
                                   if (res.data.data) {
                                     resolve("success");
                                   } else {
-                                    rej(`实例名称已存在`);
+                                    rej(res.data.message);
                                   }
                                 }
                               })
@@ -278,7 +278,7 @@ export const AddMachineModal = ({
                             if (res.data.data) {
                               resolve("success");
                             } else {
-                              rej(`ip地址已存在`);
+                              rej(res.data.message);
                             }
                           }
                         })
@@ -591,7 +591,7 @@ export const UpDateMachineModal = ({
                                   if (res.data.data) {
                                     resolve("success");
                                   } else {
-                                    rej(`实例名称已存在`);
+                                    rej(res.data.message);
                                   }
                                 }
                               })
@@ -715,7 +715,7 @@ export const UpDateMachineModal = ({
                           if (res.data.data) {
                             resolve("success");
                           } else {
-                            rej(`ip地址已存在`);
+                            rej(res.data.message);
                           }
                         }
                       })
