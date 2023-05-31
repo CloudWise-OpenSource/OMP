@@ -141,7 +141,7 @@ def explain_url(explain_info, is_service=None):
         service_ip = instance_info.get('ip')
         if instance_info.get('type') == 'service' \
                 or is_service:
-            monitor_url = url_dict.get(service_name)
+            monitor_url = url_dict.get(service_name.lower() if isinstance(service_name, str) else service_name)
             if monitor_url:
                 instance_info['monitor_url'] = grafana_url + \
                     monitor_url + f"?var-instance={service_ip}&kiosk=tv"

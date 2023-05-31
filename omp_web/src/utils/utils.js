@@ -4,7 +4,7 @@ import moment from "moment";
 import * as R from "ramda";
 import styles from "./index.module.less";
 import { getRefreshTimeChangeAction } from "@/components/CustomBreadcrumb/store/actionsCreators";
-import { CloseCircleFilled } from "@ant-design/icons";
+import { CloseCircleFilled, CheckCircleFilled } from "@ant-design/icons";
 import JSEncrypt from "jsencrypt";
 
 /**
@@ -2003,4 +2003,27 @@ export const encrypt = (message) => {
   encrypt.setPublicKey(PublicKey); //	 publicKey为公钥
   const txt = encrypt.encrypt(message);
   return txt;
+};
+
+// 根据result渲染状态
+export const RenderStatusForResult = ({ result }) => {
+  if (result === "success") {
+    return (
+      <CheckCircleFilled
+        style={{
+          color: colorConfig["normal"],
+          marginRight: "10px",
+        }}
+      />
+    );
+  } else {
+    return (
+      <CloseCircleFilled
+        style={{
+          color: colorConfig["critical"],
+          marginRight: "10px",
+        }}
+      />
+    );
+  }
 };

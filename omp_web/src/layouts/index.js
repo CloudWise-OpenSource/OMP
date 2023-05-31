@@ -372,7 +372,7 @@ const OmpLayout = (props) => {
               placement="bottomCenter"
               overlay={
                 <Menu className="menu">
-                  <Menu.Item>版本信息：V0.8</Menu.Item>
+                  <Menu.Item>版本信息：V0.9</Menu.Item>
                 </Menu>
               }
             >
@@ -425,7 +425,7 @@ const OmpLayout = (props) => {
             paddingLeft: 195,
           }}
         >
-          Copyright © 2020-2022 Cloudwise.All Rights Reserved{" "}
+          Copyright © 2020-2023 Cloudwise.All Rights Reserved{" "}
         </Footer>
       </Layout>
       <OmpModal

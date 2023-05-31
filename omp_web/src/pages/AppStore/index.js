@@ -20,6 +20,7 @@ import {
   ScanOutlined,
   ArrowUpOutlined,
   SyncOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
 import Card from "./config/card.js";
 import { useSelector, useDispatch } from "react-redux";
@@ -29,6 +30,7 @@ import { apiRequest } from "@/config/requestApi";
 import { handleResponse, downloadFile } from "@/utils/utils";
 import ReleaseModal from "./config/ReleaseModal.js";
 import ScanServerModal from "./config/ScanServerModal";
+import DeleteServerModal from "./config/DeleteServerModal";
 // 批量安装弹框组件
 import BatchInstallationModal from "./config/BatchInstallationModal";
 import ServiceUpgradeModal from "./config/ServiceUpgradeModal";
@@ -80,6 +82,9 @@ const AppStore = () => {
 
   // 批量安装弹框
   const [bIModalVisibility, setBIModalVisibility] = useState(false);
+
+  // 删除应用商店
+  const [deleteServerVisibility, setDeleteServerVisibility] = useState(false);
 
   // 批量安装的应用服务列表
   const [bIserviceList, setBIserviceList] = useState([]);
@@ -207,8 +212,7 @@ const AppStore = () => {
     );
 
     return () => {
-      dispatch(getTabKeyChangeAction(tabKey
-      ));
+      dispatch(getTabKeyChangeAction(tabKey));
     };
   }, [tabKey, searchKey]);
 
@@ -324,7 +328,13 @@ const AppStore = () => {
 
             <Dropdown
               overlay={
-                <Menu style={{ width: "calc(100% + 40px)",position:"relative",left:-20 }}>
+                <Menu
+                  style={{
+                    width: "calc(100% + 40px)",
+                    position: "relative",
+                    left: -20,
+                  }}
+                >
                   <Menu.Item
                     key="publishing"
                     style={{ display: "flex" }}
@@ -337,7 +347,7 @@ const AppStore = () => {
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        padding:"5px 0 5px 5px"
+                        padding: "5px 0 5px 5px",
                       }}
                     >
                       <div
@@ -370,7 +380,7 @@ const AppStore = () => {
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        padding:"5px 0 5px 5px"
+                        padding: "5px 0 5px 5px",
                       }}
                     >
                       <div
@@ -392,7 +402,45 @@ const AppStore = () => {
                       <div style={{ paddingLeft: 20 }}>扫描发布服务</div>
                     </div>
                   </Menu.Item>
-                  <div style={{height:1,backgroundColor:"#e3e3e3",margin:"6px 10px"}}></div>
+                  <Menu.Item
+                    key="deleteServer"
+                    style={{ display: "flex" }}
+                    onClick={() => setDeleteServerVisibility(true)}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "5px 0 5px 5px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 22,
+                          height: 22,
+                          backgroundColor: "#2e7cee",
+                          borderRadius: "50%",
+                        }}
+                      >
+                        <DeleteOutlined
+                          style={{
+                            color: "#fff",
+                            position: "relative",
+                            left: 4,
+                          }}
+                        />
+                      </div>
+                      <div style={{ paddingLeft: 20 }}>删除</div>
+                    </div>
+                  </Menu.Item>
+
+                  <div
+                    style={{
+                      height: 1,
+                      backgroundColor: "#e3e3e3",
+                      margin: "6px 10px",
+                    }}
+                  ></div>
                   <Menu.Item
                     key="upgrade"
                     style={{ display: "flex" }}
@@ -404,7 +452,7 @@ const AppStore = () => {
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        padding:"5px 0 5px 5px"
+                        padding: "5px 0 5px 5px",
                       }}
                     >
                       <div
@@ -437,7 +485,7 @@ const AppStore = () => {
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        padding:"5px 0 5px 5px"
+                        padding: "5px 0 5px 5px",
                       }}
                     >
                       <div
@@ -463,7 +511,9 @@ const AppStore = () => {
               }
               placement="bottomRight"
             >
-              <Button style={{ marginRight: 10, paddingRight:10, paddingLeft:15 }}>
+              <Button
+                style={{ marginRight: 10, paddingRight: 10, paddingLeft: 15 }}
+              >
                 更多
                 <DownOutlined style={{ position: "relative", top: 1 }} />
               </Button>
@@ -616,6 +666,12 @@ const AppStore = () => {
         setSRModalVisibility={setSRModalVisibility}
         dataSource={bIserviceList}
         initLoading={loading}
+      />
+      <DeleteServerModal
+        deleteServerVisibility={deleteServerVisibility}
+        setDeleteServerVisibility={setDeleteServerVisibility}
+        tabKey={tabKey}
+        refresh={refresh}
       />
     </div>
   );

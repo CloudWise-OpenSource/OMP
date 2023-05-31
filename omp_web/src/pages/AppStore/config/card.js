@@ -1,5 +1,4 @@
-import { useSelector } from "react-redux";
-import { Button, Tooltip } from "antd";
+import { OmpToolTip } from "@/components";
 import styles from "./index.module.less";
 import imgObj from "./img";
 import { useEffect, useState } from "react";
@@ -87,13 +86,12 @@ const Card = ({ idx, history, info, tabKey, installOperation }) => {
                 fontSize: 22,
                 backgroundImage: "linear-gradient(to right, #4f85f6, #669aee)",
                 // backgroundColor:"#5c8df6",
-                color:"#fff",
+                color: "#fff",
               }}
             >
-              <div
-                style={{ textAlign: "center", position: "relative" }}
-              >
-                {info[nameObj[tabKey].name] && info[nameObj[tabKey].name][0].toLocaleUpperCase()}
+              <div style={{ textAlign: "center", position: "relative" }}>
+                {info[nameObj[tabKey].name] &&
+                  info[nameObj[tabKey].name][0].toLocaleUpperCase()}
               </div>
             </div>
           )}
@@ -127,7 +125,11 @@ const Card = ({ idx, history, info, tabKey, installOperation }) => {
             }}
           >
             <span>最新版本</span>
-            <span>{info[nameObj[tabKey].version]}</span>
+            <span>
+              <OmpToolTip maxLength={16}>
+                {info[nameObj[tabKey].version]}
+              </OmpToolTip>
+            </span>
           </div>
           <p className={styles.text}>
             {/* <Tooltip placement="top" title={info[nameObj[tabKey].description]}> */}
