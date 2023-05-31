@@ -146,7 +146,7 @@ export const AddMachineModal = ({
                                   if (res.data.data) {
                                     resolve("success");
                                   } else {
-                                    rej(res.data.message);
+                                    rej(`实例名称已存在`);
                                   }
                                 }
                               })
@@ -278,7 +278,7 @@ export const AddMachineModal = ({
                             if (res.data.data) {
                               resolve("success");
                             } else {
-                              rej(res.data.message);
+                              rej(`ip地址已存在`);
                             }
                           }
                         })

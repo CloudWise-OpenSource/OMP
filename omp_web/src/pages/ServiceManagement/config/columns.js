@@ -1,4 +1,9 @@
-import { nonEmptyProcessing, renderDisc } from "@/utils/utils";
+import {
+  nonEmptyProcessing,
+  renderDisc,
+  RenderStatusForResult,
+} from "@/utils/utils";
+import { OmpToolTip } from "@/components";
 import { DownOutlined, DesktopOutlined } from "@ant-design/icons";
 import { Dropdown, Menu, Drawer, Tooltip, Spin, Timeline } from "antd";
 import moment from "moment";
@@ -85,9 +90,11 @@ export const DetailHost = ({
                 borderBottom: "solid 1px rgb(220,220,220)",
               }}
             >
-              <div style={{ flex: 1 }}>实例名称</div>
-              <div style={{ flex: 1 }}>
-                {isShowDrawer.record?.service_instance_name}
+              <div style={{ flex: 2 }}>实例名称</div>
+              <div style={{ flex: 3 }}>
+                <OmpToolTip maxLength={30}>
+                  {isShowDrawer.record?.service_instance_name}
+                </OmpToolTip>
               </div>
             </div>
             <div
@@ -98,9 +105,11 @@ export const DetailHost = ({
                 borderBottom: "solid 1px rgb(220,220,220)",
               }}
             >
-              <div style={{ flex: 1 }}>服务名称</div>
-              <div style={{ flex: 1 }}>
-                {nonEmptyProcessing(isShowDrawer.record?.app_name)}
+              <div style={{ flex: 2 }}>服务名称</div>
+              <div style={{ flex: 3 }}>
+                <OmpToolTip maxLength={30}>
+                  {nonEmptyProcessing(isShowDrawer.record?.app_name)}
+                </OmpToolTip>
               </div>
             </div>
             {/* <div
@@ -122,8 +131,8 @@ export const DetailHost = ({
                 borderBottom: "solid 1px rgb(220,220,220)",
               }}
             >
-              <div style={{ flex: 1 }}>版本</div>
-              <div style={{ flex: 1 }}>{isShowDrawer.record?.app_version}</div>
+              <div style={{ flex: 2 }}>版本</div>
+              <div style={{ flex: 3 }}>{isShowDrawer.record?.app_version}</div>
             </div>
             <div
               style={{
@@ -133,8 +142,8 @@ export const DetailHost = ({
                 borderBottom: "solid 1px rgb(220,220,220)",
               }}
             >
-              <div style={{ flex: 1 }}>服务分类</div>
-              <div style={{ flex: 1 }}>{isShowDrawer.record?.label_name}</div>
+              <div style={{ flex: 2 }}>服务分类</div>
+              <div style={{ flex: 3 }}>{isShowDrawer.record?.label_name}</div>
             </div>
             <div
               style={{
@@ -144,8 +153,8 @@ export const DetailHost = ({
                 borderBottom: "solid 1px rgb(220,220,220)",
               }}
             >
-              <div style={{ flex: 1 }}>集群模式</div>
-              <div style={{ flex: 1 }}>{isShowDrawer.record?.cluster_type}</div>
+              <div style={{ flex: 2 }}>集群模式</div>
+              <div style={{ flex: 3 }}>{isShowDrawer.record?.cluster_type}</div>
             </div>
             <div
               style={{
@@ -155,8 +164,8 @@ export const DetailHost = ({
                 borderBottom: "solid 1px rgb(220,220,220)",
               }}
             >
-              <div style={{ flex: 1 }}>IP地址</div>
-              <div style={{ flex: 1 }}>{isShowDrawer.record?.ip}</div>
+              <div style={{ flex: 2 }}>IP地址</div>
+              <div style={{ flex: 3 }}>{isShowDrawer.record?.ip}</div>
             </div>
           </div>
           <div
@@ -199,8 +208,12 @@ export const DetailHost = ({
                 borderBottom: "solid 1px rgb(220,220,220)",
               }}
             >
-              <div style={{ flex: 1 }}>安装目录</div>
-              <div style={{ flex: 1 }}>{data.install_info?.base_dir}</div>
+              <div style={{ flex: 2 }}>安装目录</div>
+              <div style={{ flex: 3 }}>
+                <OmpToolTip maxLength={32}>
+                  {data.install_info?.base_dir}
+                </OmpToolTip>
+              </div>
             </div>
             <div
               style={{
@@ -210,8 +223,12 @@ export const DetailHost = ({
                 borderBottom: "solid 1px rgb(220,220,220)",
               }}
             >
-              <div style={{ flex: 1 }}>数据目录</div>
-              <div style={{ flex: 1 }}>{data.install_info?.data_dir}</div>
+              <div style={{ flex: 2 }}>数据目录</div>
+              <div style={{ flex: 3 }}>
+                <OmpToolTip maxLength={32}>
+                  {data.install_info?.data_dir}
+                </OmpToolTip>
+              </div>
             </div>
             <div
               style={{
@@ -221,8 +238,12 @@ export const DetailHost = ({
                 borderBottom: "solid 1px rgb(220,220,220)",
               }}
             >
-              <div style={{ flex: 1 }}>日志目录</div>
-              <div style={{ flex: 1 }}>{data.install_info?.log_dir}</div>
+              <div style={{ flex: 2 }}>日志目录</div>
+              <div style={{ flex: 3 }}>
+                <OmpToolTip maxLength={32}>
+                  {data.install_info?.log_dir}
+                </OmpToolTip>
+              </div>
             </div>
             <div
               style={{
@@ -232,8 +253,8 @@ export const DetailHost = ({
                 borderBottom: "solid 1px rgb(220,220,220)",
               }}
             >
-              <div style={{ flex: 1 }}>端口号</div>
-              <div style={{ flex: 1 }}>{data.install_info?.service_port}</div>
+              <div style={{ flex: 2 }}>端口号</div>
+              <div style={{ flex: 3 }}>{data.install_info?.service_port}</div>
             </div>
             <div
               style={{
@@ -243,8 +264,8 @@ export const DetailHost = ({
                 borderBottom: "solid 1px rgb(220,220,220)",
               }}
             >
-              <div style={{ flex: 1 }}>用户名</div>
-              <div style={{ flex: 1 }}>{data.install_info?.username}</div>
+              <div style={{ flex: 2 }}>用户名</div>
+              <div style={{ flex: 3 }}>{data.install_info?.username}</div>
             </div>
             <div
               style={{
@@ -254,8 +275,8 @@ export const DetailHost = ({
                 borderBottom: "solid 1px rgb(220,220,220)",
               }}
             >
-              <div style={{ flex: 1 }}>密码</div>
-              <div style={{ flex: 1 }}>{data.install_info?.password}</div>
+              <div style={{ flex: 2 }}>密码</div>
+              <div style={{ flex: 3 }}>{data.install_info?.password}</div>
             </div>
             <div
               style={{
@@ -265,8 +286,8 @@ export const DetailHost = ({
                 borderBottom: "solid 1px rgb(220,220,220)",
               }}
             >
-              <div style={{ flex: 1 }}>安装时间</div>
-              <div style={{ flex: 1 }}>
+              <div style={{ flex: 2 }}>安装时间</div>
+              <div style={{ flex: 3 }}>
                 {data?.created
                   ? moment(data?.created).format("YYYY-MM-DD HH:mm:ss")
                   : "-"}
@@ -317,7 +338,8 @@ export const DetailHost = ({
                   return (
                     <Timeline.Item key={item.created}>
                       <p style={{ color: "#595959" }}>
-                        [{item.username}] {item.description}
+                        <RenderStatusForResult result={item?.result} />[
+                        {item.username}] {item.description}
                       </p>
                       <p style={{ color: "#595959" }}>
                         {moment(item.created).format("YYYY-MM-DD HH:mm:ss")}
@@ -683,7 +705,7 @@ const getColumnsConfig = (
       },
       //ellipsis: true,
     },
-   
+
     {
       title: "集群模式",
       key: "cluster_type",

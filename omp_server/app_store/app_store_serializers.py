@@ -897,3 +897,46 @@ class ExecutionRecordSerializer(ModelSerializer):
         fields = ("id", "operator", "count", "state", "state_display",
                   "can_rollback", "duration", "created", "end_time",
                   "module", "module_id")
+
+
+class DeleteComponentSerializer(ModelSerializer):
+    """
+    基础组件序列化
+    """
+    name = serializers.SerializerMethodField()
+    versions = serializers.SerializerMethodField()
+
+    class Meta:
+        """ 元数据 """
+        model = ApplicationHub
+        fields = ("name", "versions")
+
+    def get_name(self, obj):
+        return obj.app_name
+
+    def get_versions(self, obj):
+        return [obj.app_version]
+
+
+class DeleteProDuctSerializer(ModelSerializer):
+    """
+    产品序列化
+    """
+    name = serializers.SerializerMethodField()
+    versions = serializers.SerializerMethodField()
+
+    class Meta:
+        """ 元数据 """
+        model = ProductHub
+        fields = ("name", "versions")
+
+    def get_name(self, obj):
+        return f"{obj.pro_name}|{obj.pro_version}"
+
+    def get_versions(self, obj):
+        app_ls = []
+        app_values = ApplicationHub.objects.filter(
+            product=obj).values_list("app_name", "app_version")
+        for app in app_values:
+            app_ls.append(f"{app[0]}|{app[1]}")
+        return app_ls
