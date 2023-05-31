@@ -164,6 +164,8 @@ export const apiRequest = {
     doRollback: "/api/rollback/do-rollback",
     // 服务回退页面列表进度查询
     queryRollbackProcess: "/api/rollback/history",
+    // 删除应用商店
+    deleteServer: "/api/appStore/delete/",
   },
   installHistoryPage: {
     queryInstallHistoryList: "/api/appStore/mainInstallHistory",
@@ -230,7 +232,7 @@ export const apiRequest = {
     queryExtendRuleList: "/api/promemonitor/customScript/",
 
     // 扩展指标详情查询
-    queryDetail: "/api/promemonitor/customScriptJobInfo/"
+    queryDetail: "/api/promemonitor/customScriptJobInfo/",
   },
   // 部署计划
   deloymentPlan: {

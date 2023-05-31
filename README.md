@@ -21,50 +21,34 @@ OMP（Operation Management Platform）是云智慧公司自主设计、研发的
 - **状态巡检**：自动、手动进行业务指标、运行状态汇总，支持自动发送报告到指定邮箱
 - **备份/恢复**：针对核心数据进行本地+异地备份，支持自动执行备份并将数据发送至指定邮箱，达到异地的存储效果，确保数据安全
 - **精简工具**：提供运维常用工具、命令、脚本、SQL等，为日常运维操作提供便利，减少误操作、减低技术门槛，支持自行维护、扩充更多工具
-- **知识文库**：积累运维常用知识、技术、架构、解决方案等，支持自行维护、扩充文库内容
-- **小智解答**：可以快速检索知识文库内容，如文库知识不足，可以申请人工远程支持
 - **权限管理**：针对不同用户、角色，进行权限控制，及操作审计
-- **大屏展示**：用大屏来展示最核心的运营状态
-- **批量处理、流水线**：<待定>
 
 # 架构设计
 ![./doc/architecture.png](./doc/architecture.png)
 
-# 环境依赖
+## Demo
 
-## 后端技术栈：
-- Python 3.8.7
-- Django 3.1.4
-- Saltstack 3002.2
-- Uwsgi 2.0.19.1
+通过浏览器访问页面，访问入口为：http://omp.cloudwise.com/#/login    \
+默认用户名：admin     \
+默认密码：Yunweiguanli@OMP  \
+每晚 00:00 将重置数据
 
-## 数据库:
-- mysql 5.7.37
-- redis 6.2.7
 
-## 前端技术栈：
-- Tengine 1.22.0
-- React 17.0.1
 
-## 监控技术栈：
-- Prometheus 2.25.1
-- Alertmanager 0.24.0
-- Grafana  7.4.3
-- Loki 2.1.0
-- Promtail 2.2.0
-
-# 安装部署
-## CentOS环境部署：
+# 使用 OMP
+## 安装部署
 当前OMP安装包内部包含了其使用的所有组件，建议将OMP部署在 /data/ 下，当前版本部署流程如下：   \
-step0：下载/解压安装包
+step0：下载解压安装包
+
 ```shell
-# omp_open-0.5.tar.gz
-wget -c https://github.com/CloudWise-OpenSource/OMP/releases/download/Release-v0.5.0/omp_open-0.5.tar.gz
-tar -xmf omp_open-0.5.tar.gz -C /data
+tar -xvf omp_open-*.tar.gz -C /data
 ```
 
-step1：依赖环境配置
-编辑文件vim /data/omp/config/omp.yaml
+step1：编辑文件，检查环境配置
+
+```shell
+vim /data/omp/config/omp.yaml
+```
 
 注意：当前版本已携带mysql、redis安装，配置信息如下，如需修改请在安装前修改
 
@@ -89,45 +73,39 @@ cd /data/omp && bash scripts/install.sh
 # 注意2：当前执行操作的用户即为OMP中各个服务进程的运行用户，在以后的维护中，也应使用此用户进行操作
 ```
 
-step3：grafana配置（执行install.sh报错时执行此步骤，后续会进行优化）
+## 管理OMP
+
+注意：如需停止 OMP 相关服务，请先执行 “停止 OMP 定时保活任务” 操作
+
 ```shell
-# 如果在安装过程中出现了grafana相关安装错误，需要确认grafana是否已经启动
-# 在grafana启动的前提下执行其更新命令
-/data/omp/component/env/bin/python3 /data/omp/scripts/source/update_grafana.py local_ip
+# [服务名称] 值为： all 为对所有组件操作
+# all|mysql|redis|tengine|uwsgi|worker|cron|salt|prometheus|alertmanager|grafana|loki
+bash /data/omp/scripts/omp [服务名称] [status|start|stop|restart]
 ```
 
-step4：grafana跳转面板初始化（在跳转grafana出错情况下使用）
-```shell
-$ /data/omp/component/env/bin/python3 /data/omp/omp_server/manage.py shell
-Python 3.8.7 (default, Dec 22 2020, 06:47:35)
-[GCC 4.8.5 20150623 (Red Hat 4.8.5-44)] on linux
-Type "help", "copyright", "credits" or "license" for more information.
-(InteractiveConsole)
->>> from utils.plugin.synch_grafana import synch_grafana_info
->>> synch_grafana_info()
->>> quit()
+停止 OMP 定时保活任务：
+
+```Apache
+# 查看定时任务
+crontab -e
+
+# 删除或注释如下内容，否则定时任务会将 OMP 自动拉起
+# */5 * * * * bash /data/omp/scripts/omp all start &>/dev/null
 ```
 
-## Demo
-
-通过浏览器访问页面，访问入口为：http://omp.cloudwise.com/#/login    \
-默认用户名：admin     \
-默认密码：Yunweiguanli@OMP  \
-每晚 00:00 将重置数据
 ## 卸载OMP
+
 omp节点上卸载操作如下：
 ```shell
 bash /data/omp/scripts/uninstall.sh
 ```
-# 升级回滚
-
-## OMP 自身升级、回滚
+## 升级 & 回滚 OMP
 
 ```shell
 # 升级命令
 bash cmd_manager omp_upgrade [必填参数：升级目标路径(如:/data/omp，注意此处路径末尾无/)] [选填参数:从某个断点处升级,默认开头]
 # 例如
-bash 升级包路径/scripts/cmd_manager omp_upgrade /data/omp(当前正在运行的旧安装路径) 
+bash 升级包路径/scripts/cmd_manager omp_upgrade /data/omp(当前正在运行的旧安装路径)
 
 # 回滚命令
 bash cmd_manager omp_upgrade [必填参数：升级目标路径(如:/data/omp，注意此处路径末尾无/)] [选填参数:从某个断点处升级,默认开头]
@@ -148,7 +126,54 @@ bash 升级包路径/scripts/cmd_manager omp_rollback /data/omp(当前正在运�
 
 
 
-# 应用商店
+# 环境依赖
+
+## 技术栈
+
+### 后端技术栈
+
+- Python 3.8.7
+- Django 3.1.4
+- Saltstack 3002.2
+- Uwsgi 2.0.19.1
+
+### 数据库
+
+- mysql 5.7.37
+- redis 6.2.7
+
+### 前端技术栈
+
+- Tengine 1.22.0
+- React 17.0.1
+
+### 监控技术栈
+
+- Prometheus 2.25.1
+- Alertmanager 0.24.0
+- Grafana  9.3.8
+- Loki 2.4.1
+- Promtail 2.2.0
+
+## 内置组件概览
+
+| **组件名称** | **组件作用**                                     | **端口**     |
+| ------------ | ------------------------------------------------ | ------------ |
+| tengine      | 平台访问入口，代理前端页面及后端uwsgi程序        | 19001        |
+| uwsgi        | web容器，用于提供 python Django 后端程序访问入口 | 19003        |
+| salt         | 开源组件，服务器控制程序，提供主机 Agent 通信    | 19004、19005 |
+| worker       | 异步任务、定时任务执行程序，有进程无端口         | -            |
+| prometheus   | 开源组件，提供监控数据                           | 19011        |
+| grafana      | 开源组件，提供监控面板                           | 19014        |
+| alertmanager | 开源组件，提供日志告警                           | 19013、9094  |
+| loki         | 开源组件，提供日志采集                           | 19012、9095  |
+| redis        | 开源组件，提供缓存，消息队列                     | 6380         |
+| mysql        | 开源组件，数据存储                               | 3307         |
+| ntpd         | 开源组件，提供时间同步功能                       | 123（udp）   |
+
+
+
+# 关于应用商店
 
 ## 如何制作一个OMP应用商店中的应用
 
@@ -161,7 +186,7 @@ bash 升级包路径/scripts/cmd_manager omp_rollback /data/omp(当前正在运�
 
 ## 卸载应用商店中已经发布的应用
 
-命令行方式如下（未来会支持界面化方式，请关注后续版本）
+>已支持界面操作
 
 ```shell
 export LD_LIBRARY_PATH=/data/omp/component/env/lib && /data/omp/component/env/bin/python3.8 /data/omp/scripts/source/uninstall_app_store.py --product 产品名称 --app_name 组件/服务名称 --version 版本
@@ -178,32 +203,7 @@ export LD_LIBRARY_PATH=/data/omp/component/env/lib && /data/omp/component/env/bi
 
 
 
-## OMP脚本功能说明
 
-omp的控制脚本位于 omp/scripts/omp 其具体使用方式如下：
-```shell
-bash omp [all|tengine|uwsgi|worker|cron|salt|prometheus|alertmanager|grafana|loki] [status|start|stop|restart]
-# OMP的所有组件的控制参数
-bash omp all [status|start|stop|restart]
-# 控制tengine的启停，影响页面访问
-bash omp tengine [status|start|stop|restart]
-# 控制django后端程序启停，影响页面访问
-bash omp uwsgi [status|start|stop|restart]
-# 控制celery异步任务启停，影响异步任务执行
-bash omp worker [status|start|stop|restart]
-# 控制celery定时任务，影响定时任务执行
-bash omp cron [status|start|stop|restart]
-# 控制salt-master的启停，影响服务端对Agent端的控制
-bash omp salt [status|start|stop|restart]
-# 控制prometheus的启停，影响页面监控数据
-bash omp prometheus [status|start|stop|restart]
-# 控制alertmanager的启停，影响告警邮件的发送，页面告警信息展示
-bash omp alertmanager [status|start|stop|restart]
-# 控制grafana的启停，影响页面grafana iframe数据、页面展示
-bash omp grafana [status|start|stop|restart]
-# 控制loki的启停，影响日志采集、页面展示服务日志问题
-bash omp loki [status|start|stop|restart]
-```
 
 欢迎加入
 获取更多关于OMP的技术资料，或加入OMP开发者交流群，可扫描下方二维码咨询

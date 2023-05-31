@@ -1,5 +1,6 @@
 import { DownOutlined } from "@ant-design/icons";
 import { useEffect, useRef, useState } from "react";
+import { OmpToolTip } from "@/components";
 
 const stepOpen = {
   marginTop: 10,
@@ -11,7 +12,7 @@ const stepOpen = {
   color: "#fff",
   padding: 10,
   overflowY: "auto",
-  whiteSpace: "pre-line"
+  whiteSpace: "pre-line",
 };
 const stepNotOpen = {
   height: 0,
@@ -22,23 +23,21 @@ const stepNotOpen = {
 };
 
 // 状态渲染规则
-  const renderStatus = {
-    0: <span style={{ color: "#f0c242" }}>等待回滚</span>,
-    1: <span style={{ color: "rgba(0, 0, 0, 0.85)" }}>正在回滚</span>,
-    2: <span style={{ color: "rgb(118,204,104)" }}>回滚成功</span>,
-    3: <span style={{ color: "#da4e48" }}>回滚失败</span>,
-  };
+const renderStatus = {
+  0: <span style={{ color: "#f0c242" }}>等待回滚</span>,
+  1: <span style={{ color: "rgba(0, 0, 0, 0.85)" }}>正在回滚</span>,
+  2: <span style={{ color: "rgb(118,204,104)" }}>回滚成功</span>,
+  3: <span style={{ color: "#da4e48" }}>回滚失败</span>,
+};
 
 const RollbackDetail = ({ title, ip, status, log, instance_name }) => {
+  const containerRef = useRef(null);
 
-  const containerRef = useRef(null)
+  const [openName, setOpenName] = useState("");
 
-  const [openName, setOpenName] = useState("")
-
-  useEffect(()=>{
-    containerRef.current.scrollTop =
-    containerRef.current.scrollHeight;
-  },[log])
+  useEffect(() => {
+    containerRef.current.scrollTop = containerRef.current.scrollHeight;
+  }, [log]);
 
   return (
     <div
@@ -52,7 +51,9 @@ const RollbackDetail = ({ title, ip, status, log, instance_name }) => {
           justifyContent: "space-between",
         }}
       >
-        <div style={{ flex: 2 }}>{instance_name}</div>
+        <div style={{ flex: 3 }}>
+          <OmpToolTip maxLength={24}>{instance_name}</OmpToolTip>
+        </div>
         <div style={{ flex: 1 }}>{renderStatus[status]}</div>
         <div style={{ flex: 6, textAlign: "right", paddingRight: 50 }}>
           <a
@@ -78,11 +79,14 @@ const RollbackDetail = ({ title, ip, status, log, instance_name }) => {
           </a>
         </div>
       </div>
-      <div ref={containerRef} style={openName == `${title}=${ip}` ? stepOpen : stepNotOpen}>
+      <div
+        ref={containerRef}
+        style={openName == `${title}=${ip}` ? stepOpen : stepNotOpen}
+      >
         {log || "暂无数据"}
       </div>
     </div>
   );
 };
 
-export default RollbackDetail
+export default RollbackDetail;

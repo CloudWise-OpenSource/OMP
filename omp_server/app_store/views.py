@@ -36,8 +36,12 @@ from app_store.app_store_serializers import (
     UploadPackageHistorySerializer, ExecuteLocalPackageScanSerializer,
     PublishPackageHistorySerializer, DeploymentPlanValidateSerializer,
     DeploymentImportSerializer, DeploymentPlanListSerializer,
-    ExecutionRecordSerializer
+    ExecutionRecordSerializer, DeleteComponentSerializer,
+    DeleteProDuctSerializer
 )
+from backups.backup_service import cmd
+from omp_server.settings import PROJECT_DIR
+
 from app_store.app_store_serializers import (
     ProductDetailSerializer, ApplicationDetailSerializer
 )
@@ -988,3 +992,125 @@ class ExecutionRecordAPIView(GenericViewSet, ListModelMixin):
     serializer_class = ExecutionRecordSerializer
     # 操作信息描述
     get_description = "查询执行记录"
+
+
+class DeleteAppStorePackageView(GenericViewSet, ListModelMixin, CreateModelMixin):
+    """
+        get:
+        查看应用商店
+    """
+    get_description = "查看应用商店"
+    post_description = "删除应用商店"
+
+    def get_queryset(self):
+        if self.request.query_params.get('type') == "component":
+            return ApplicationHub.objects.filter(
+                app_type=ApplicationHub.APP_TYPE_COMPONENT).order_by("-created")
+        else:
+            return ProductHub.objects.all().order_by("-created")
+
+    def get_serializer_class(self):
+        if self.request.query_params.get('type') == "component":
+            return DeleteComponentSerializer
+        return DeleteProDuctSerializer
+
+    def list(self, request, *args, **kwargs):
+        app_type = request.GET.get("type")
+        if not app_type or app_type not in ["component", "product"]:
+            raise OperateError("请传入type或合法type")
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        app_name_dc = {}
+        for _ in serializer.data:
+            app_name_dc.setdefault(_["name"], []).extend(_["versions"])
+        res_ls = []
+        for name, versions in app_name_dc.items():
+            res_ls.append({"name": name, "versions": versions})
+        return Response(
+            {"data": res_ls,
+             "type": app_type}
+        )
+
+    @staticmethod
+    def explain_info():
+        app_ls = ApplicationHub.objects.all().values_list(
+            "id", "app_name", "app_version", "product")
+        pro_ls = ProductHub.objects.all().values_list("id", "pro_name", "pro_version")
+        app_dc = {}
+        pro_id_app_count = {}
+        for app in app_ls:
+            app_dc[f"{app[1]}|{app[2]}"] = app[0]
+            if app[3]:
+                pro_id_app_count[app[3]] = pro_id_app_count.get(app[3], 0) + 1
+        pro_id_count = {}
+        for pro in pro_ls:
+            if pro_id_app_count.get(pro[0]):
+                pro_id_count[f"{pro[1]}|{pro[2]}"] = [
+                    pro_id_app_count[pro[0]], pro[0]]
+            else:
+                pro_id_count[f"{pro[1]}|{pro[2]}"] = [0, pro[0]]
+        return pro_id_count, app_dc
+
+    def check_service(self, params):
+        pro_id_count, app_dc = self.explain_info()
+        ser_id = []
+        pro_dc = {}
+        for info in params["data"]:
+            if params['type'] == "component":
+                for version in info["versions"]:
+                    app_id = app_dc.get(f'{info["name"]}|{version}')
+                    if app_id:
+                        ser_id.append(app_id)
+            else:
+                # 查询选择的产品是不是勾选全部
+                pro_info = pro_id_count[info["name"]]
+                # 确定就是产品删除
+                if pro_info[0] == len(info["versions"]):
+                    pro_dc[pro_info[1]] = info["name"]
+                for _ in info["versions"]:
+                    app_id = app_dc.get(_)
+                    if app_id:
+                        ser_id.append(app_id)
+        ser_name = Service.objects.filter(
+            service__in=ser_id).values_list('service_instance_name', flat=True)
+        if ser_name:
+            raise OperateError(f'存在已安装的服务{",".join(ser_name)}')
+        return ser_id, pro_dc
+
+    @staticmethod
+    def del_file(file_path):
+        logger.info(f"应用包可能删除的路径 {file_path}")
+        if file_path and len(file_path) > 28:
+            _out, _err, _code = cmd(f"/bin/rm -rf {file_path}")
+            if _code != 0:
+                raise OperateError(f'执行cmd异常,删除路径失败{file_path}:{_err},{_out}')
+
+    def del_database(self, ser_id, pro_dc):
+        app_objs = ApplicationHub.objects.filter(id__in=ser_id)
+        del_ser_file = []
+        for app in app_objs:
+            if app.app_package.package_name:
+                del_ser_file.append(os.path.join(
+                    PROJECT_DIR, "package_hub", app.app_package.package_path,
+                    app.app_package.package_name,
+                ))
+        self.del_file(" ".join(del_ser_file))
+        app_objs.delete()
+        if pro_dc:
+            del_pro_file = []
+            for pro_id, pro_info in pro_dc.items():
+                pro_info = pro_info.replace("|", "-")
+                if pro_info:
+                    del_pro_file.append(
+                        os.path.join(PROJECT_DIR, f"package_hub/verified/{pro_info}"))
+            self.del_file(" ".join(del_pro_file))
+            ProductHub.objects.filter(id__in=list(pro_dc)).delete()
+
+    def create(self, request, *args, **kwargs):
+        params = request.data
+        app_type = params.get('type', None)
+        if not app_type:
+            raise OperateError("请传入类型")
+        ser_id, pro_dc = self.check_service(params)
+        self.del_database(ser_id, pro_dc)
+        return Response({"status": "删除成功"})

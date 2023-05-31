@@ -50,7 +50,7 @@ const InstallDetail = ({ title, ip, status, openName, setOpenName,log }) => {
           justifyContent: "space-between",
         }}
       >
-        <div style={{ flex: 1 }}>{ip}</div>
+        <div style={{ flex: 2 }}>{ip}</div>
         <div style={{ flex: 1 }}>{renderStatus[status]}</div>
         <div style={{ flex: 6, textAlign: "right", paddingRight: 50 }}>
           <a

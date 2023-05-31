@@ -17,7 +17,7 @@ from app_store.views import (
     ApplicationTemplateView, DeploymentPlanValidateView,
     DeploymentPlanImportView, DeploymentPlanListView,
     DeploymentOperableView, DeploymentTemplateView,
-    ExecutionRecordAPIView)
+    ExecutionRecordAPIView, DeleteAppStorePackageView)
 from app_store.views_for_install import (
     ComponentEntranceView,
     ProductEntranceView,
@@ -49,6 +49,7 @@ router.register("components", ComponentListView, basename="components")
 router.register("services", ServiceListView, basename="appServices")
 router.register("upload", UploadPackageView, basename="upload")
 router.register("remove", RemovePackageView, basename="remove")
+router.register("delete", DeleteAppStorePackageView, basename="delete")
 router.register("componentDetail", ComponentDetailView,
                 basename="componentDetail")
 router.register("serviceDetail", ServiceDetailView,

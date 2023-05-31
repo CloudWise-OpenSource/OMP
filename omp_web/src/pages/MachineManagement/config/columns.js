@@ -1,4 +1,9 @@
-import { nonEmptyProcessing, renderDisc } from "@/utils/utils";
+import {
+  nonEmptyProcessing,
+  renderDisc,
+  RenderStatusForResult,
+} from "@/utils/utils";
+import { OmpToolTip } from "@/components";
 import { DownOutlined, DesktopOutlined } from "@ant-design/icons";
 import { Dropdown, Menu, Drawer, Tooltip, Spin, Timeline } from "antd";
 import moment from "moment";
@@ -62,7 +67,7 @@ export const DetailHost = ({
       destroyOnClose={true}
     >
       <div
-        style={{ height: "calc(100% - 15px)", width: "100%", display: "flex" }}
+        style={{ height: "calc(100% - 14px)", width: "100%", display: "flex" }}
       >
         <div
           style={{
@@ -191,7 +196,9 @@ export const DetailHost = ({
                         justifyContent: "space-between",
                       }}
                     >
-                      <span style={{ width: "65%" }}>{item}</span>
+                      <span style={{ width: "65%" }}>
+                        <OmpToolTip maxLength={16}>{item}</OmpToolTip>
+                      </span>
                       <span style={{ width: "35%" }}>
                         {isShowDrawer.record.disk[item]} G
                       </span>
@@ -380,7 +387,8 @@ export const DetailHost = ({
                   return (
                     <Timeline.Item key={item.id}>
                       <p style={{ color: "#595959" }}>
-                        [{item.username}] {item.description}
+                        <RenderStatusForResult result={item?.result} />[
+                        {item.username}] {item.description}
                       </p>
                       <p style={{ color: "#595959" }}>
                         {moment(item.created).format("YYYY-MM-DD HH:mm:ss")}
