@@ -2,16 +2,31 @@ import logging
 
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer, Serializer
-from db_models.models import Env, SelfHealingSetting, SelfHealingHistory
+from db_models.models import SelfHealingSetting, SelfHealingHistory
+from rest_framework_bulk import BulkSerializerMixin, BulkListSerializer
+from rest_framework.exceptions import ValidationError
 
 logger = logging.getLogger("server")
 
 
-class SelfHealingSettingSerializer(ModelSerializer):
-
+class SelfHealingSettingSerializer(BulkSerializerMixin, ModelSerializer):
     class Meta:
         model = SelfHealingSetting
-        fields = ("used", "alert_count", "max_healing_count")
+        fields = "__all__"
+        list_serializer_class = BulkListSerializer
+
+    def validate(self, attrs):
+        repair_ls = SelfHealingSetting.objects.all().values_list("repair_instance", flat=True)
+        repairs = []
+        for _ in repair_ls:
+            repairs.extend(_)
+        repeat = set(repairs) & set(attrs["repair_instance"])
+        if repeat:
+            raise ValidationError(f"服务不可重复{repeat}")
+        if "all" in repairs:
+            raise ValidationError(f"all服务不可再次添加其他服务")
+        return attrs
+
 
 class ListSelfHealingHistorySerializer(ModelSerializer):
     class Meta:

@@ -11,12 +11,12 @@ thread_pool_max_workers: 10
 # redis相关配置
 redis:
   host: 127.0.0.1
-  port: 6379
+  port: 19034
   password: common123
 # mysql相关配置
 mysql:
   host: 127.0.0.1
-  port: 3306
+  port: 19033
   username: common
   password: Common@123
 # salt相关配置
@@ -37,6 +37,16 @@ tengine:
 token_expiration: 1
 #grafana认证字段，无需修改
 grafana_api_key: test
+#grafana_auth
+grafana_auth:
+  # grafana admin auth
+  grafana_admin_auth:
+    username: admin
+    plaintext_password: Yunweiguanli@OMP_123
+  # grafana viewer auth
+  grafana_viewer_auth:
+    username: omp
+    plaintext_password: Common@123
 # 关联邮件设置,谨慎修改
 alert_manager:
   # 是否开启发送邮件配置，默认不开启
@@ -136,3 +146,13 @@ basic_order:
     - filebeat
     - victoriaMetrics
     - sentinel
+# 自愈周期内服务key的存活时常 min
+health_redis_timeout: 60
+# 单次health接口检测最大次数
+health_request_count: 10
+# 单次health接口请求停留时常 s
+health_request_sleep: 6
+# 模板安装下，基础组件集群模式个数的严格校验
+template_cluster_check: true
+#服务发现脚本,纳管自定义排查脚本
+service_discovery:

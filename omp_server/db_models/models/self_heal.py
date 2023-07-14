@@ -1,15 +1,30 @@
 from django.db import models
-from .env import Env
+from django.core.validators import MaxValueValidator
+
+
+class WaitSelfHealing(models.Model):
+    # 0 等待自愈 1 自愈中 存在自愈中的服务不被允许再次触发自愈，保证自愈过程中只有一个自愈在进行。
+    service_name = models.CharField("自愈服务名称", max_length=64, default="")
+    repair_ser = models.JSONField("自愈缓存服务详情", default=dict)
+    repair_status = models.IntegerField("自愈缓存服务", default=0)
+
+    class Meta:
+        db_table = "omp_wait_self_healing"
+        verbose_name = verbose_name_plural = "自愈等待队列"
 
 
 class SelfHealingSetting(models.Model):
     """自愈策略设置表"""
+    REPAIR_CHOICES = [
+        (0, "启动"),
+        (1, "重新启动")
+    ]
+
     used = models.BooleanField("是否启用", default=False)
-    alert_count = models.IntegerField("触发自愈的告警次数", default=1)
-    max_healing_count = models.IntegerField("最多自愈操作次数", default=5)
-    env = models.ForeignKey(
-        Env, null=True, on_delete=models.SET_NULL,
-        verbose_name="环境", help_text="环境")
+    max_healing_count = models.IntegerField("最多自愈操作次数", default=5, validators=[MaxValueValidator(20)])
+    fresh_rate = models.IntegerField("周期内采集告警消息频次", default=10, validators=[MaxValueValidator(60)])
+    instance_tp = models.IntegerField("实例类别", choices=REPAIR_CHOICES, default=0)
+    repair_instance = models.JSONField("修复实例", default=dict, blank=False, null=False)
 
     class Meta:
         db_table = "omp_self_healing_setting"
@@ -34,15 +49,10 @@ class SelfHealingHistory(models.Model):
     healing_count = models.IntegerField("已运行自愈次数", default=0)
     start_time = models.DateTimeField("自愈开始时间", null=True)
     end_time = models.DateTimeField("自愈结束时间", null=True)
-    healing_log = models.JSONField("自愈日志", default=dict)
-    env = models.ForeignKey(
-        Env, null=True, on_delete=models.SET_NULL,
-        verbose_name="环境", help_text="环境")
-    fingerprint = models.CharField("关联告警唯一值", max_length=64)
+    healing_log = models.TextField("自愈日志", default="")
     alert_time = models.DateTimeField("关联告警时间，与fingerprint确定同一次告警", null=True)
     alert_content = models.TextField("告警日志内容", default="")
     monitor_log = models.TextField("grafana日志url", default="")
-    service_en_type = models.CharField("服务类型，self_dev&component&database", max_length=64, default="")
 
     class Meta:
         db_table = "omp_self_healing_history"

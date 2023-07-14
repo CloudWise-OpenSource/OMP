@@ -32,7 +32,8 @@ import ToolDetails from "@/pages/ToolManagement/detail";
 import ToolExecution from "@/pages/ToolExecution";
 import ToolExecutionResults from "@/pages/ToolExecutionResults";
 import RuleIndicator from "@/pages/RuleIndicator";
-import RuleExtend from "@/pages/RuleExtend"
+import RuleExtend from "@/pages/RuleExtend";
+import GetService from "@/pages/AppStore/config/GetService";
 
 import {
   DesktopOutlined,
@@ -46,7 +47,7 @@ import {
   SaveOutlined,
   SolutionOutlined,
   InteractionOutlined,
-  ToolOutlined
+  ToolOutlined,
 } from "@ant-design/icons";
 
 export default [
@@ -135,6 +136,12 @@ export default [
         path: "/application_management/deployment-plan",
         component: DeploymentPlan,
       },
+      {
+        title: "服务纳管",
+        path: "/application_management/get-service",
+        notInMenu: true,
+        component: GetService,
+      },
     ],
   },
   {
@@ -165,14 +172,14 @@ export default [
     menuKey: "/fault-selfHealing",
     children: [
       {
-        title: "自愈记录",
-        path: "/fault-selfHealing/selfHealing-record",
-        component: SelfHealingRecord,
-      },
-      {
         title: "自愈策略",
         path: "/fault-selfHealing/selfHealing-strategy",
         component: SelfHealingStrategy,
+      },
+      {
+        title: "自愈记录",
+        path: "/fault-selfHealing/selfHealing-record",
+        component: SelfHealingRecord,
       },
     ],
   },

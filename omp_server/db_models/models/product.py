@@ -182,6 +182,13 @@ class ApplicationHub(TimeStampMixin):
         # 服务、组件名称和版本形成联合唯一索引，不允许重复
         unique_together = ("app_name", "app_version")
 
+    @property
+    def pro_info(self):
+        """ 查询是product名字 """
+        if self.product:
+            return {"pro_name": self.product.pro_name, "pro_version": self.product.pro_version}
+        return None
+
 
 class Product(TimeStampMixin):
     """ 已安装产品表 """

@@ -26,11 +26,12 @@ PROJECT_LOG_PATH = os.path.join(PROJECT_FOLDER, "logs")
 
 sys.path.append(os.path.join(PROJECT_FOLDER, "omp_server"))
 import django
+
 # 加载Django环境
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "omp_server.settings")
 django.setup()
 
-from utils.parse_config import MONITOR_PORT, PROMETHEUS_AUTH
+from utils.parse_config import MONITOR_PORT, PROMETHEUS_AUTH, GRAFANA_AUTH
 
 
 def get_config_dic():
@@ -467,9 +468,14 @@ def update_grafana():
     # 修改 conf/defaults.ini
     cdi_file = os.path.join(grafana_path, 'conf', 'defaults.ini')
     CW_GRAFANA_PORT = MONITOR_PORT.get("grafana", '19014')
+    CW_GRAFANA_ADMIN_USER = GRAFANA_AUTH.get("grafana_admin_auth").get("username", "admin")
+    CW_GRAFANA_ADMIN_PASSWORD = GRAFANA_AUTH.get("grafana_admin_auth").get("plaintext_password", "Yunweiguanli@OMP_123")
+
     cdi_placeholder_script = [
         {'CW-HTTP-PORT': CW_GRAFANA_PORT},
         {'OMP_GRAFANA_LOG_PATH': omp_grafana_log_path},
+        {'CW_GRAFANA_ADMIN_USER': CW_GRAFANA_ADMIN_USER},
+        {'CW_GRAFANA_ADMIN_PASSWORD': CW_GRAFANA_ADMIN_PASSWORD},
     ]
     replace_placeholder(cdi_file, cdi_placeholder_script)
 

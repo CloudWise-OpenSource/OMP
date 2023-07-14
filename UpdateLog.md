@@ -109,5 +109,12 @@
 - 支持通过前端界面方式卸载应用商店中已经发布的应用
 - 更新readme文档
 
-##
+## v1.0 (2023.07.14)
+- 新增功能「服务纳管」模块
+- 重构「服务自愈」模块
+- 新增OOM告警
+- 更新部分Grafana面板
+  - 服务面板： redis、victoriametrics、rocketmq
+  - 集群面板： redis、clickhouse、mysql、tengine
+- 修复 Grafana 无法登陆问题
 

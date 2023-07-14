@@ -4,7 +4,8 @@ from rest_framework.routers import DefaultRouter
 from services.views import (
     ServiceListView, ServiceDetailView,
     ServiceActionView, ServiceDeleteView,
-    ServiceStatusView, ServiceDataJsonView
+    ServiceStatusView, ServiceDataJsonView,
+    AppListView, AppConfCheckView,
 )
 from services.self_heal_view import (
     SelfHealingSettingView, ListSelfHealingHistoryView,
@@ -24,6 +25,10 @@ router.register("UpdateSelfHealingHistory",
                 UpdateSelfHealingHistoryView,
                 basename="UpdateSelfHealingHistory")
 router.register("serviceStatus", ServiceStatusView, basename="serviceStatus")
+
+# Accept_manager
+router.register("appList", AppListView, basename="appList")
+router.register("appConfCheck", AppConfCheckView, basename="appConfCheck")
 
 urlpatterns = [
     path('data_json', ServiceDataJsonView.as_view(), name="serviceDataJson")
