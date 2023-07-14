@@ -81,6 +81,19 @@ class RedisDB(object):
         self.conn.set(name, pickle.dumps(data), ex=timeout)
         logger.info(f"Insert data to redis:\nname:{name}\ndata:{data}")
 
+    def update(self, name, data, timeout=60 * 60 * 8):
+        """
+        更新redis键值对,此时过期时间不可刷新
+        :param name: redis键名称
+        :param data: redis中要存储的值
+        :param timeout: 超时时间 -2是过期 -1是无过期
+        :return:
+        """
+        _obj = self.conn.ttl(name)
+        if _obj == -2:
+            _obj = timeout
+        return self.set(name, data, timeout=_obj)
+
     def get(self, name):
         """
         获取存储在redis中的值

@@ -39,7 +39,13 @@ TOKEN_EXPIRATION = CONFIG_DIC.get("token_expiration", 1)
 MONITOR_PORT = CONFIG_DIC.get("monitor_port")
 GRAFANA_API_KEY = CONFIG_DIC.get("grafana_api_key")
 PROMETHEUS_AUTH = CONFIG_DIC.get("prometheus_auth", {})
+GRAFANA_AUTH = CONFIG_DIC.get("grafana_auth", {})
 LOKI_CONFIG = CONFIG_DIC.get("loki_config", {})
+HEALTH_REDIS_TIMEOUT = int(CONFIG_DIC.get("health_redis_timeout", 60)) * 60
+HEALTH_REQUEST_COUNT = int(CONFIG_DIC.get("health_request_count", 6))
+HEALTH_REQUEST_SLEEP = int(CONFIG_DIC.get("health_request_sleep", 5))
+CLEAR_DB = CONFIG_DIC.get("clear_table", {})
+SERVICE_DISCOVERY = CONFIG_DIC.get("service_discovery", [])
 OMP_REDIS_HOST = os.getenv(
     "OMP_REDIS_HOST",
     CONFIG_DIC.get("redis", {}).get("host")

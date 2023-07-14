@@ -1,222 +1,293 @@
 import logging
-from db_models.models import Service
-from db_models.models import SelfHealingSetting
-from db_models.models import SelfHealingHistory
-from db_models.models import Alert
-from db_models.models import Host
-from db_models.models import GrafanaMainPage
-from utils.plugin.salt_client import SaltClient
-from utils.plugin.crypto import AESCryptor
-logger = logging.getLogger('server')
-from celery import shared_task
+import copy
 import time
 import paramiko
-import sys
 import requests
 import json
-from utils.parse_config import MONITOR_PORT
+import datetime
+from db_models.models import Service, SelfHealingSetting, \
+    SelfHealingHistory, Host, WaitSelfHealing, ApplicationHub
+from celery import shared_task
 from promemonitor.prometheus_utils import CW_TOKEN
+from utils.plugin.salt_client import SaltClient
+from utils.plugin.crypto import AESCryptor
+from concurrent.futures import (
+    ThreadPoolExecutor, as_completed
+)
+from utils.parse_config import MONITOR_PORT, BASIC_ORDER, \
+    THREAD_POOL_MAX_WORKERS, HEALTH_REDIS_TIMEOUT, HEALTH_REQUEST_COUNT, HEALTH_REQUEST_SLEEP
+from app_store.new_install_utils import RedisDB
+from utils.plugin.crontab_utils import maintain
+
+logger = logging.getLogger('server')
+
+class SelfHealing:
+    def __init__(self, instance_tp, max_healing_count):
+        # 需要起停信息ip等操作
+        self.instance_tp = instance_tp
+        self.max_healing_count = max_healing_count
+        self.redis = RedisDB()
+        self.service_info = set()
+        self.host_info = set()
+
+    def merge_and_filter_ser(self, alert_info):
+        """
+        初始化用，过滤服务（主机），及服务初始化信息
+        """
+        data_dict = {}
+        host_ls = []
+        for d in alert_info:
+            if d.get("alert_instance_name") and \
+                    d['alert_instance_name'] not in self.service_info:
+                data_dict.setdefault(d['alert_service_name'], []).append(d)
+                self.service_info.add(d['alert_instance_name'])
+            if not d.get("alert_instance_name") and \
+                    d['alert_host_ip'] not in self.host_info:
+                self.host_info.add(d['alert_host_ip'])
+                host_ls.append(d)
+        # 初始化主机和服务信息
+        self.host_info = dict(Host.objects.filter(
+            ip__in=list(self.host_info)).values_list("ip", "agent_dir"))
+        self.service_info = dict(Service.objects.filter(
+            service_instance_name__in=list(self.service_info)
+        ).values_list("service_instance_name", "service_controllers"))
+        return data_dict, host_ls
+
+    def sort_service(self, alert_info):
+        """
+        初始化用，提供排序
+        """
+        sort_dict = copy.copy(BASIC_ORDER)
+        # 赋值并过滤 存在问题 过滤需要过滤会过滤到同服务不同实例名的例
+        data_dict, host_ls = self.merge_and_filter_ser(alert_info)
+        sort_ser = []
+        for key in sort_dict:
+            temp = []
+            for item in sort_dict[key]:
+                temp.extend(data_dict.pop(item, []))
+                if temp:
+                    sort_ser.append(temp)
+            other_ser = data_dict.values()
+        if other_ser:
+            other_ser = [service for app in other_ser for service in app]
+            sort_ser.append(other_ser)
+        if host_ls:
+            sort_ser.insert(0, host_ls)
+        return sort_ser
+
+    def exec_salt_cmd(self, ip, command, his_obj):
+        """
+        进行启动，请求接口查询状态，日志追加，状态变更
+        """
+        salt_obj = SaltClient()
+        cmd_flag, cmd_msg = salt_obj.cmd(
+            target=ip,
+            command=command,
+            timeout=60)
+        healing_log = f"执行ip:{ip},执行cmd:{command},执行结果:{cmd_flag},执行详情:{cmd_msg},"
+        if not cmd_flag:
+            his_obj.healing_log = healing_log
+            his_obj.save()
+            return False
+        # 循环检测，超出检测时常后退出
+        for _ in range(HEALTH_REQUEST_COUNT):
+            res = self.check_health(ip, command, his_obj, healing_log)
+            if res:
+                return True
+            time.sleep(HEALTH_REQUEST_SLEEP)
+        return False
+
+    @staticmethod
+    def check_health(ip, command, his_obj, healing_log):
+        request_monitor = {"service_name": his_obj.service_name, "ip": ip}
+        if "omp_monitor_agent" in command:
+            request_monitor["service_name"] = "node"
+        try:
+            monitor_agent_res = get_service_status_direct([request_monitor])
+        except Exception as e:
+            his_obj.healing_log = healing_log + ",请求监控报错"
+            his_obj.save()
+            logger.info("monitor_agent_res_error 监控报错信息{}".format(e))
+            return False
+        if monitor_agent_res[0].get("status") == 1:
+            his_obj.healing_log = healing_log + "monitor_agent_res 服务状态查看正常更新服务状态"
+            his_obj.state = SelfHealingHistory.HEALING_SUCCESS,
+            his_obj.end_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+            his_obj.save()
+            return True
+        return False
+
+    def get_command(self, instance_name):
+        """
+        获取cmd ，通过策略类型选择启动或重启
+        """
+        action_dc = {
+            0: "start",
+            1: "restart"
+        }
+        action = action_dc[self.instance_tp]
+        service_action = self.service_info.get(instance_name)
+        host_action = self.host_info.get(instance_name)
+        if service_action:
+            command = service_action.get(action) if service_action.get(action) \
+                else service_action.get("start", "").replace("start", action)
+        else:
+            command = f"bash {host_action}/omp_monitor_agent/monitor_agent.sh {action}"
+        return command
+
+    @staticmethod
+    def write_db(data, healing_count):
+        """
+        合法后创建记录表用
+        """
+
+        initial_v = {
+            "start_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "is_read": 0,
+            "state": 2,
+            "healing_log": "",
+            "healing_count": healing_count
+        }
+        compare_dc = {
+            "alert_host_ip": "host_ip",
+            "alert_service_name": "service_name",
+            "alert_time": "alert_time",
+            # "fingerprint": "fingerprint",
+            "monitor_log": "monitor_log",
+            "alert_describe": "alert_content",
+            "alert_instance_name": "instance_name",
+        }
+        write_db_dc = {}
+        for field, value in data.items():
+            compare_v = compare_dc.get(field)
+            if compare_v:
+                write_db_dc[compare_v] = value
+        write_db_dc.update(initial_v)
+        return SelfHealingHistory.objects.create(**write_db_dc)
+
+    def get_redis_count(self, instance_name):
+        """
+        缓存校验用，周期内自愈次数最大限制
+        """
+        _flag, _data = self.redis.get(f"heal{instance_name}")
+        if not _flag:
+            count = 1
+        else:
+            count = int(_data) + 1
+        self.redis.update(
+            name=f"heal{instance_name}",
+            data=count,
+            timeout=HEALTH_REDIS_TIMEOUT
+        )
+        return count
+
+    def host(self, hosts_info):
+        identify_des = "monitor_agent进程丢失"
+        ip = hosts_info["alert_host_ip"]
+        if identify_des not in hosts_info.get('alert_describe'):
+            # 暂不支持的模式
+            logger.info(f"暂不支持的模式{ip}")
+            return True
+        ip = hosts_info["alert_host_ip"]
+        host_ip = "".join(ip.split("."))
+        healing_count = self.get_redis_count(host_ip)
+        if healing_count > self.max_healing_count:
+            # 自愈实例超出限制个数
+            return True
+        # 写库
+        his_obj = self.write_db(hosts_info, healing_count)
+        res = self.exec_salt_cmd(ip, self.get_command(ip), his_obj)
+        if not res:
+            return self.exec_salt_cmd(ip, self.get_command(ip), his_obj)
+        his_obj.state = SelfHealingHistory.HEALING_SUCCESS if res else SelfHealingHistory.HEALING_FAIL
+        his_obj.end_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        his_obj.save()
+
+    def service(self, service_info):
+        # 获取service的redis的key HEALTH_REDIS_TIMEOUT
+        identify_des = "been down for more than a minute"
+        if identify_des not in service_info.get('alert_describe'):
+            logger.info(f"暂不支持的模式{service_info['alert_instance_name']}")
+            # 暂不支持的模式
+            return True
+        healing_count = self.get_redis_count(service_info['alert_instance_name'])
+        if healing_count > self.max_healing_count:
+            # 自愈实例超出限制个数
+            logger.info(f"自愈实例超出限制个数{service_info['alert_instance_name']}")
+            return True
+        # 写库
+        his_obj = self.write_db(service_info, healing_count)
+        command = self.get_command(service_info['alert_instance_name'])
+        res = self.exec_salt_cmd(service_info['alert_host_ip'], command, his_obj)
+        if not res:
+            # 二次重复不再进行其余操作
+            res = self.exec_salt_cmd(service_info['alert_host_ip'], command, his_obj)
+        his_obj.state = SelfHealingHistory.HEALING_SUCCESS if res else SelfHealingHistory.HEALING_FAIL
+        his_obj.end_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        his_obj.save()
+
+
+def get_enable_health(repairs):
+    h_ls = set(Host.objects.all().values_list("ip", flat=True))
+    for app in ApplicationHub.objects.filter(is_base_env=False):
+        if not app.extend_fields.get("affinity", "") == "tengine":
+            h_ls.add(app.app_name)
+    return list(h_ls - set(repairs))
+
+
 @shared_task
-def self_healing(alert_list):
-    """ 添加数据入库校验逻辑 添加定时任务"""
-    alert_list = Alert.objects.filter(id__in=alert_list)
-    logger.info("传入id 信息{}".format(alert_list))
-    user_healing = SelfHealingSetting.objects.all().values_list("used", "max_healing_count", "env_id")
-    healing_mode = user_healing[0][0]
-    max_healing_count = user_healing[0][1]
-    env_id = user_healing[0][2]
-    host_service_healing = 'monitor_agent进程丢失'
-    sudo_check_cmd = "bash /data/omp_monitor_agent/monitor_agent.sh start"
-    grafana_url = GrafanaMainPage.objects.filter(instance_name='log').values("instance_url")
-    grafana_url_log = (grafana_url[0].get("instance_url"))
-    # 监控服务集合
-    instance_name_list = []
-    # 服务查看时间间隔
-    self_healing_interval=50
-    # 循环自愈服务间隔
-    loop_interval=5
-    if len(alert_list) >= 1 and healing_mode == 1:
-        time.sleep(loop_interval)
-        for i in range(len(alert_list)):
-            host_alert_time = alert_list[i].alert_time
-            if alert_list[i].alert_type == 'service':
-                logger.info("service:service_step_0 进入服务级别的自愈")
-                alert_ser = SelfHealingHistory.objects.filter(
-                    service_name=alert_list[i].alert_service_name,
-                    host_ip=alert_list[i].alert_host_ip,
-                    # state=2,
-                    alert_time=host_alert_time)
-                logger.info("service_step_1 需要入库信息集合长度: {} ".format(alert_ser.count()))
-                instance_name_list.append(alert_list[i].alert_instance_name)
-                logger.info("service_step_2 需要入库信息集合列表: {} ".format(instance_name_list))
-                if alert_ser.count() == 0:
-                    service_queryset = Service.objects.filter(service_instance_name__in=instance_name_list).values_list(
-                        "ip", "service_controllers", "service_instance_name","id").order_by("id")
-                    logger.info("service_step_3 Service表返回结合: {} ".format(service_queryset))
-                    for j in service_queryset:
-                        try:
-                            res_dist = {}
-                            res_dist['ip'] = j[0]
-                            res_dist['start'] = j[1].get('start')
-                            res_dist['service_instance_name'] = j[2].split('-')[0]
-                            logger.info("service_step_4 服务启动脚本入库信息".format(res_dist))
-                            SelfHealingHistory.objects.create(
-                                is_read=0, host_ip=alert_list[i].alert_host_ip,
-                                service_name=alert_list[i].alert_service_name, state=2,
-                                alert_time=alert_list[i].alert_time,
-                                fingerprint=alert_list[i].fingerprint,
-                                env_id=env_id,
-                                monitor_log=alert_list[i].monitor_log,
-                                service_en_type=0,
-                                instance_name=alert_list[i].alert_instance_name,
-                                start_time=alert_list[i].create_time,
-                                healing_log=res_dist,
-                                alert_content=alert_list[i].alert_describe)
-                        except Exception as e:
-                            logger.info("service_step_4 服务级别入库失败,报错信息为:{}".format(e))
-            if alert_list[i].alert_type == 'host' and host_service_healing in alert_list[i].alert_describe:
-                logger.info("host:host_step_0 进入主机级别的自愈")
-                ssh_res = self_healing_ssh_verification(alert_list[i].alert_host_ip, sudo_check_cmd)
-                logger.info("host_step_1 主机ssh校验对象:{},校验结果:{}".format(alert_list[i].alert_host_ip,ssh_res))
-                """ ssh 正常  监控启动完成 """
-                if ssh_res[0] == True and ssh_res[1] == 1:
-                    """ 查询所有主机"""
-                    service_queryset_1 = Service.objects.filter(ip=alert_list[i].alert_host_ip).values_list\
-                        ( "ip","service_controllers","service_instance_name","id").order_by("id")
-                    logger.info("host_step_2 Service表返回结合{} ".format(service_queryset_1))
-                    """ 批量请求接口"""
-                    req_monitor_agent = []
-                    req_monitor_agent_ = []
-                    for h1 in service_queryset_1:
-                        if h1[1].get('start') is not None:
-                            req_dist = {}
-                            req_dist['ip'] = h1[0]
-                            req_dist['service_name'] = h1[2].split('-')[0]
-                            req_monitor_agent_.append(req_dist)
-                    req_monitor_agent.append(req_monitor_agent_[0])
-                    logger.info("monitor_agent_res_请求数据类型{} 请求数据内容"
-                                "".format(type(req_monitor_agent),req_monitor_agent))
-                    try:
-                        monitor_agent_res_batch = get_service_status_direct(req_monitor_agent)
-                    except Exception as e:
-                        logger.info("monitor_agent_res_error 监控报错信息{}".format(e))
-                    """ 服务状态查看"""
-                    if monitor_agent_res_batch[0].get("status") ==0:
-                        for w in service_queryset_1:
-                            logger.info("host_step_3 服务状态异常逻辑 ")
-                            if w[1].get('start') is not None:
-                                try:
-                                    logger.info("host_step_4 需要入库信息:{},host_ip:{},alert_time:{}"
-                                                "".format(w[2].split('-')[0],w[0],host_alert_time))
-                                    alert_ser_0 = SelfHealingHistory.objects.filter(
-                                        service_name=w[2].split('-')[0],
-                                        host_ip=w[0],
-                                        alert_time=host_alert_time)
-                                    logger.info("host_step_5 需要入库信息集合列表:{}".format(alert_ser_0))
-                                    if alert_ser_0.count() == 0:
-                                        res_dist = {}
-                                        res_dist['ip'] = w[0]
-                                        res_dist['start'] = w[1].get('start')
-                                        res_dist['service_instance_name'] =w[2].split('-')[0]
-                                        logger.info("host_step_5 服务启动脚本入库信息".format(res_dist))
-                                        instance_name_list.append(w[2])
-                                        SelfHealingHistory.objects.create(
-                                            is_read=0, host_ip=w[0],
-                                            service_name=w[2].split('-')[0],
-                                            state=2,
-                                            alert_time=host_alert_time,
-                                            env_id=env_id,
-                                            instance_name=w[2],
-                                            service_en_type=1,
-                                            healing_log=res_dist,
-                                            alert_content=alert_list[i].alert_describe,
-                                            monitor_log=grafana_url_log+"?var-app={}".format(w[2].split('-')[0]),
-                                            start_time=host_alert_time)
-                                except Exception as e:
-                                    logger.info("host_step_6 服务级别入库失败,报错信息".format(e))
-                                    return False
-                                    sys.exit()
-                if ssh_res[0]==False:
-                    logger.info("host_step_2 主机ssh 校验失败退出")
-                    break
-        history_queryset = SelfHealingHistory.objects.filter(
-            instance_name__in=instance_name_list, state=2).values("id","healing_log").order_by( "id")
-        logger.info("self_healing_0 需要自愈对象集合 {}".format(history_queryset))
-        if len(history_queryset) > 0:
-            logger.info("self_healing_1 进入自愈逻辑 {}".format(len(history_queryset)))
-            service_replace_list_0 = []
-            for z in history_queryset:
-                healing_dist = {}
-                healing_dist['ip'] = z.get("healing_log").get("ip")
-                healing_dist['start'] = z.get("healing_log").get("start")
-                healing_dist['id'] = z.get("id")
-                healing_dist['service_name'] = z.get("healing_log").get("service_instance_name")
-                service_replace_list_0.append(healing_dist)
-            logger.info("self_healing_2 需要自愈服务列表: {}".format(service_replace_list_0))
-            salt_client = SaltClient()
-            count = 0
-            while (count < max_healing_count):  # 变量
-                logger.info("self_healing_3 进入循环自愈流程")
-                count = count + 1
-                logger.info("self_healing_4  第{}次自愈输出列表{},列表长度为:{}".format(
-                    count, service_replace_list_0, len(service_replace_list_0)))
-                """ 需要修改"""
-                for k in range(len(service_replace_list_0)):
-                    cmd_flag, cmd_msg = salt_client.cmd(
-                        target=service_replace_list_0[k].get("ip"),
-                        command=service_replace_list_0[k].get("start").replace("start","restart"),
-                        timeout=60)
-                    logger.info("self_healing_5 循环自愈服务IP: {}".format(service_replace_list_0[k].get("ip")))
-                    logger.info("self_healing_5 循环自愈服务start :{}".format(service_replace_list_0[k].get("start")))
-                    logger.info("self_healing_5 自愈执行返回状态码:{}".format(cmd_flag))
-                    logger.info("self_healing_5 自愈执行返回结果:{}".format(cmd_msg))
-                    if cmd_flag == True:  # 重试逻辑
-                        """ 查看服务状态   """
-                        time.sleep(self_healing_interval)
-                        loop_request_monitor_agent = []
-                        req_dist = {}
-                        req_dist['ip'] = service_replace_list_0[k].get("ip")
-                        req_dist['service_name'] = service_replace_list_0[k].get("service_name")
-                        loop_request_monitor_agent.append(req_dist)
-                        logger.info("loop_0 第{}次自愈,服务自愈过程-服务状态查看请求数据: {}"
-                                    "".format(count, loop_request_monitor_agent))
-                        try:
-                            monitor_agent_res=get_service_status_direct(loop_request_monitor_agent)
-                        except Exception as e:
-                            logger.info("monitor_agent_res_error 监控报错信息{}".format(e))
-                            break
-                        logger.info("monitor_agent_res 监控返回数据{},数据类型{}"
-                                    "".format(monitor_agent_res, type(monitor_agent_res)))
-                        if monitor_agent_res[0].get("status")==1:
-                            logger.info("monitor_agent_res 服务状态查看正常更新服务状态")
-                            SelfHealingHistory.objects.filter(
-                                id=service_replace_list_0[k].get("id")).update(
-                                state=1, healing_count=count,end_time=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-                            service_replace_list_0.remove(service_replace_list_0[k])
-                            break
-                    if cmd_flag == False:
-                        SelfHealingHistory.objects.filter(
-                            id=service_replace_list_0[k].get("id")) \
-                            .update(healing_count=count,state=0,
-                                    end_time=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-                        service_replace_list_0.remove(service_replace_list_0[k])
-                        break
-                    if len(service_replace_list_0)==0:
-                        break
-            logger.info("self_healing_4 到达循环条件之后仍未自愈服务 : {}".format(service_replace_list_0))
-            if len(service_replace_list_0)!=0:
-                for k1 in range(len(service_replace_list_0)):
-                    SelfHealingHistory.objects.filter(
-                        id=service_replace_list_0[k].get("id")).update(
-                        state=0, healing_count=max_healing_count,
-                        end_time=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-def self_healing_ssh_verification(host_self_healing_list,sudo_check_cmd):
-    host_self_healing_list=host_self_healing_list
+@maintain
+def self_healing(task_id):
+    # 校验是否需要自愈
+    self_obj = SelfHealingSetting.objects.get(id=task_id)
+    if not self_obj.used:
+        return "该策略并未启用"
+    if "all" in self_obj.repair_instance:
+        data = self_obj.get_enable_health(list())
+    else:
+        data = list(self_obj.repair_instance)
+    wait_ser = WaitSelfHealing.objects.filter(service_name__in=data)
+    if not wait_ser or wait_ser.filter(repair_status=1):
+        return "存在正在自愈的服务或无需自愈的服务"
+    wait_ser.update(repair_status=1)
+    repair_ser_dc = dict(wait_ser.values_list("id", "repair_ser"))
+
+    repair_info = []
+    for ser in repair_ser_dc.values():
+        repair_info.append(ser)
+    logger.info(f"需要自愈的服务:{repair_info}")
+    # 排序 先主机 - 基础组件 -自研服务
+    try:
+        health_obj = SelfHealing(self_obj.instance_tp, self_obj.max_healing_count)
+        ser = health_obj.sort_service(repair_info)
+        logger.info(f"等待自愈的服务信息:{ser}")
+        # 开启修复
+        for service_ls in ser:
+            with ThreadPoolExecutor(THREAD_POOL_MAX_WORKERS) as executor:
+                future_list = []
+                for service in service_ls:
+                    future_obj = executor.submit(
+                        getattr(health_obj, service['alert_type']), service)
+                    future_list.append(future_obj)
+                for future in as_completed(future_list):
+                    future.result()
+    except Exception as e:
+        logger.info(f"未知异常，需保护释放锁 {e}")
+        # 释放锁 ,防止惰性查询再次筛选
+    WaitSelfHealing.objects.filter(id__in=list(repair_ser_dc)).delete()
+
+
+def self_healing_ssh_verification(host_self_healing_list, sudo_check_cmd):
+    """
+        先留着吧暂时没啥用。
+        """
+
+    host_self_healing_list = host_self_healing_list
     aes_crypto = AESCryptor()
     host_list = Host.objects.filter(ip=host_self_healing_list).values_list("ip", "port", "username", "password")
     for i in range(len(host_list)):
         try:
-            if len(host_list[i][2])!=0 and  len(host_list[i][3])!=0:
+            if len(host_list[i][2]) != 0 and len(host_list[i][3]) != 0:
                 client = paramiko.SSHClient()
                 client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 client.connect(hostname=host_list[i][0], port=host_list[i][1],
@@ -238,13 +309,14 @@ def self_healing_ssh_verification(host_self_healing_list,sudo_check_cmd):
             else:
                 logger.info("监控重启失败 无ssh")
                 """ 无ssh的情况"""
-                return False,0
+                return False, 0
         except Exception as e:
             logger.info("监控重启失败,报错信息为：{}".format(e))
             """ ssh 连接超时"""
-            return False,1
-    return True,2
+            return False, 1
+    return True, 2
     transport.close()
+
 
 def get_service_status_direct(service_obj_list):
     """

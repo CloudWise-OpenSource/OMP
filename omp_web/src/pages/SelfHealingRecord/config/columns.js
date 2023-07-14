@@ -68,7 +68,7 @@ const getColumnsConfig = (
     {
       title: "IP地址",
       key: "host_ip",
-      width: 200,
+      width: 140,
       dataIndex: "host_ip",
       ellipsis: true,
       sorter: (a, b) => a.host_ip - b.host_ip,
@@ -101,17 +101,17 @@ const getColumnsConfig = (
           text: "自愈中",
         },
       ],
-      render: renderStatus
+      render: renderStatus,
     },
     {
-      title: "自愈重试次数",
+      title: "重试次数",
       key: "healing_count",
       dataIndex: "healing_count",
       align: "center",
       //ellipsis: true,
-      width: 150,
+      width: 80,
       render: (text) => {
-       return text ? `${text}次`:"-"
+        return text ? `${text}次` : "-";
       },
     },
     {
@@ -124,11 +124,11 @@ const getColumnsConfig = (
       // sorter: (a, b) => a.alert_time - b.alert_time,
       // sortDirections: ["descend", "ascend"],
       render: (text) => {
-        if(text){
+        if (text) {
           let str = moment(text).format("YYYY-MM-DD HH:mm:ss");
           return str;
         }
-        return "-"
+        return "-";
       },
     },
     {
@@ -141,11 +141,11 @@ const getColumnsConfig = (
       // sorter: (a, b) => a.create_time - b.create_time,
       // sortDirections: ["descend", "ascend"],
       render: (text) => {
-        if(text){
+        if (text) {
           let str = moment(text).format("YYYY-MM-DD HH:mm:ss");
           return str;
         }
-        return "-"
+        return "-";
       },
     },
     {
@@ -153,11 +153,26 @@ const getColumnsConfig = (
       key: "alert_content",
       dataIndex: "alert_content",
       align: "center",
-      width: 420,
+      width: 300,
       ellipsis: true,
       render: (text) => {
         return (
           <Tooltip title={text}>
+            <span>{text ? text : "-"}</span>
+          </Tooltip>
+        );
+      },
+    },
+    {
+      title: "自愈日志",
+      key: "healing_log",
+      dataIndex: "healing_log",
+      align: "center",
+      width: 220,
+      ellipsis: true,
+      render: (text) => {
+        return (
+          <Tooltip title={text} placement="topLeft">
             <span>{text ? text : "-"}</span>
           </Tooltip>
         );
@@ -178,14 +193,14 @@ const getColumnsConfig = (
               {record.instance_name ? (
                 <a
                   onClick={() => {
-                    console.log(record)
+                    console.log(record);
                     history.push({
                       pathname: "/application-monitoring/alarm-log",
                       state: {
-                        alert_instance_name:record.instance_name,
-                        time: record.alert_time
-                      }
-                    })
+                        alert_instance_name: record.instance_name,
+                        time: record.alert_time,
+                      },
+                    });
                   }}
                 >
                   关联告警

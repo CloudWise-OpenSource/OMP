@@ -14,8 +14,11 @@ import time
 import json
 from promemonitor.prometheus_utils import PrometheusUtils
 from db_models.models import (
-    Host, HostOperateLog, ClusterInfo, Product
+    Host, HostOperateLog, ClusterInfo, Product, SelfHealingHistory, Alert
 )
+from utils.parse_config import BASIC_ORDER, CLEAR_DB
+from django.utils import timezone
+
 from django.db.models import F
 from django.db import transaction
 
@@ -199,3 +202,17 @@ def exec_action(action, instance, operation_user, del_file=False, need_sleep=Tru
     else:
         logger.error(f"数据库无{action[0]}动作")
         raise ValueError(f"数据库无{action[0]}动作")
+
+@shared_task
+def clear_db(task_id):
+    """
+    # ToDo 懒得写了以后优化
+    """
+    days_ago = timezone.now() - timezone.timedelta(
+        days=CLEAR_DB.get('health').get("day", 7)
+    )
+    SelfHealingHistory.objects.filter(end_time__lt=days_ago).delete()
+    days_ago = timezone.now() - timezone.timedelta(
+        days=CLEAR_DB.get('alert').get("day", 7)
+    )
+    Alert.objects.filter(create_time__lt=days_ago).delete()

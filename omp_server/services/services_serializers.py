@@ -4,7 +4,7 @@
 import json
 from rest_framework import serializers
 
-from db_models.models import Service
+from db_models.models import Service, ApplicationHub
 
 
 class ServiceStatusSerializer(serializers.ModelSerializer):
@@ -189,4 +189,11 @@ class ServiceDeleteSerializer(serializers.ModelSerializer):
     class Meta:
         """ 元数据 """
         model = Service
+        fields = '__all__'
+
+
+class AppListSerializer(serializers.ModelSerializer):
+    class Meta:
+        """ 元数据 """
+        model = ApplicationHub
         fields = '__all__'

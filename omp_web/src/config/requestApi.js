@@ -166,6 +166,11 @@ export const apiRequest = {
     queryRollbackProcess: "/api/rollback/history",
     // 删除应用商店
     deleteServer: "/api/appStore/delete/",
+
+    // 获取可纳管服务列表
+    queryAppList: "/api/services/appList/",
+    // 校验服务纳管配置信息
+    appConfCheck: "/api/services/appConfCheck/",
   },
   installHistoryPage: {
     queryInstallHistoryList: "/api/appStore/mainInstallHistory",
@@ -249,20 +254,16 @@ export const apiRequest = {
   },
   // 数据备份
   dataBackup: {
-    // 查询备份历史记录
-    queryBackupHistory: "/api/backups/backupHistory/",
-    // 备份设置初始值查询
-    queryBackupSettingData: "/api/backups/backupSettings/",
-    // 更新备份策略
-    updateBackupSetting: "/api/backups/backupSettings/",
-    // 获取可备份实例列表
-    queryCanBackup: "/api/backups/canBackupInstances/",
-    // 单次备份
-    backupOnce: "/api/backups/backupOnce/",
-    // 删除备份文件
-    deleteBackupFile: "/api/backups/backupHistory/",
-    // 推送备份记录
-    pushEmail: "/api/backups/backupSendEmail/",
+    // 数据库备份策略
+    strategySetting: "api/backups/backupSettings/",
+    // 自定义参数
+    backupCustom: "api/backups/backupCustom/",
+    // 可备份实例
+    queryCanBackup: "api/backups/canBackupInstances/",
+    // 查询自定义参数是否存在实例使用
+    backupRepeatCustom: "api/backups/backupRepeatCustom/",
+    // 备份记录
+    queryBackupHistory: "api/backups/backupHistory/",
   },
   operationRecord: {
     // 登录日志
@@ -276,10 +277,8 @@ export const apiRequest = {
     // "/api/services/ListSelfHealingHistory/",
     // 自愈已读
     selfHeadlingIsRead: "/api/services/UpdateSelfHealingHistory/",
-    // 自愈策略查询
-    querySelfHealingStrategy: "/api/services/SelfHealingSetting/",
-    // 自愈策略修改
-    setSelfHealingSetting: "/api/services/SelfHealingSetting/",
+    // 自愈策略
+    selfHealingStrategy: "/api/services/SelfHealingSetting/",
   },
   // 实用工具
   utilitie: {

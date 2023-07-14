@@ -17,7 +17,7 @@ from .upload import UploadFileHistory
 from .user import UserProfile, OperateLog, UserLoginLog
 from .upgrade import UpgradeHistory, UpgradeDetail, RollbackHistory, \
     RollbackDetail
-from .self_heal import SelfHealingSetting, SelfHealingHistory
+from .self_heal import SelfHealingSetting, SelfHealingHistory, WaitSelfHealing
 from .custom_metric import CustomScript
 
 __all__ = [
@@ -76,6 +76,7 @@ __all__ = [
     # 自愈
     SelfHealingHistory,
     SelfHealingSetting,
+    WaitSelfHealing,
     # 执行记录
     ExecutionRecord,
     # 小工具

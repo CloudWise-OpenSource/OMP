@@ -24,10 +24,10 @@ django.setup()
 
 from db_models.models import UserProfile
 from db_models.models import MonitorUrl
-from utils.parse_config import MONITOR_PORT
+from utils.parse_config import MONITOR_PORT, CLEAR_DB
 from db_models.models import Env
 from db_models.models import AlertRule, Rule
-from db_models.models import SelfHealingSetting
+from utils.plugin.crontab_utils import change_task
 
 
 def create_default_user():
@@ -384,6 +384,44 @@ def create_threshold():
             "service": "service",
             "forbidden": 2
         },
+        {
+            "alert": "heap使用率过高，可能导致oom",
+            "description": '主机 {{ $labels.instance }}中的服务 {{ $labels.instance_name }} ,heap内存使用率为 {{ $value | '
+                           'humanize }}%, 大于阈值 80%',
+            "expr": 'sum(jvm_memory_used_bytes{area=~"heap"}) by (env, instance, job)/sum(jvm_memory_max_bytes{area=~"heap"}) by (env, instance, job) * 100',
+            "summary": "-",
+            "compare_str": ">",
+            "threshold_value": 80,
+            "for_time": "60s",
+            "severity": "warning",
+            "labels": {
+                "severity": "warning"
+            },
+            "name": "heap使用率",
+            "quota_type": 0,
+            "status": 1,
+            "service": "service",
+            "forbidden": 2
+        },
+        {
+            "alert": "gc后老年代所占内存比例过高，可能导致oom",
+            "description": '主机 {{ $labels.instance }}中的服务 {{ $labels.instance_name }} ,gc后老年代所占内存比例为 {{ $value | '
+                           'humanize }}%, 大于阈值 80%',
+            "expr": 'sum(jvm_gc_live_data_size_bytes) by (env, instance, job)/sum(jvm_gc_max_data_size_bytes) by (env, instance, job) * 100',
+            "summary": "-",
+            "compare_str": ">",
+            "threshold_value": 80,
+            "for_time": "60s",
+            "severity": "warning",
+            "labels": {
+                "severity": "warning"
+            },
+            "name": "gc后老年代所占内存率",
+            "quota_type": 0,
+            "status": 1,
+            "service": "service",
+            "forbidden": 2
+        },
     ]
     rule = [
         {
@@ -461,6 +499,20 @@ def create_threshold():
             "expr": 'http_server_requests_seconds_count{status=~\"5..\"}',
             "service": "node",
         },
+        {
+            "name": "heap 使用率过高，可能导致oom",
+            "description": '主机 {{ $labels.instance }}中的服务 {{ $labels.instance_name }} ,heap内存使用率为 {{ $value | '
+                           'humanize }}%, $compare_str$阈值 $threshold_value$',
+            "expr": 'sum(jvm_memory_used_bytes{area=~"heap"}) by (env, instance, job)/sum(jvm_memory_max_bytes{area=~"heap"}) by (env, instance, job) * 100',
+            "service": "service",
+        },
+        {
+            "name": "gc后老年代所占内存比例过高，可能导致oom",
+            "description": '主机 {{ $labels.instance }}中的服务 {{ $labels.instance_name }} ,gc后老年代所占内存比例为 {{ $value | '
+                           'humanize }}%, $compare_str$阈值 $threshold_value$',
+            "expr": 'sum(jvm_gc_live_data_size_bytes) by (env, instance, job)/sum(jvm_gc_max_data_size_bytes) by (env, instance, job) * 100',
+            "service": "service",
+        },
     ]
     try:
         for info in builtins_rules:
@@ -482,16 +534,42 @@ def create_threshold():
 
 def create_self_healing_setting():
     """添加默认自愈策略"""
-    if SelfHealingSetting.objects.all().count() != 0:
+    # if SelfHealingSetting.objects.all().count() != 0:
+    #     return
+    # default_setting = dict()
+    # default_setting = {
+    #     "used": False,
+    #     "alert_count": 1,
+    #     "max_healing_count": 5,
+    #     "env_id": 1
+    # }
+    # SelfHealingSetting(**default_setting).save()
+
+
+class ClearDb:
+
+    def alert(self):
         return
-    default_setting = dict()
-    default_setting = {
-        "used": False,
-        "alert_count": 1,
-        "max_healing_count": 5,
-        "env_id": 1
-    }
-    SelfHealingSetting(**default_setting).save()
+
+    def health(self):
+        return
+
+    def __call__(self, *args, **kwargs):
+        for k, v in CLEAR_DB.items():
+            obj = getattr(self, k)
+            if not obj:
+                print("改函数未定义")
+        # ToDo 暂时无其他逻辑以后补充
+        data = {
+            "is_on": True,
+            'task_func': 'services.tasks.clear_db',
+            'task_name': 'self_clear_cron_db',
+            'crontab_detail': dict(
+                day_of_month='*', day_of_week='*',
+                hour="00", minute="00",
+                month_of_year='*')
+        }
+        change_task(1, data)
 
 
 def main():
@@ -509,6 +587,8 @@ def main():
     create_threshold()
     # 添加默认自愈策略
     create_self_healing_setting()
+    # 创建清理任务
+    ClearDb()()
 
 
 if __name__ == '__main__':

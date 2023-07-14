@@ -13,14 +13,16 @@
 import json
 import pytz
 from copy import deepcopy
-
+import logging
 
 from django_celery_beat.models import PeriodicTask
 from django_celery_beat.models import CrontabSchedule
 from django_celery_beat.models import IntervalSchedule
 from django.core.exceptions import ObjectDoesNotExist
-
+from functools import wraps
 from omp_server.settings import TIME_ZONE
+
+logger = logging.getLogger("server")
 
 
 class CrontabUtils(object):
@@ -123,3 +125,58 @@ class CrontabUtils(object):
             return True, "success"
         except ObjectDoesNotExist:
             return False, f"{self.task_name} not exists!"
+
+
+def get_per_cron(cron_args):
+    """
+    */int 进行拆除
+    """
+    max_time = {
+        "hour": 24,
+        "minute": 60,
+        "day_of_month": 30,
+        "day_of_week": 7,
+        "month_of_year": 12
+    }
+    for k, v in cron_args.items():
+        v_ls = str(v).split("/")
+        if len(v_ls) == 2:
+            cron_args[k] = ','.join(
+                list(
+                    map(str, range(0, max_time.get(k), int(v_ls[1])))
+                ))
+    return cron_args
+
+
+def change_task(task_id, data=dict()):
+    task_func = data.get("task_func", "backups.tasks.backup_service")
+    task_name = data.get("task_name", f"backups_cron_task_{task_id}")
+    try:
+        cron_args = data.get("crontab_detail", {}).copy()
+        cron_args = get_per_cron(cron_args)
+
+        create = data.get("is_on", False)
+
+        cron_obj = CrontabUtils(task_name=task_name, task_func=task_func,
+                                task_kwargs={"task_id": task_id})
+        if cron_obj.check_task_exist():
+            res, msg = cron_obj.delete_job()
+            logger.info(f"删除周期任务{task_name},结果{res},详情{msg}")
+        if create:
+            res, msg = cron_obj.create_crontab_job(**cron_args)
+            logger.info(f"创建周期任务{task_name},结果{res},详情{msg}")
+        return 0, ""
+    except Exception as e:
+        logger.error(f"执行定时任务失败：{str(e)}")
+        return 1, "执行定时任务失败，请重试！"
+
+
+def maintain(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if Maintain.objects.filter(matcher_value="default").first():
+            logger.info("任务处于维护模式")
+            return "task will not run"
+        return f(*args, **kwargs)
+
+    return decorated

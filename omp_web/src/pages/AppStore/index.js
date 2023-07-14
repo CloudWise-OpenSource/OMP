@@ -21,6 +21,7 @@ import {
   ArrowUpOutlined,
   SyncOutlined,
   DeleteOutlined,
+  ZoomInOutlined,
 } from "@ant-design/icons";
 import Card from "./config/card.js";
 import { useSelector, useDispatch } from "react-redux";
@@ -39,6 +40,7 @@ import {
   getTabKeyChangeAction,
   getUniqueKeyChangeAction,
 } from "./store/actionsCreators";
+import GetServiceModal from "./config/GetServiceModal";
 
 const AppStore = () => {
   // appStoreTabKey
@@ -88,6 +90,13 @@ const AppStore = () => {
 
   // 批量安装的应用服务列表
   const [bIserviceList, setBIserviceList] = useState([]);
+
+  // 服务纳管弹框
+  const [serviceGetModalVisibility, setServiceGetModalVisibility] =
+    useState(false);
+
+  const [serviceGetData, setServiceGetData] = useState([]);
+  const [initData, setInitData] = useState([]);
 
   // 批量安装标题文案
   const installTitle = useRef("批量");
@@ -198,6 +207,29 @@ const AppStore = () => {
       .catch((e) => console.log(e))
       .finally(() => {
         //setSearchLoading(false);
+      });
+  };
+
+  // 获取可纳管服务列表
+  const queryAllAppList = () => {
+    setLoading(true);
+    fetchGet(apiRequest.appStore.queryAppList)
+      .then((res) => {
+        handleResponse(res, (res) => {
+          const resArr = res.data;
+          for (let i = 0; i < resArr.length; i++) {
+            const element = resArr[i];
+            if (element.hasOwnProperty("child")) {
+              element.children = element.child[element.version[0]];
+            }
+          }
+          setServiceGetData(resArr);
+          setInitData(resArr);
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setLoading(false);
       });
   };
 
@@ -507,6 +539,47 @@ const AppStore = () => {
                       <div style={{ paddingLeft: 20 }}>服务回滚</div>
                     </div>
                   </Menu.Item>
+                  <div
+                    style={{
+                      height: 1,
+                      backgroundColor: "#e3e3e3",
+                      margin: "6px 6px",
+                    }}
+                  ></div>
+                  <Menu.Item
+                    key="getService"
+                    style={{ display: "flex" }}
+                    onClick={() => {
+                      queryAllAppList();
+                      setServiceGetModalVisibility(true);
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "5px 0 5px 5px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 22,
+                          height: 22,
+                          backgroundColor: "#2e7cee",
+                          borderRadius: "50%",
+                        }}
+                      >
+                        <ZoomInOutlined
+                          style={{
+                            color: "#fff",
+                            position: "relative",
+                            left: 4,
+                          }}
+                        />
+                      </div>
+                      <div style={{ paddingLeft: 20 }}>服务纳管</div>
+                    </div>
+                  </Menu.Item>
                 </Menu>
               }
               placement="bottomRight"
@@ -672,6 +745,14 @@ const AppStore = () => {
         setDeleteServerVisibility={setDeleteServerVisibility}
         tabKey={tabKey}
         refresh={refresh}
+      />
+      <GetServiceModal
+        modalVisibility={serviceGetModalVisibility}
+        setModalVisibility={setServiceGetModalVisibility}
+        initData={initData}
+        dataSource={serviceGetData}
+        setDataSource={setServiceGetData}
+        initLoading={loading}
       />
     </div>
   );

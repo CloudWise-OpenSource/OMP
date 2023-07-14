@@ -5,6 +5,7 @@ import traceback
 import requests
 
 from db_models.models import MonitorUrl, GrafanaMainPage
+from utils.parse_config import GRAFANA_AUTH
 
 
 def make_request(url, headers, payload):
@@ -16,9 +17,11 @@ def make_request(url, headers, payload):
     :return:
     """
     flag = 0
+    auth = (GRAFANA_AUTH.get("grafana_admin_auth").get("username", "admin"),
+            GRAFANA_AUTH.get("grafana_admin_auth").get("plaintext_password", "Yunweiguanli@OMP_123"))
     while flag < 5:
         response = requests.get(url=url, headers=headers,
-                                data=payload, auth=("admin", "admin"))
+                                data=payload, auth=auth)
         r = json.loads(response.text)
         for url in r:
             if not isinstance(url, dict):

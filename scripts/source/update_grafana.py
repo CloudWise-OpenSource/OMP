@@ -30,7 +30,7 @@ sys.path.append(os.path.join(PROJECT_DIR, "omp_server"))
 # 加载Django环境
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "omp_server.settings")
 django.setup()
-from utils.parse_config import PROMETHEUS_AUTH
+from utils.parse_config import PROMETHEUS_AUTH, GRAFANA_AUTH
 from utils.plugin.synch_grafana import synch_grafana_info
 
 
@@ -64,8 +64,10 @@ class Grafana(object):
         self.profile_url = \
             f"{AGREE}://{self.ip}:{self.port}/api/user/preferences"
         self.content_type = {'Content-Type': 'application/json'}
-        self.basic_auth = ("admin", "admin")
-        self.omp_auth = ("omp", "Common@123")
+        self.basic_auth = (GRAFANA_AUTH.get("grafana_admin_auth").get("username", "admin"),
+                           GRAFANA_AUTH.get("grafana_admin_auth").get("plaintext_password", "Yunweiguanli@OMP_123"))
+        self.omp_auth = (GRAFANA_AUTH.get("grafana_viewer_auth").get("username", "omp"),
+                         GRAFANA_AUTH.get("grafana_viewer_auth").get("plaintext_password", "Common@123"))
 
     def post(self, url, data, auth):
         """

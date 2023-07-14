@@ -1,0 +1,16 @@
+interface: 0.0.0.0
+publish_port: 19004
+ret_port: 19005
+user: root
+enable_ssh_minions: False
+presence_events: True
+auto_accept: True
+timeout: 30
+root_dir: /data/omp/data/salt
+conf_file: /data/omp/config/salt/master
+file_roots:
+  base:
+    - /data/omp/package_hub
+file_recv: True
+file_recv_max_size: 524288
+

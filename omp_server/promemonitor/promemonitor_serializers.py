@@ -7,7 +7,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import ModelSerializer, ListSerializer, \
     Serializer
 
-from db_models.models import Host, MonitorUrl, Alert, Maintain, Service, Rule, AlertRule
+from db_models.models import Host, MonitorUrl, Alert, Maintain, Service, Rule, AlertRule, WaitSelfHealing
 from promemonitor.alert_util import AlertAnalysis
 from promemonitor.alertmanager import Alertmanager
 from promemonitor.tasks import monitor_agent_restart
@@ -18,7 +18,6 @@ from utils.common.validators import (
 )
 
 logger = logging.getLogger('server')
-from services.self_healing import self_healing
 
 
 class MonitorUrlListSerializer(ListSerializer):
@@ -212,7 +211,6 @@ class ReceiveAlertSerializer(Serializer):
 
     def create(self, validated_data):
         alerts = validated_data.get('alerts')
-        alert_obj_list = []
         for ele in alerts:
             alert_analysis = AlertAnalysis(ele)
             alert_info = alert_analysis()
@@ -240,7 +238,9 @@ class ReceiveAlertSerializer(Serializer):
                 # env='default'  # TODO 此版本默认不赋值
             )
             alert.save()
-            alert_obj_list.append(alert.id)
+            service_name = alert_info.get('alert_service_name') if \
+                alert_info.get('alert_service_name') else alert_info.get('alert_host_ip')
+            WaitSelfHealing.objects.create(repair_ser=alert_info, service_name=service_name)
             if alert_info.get('alert_type') == 'host':
                 Host.objects.filter(ip=alert_info.get('alert_host_ip')).update(
                     alert_num=F("alert_num") + 1)
@@ -250,9 +250,6 @@ class ReceiveAlertSerializer(Serializer):
                     ip=alert_info.get('alert_host_ip')).update(
                     service_status=Service.SERVICE_STATUS_STOP,
                     alert_count=F("alert_count") + 1)  # TODO 后续在模型中增加异常字段
-        logger.info("监控接收文件的长度开始{}".format(len(alert_obj_list)))
-        self_healing.delay(alert_obj_list)
-        logger.info("监控接收文件的信息{}".format((alert_obj_list)))
         return validated_data
 
 

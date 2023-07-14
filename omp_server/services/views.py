@@ -14,7 +14,8 @@ from rest_framework.mixins import (
 from rest_framework.response import Response
 from rest_framework.filters import OrderingFilter
 
-from db_models.models import Service, ApplicationHub, MainInstallHistory
+from db_models.models import Service, ApplicationHub, MainInstallHistory, Host
+from utils.parse_config import BASIC_ORDER
 from service_upgrade.update_data_json import DataJsonUpdate
 from services.permission import GetDataJsonAuthenticated
 from services.tasks import exec_action
@@ -22,12 +23,16 @@ from services.services_filters import ServiceFilter
 from services.services_serializers import (
     ServiceSerializer, ServiceDetailSerializer,
     ServiceActionSerializer, ServiceDeleteSerializer,
-    ServiceStatusSerializer
+    ServiceStatusSerializer, AppListSerializer
 )
 from promemonitor.prometheus import Prometheus
 from promemonitor.grafana_url import explain_url
 from utils.common.exceptions import OperateError
 from utils.common.paginations import PageNumberPager
+from operator import itemgetter
+from services.app_check import (
+    ConfCheck, ManagerService
+)
 
 logger = logging.getLogger('server')
 
@@ -289,7 +294,7 @@ class ServiceStatusView(GenericViewSet, ListModelMixin):
 
 class ServiceDataJsonView(APIView):
     # for automated testing
-    permission_classes = (GetDataJsonAuthenticated, )
+    permission_classes = (GetDataJsonAuthenticated,)
 
     def get(self, request):
         main_install = MainInstallHistory.objects.order_by("-id").first()
@@ -304,3 +309,176 @@ class ServiceDataJsonView(APIView):
         with open(json_path, "r") as f:
             json_data = json.load(f)
         return Response({"json_data": json_data})
+
+
+class AppListView(GenericViewSet, ListModelMixin, CreateModelMixin):
+    queryset = ApplicationHub.objects.all().exclude(app_name__in=["hadoop", "doim"])
+    serializer_class = AppListSerializer
+    get_description = "应用列表查询"
+    post_description = "列表合法性校验"
+    need_key = ['base_dir', 'run_user', 'service_port', 'data_dir', 'log_dir']
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        app_dc = {}
+        app_ls = []
+        for query in queryset:
+            if query.pro_info:
+                pro_name = query.pro_info["pro_name"]
+                pro_version = query.pro_info["pro_version"]
+                app_dc.setdefault(pro_name, {})
+                app_dc[pro_name].setdefault("version", [])
+                if pro_version not in app_dc[pro_name]["version"]:
+                    app_dc[pro_name]["version"].append(pro_version)
+                app_dc[pro_name].setdefault("child", {})
+                app_dc[pro_name]["child"].setdefault(pro_version, []).append(
+                    {"name": query.app_name, "version": query.app_version})
+            else:
+                app_dc.setdefault(query.app_name, {})
+                app_dc[query.app_name].setdefault("version", []).append(query.app_version)
+
+        basic_ls = [list() for _ in range(len(BASIC_ORDER))]
+        pro_ls = []
+        for name, info in app_dc.items():
+            tmp_dc = {
+                "name": name,
+                "version": info["version"]
+            }
+            if info.get("child"):
+                tmp_dc.update({"child": info.get("child")})
+                pro_ls.append(tmp_dc)
+            else:
+                for index, name_ls in BASIC_ORDER.items():
+                    if name in name_ls:
+                        basic_ls[index].append(tmp_dc)
+        for i in basic_ls:
+            app_ls.extend(i)
+        app_ls.extend(pro_ls)
+        return Response(app_ls)
+
+    def check_repeat(self, app_data):
+        """
+        查询重复
+        """
+        for info in app_data:
+            if len(info.get("version", [])) != 1:
+                info.setdefault("error", f"{info.get('name')}不允许纳管不同版本")
+                self.error = True
+            if info.get("child"):
+                app_names = []
+                for app_info in list(info["child"].values())[0]:
+                    app_name = app_info.get("name")
+                    if app_name not in app_names:
+                        app_names.append(app_name)
+                    else:
+                        info.setdefault("error", f"{info.get('name')}产品下{app_name}服务只允许选其中一个")
+                        self.error = True
+
+    @staticmethod
+    def check_dependence_one(dependence_dc, installed_ser_all):
+        """
+        检查单个服务依赖是否存在
+        """
+        lost_ser = []
+        for dependence in dependence_dc:
+            dependence_ser = f'{dependence.get("name")}:{dependence.get("version")}'
+            if dependence_ser not in installed_ser_all:
+                lost_ser.append(dependence_ser)
+        return lost_ser
+
+    def check_dependence(self, dependence_dc, app_dc, app_data):
+        """
+        查询依赖初次筛选。仅对照应用商店实例，不对照具体实例依赖,并追加参数
+        """
+        if self.error:
+            return
+        # 查询当前所有服务的name:version,过滤状态异常的服务
+        ser_name_version = Service.objects.filter(service_status__in=range(0, 5)).values_list(
+            "service__app_name", "service__app_version")
+        installed_ser = []
+        for ser in ser_name_version:
+            installed_ser.append(f"{ser[0]}:{ser[1].split('.')[0]}")
+
+        for info in app_data:
+            lost_ser_set = set()
+            if info.get("child") and list(info["child"].values())[0]:
+                for app in list(info["child"].values())[0]:
+                    app_key = f"{app['name']}:{app['version']}"
+                    lost_ser = self.check_dependence_one(dependence_dc.get(app_key), installed_ser)
+                    lost_ser_set.update(set(lost_ser))
+                    has_install_app_args = dict(zip(self.need_key, app_dc.get(app_key))) if app_dc.get(
+                        app_key) else dict(zip(self.need_key, [""] * len(self.need_key)))
+                    app.update(has_install_app_args)
+            else:
+                app_key = f'{info.get("name", "")}:{info.get("version", ["0"])[0]}'
+                lost_ser = self.check_dependence_one(dependence_dc.get(app_key), installed_ser)
+                lost_ser_set.update(set(lost_ser))
+                has_install_app_args = dict(zip(self.need_key, app_dc.get(app_key))) if app_dc.get(
+                    app_key) else dict(zip(self.need_key, [""] * len(self.need_key)))
+                info.update(has_install_app_args)
+            if lost_ser_set:
+                info.update({"error": f'缺失依赖:{",".join(list(lost_ser_set))}'})
+                self.error = True
+
+    @staticmethod
+    def explain_json(text):
+        if text:
+            return json.loads(text)
+        return []
+
+    @classmethod
+    def gets_app_list(cls):
+        """
+        获取app列表信息
+        """
+        app_ls = ApplicationHub.objects.all(). \
+            values_list("app_name", "app_version", "app_install_args",
+                        "app_port", "app_dependence")
+        app_dc = {}
+        dependence_dc = {}
+        for app in app_ls:
+            app_install_port = {}
+            for install in cls.explain_json(app[2]):
+                app_install_port[install.get('key')] = install.get('default')
+            for port in cls.explain_json(app[3]):
+                app_install_port[port.get('key')] = port.get('default')
+            for key in cls.need_key:
+                app_install_port.setdefault(key, "")
+            app_dc[f"{app[0]}:{app[1]}"] = itemgetter(*cls.need_key)(app_install_port)
+            dependence_dc[f"{app[0]}:{app[1]}"] = cls.explain_json(app[4])
+        return app_dc, dependence_dc
+
+    def create(self, request, *args, **kwargs):
+        if not hasattr(self, "error"):
+            setattr(self, "error", False)
+        app_data = self.request.data.get("data", [])
+        # 查询是否勾选想通服务多版本情况
+        self.check_repeat(app_data)
+        # 查询安装参数及依赖
+        app_dc, dependence_dc = self.gets_app_list()
+        # 检查依赖是否存在
+        self.check_dependence(dependence_dc, app_dc, app_data)
+        res_dc = {"service": app_data, "is_continue": False if self.error else True}
+        hosts_info = Host.objects.filter(
+            host_agent=Host.AGENT_RUNNING).values_list("ip", "agent_dir")
+        res_dc["ips"] = dict(hosts_info)
+        return Response(res_dc)
+
+
+class AppConfCheckView(GenericViewSet, CreateModelMixin):
+    queryset = ApplicationHub.objects.all()
+    serializer_class = AppListSerializer
+    post_description = "校验列表问题"
+
+    def create(self, request, *args, **kwargs):
+        """
+        传uuid和不传uuid
+        """
+        app_data = self.request.data.get("data")
+        if not app_data.get("uuid"):
+            if not app_data.pop("is_continue"):
+                raise OperateError("存在不允许继续纳管的服务")
+            app_data = ConfCheck(app_data).run()
+        else:
+            app_data = ManagerService(app_data).run()
+        return Response(app_data)

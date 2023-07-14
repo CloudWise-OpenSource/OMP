@@ -1,10 +1,11 @@
-from django.db.models.signals import pre_delete
+from django.db.models.signals import pre_delete, post_save
 from django.dispatch import receiver
 
 from db_models.mixins import UpgradeStateChoices, RollbackStateChoices
 from db_models.models import Service, MainInstallHistory, \
     ExecutionRecord, UpgradeHistory, RollbackHistory, UpgradeDetail, \
-    RollbackDetail, DetailInstallHistory
+    RollbackDetail, DetailInstallHistory, SelfHealingSetting
+from utils.plugin.crontab_utils import change_task
 
 
 def update_upgrade_history(history, union_server):
@@ -63,3 +64,24 @@ def update_execution_record(sender, instance, *args, **kwargs):
             update_upgrade_history(history, union_server)
     # 删除安装记录, 修复卸载产品再重试安装
     DetailInstallHistory.objects.filter(service=instance).delete()
+
+@receiver(post_save, sender=SelfHealingSetting)
+def update_self_health(sender, instance, *args, **kwargs):
+    data = {'is_on': instance.used,
+            'task_func': 'services.self_healing.self_healing',
+            'task_name': f'self_health_cron_task_{instance.id}',
+            'crontab_detail': dict(day_of_month='*', day_of_week='*', hour="*", minute=f"*/{instance.fresh_rate}",
+                                   month_of_year='*')}
+
+    change_task(instance.id, data=data)
+
+
+@receiver(pre_delete, sender=SelfHealingSetting)
+def delete_self_health(sender, instance, *args, **kwargs):
+    data = {
+        "is_on": False,
+        'task_func': 'services.self_healing.self_healing',
+        'task_name': f'self_health_cron_task_{instance.id}',
+    }
+    change_task(instance.id, data=data)
+

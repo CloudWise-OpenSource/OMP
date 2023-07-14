@@ -203,6 +203,9 @@ class PostUpdate(Common):
             if key not in old_omp.keys():
                 old_omp[key] = values
         old_omp['basic_order'] = new_omp.get('basic_order')
+        old_omp['test_product_list'] = new_omp.get('test_product_list')
+        old_omp['mysql']['port'] = new_omp['mysql']['port']
+        old_omp['redis']['port'] = new_omp['redis']['port']
         with open(self.omp_conf, "w", encoding="utf8") as fp:
             yaml.dump(old_omp, fp)
 
