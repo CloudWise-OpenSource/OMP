@@ -21,6 +21,7 @@ from django_celery_beat.models import IntervalSchedule
 from django.core.exceptions import ObjectDoesNotExist
 from functools import wraps
 from omp_server.settings import TIME_ZONE
+from db_models.models import Maintain
 
 logger = logging.getLogger("server")
 
@@ -125,6 +126,35 @@ class CrontabUtils(object):
             return True, "success"
         except ObjectDoesNotExist:
             return False, f"{self.task_name} not exists!"
+
+
+def change_task(task_id, data=dict()):
+    task_func = data.get("task_func", "backups.tasks.backup_service")
+    task_name = data.get("task_name", f"backups_cron_task_{task_id}")
+    try:
+        cron_args = data.get("crontab_detail", {})
+        hour = cron_args.get("hour", "")
+        hour_ls = str(hour).split("/")
+        if len(hour_ls) == 2:
+            cron_args["hour"] = ','.join(
+                list(
+                    map(str, range(0, 24, int(hour_ls[1])))
+                ))
+
+        create = data.get("is_on", False)
+
+        cron_obj = CrontabUtils(task_name=task_name, task_func=task_func,
+                                task_kwargs={"task_id": task_id})
+        if cron_obj.check_task_exist():
+            res, msg = cron_obj.delete_job()
+            logger.info(f"删除周期任务{task_name},结果{res},详情{msg}")
+        if create:
+            res, msg = cron_obj.create_crontab_job(**cron_args)
+            logger.info(f"创建周期任务{task_name},结果{res},详情{msg}")
+        return 0, ""
+    except Exception as e:
+        logger.error(f"执行定时任务失败：{str(e)}")
+        return 1, "执行定时任务失败，请重试！"
 
 
 def get_per_cron(cron_args):

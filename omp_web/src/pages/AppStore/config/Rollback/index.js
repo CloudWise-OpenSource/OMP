@@ -1,13 +1,10 @@
 // 服务的升级和回滚
-import { useHistory, useLocation } from "react-router-dom";
+import { useHistory } from "react-router-dom";
 // import { getTabKeyChangeAction } from "../../store/actionsCreators";
-import { useDispatch } from "react-redux";
-import { Steps } from "antd";
-import { useState } from "react";
 import styles from "./index.module.less";
 
 import { LeftOutlined } from "@ant-design/icons";
-import Content from "./content/index.js"
+import Content from "./content/index.js";
 // 安装页面
 const Rollback = () => {
   // const dispatch = useDispatch();

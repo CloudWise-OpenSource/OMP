@@ -1,7 +1,7 @@
 import { apiRequest } from "@/config/requestApi";
 import { fetchGet } from "@/utils/request";
 import { handleResponse } from "@/utils/utils";
-import { Progress, Spin, message, Anchor } from "antd";
+import { Spin } from "antd";
 import React, { useEffect, useState } from "react";
 import { useHistory } from "react-router-dom";
 import styles from "./index.module.less";
@@ -9,7 +9,6 @@ import OmpStateBlock from "@/components/OmpStateBlock";
 import { OmpProgress } from "@/components";
 //import { context } from "@/Root";
 import ExceptionList from "./warningList";
-import { useSelector, useDispatch } from "react-redux";
 import { OmpContentWrapper } from "@/components";
 
 function calcPercentage(normal = 0, total = 1) {
@@ -182,6 +181,9 @@ const Homepage = () => {
                       dataSource.service?.service_info_exc_count &&
                       history.push({
                         pathname: "/application-monitoring/exception-list",
+                        state: {
+                          type: "service",
+                        },
                       })
                     }
                   >
@@ -272,6 +274,9 @@ const Homepage = () => {
                       dataSource.component?.component_info_exc_count &&
                       history.push({
                         pathname: "/application-monitoring/exception-list",
+                        state: {
+                          type: "component",
+                        },
                       })
                     }
                   >
@@ -362,6 +367,9 @@ const Homepage = () => {
                       dataSource.database?.database_info_exc_count &&
                       history.push({
                         pathname: "/application-monitoring/exception-list",
+                        state: {
+                          type: "database",
+                        },
                       })
                     }
                   >
@@ -441,6 +449,9 @@ const Homepage = () => {
                       dataSource.host?.host_info_exc_count &&
                       history.push({
                         pathname: "/application-monitoring/exception-list",
+                        state: {
+                          type: "host",
+                        },
                       })
                     }
                   >
@@ -571,7 +582,7 @@ const Homepage = () => {
               // key={"serviceData"}
               // tag={"all"}
               link={(data) => {
-                console.log(data)
+                console.log(data);
                 history.push({
                   pathname: "/application_management/service_management",
                   state: {
@@ -615,8 +626,8 @@ const Homepage = () => {
                 history.push({
                   pathname: "/application-monitoring/exception-list",
                   state: {
-                    ip: data?.info[0]?.ip,
-                    type: "service",
+                    instance_name: data?.info[0]?.instance_name,
+                    type: "component",
                   },
                 });
               }}
@@ -646,8 +657,8 @@ const Homepage = () => {
                 history.push({
                   pathname: "/application-monitoring/exception-list",
                   state: {
-                    ip: data?.info[0]?.ip,
-                    type: "service",
+                    instance_name: data?.info[0]?.instance_name,
+                    type: "database",
                   },
                 });
               }}

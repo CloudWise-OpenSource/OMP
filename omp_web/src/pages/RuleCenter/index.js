@@ -1,5 +1,5 @@
 import { apiRequest } from "@/config/requestApi";
-import { fetchGet, fetchPut, fetchPost } from "@/utils/request";
+import { fetchGet, fetchPost } from "@/utils/request";
 import { handleResponse } from "@/utils/utils";
 import {
   Collapse,
@@ -12,7 +12,7 @@ import {
   Tooltip,
 } from "antd";
 import * as R from "ramda";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import styles from "./index.module.less";
 import {
   PlusCircleTwoTone,

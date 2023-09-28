@@ -1,0 +1,108 @@
+#!/bin/bash
+
+# omp自带变量
+# 注意备份路径需要单独创建 不可和其他文件共用一个路径
+backupDir="${cw_o_data_dir}/backup/mysql"
+MySQLBin="${cw_o_base_dir}/bin/mysql"
+MySQLDump="${cw_o_base_dir}/bin/mysqldump"
+mysqlPort=${cw_o_service_port}
+mysqlUser="${cw_o_username}"
+mysqlPasswd="${cw_o_password}"
+ip="${cw_o_ip}"
+
+
+# 自定义变量
+db_name=${db_name}
+no_pass=${no_pass}
+need_push=${need_push}
+
+# 公共变量
+service_name="mysql"
+BasePath=$(cd `dirname $0`; pwd)
+nowTime=$(date +%Y%m%d%H%M)
+count=0
+# 请求重试机制
+max_count=6
+
+
+function request_omp() {
+  if [[ -z "$rq_body" ]]; then
+    if [[ -z "$1" ]]; then
+      echo "need request result"
+      exit 1
+    fi
+    # $1 结果(必填)  $2 消息  $3 omp抓取路径 要确定是一个单独的文件
+    rq_body="{\"result\":\"$1\",\"message\":\"$2\",\"remote_path\":\"$3\",\"ip\":\"$ip\",\"need_push\":\"$need_push\"}"
+  fi
+  RES=$(curl --location --request POST 'http://${cw_o_master_url}p/' --header 'Content-Type: application/json' --data "$rq_body"|grep "\"code\":0")
+  code=$?
+  # 存在返回证明有异常 或者状态码非0
+  if [[ -z "$RES" ]] || [[ $code != 0 ]];then
+    echo $RES
+    if [[ "$count" -lt "$max_count" ]];then
+      sleep 5
+      let count+=1
+      request_omp $1 $2 $3
+    fi
+    exit 1
+  else
+    exit 0
+  fi
+}
+
+
+# 状态码 备份路径
+function touch_zip() {
+  if [[ -z "$2" ]]; then
+    request_omp 1 "need backup path but not provided"
+  fi
+
+  back_length=$(echo $2 |sed 's#/# #g'|awk '{print NF}')
+  # 保护机制
+  if [[ "$back_length" -lt 2 ]];then
+    request_omp 1 "backup path is not available"
+  fi
+
+  tar_name=${service_name}-backup-${nowTime}.tar.gz
+  cd $BasePath && tar -zcf $tar_name -C $2 . --remove-files
+
+  tar_path=${BasePath}/${tar_name}
+  request_omp $1 "success" $tar_path
+}
+
+
+function check_mysql(){
+  if [[ ! -d $backupDir ]]; then
+    mkdir -p $backupDir
+  fi
+
+  if [ -n "$no_pass" ]; then
+    $MySQLBin -P$mysqlPort -u$mysqlUser -h'127.0.0.1' -e 'exit' >/dev/null 2>&1
+    databases=$($MySQLBin -u$mysqlUser -h'127.0.0.1' -P$mysqlPort -e 'show databases;' 2>/dev/null | egrep -v 'information_schema|binlogs|mysql|test|Database|performance_schema|hive')
+  else
+    $MySQLBin -P$mysqlPort -u$mysqlUser -p$mysqlPasswd -h'127.0.0.1' -e 'exit' >/dev/null 2>&1
+    databases=$($MySQLBin -u$mysqlUser -p$mysqlPasswd -h'127.0.0.1' -P$mysqlPort -e 'show databases;' 2>/dev/null | egrep -v 'information_schema|binlogs|mysql|Database|performance_schema|hive')
+  fi
+  if [ $? -ne 0 ]; then
+    request_omp 1 "Error: MySQL User and Password Error."
+    exit 1
+  fi
+}
+
+
+function backup_mysql(){
+  if [ -n "$db_name" ]; then
+    databases=$(echo $db_name |sed 's#,# #g')
+  fi
+  for dataName in $databases; do
+    if [ -n "$no_pass" ]; then
+        $MySQLDump --single-transaction -P$mysqlPort -u$mysqlUser -h'127.0.0.1' -a --default-character-set=utf8 --skip-comments $dataName 2>/dev/null >$backupDir/$dataName-$nowTime.sql
+    else
+        $MySQLDump --single-transaction -P$mysqlPort -u$mysqlUser -p$mysqlPasswd -h'127.0.0.1' -a --default-character-set=utf8 --skip-comments $dataName 2>/dev/null >$backupDir/$dataName-$nowTime.sql
+    fi
+  touch_zip $? $backupDir
+done
+}
+
+check_mysql
+backup_mysql

@@ -1,23 +1,7 @@
-/*
- * @Author: your name
- * @Date: 2021-06-28 17:04:53
- * @LastEditTime: 2021-06-28 17:37:32
- * @LastEditors: Please set LastEditors
- * @Description: In User Settings Edit
- * @FilePath: /omp-fontend123/src/components/OmpModal/index.js
- */
-
-import { Modal, Button, Form, Input } from "antd";
+import { Modal, Button, Form } from "antd";
 import React from "react";
 import styles from "./index.module.less";
-/**
- * @name:
- * @test: test font
- * @msg:
- * @param {*} visibleHandle
- * @param {*} children
- * @return {*}
- */
+
 const OmpModal = ({
   visibleHandle,
   children,

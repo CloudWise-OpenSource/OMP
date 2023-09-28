@@ -2,7 +2,6 @@ import "./index.css";
 import {
   columnsConfig,
   formatTableRenderData,
-  host_memory_top_columns,
   host_port_connectivity_columns,
   kafka_offsets_columns,
   kafka_partition_columns,
@@ -10,13 +9,12 @@ import {
   handleResponse,
   downloadFile,
 } from "@/utils/utils";
-import { Card, Collapse, message, Table, BackTop, Drawer } from "antd";
+import { Card, Collapse, message, Table, Drawer } from "antd";
 import * as R from "ramda";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 //import data from "./data.json";
 import { useHistory, useLocation } from "react-router-dom";
-import { LeftOutlined } from "@ant-design/icons";
-import { fetchGet, fetchPost, fetchPatch } from "@/utils/request";
+import { fetchGet } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 const { Panel } = Collapse;
 

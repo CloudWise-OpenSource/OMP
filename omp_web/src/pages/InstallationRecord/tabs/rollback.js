@@ -7,10 +7,9 @@ import {
   nonEmptyProcessing,
   renderDisc,
 } from "@/utils/utils";
-import { fetchGet, fetchPost } from "@/utils/request";
+import { fetchGet } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import moment from "moment";
-import ServiceUpgradeModal from "../config/ServiceUpgradeModal";
 
 const renderStatus = (text) => {
   switch (text) {
@@ -162,7 +161,7 @@ const Rollback = ({ history }) => {
   }, []);
 
   return (
-    <OmpContentWrapper wrapperStyle={{ paddingBottom:0}}>
+    <OmpContentWrapper wrapperStyle={{ paddingBottom: 0 }}>
       <div style={{ display: "flex" }}>
         <div style={{ display: "flex", marginLeft: "auto" }}>
           <Button
@@ -233,4 +232,4 @@ const Rollback = ({ history }) => {
   );
 };
 
-export default Rollback
+export default Rollback;

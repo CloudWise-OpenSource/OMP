@@ -1,12 +1,11 @@
-import { OmpContentWrapper, OmpMessageModal } from "@/components";
-import { Spin, Form, Input, Button, InputNumber, message, Switch } from "antd";
-import { useState, useEffect, useRef } from "react";
-import { isValidIpChar, handleResponse, _idxInit } from "@/utils/utils";
-import { fetchGet, fetchPost, fetchPatch } from "@/utils/request";
+import { OmpContentWrapper } from "@/components";
+import { Spin, Form, Input, Button, InputNumber, message } from "antd";
+import { useState, useEffect } from "react";
+import { handleResponse, _idxInit } from "@/utils/utils";
+import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import styles from "./index.module.less";
-import { MailOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
-import { useSelector, useDispatch } from "react-redux";
+import { MailOutlined } from "@ant-design/icons";
 
 const EmailSettings = () => {
   const [loading, setLoading] = useState(false);
@@ -142,9 +141,7 @@ const EmailSettings = () => {
             />
           </Form.Item>
 
-          <Form.Item
-            className={styles.saveButtonWrapper}
-          >
+          <Form.Item className={styles.saveButtonWrapper}>
             <Button
               type="primary"
               htmlType="submit"

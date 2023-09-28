@@ -1,5 +1,4 @@
 import { useHistory, useLocation } from "react-router-dom";
-import { getTabKeyChangeAction } from "../../store/actionsCreators";
 import { useDispatch } from "react-redux";
 import { Steps } from "antd";
 import { useState } from "react";
@@ -12,7 +11,7 @@ import Step4 from "./steps/Step4";
 import { LeftOutlined } from "@ant-design/icons";
 // 安装页面
 const Installation = () => {
-  
+
   const dispatch = useDispatch();
   const history = useHistory();
   const location = useLocation()

@@ -1,7 +1,7 @@
 import { OmpToolTip } from "@/components";
 import styles from "./index.module.less";
 import imgObj from "./img";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const Card = ({ idx, history, info, tabKey, installOperation }) => {
   //定义命名

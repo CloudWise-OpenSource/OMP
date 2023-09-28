@@ -8,7 +8,7 @@ import {
 import { Button, message, Menu, Dropdown, Input, Select, Checkbox } from "antd";
 import { useState, useEffect, useRef } from "react";
 import { handleResponse, _idxInit, refreshTime } from "@/utils/utils";
-import { fetchGet, fetchPost, fetchPatch } from "@/utils/request";
+import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import { useDispatch } from "react-redux";
 import getColumnsConfig, { DetailHost } from "./config/columns";
@@ -22,9 +22,9 @@ import { useHistory, useLocation } from "react-router-dom";
 const ServiceManagement = () => {
   const location = useLocation();
 
-  const initIp = location.state?.ip
+  const initIp = location.state?.ip;
 
-  console.log(initIp)
+  console.log(initIp);
 
   const history = useHistory();
 
@@ -46,7 +46,9 @@ const ServiceManagement = () => {
 
   const [instanceSelectValue, setInstanceSelectValue] = useState("");
 
-  const [labelControl, setLabelControl] = useState(initIp ? "ip" : "instance_name");
+  const [labelControl, setLabelControl] = useState(
+    initIp ? "ip" : "instance_name"
+  );
 
   const [installationRecordModal, setInstallationRecordModal] = useState(false);
 
@@ -403,7 +405,7 @@ const ServiceManagement = () => {
           }
           placement="bottomCenter"
         >
-          <Button style={{ marginLeft: 10, paddingRight:10, paddingLeft:15 }}>
+          <Button style={{ marginLeft: 10, paddingRight: 10, paddingLeft: 15 }}>
             更多
             <DownOutlined />
           </Button>

@@ -1,7 +1,7 @@
-import { OmpContentWrapper, OmpContentNav, OmpTable } from "@/components";
+import { OmpContentWrapper, OmpTable } from "@/components";
 import { useState, useEffect } from "react";
-import { useHistory, useLocation } from "react-router-dom";
-import { fetchGet, fetchPost } from "@/utils/request";
+import { useHistory } from "react-router-dom";
+import { fetchGet } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import { Button } from "antd";
 import {
@@ -274,7 +274,7 @@ const InstallationRecord = () => {
     ordering,
     searchParams
   ) {
-    console.log(searchParams)
+    console.log(searchParams);
     setLoading(true);
     fetchGet(apiRequest.installHistoryPage.queryAllList, {
       params: {

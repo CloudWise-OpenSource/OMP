@@ -97,6 +97,7 @@ monitor_port:
   elasticsearchExporter: 19027
   httpdExporter: 19028
   igniteExporter: 19029
+  rocketmqExporter: 19032
   # arangodb与nacos没有单独的exporter，使用的是arangodb和nacos的原生自带接口
   arangodbExporter: 18119
   nacosExporter: 18117
@@ -156,3 +157,6 @@ health_request_sleep: 6
 template_cluster_check: true
 #服务发现脚本,纳管自定义排查脚本
 service_discovery:
+backup_service:
+  - mysql
+  - postgreSql

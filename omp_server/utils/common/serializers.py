@@ -32,7 +32,6 @@ class HostIdsSerializer(serializers.Serializer):
 
 
 class UploadFileSerializer(serializers.Serializer):
-
     file = serializers.FileField(
         help_text="上传的文件",
         required=True,
@@ -88,3 +87,24 @@ class UploadFileSerializer(serializers.Serializer):
             }
         )
         return validated_data
+
+
+class DynamicFieldsModelSerializer(serializers.ModelSerializer):
+    """
+    A ModelSerializer that takes an additional `fields` argument that
+    controls which fields should be displayed.
+    """
+
+    def __init__(self, *args, **kwargs):
+        # Don't pass the 'fields' arg up to the superclass
+        fields = kwargs.pop('fields', None)
+
+        # 正常地实例化父类
+        super(DynamicFieldsModelSerializer, self).__init__(*args, **kwargs)
+
+        if fields is not None:
+            # 删除fields参数中未指定的任何字段
+            allowed = set(fields)
+            existing = set(self.fields)
+            for field_name in existing - allowed:
+                self.fields.pop(field_name)

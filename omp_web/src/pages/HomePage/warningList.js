@@ -1,32 +1,9 @@
-import {
-  OmpContentWrapper,
-  OmpTable,
-  OmpMessageModal,
-  OmpSelect,
-  OmpDatePicker,
-  OmpDrawer,
-} from "@/components";
-import {
-  Button,
-  Select,
-  message,
-  Menu,
-  Dropdown,
-  Modal,
-  Input,
-  Tooltip,
-  Badge,
-} from "antd";
-import { useState, useEffect, useRef } from "react";
-import {
-  handleResponse,
-  _idxInit,
-  refreshTime,
-  colorConfig,
-} from "@/utils/utils";
-import { fetchGet, fetchPost, fetchPatch } from "@/utils/request";
+import { OmpContentWrapper, OmpTable, OmpDrawer } from "@/components";
+import { Tooltip, Badge } from "antd";
+import { useState, useEffect } from "react";
+import { handleResponse, _idxInit, colorConfig } from "@/utils/utils";
+import { fetchGet } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-import { SearchOutlined } from "@ant-design/icons";
 import moment from "moment";
 import { useHistory } from "react-router-dom";
 
@@ -240,16 +217,16 @@ const getColumnsConfig = (
       dataIndex: "type",
       usefilter: true,
       queryRequest: queryRequest,
-      filterMenuList: [
-        {
-          value: "service",
-          text: "服务",
-        },
-        {
-          value: "host",
-          text: "主机",
-        },
-      ],
+      // filterMenuList: [
+      //   {
+      //     value: "service",
+      //     text: "服务",
+      //   },
+      //   {
+      //     value: "host",
+      //     text: "主机",
+      //   },
+      // ],
       align: "center",
       //ellipsis: true,
       width: 150,
@@ -258,6 +235,10 @@ const getColumnsConfig = (
           return "主机";
         } else if (text == "service") {
           return "服务";
+        } else if (text == "component") {
+          return "组件";
+        } else if (text == "database") {
+          return "数据库";
         }
       },
     },

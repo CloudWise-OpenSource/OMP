@@ -782,13 +782,21 @@ def check_monitor_data(detail_obj):
     _ret_dic = {
         "listen_port": get_port("service_port"),
         "metric_port": None,
+        "run_port": [],
         "only_process": False,
         "process_key_word": None,
         "type": None
     }
+    run_port_key_list = list()
+    run_port_value_list = list()
     app_monitor = detail_obj.service.service.app_monitor
     if not app_monitor:
         return False, _ret_dic
+    run_port_key_list = app_monitor.get("run_port", [])
+    if len(run_port_key_list) > 0:
+        run_port_value_list = [get_port(key) for key in run_port_key_list]
+        if None not in run_port_value_list:
+            _ret_dic["run_port"] = run_port_value_list
     _ret_dic["type"] = app_monitor.get("type")
     _ret_dic["process_key_word"] = app_monitor.get("process_name")
 
@@ -800,7 +808,6 @@ def check_monitor_data(detail_obj):
     else:
         _metric_port_key = None
     if detail_obj.service.service_port is not None:
-        _ret_dic["listen_port"] = get_port("service_port")
         _ret_dic["metric_port"] = get_port(_metric_port_key)
     if _ret_dic["metric_port"]:
         return True, _ret_dic
@@ -837,6 +844,7 @@ def add_prometheus(main_history_id, queryset=None):
         # TODO 已是否具有端口作为是否需要添加监控的依据，后续版本优化
         instance_name = detail_obj.service.service_instance_name
         service_port = _monitor_dic.get("listen_port")
+        run_port = _monitor_dic.get("run_port", [])
         # 获取数据目录、日志目录
         app_install_args = detail_obj.install_detail_args.get(
             "install_args", [])
@@ -864,6 +872,7 @@ def add_prometheus(main_history_id, queryset=None):
             "env": "default",
             "ip": detail_obj.service.ip,
             "listen_port": service_port,
+            "run_port": run_port,
             "metric_port": _monitor_dic.get("metric_port"),
             "only_process": _monitor_dic.get("only_process"),
             "process_key_word": _monitor_dic.get("process_key_word"),

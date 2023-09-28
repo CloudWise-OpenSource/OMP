@@ -1,24 +1,12 @@
-import {
-  OmpContentWrapper,
-  OmpTable,
-  OmpMessageModal,
-  OmpSelect,
-  OmpDrawer,
-} from "@/components";
-import { Button, message, Menu, Dropdown, Input, Checkbox, Form } from "antd";
-import { useState, useEffect, useRef } from "react";
+import { OmpContentWrapper, OmpTable, OmpMessageModal } from "@/components";
+import { Button, message, Input, Checkbox, Form } from "antd";
+import { useState, useEffect } from "react";
 import { handleResponse, _idxInit } from "@/utils/utils";
-import { fetchGet, fetchPost, fetchPatch } from "@/utils/request";
+import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-import { useDispatch } from "react-redux";
 import getColumnsConfig from "./config/columns";
-import {
-  DownOutlined,
-  ExclamationCircleOutlined,
-  SearchOutlined,
-  QuestionCircleOutlined,
-} from "@ant-design/icons";
-import { useHistory, useLocation } from "react-router-dom";
+import { ExclamationCircleOutlined, SearchOutlined } from "@ant-design/icons";
+import { useHistory } from "react-router-dom";
 import PatrolInspectionDetail from "@/pages/PatrolInspectionRecord/config/detail";
 const PatrolInspectionRecord = () => {
   const history = useHistory();
@@ -201,9 +189,11 @@ const PatrolInspectionRecord = () => {
   return (
     <OmpContentWrapper>
       <div style={{ display: "flex" }}>
-        <Button type="primary" 
-        // size="middle" 
-        onClick={() => setDeepAnalysisModal(true)}>
+        <Button
+          type="primary"
+          // size="middle"
+          onClick={() => setDeepAnalysisModal(true)}
+        >
           深度分析
         </Button>
 

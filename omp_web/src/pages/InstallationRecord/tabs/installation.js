@@ -10,7 +10,7 @@ import {
   nonEmptyProcessing,
   renderDisc,
 } from "@/utils/utils";
-import { fetchGet, fetchPost } from "@/utils/request";
+import { fetchGet } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 //import updata from "@/store_global/globalStore";
 import moment from "moment";

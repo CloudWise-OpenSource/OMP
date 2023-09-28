@@ -1,15 +1,5 @@
 import styles from "../index.module.less";
-import {
-  Steps,
-  Form,
-  Input,
-  Button,
-  Select,
-  Checkbox,
-  Tooltip,
-  message,
-  InputNumber,
-} from "antd";
+import { Form, Input, InputNumber } from "antd";
 import { useEffect, useState, useRef } from "react";
 import { randomNumber } from "@/utils/utils";
 import { DownOutlined } from "@ant-design/icons";
@@ -46,7 +36,9 @@ const BasicInfoItem = ({ data, form }) => {
       [`${data.name}`]: `${data.name}-${randomNumber()}`,
     });
     data.services_list.map((item) => {
-      numRef.current[`${data.name}=${item.name}`] = `${item.deploy_mode.default}`
+      numRef.current[
+        `${data.name}=${item.name}`
+      ] = `${item.deploy_mode.default}`;
       form.setFieldsValue({
         [`${data.name}=${item.name}`]: `${item.deploy_mode.default}`,
       });
@@ -122,15 +114,19 @@ const BasicInfoItem = ({ data, form }) => {
                 <InputNumber
                   min={1}
                   max={32}
-                  onChange={(e)=>{
+                  onChange={(e) => {
                     if (
-                      e && (e - item.deploy_mode.step == numRef.current[`${data.name}=${item.name}`] ||
-                      e + item.deploy_mode.step == numRef.current[`${data.name}=${item.name}`]
-                    )) {
+                      e &&
+                      (e - item.deploy_mode.step ==
+                        numRef.current[`${data.name}=${item.name}`] ||
+                        e + item.deploy_mode.step ==
+                          numRef.current[`${data.name}=${item.name}`])
+                    ) {
                       numRef.current[`${data.name}=${item.name}`] = e;
                     } else {
                       form.setFieldsValue({
-                        [`${data.name}=${item.name}`]: numRef.current[`${data.name}=${item.name}`],
+                        [`${data.name}=${item.name}`]:
+                          numRef.current[`${data.name}=${item.name}`],
                       });
                     }
                   }}
@@ -143,7 +139,7 @@ const BasicInfoItem = ({ data, form }) => {
           );
         })}
       </div>
-      <div style={{ marginTop: 5, color: "red",whiteSpace: "pre-line" }}>
+      <div style={{ marginTop: 5, color: "red", whiteSpace: "pre-line" }}>
         {data.error_msg}
       </div>
     </>

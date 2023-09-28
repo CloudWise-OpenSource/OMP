@@ -1,22 +1,12 @@
-import { OmpContentWrapper, OmpTable, OmpModal } from "@/components";
-import { Button, Input, Form, message, Menu } from "antd";
-import { useState, useEffect, useRef } from "react";
-import {
-  handleResponse,
-  _idxInit,
-  refreshTime,
-  MessageTip,
-  nonEmptyProcessing,
-  logout,
-  isPassword,
-} from "@/utils/utils";
-import { fetchGet, fetchPost } from "@/utils/request";
+import { OmpContentWrapper, OmpTable } from "@/components";
+import { Button, Input } from "antd";
+import { useState, useEffect } from "react";
+import { handleResponse, _idxInit, nonEmptyProcessing } from "@/utils/utils";
+import { fetchGet } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-import moment from "moment";
-import { SearchOutlined, SettingFilled } from "@ant-design/icons";
+import { SearchOutlined } from "@ant-design/icons";
 
 const SystemLog = () => {
-
   const [loading, setLoading] = useState(false);
 
   const [searchLoading, setSearchLoading] = useState(false);
@@ -100,7 +90,7 @@ const SystemLog = () => {
       dataIndex: "create_time",
       align: "center",
       width: 100,
-       sorter: (a, b) => a.create_time - b.create_time,
+      sorter: (a, b) => a.create_time - b.create_time,
       sortDirections: ["descend", "ascend"],
       render: nonEmptyProcessing,
       // render: (text) => {
@@ -177,7 +167,7 @@ const SystemLog = () => {
                 {username:e},
                 pagination.ordering
               );
-          }} 
+          }}
           style={{ width: 200 }} /> */}
           <Input
             placeholder="请输入用户名"

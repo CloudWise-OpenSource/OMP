@@ -1,22 +1,21 @@
 import { OmpContentWrapper, OmpTable, OmpModal } from "@/components";
-import { Button, Input, Form, message, Menu } from "antd";
+import { Button, Input, Form, message } from "antd";
 import { useState, useEffect, useRef } from "react";
 import {
   handleResponse,
   _idxInit,
   refreshTime,
-  MessageTip,
   nonEmptyProcessing,
   logout,
   isPassword,
-  encrypt
+  encrypt,
 } from "@/utils/utils";
 import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 //import updata from "@/store_global/globalStore";
 import { useDispatch } from "react-redux";
 import moment from "moment";
-import { SearchOutlined, SettingFilled } from "@ant-design/icons";
+import { SearchOutlined } from "@ant-design/icons";
 
 const UserManagement = () => {
   const dispatch = useDispatch();

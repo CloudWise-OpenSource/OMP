@@ -1,6 +1,4 @@
-import React from "react";
 import ReactEcharts from "echarts-for-react";
-import echarts from "echarts";
 
 const OmpProgress = ({ trafficWay, percent }) => {
   // 判断trafficWay的每一项是否都是0

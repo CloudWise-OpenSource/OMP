@@ -1,7 +1,5 @@
-import { useSelector } from "react-redux";
-import { Button, Tooltip } from "antd";
 import styles from "./index.module.less";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import initLogo from "../initLogo/tools.svg";
 
 const kindMap = ["管理工具", "检查工具", "安全工具", "其他工具"];

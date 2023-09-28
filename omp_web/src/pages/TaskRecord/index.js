@@ -1,21 +1,17 @@
-import { OmpContentWrapper, OmpTable, OmpModal } from "@/components";
-import { Button, Input, Form, message, Menu } from "antd";
-import { useState, useEffect, useRef } from "react";
+import { OmpContentWrapper, OmpTable } from "@/components";
+import { Button, Input } from "antd";
+import { useState, useEffect } from "react";
 import {
   handleResponse,
   _idxInit,
-  refreshTime,
-  MessageTip,
   nonEmptyProcessing,
-  logout,
-  isPassword,
   renderDisc,
 } from "@/utils/utils";
-import { fetchGet, fetchPost } from "@/utils/request";
+import { fetchGet } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import moment from "moment";
-import { SearchOutlined, SettingFilled } from "@ant-design/icons";
-import { useHistory, useLocation } from "react-router-dom";
+import { SearchOutlined } from "@ant-design/icons";
+import { useHistory } from "react-router-dom";
 
 const kindMap = ["管理工具", "检查工具", "安全工具", "其他工具"];
 
@@ -46,18 +42,22 @@ const TaskRecord = () => {
       // sortDirections: ["descend", "ascend"],
       align: "center",
       fixed: "left",
-      render:(text, record)=>{
-        if(!text){
-          return "-"
+      render: (text, record) => {
+        if (!text) {
+          return "-";
         }
-        return <a onClick={()=>{
-          history.push(
-            `/utilitie/tool-management/tool-execution-results/${
-              record.id
-            }`
-          );
-        }}>{text}</a>
-      }
+        return (
+          <a
+            onClick={() => {
+              history.push(
+                `/utilitie/tool-management/tool-execution-results/${record.id}`
+              );
+            }}
+          >
+            {text}
+          </a>
+        );
+      },
     },
     {
       title: "分类",
@@ -103,7 +103,7 @@ const TaskRecord = () => {
       sorter: (a, b) => a.start_time - b.start_time,
       sortDirections: ["descend", "ascend"],
       align: "center",
-      render: (text)=>{
+      render: (text) => {
         return text ? moment(text).format("YYYY-MM-DD HH:mm:ss") : "-";
       },
     },
@@ -148,13 +148,15 @@ const TaskRecord = () => {
         return (
           <div style={{ display: "flex", justifyContent: "space-around" }}>
             <div style={{ margin: "auto" }}>
-              <a onClick={() => {
-                 history.push(
-                  `/utilitie/tool-management/tool-execution-results/${
-                    record.id
-                  }`
-                );
-              }}>查看</a>
+              <a
+                onClick={() => {
+                  history.push(
+                    `/utilitie/tool-management/tool-execution-results/${record.id}`
+                  );
+                }}
+              >
+                查看
+              </a>
             </div>
           </div>
         );
@@ -269,7 +271,7 @@ const TaskRecord = () => {
             onClick={() => {
               fetchData(
                 { current: pagination.current, pageSize: pagination.pageSize },
-                {  search: selectValue },
+                { search: selectValue },
                 pagination.ordering
               );
             }}

@@ -10,9 +10,9 @@ import {
   TimePicker,
   message,
 } from "antd";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { handleResponse } from "@/utils/utils";
-import { fetchGet, fetchDelete, fetchPost, fetchPut } from "@/utils/request";
+import { fetchGet, fetchPost, fetchPut } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import styles from "./index.module.less";
 import {
@@ -327,18 +327,21 @@ const PatrolStrategy = () => {
               <Form.Item
                 name={["name", "value"]}
                 noStyle
-                rules={[{ required: true, message: "请输入巡检任务名称" },  {
-                  validator: (rule, value, callback ) => {
-                    if (value) {
-                      if(value.match(/^[ ]*$/)){
-                        return Promise.reject("请输入巡检任务名称");
+                rules={[
+                  { required: true, message: "请输入巡检任务名称" },
+                  {
+                    validator: (rule, value, callback) => {
+                      if (value) {
+                        if (value.match(/^[ ]*$/)) {
+                          return Promise.reject("请输入巡检任务名称");
+                        }
+                        return Promise.resolve("success");
+                      } else {
+                        return Promise.resolve("success");
                       }
-                      return Promise.resolve("success");
-                    } else {
-                      return Promise.resolve("success");
-                    }
+                    },
                   },
-                },]}
+                ]}
               >
                 <Input
                   placeholder="例如：深度分析"

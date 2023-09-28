@@ -1,15 +1,14 @@
 import {
   OmpContentWrapper,
   OmpTable,
-  OmpMessageModal,
   OmpSelect,
   OmpDatePicker,
   OmpDrawer,
 } from "@/components";
-import { Button, Select, message, Menu, Dropdown, Modal, Input } from "antd";
-import { useState, useEffect, useRef } from "react";
-import { handleResponse, _idxInit, refreshTime } from "@/utils/utils";
-import { fetchGet, fetchPost, fetchPatch } from "@/utils/request";
+import { Button, Select, message, Input } from "antd";
+import { useState, useEffect } from "react";
+import { handleResponse, _idxInit } from "@/utils/utils";
+import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import getColumnsConfig from "./config/columns";
 import { SearchOutlined } from "@ant-design/icons";

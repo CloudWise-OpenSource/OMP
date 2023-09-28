@@ -253,7 +253,6 @@ CUSTOM_THRESHOLD_SERVICES = {
 
 # 备份相关配置
 # 可备份的组件
-BACKUP_SERVICE = {"mysql", "arangodb", "postgreSql"}
 BACKUP_DEFAULT_PATH = os.path.join(PROJECT_DIR, "data/backup/")
 
 SCAN_TOOL_LOCK_KEY = "tool_package_verify"

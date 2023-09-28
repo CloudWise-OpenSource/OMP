@@ -5,7 +5,6 @@ import {
   ExclamationCircleOutlined,
   CloseCircleFilled,
   CheckCircleFilled,
-  LoadingOutlined,
   SyncOutlined,
   ClockCircleFilled,
   SendOutlined,
@@ -323,7 +322,7 @@ const ReleaseModal = ({
                         paddingTop: 10,
                       }}
                     >
-                      支持扩展名: .tar 或 .tar.gz  文件大小不超过4G
+                      支持扩展名: .tar 或 .tar.gz 文件大小不超过4G
                     </p>
                     <p
                       style={{

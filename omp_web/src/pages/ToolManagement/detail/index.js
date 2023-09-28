@@ -1,34 +1,10 @@
-import {
-  OmpContentWrapper,
-  OmpTable,
-  OmpMessageModal,
-  OmpSelect,
-  OmpDatePicker,
-  OmpDrawer,
-} from "@/components";
-import {
-  Button,
-  Select,
-  message,
-  Menu,
-  Dropdown,
-  Modal,
-  Input,
-  Table,
-  Tooltip,
-  Spin,
-} from "antd";
-import { useState, useEffect, useRef } from "react";
-import {
-  handleResponse,
-  _idxInit,
-  refreshTime,
-  downloadFile,
-} from "@/utils/utils";
-import { fetchGet, fetchPost, fetchPatch } from "@/utils/request";
+import { OmpContentWrapper } from "@/components";
+import { Button, Table, Tooltip, Spin } from "antd";
+import { useState, useEffect } from "react";
+import { handleResponse, _idxInit, downloadFile } from "@/utils/utils";
+import { fetchGet } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import { QuestionCircleOutlined, FileProtectOutlined } from "@ant-design/icons";
-import moment from "moment";
 import { useHistory, useLocation } from "react-router-dom";
 import styles from "./index.module.less";
 import Readme from "./Readme.js";
@@ -75,7 +51,7 @@ const Details = () => {
     <OmpContentWrapper wrapperStyle={{ padding: "20px 30px" }}>
       <Spin spinning={loading}>
         <div className={styles.header}>
-          {(!info.logo) ? (
+          {!info.logo ? (
             <div className={styles.icon}>
               <div
                 style={{

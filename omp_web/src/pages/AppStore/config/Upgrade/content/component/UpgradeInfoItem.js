@@ -1,6 +1,6 @@
 import UpgradeDetail from "./UpgradeDetail";
-import { useState } from "react";
-const UpgradeInfoItem = ({ id, data, title, log,idx }) => {
+
+const UpgradeInfoItem = ({ id, data, title, log, idx }) => {
   return (
     <div
       id={id}
@@ -9,7 +9,7 @@ const UpgradeInfoItem = ({ id, data, title, log,idx }) => {
         backgroundColor: "#fff",
         padding: 10,
         //marginBottom: 15,
-        marginTop:idx !== 0 && 15
+        marginTop: idx !== 0 && 15,
       }}
     >
       <div
@@ -19,7 +19,7 @@ const UpgradeInfoItem = ({ id, data, title, log,idx }) => {
           width: "100%",
           position: "relative",
           height: 40,
-          paddingTop:10
+          paddingTop: 10,
         }}
       >
         <div
@@ -45,7 +45,7 @@ const UpgradeInfoItem = ({ id, data, title, log,idx }) => {
         }}
       >
         {data?.map((item) => {
-          console.log(item)
+          console.log(item);
           return (
             <UpgradeDetail
               title={title}

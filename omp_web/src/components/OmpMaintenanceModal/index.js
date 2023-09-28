@@ -1,19 +1,8 @@
-/*
- * @Author: your name
- * @Date: 2021-06-21 11:41:47
- * @LastEditTime: 2021-06-22 19:50:32
- * @LastEditors: Please set LastEditors
- * @Description: In User Settings Edit
- * @FilePath: /ompWeb/src/components/OmpMaintenanceModal/OmpMaintenanceModal.js
- */
-import React, { useState } from "react";
-import OmpModal from "@/components/OmpModal";
+import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { handleResponse } from "@/utils/utils";
-//import { getMaintenanceChangeAction } from "@/layouts/CustomBreadcrumb/store/actionsCreators";
 import { fetchPut } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-//import updata from "@/stores/globalStore";
 
 const OmpMaintenanceModal = ({ control, used }) => {
   const dispatch = useDispatch();
@@ -27,7 +16,7 @@ const OmpMaintenanceModal = ({ control, used }) => {
       },
     })
       .then((res) => {
-        res = res.data
+        res = res.data;
         handleResponse(res, () => {
           if (res.code === 0) {
             //dispatch(getMaintenanceChangeAction(res.data.used));

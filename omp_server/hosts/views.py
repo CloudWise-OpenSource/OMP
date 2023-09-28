@@ -75,7 +75,7 @@ class HostListView(GenericViewSet, ListModelMixin, CreateModelMixin):
             host_info["password"] = base64.b64encode(password.encode())
 
         # 获取监控及日志的url
-        serializer_data = explain_url(serializer_data)
+        serializer_data = explain_url(serializer_data, is_host=True)
 
         # 实时获取主机动态
         prometheus_obj = Prometheus()

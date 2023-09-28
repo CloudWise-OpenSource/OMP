@@ -1,11 +1,5 @@
-import { Tag, Modal, Cascader, message } from "antd";
-import { useEffect, useRef, useState } from "react";
-import {
-  SendOutlined,
-  LoadingOutlined,
-  CheckCircleFilled,
-  ScanOutlined,
-} from "@ant-design/icons";
+import { Modal, Cascader, message } from "antd";
+import { useEffect, useState } from "react";
 //import BMF from "browser-md5-file";
 import { fetchPost, fetchGet } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";

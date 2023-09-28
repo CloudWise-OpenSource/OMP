@@ -1,12 +1,5 @@
 import { Modal, Button } from "antd";
-/**
- * @name:
- * @test: test font
- * @msg:
- * @param {*} visibleHandle
- * @param {*} children
- * @return {*}
- */
+
 const OmpMessageModal = ({
   visibleHandle,
   children,

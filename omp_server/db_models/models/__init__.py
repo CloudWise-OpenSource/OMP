@@ -1,4 +1,4 @@
-from .backup import BackupSetting, BackupHistory
+from .backup import BackupSetting, BackupHistory, BackupCustom
 from .email import EmailSMTPSetting, ModuleSendEmailSetting
 from .env import Env
 from .execution import ExecutionRecord

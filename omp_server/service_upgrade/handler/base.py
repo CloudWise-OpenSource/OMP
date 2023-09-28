@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 def get_install_detail(detail, service, operation_uuid):
     install_history = service.detailinstallhistory_set.filter(
         install_step_status=2).last()
-
+    logger.info(f"{service.service_instance_name}无detail记录或该服务升级前为安装失败")
     if not install_history:
         return None, None
 

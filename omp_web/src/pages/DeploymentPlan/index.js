@@ -1,16 +1,8 @@
 import { OmpContentWrapper, OmpTable, OmpMessageModal } from "@/components";
-import { Button, Input, Form, message, Menu, Select } from "antd";
+import { Button } from "antd";
 import { useState, useEffect, useRef } from "react";
-import {
-  handleResponse,
-  _idxInit,
-  refreshTime,
-  MessageTip,
-  nonEmptyProcessing,
-  logout,
-  isPassword,
-} from "@/utils/utils";
-import { fetchGet, fetchPost } from "@/utils/request";
+import { handleResponse, _idxInit } from "@/utils/utils";
+import { fetchGet } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 //import updata from "@/store_global/globalStore";
 import { useDispatch } from "react-redux";

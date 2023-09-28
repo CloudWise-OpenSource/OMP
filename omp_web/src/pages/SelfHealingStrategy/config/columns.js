@@ -1,4 +1,4 @@
-import { nonEmptyProcessing, renderDisc } from "@/utils/utils";
+import { renderDisc } from "@/utils/utils";
 import { Tooltip } from "antd";
 
 const getColumnsConfig = (
@@ -26,14 +26,13 @@ const getColumnsConfig = (
       width: 200,
       ellipsis: true,
       render: (text) => {
-
         // if (text.length > 0 && text[0] === "all") return "所有服务";
         const textMap = {
           host: "主机监控Agent",
           component: "基础组件",
-          service: "自研服务"
-        }
-        const resText = text.map(e=>textMap[e])
+          service: "自研服务",
+        };
+        const resText = text.map((e) => textMap[e]);
         return (
           <Tooltip title={resText.join(", ")}>
             <span>{resText.join(", ")}</span>
@@ -64,7 +63,7 @@ const getColumnsConfig = (
       width: 100,
       ellipsis: true,
       render: (text) => {
-        return `${text} min`
+        return `${text} min`;
       },
     },
     {

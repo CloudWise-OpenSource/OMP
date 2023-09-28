@@ -1,12 +1,12 @@
-import { Button, Modal, Input, Select, Switch } from "antd";
+import { Button, Modal, Input, Select } from "antd";
 import { useEffect, useRef, useState } from "react";
 import { CopyOutlined, SearchOutlined } from "@ant-design/icons";
 //import BMF from "browser-md5-file";
-import { fetchPost, fetchGet } from "@/utils/request";
+import { fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import { handleResponse } from "@/utils/utils";
-import { OmpMessageModal, OmpTable } from "@/components";
-import { useHistory, useLocation } from "react-router-dom";
+import { OmpTable } from "@/components";
+import { useHistory } from "react-router-dom";
 
 const GetServiceModal = ({
   modalVisibility,

@@ -1,7 +1,5 @@
-import { nonEmptyProcessing, colorConfig } from "@/utils/utils";
-import { Tooltip, Badge, Menu, Dropdown } from "antd";
-import { FilterFilled } from "@ant-design/icons";
-import OmpTableFilter from "@/components/OmpTable/components/OmpTableFilter";
+import { colorConfig } from "@/utils/utils";
+import { Tooltip, Badge } from "antd";
 import moment from "moment";
 
 const getColumnsConfig = (
@@ -117,6 +115,10 @@ const getColumnsConfig = (
           return "主机";
         } else if (text == "service") {
           return "服务";
+        } else if (text == "component") {
+          return "组件";
+        } else if (text == "database") {
+          return "数据库";
         }
       },
     },

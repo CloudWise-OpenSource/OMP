@@ -25,8 +25,10 @@ django.setup()
 from db_models.models import UserProfile
 from db_models.models import MonitorUrl
 from utils.parse_config import MONITOR_PORT, CLEAR_DB
-from db_models.models import Env
-from db_models.models import AlertRule, Rule
+from db_models.models import Env, AlertRule, \
+    Rule, Service, \
+    BackupHistory, BackupCustom, \
+    DetailInstallHistory, Host, SelfHealingSetting
 from utils.plugin.crontab_utils import change_task
 
 
@@ -320,7 +322,6 @@ def create_threshold():
             "for_time": "60s",
             "severity": "critical",
             "labels": {
-                "job": "nodeExporter",
                 "severity": "critical"
             },
             "name": "exporter异常",
@@ -331,7 +332,7 @@ def create_threshold():
         },
         {
             "alert": "服务存活状态",
-            "description": '主机 {{ $labels.instance }} 中的 服务 {{ $labels.app }} 已经down掉超过一分钟.',
+            "description": '主机 {{ $labels.instance }} 中的 服务 {{ $labels.app }} been down for more than a minute.',
             "expr": 'probe_success{env="default"}',
             "summary": "-",
             "compare_str": "==",
@@ -435,13 +436,13 @@ def create_threshold():
             "name": "exporter异常",
             "description": '主机 {{ $labels.instance }} 中的 {{ $labels.app }}_exporter 已经down掉超过一分钟',
             "expr": 'exporter_status{env="$env$"}',
-            "service": "node",
+            "service": "service",
         },
         {
             "name": "服务状态",
-            "description": '主机 {{ $labels.instance }} 中的 服务 {{ $labels.app }} 已经down掉超过一分钟.',
+            "description": '主机 {{ $labels.instance }} 中的 服务 {{ $labels.app }} been down for more than a minute.',
             "expr": 'probe_success{env="$env$"}',
-            "service": "node",
+            "service": "service",
         },
         {
             "name": "CPU使用率",
@@ -534,16 +535,10 @@ def create_threshold():
 
 def create_self_healing_setting():
     """添加默认自愈策略"""
-    # if SelfHealingSetting.objects.all().count() != 0:
-    #     return
-    # default_setting = dict()
-    # default_setting = {
-    #     "used": False,
-    #     "alert_count": 1,
-    #     "max_healing_count": 5,
-    #     "env_id": 1
-    # }
-    # SelfHealingSetting(**default_setting).save()
+    # self_obj = SelfHealingSetting.objects.all().first()
+    # if not self_obj.repair_instance:
+    #     self_obj.repair_instance = ["all"]
+    #     self_obj.save()
 
 
 class ClearDb:
@@ -572,6 +567,55 @@ class ClearDb:
         change_task(1, data)
 
 
+def create_back_settings():
+    init_db = [
+        {"field_k": "db_name",
+         "field_v": "test_db",
+         "notes": "数据库名称,适用mysql,postgre"},
+        {"field_k": "no_pass",
+         "field_v": "true",
+         "notes": "无需认证,非必填,适用mysql"},
+        {
+            "field_k": "need_push",
+            "field_v": "true",
+            "notes": "异地备份,非必填,适用全部"
+        },
+        {
+            "field_k": "need_app",
+            "field_v": "true",
+            "notes": "安装路径备份,非必填,适用pg"
+        }
+    ]
+
+    his_obj = BackupHistory.objects.all()
+
+    for i in his_obj:
+        if "," in i.content:
+            i.delete()
+
+    for v in init_db:
+        BackupCustom.objects.get_or_create(**v)
+
+
+def repair_dirty_data():
+    detail_objs = DetailInstallHistory.objects.all()
+    for obj in detail_objs:
+        run_user = Host.objects.filter(ip=obj.service.ip).first().username
+        if run_user != 'root':
+            obj.install_detail_args['run_user'] = run_user
+            for i in obj.install_detail_args.get('install_args', []):
+                if i.get('key', '') == 'run_user':
+                    i['default'] = run_user
+            obj.save()
+        else:
+            continue
+    service_obj = Service.split_objects.all()
+    for ser in service_obj:
+        if ser.service.app_name == "hadoop":
+            ser.service_status = Service.SERVICE_STATUS_NORMAL
+            ser.save()
+
+
 def main():
     """
     基础数据创建流程
@@ -589,6 +633,10 @@ def main():
     create_self_healing_setting()
     # 创建清理任务
     ClearDb()()
+    # 添加告警策略
+    create_back_settings()
+    # 升级是清洗以前问题数据
+    repair_dirty_data()
 
 
 if __name__ == '__main__':

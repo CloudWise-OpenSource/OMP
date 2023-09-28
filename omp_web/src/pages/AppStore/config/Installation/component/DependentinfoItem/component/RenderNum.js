@@ -1,4 +1,4 @@
-import { Select, Form, Checkbox, InputNumber, Input } from "antd";
+import { Form, InputNumber, Input } from "antd";
 import { useEffect, useRef, useState } from "react";
 import { randomNumber } from "@/utils/utils";
 

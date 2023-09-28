@@ -1,4 +1,4 @@
-import { Input, Checkbox, Button, Form, message } from "antd";
+import { Input, Checkbox, Button, Form } from "antd";
 import { useEffect, useState } from "react";
 import styles from "./index.module.less";
 import img from "@/config/logo/logo.svg";
@@ -9,9 +9,9 @@ import {
   SafetyCertificateOutlined,
 } from "@ant-design/icons";
 import { OmpContentWrapper } from "@/components";
-import { fetchGet, fetchPost } from "@/utils/request";
+import { fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-import { handleResponse, logout, encrypt } from "@/utils/utils";
+import { logout, encrypt } from "@/utils/utils";
 import { withRouter } from "react-router";
 
 const Login = withRouter(({ history }) => {

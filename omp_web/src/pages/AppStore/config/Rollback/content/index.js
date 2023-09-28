@@ -7,7 +7,7 @@ import { apiRequest } from "@/config/requestApi";
 import { fetchGet } from "@/utils/request";
 import { handleResponse } from "@/utils/utils";
 import { useHistory, useLocation } from "react-router-dom";
-import { fetchPost, fetchPut } from "src/utils/request";
+import { fetchPut } from "src/utils/request";
 
 const { Link } = Anchor;
 // 状态渲染规则

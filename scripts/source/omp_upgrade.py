@@ -486,6 +486,10 @@ class OmpServer(Common):
         """
         # 计算出旧版本的文件目录与目标版本目录的不同
         ignore = ["back_end_verified", "front_end_verified", "verified"]
+        force_override = ["_modules", "grafana_dashboard_json",
+                          "omp_salt_agent.tar.gz", "omp_monitor_agent-0.5.tar.gz"
+                          ]
+        ignore.extend(force_override)
         need_change = self.explain_one(source_dir, ignore) - self.explain_one(target_dir, ignore)
         # 排序
         dir_ls = []
@@ -500,6 +504,9 @@ class OmpServer(Common):
                 self.sys_cmd(f"mkdir -p {os.path.join(target_dir, d)}")
             for f in file_ls:
                 self.sys_cmd(f"cp -a {os.path.join(source_dir, f)} {os.path.join(target_dir, f)}")
+        # 部分路径强制覆盖
+        for force in force_override:
+            f"cp -a {os.path.join(source_dir, force)} {os.path.join(target_dir, force)}"
 
     def install(self):
         # 启动redis
@@ -521,7 +528,7 @@ class OmpServer(Common):
         print("4. 执行前请确认上述步骤已完成 请手动执行 export LD_LIBRARY_PATH=:{0} && {1} {2}".format(
             os.path.join(self.target_dir, 'component/env/lib/'),
             os.path.join(self.target_dir, 'component/env/bin/python3.8'),
-            os.path.join(self.target_dir, 'scripts/source/repair_dirty_data.py')
+            os.path.join(self.target_dir, 'scripts/source/update_data.py')
         ))
 
 
