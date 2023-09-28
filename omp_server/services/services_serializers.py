@@ -5,9 +5,10 @@ import json
 from rest_framework import serializers
 
 from db_models.models import Service, ApplicationHub
+from utils.common.serializers import DynamicFieldsModelSerializer
 
 
-class ServiceStatusSerializer(serializers.ModelSerializer):
+class ServiceStatusSerializer(DynamicFieldsModelSerializer):
     is_web = serializers.SerializerMethodField()
     is_base_env = serializers.BooleanField(source="service.is_base_env")
     service_status = serializers.CharField(source="get_service_status_display")

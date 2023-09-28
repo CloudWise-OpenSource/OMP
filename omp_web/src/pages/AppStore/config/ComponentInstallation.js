@@ -1,18 +1,9 @@
-import { useCallback, useEffect, useState, useRef } from "react";
-import { useHistory, useLocation } from "react-router-dom";
+import { useEffect, useState, useRef } from "react";
+import { useHistory } from "react-router-dom";
 import { handleResponse } from "@/utils/utils";
 import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-import {
-  Steps,
-  Form,
-  Input,
-  Button,
-  Select,
-  Checkbox,
-  Tooltip,
-  message,
-} from "antd";
+import { Steps, Form, Input, Button, Select, Tooltip, message } from "antd";
 import {
   LeftOutlined,
   DownOutlined,

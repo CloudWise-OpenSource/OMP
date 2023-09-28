@@ -70,8 +70,9 @@ class EmailSMTPSetting(models.Model):
     def reload_alert_manage():
         from promemonitor.alertmanager import Alertmanager
         alertmanager_url = Alertmanager.get_alertmanager_config()
+        _basic_auth = Alertmanager().basic_auth
         try:
-            response = requests.post(f"http://{alertmanager_url}/-/reload")  # NOQA
+            response = requests.post(f"http://{alertmanager_url}/-/reload", auth=_basic_auth)  # NOQA
         except Exception as e:
             logger.error(f"重载alertmanager配置出错！错误信息：{str(e)}")
             return False

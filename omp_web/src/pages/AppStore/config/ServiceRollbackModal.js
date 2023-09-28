@@ -1,31 +1,11 @@
-import {
-  Button,
-  Modal,
-  Upload,
-  message,
-  Steps,
-  Tooltip,
-  Select,
-  Switch,
-  Input,
-  Table,
-} from "antd";
+import { Button, Modal, Tooltip, Input, Table } from "antd";
 import { useEffect, useRef, useState } from "react";
-import {
-  CopyOutlined,
-  SearchOutlined,
-  ArrowUpOutlined,
-  SyncOutlined,
-} from "@ant-design/icons";
+import { SearchOutlined, SyncOutlined } from "@ant-design/icons";
 //import BMF from "browser-md5-file";
 import { fetchPost, fetchGet } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import { handleResponse } from "@/utils/utils";
-import { OmpMessageModal, OmpTable } from "@/components";
-import { useHistory, useLocation } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
-import { getStep1ChangeAction } from "./Installation/store/actionsCreators";
-import { getUniqueKeyChangeAction } from "../store/actionsCreators";
+import { useHistory } from "react-router-dom";
 
 const ServiceRollbackModal = ({
   sRModalVisibility,
@@ -33,7 +13,7 @@ const ServiceRollbackModal = ({
   // dataSource,
   installTitle,
   initLoading,
-  fixedParams
+  fixedParams,
 }) => {
   const [loading, setLoading] = useState(false);
 
@@ -102,7 +82,7 @@ const ServiceRollbackModal = ({
   ];
 
   const [dataSource, setDataSource] = useState([]);
-  const [allLength, setAllLength] = useState(0)
+  const [allLength, setAllLength] = useState(0);
 
   const queryDataList = (search) => {
     // setRows([]);
@@ -115,9 +95,9 @@ const ServiceRollbackModal = ({
     })
       .then((res) => {
         handleResponse(res, (res) => {
-          let result = formatResData(res.data.results)
-          if(!search || search == undefined){
-            setAllLength(result.map((i) => i.children).flat().length)
+          let result = formatResData(res.data.results);
+          if (!search || search == undefined) {
+            setAllLength(result.map((i) => i.children).flat().length);
           }
           setDataSource(result);
         });
@@ -178,7 +158,7 @@ const ServiceRollbackModal = ({
     setLoading(true);
     fetchPost(apiRequest.appStore.doRollback, {
       body: {
-        choices: checkedList.map(item=>item._id)
+        choices: checkedList.map((item) => item._id),
       },
     })
       .then((res) => {

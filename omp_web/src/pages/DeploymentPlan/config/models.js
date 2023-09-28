@@ -1,23 +1,7 @@
 import React, { useEffect } from "react";
 import { useHistory } from "react-router-dom";
+import { Button, message, Tooltip, Modal, Steps, Upload, Table } from "antd";
 import {
-  Button,
-  Input,
-  Select,
-  Form,
-  message,
-  InputNumber,
-  Row,
-  Col,
-  Tooltip,
-  Modal,
-  Steps,
-  Upload,
-  Switch,
-  Table,
-} from "antd";
-import {
-  PlusSquareOutlined,
   SyncOutlined,
   ImportOutlined,
   DownloadOutlined,
@@ -30,7 +14,6 @@ import { fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import { useState, useRef } from "react";
 import XLSX from "xlsx";
-import { OmpTable } from "@/components";
 
 const getHeaderRow = (sheet) => {
   const headers = [];

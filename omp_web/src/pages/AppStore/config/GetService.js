@@ -1,7 +1,7 @@
 import { useHistory, useLocation } from "react-router-dom";
 import styles from "./index.module.less";
-import { useSelector, useDispatch } from "react-redux";
-import { fetchPost, fetchGet } from "@/utils/request";
+import { useSelector } from "react-redux";
+import { fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import { handleResponse } from "@/utils/utils";
 import {

@@ -1,24 +1,13 @@
-import {
-  Button,
-  Modal,
-  Upload,
-  message,
-  Steps,
-  Tooltip,
-  Select,
-  Switch,
-} from "antd";
+import { Button, Modal, Select, Switch } from "antd";
 import { useEffect, useRef, useState } from "react";
 import { CopyOutlined } from "@ant-design/icons";
 //import BMF from "browser-md5-file";
-import { fetchPost, fetchGet } from "@/utils/request";
+import { fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import { handleResponse } from "@/utils/utils";
-import { OmpMessageModal, OmpTable } from "@/components";
-import { useHistory, useLocation } from "react-router-dom";
+import { OmpTable } from "@/components";
+import { useHistory } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-// import { getStep1ChangeAction } from "./Installation/store/actionsCreators";
-//import { getUniqueKeyChangeAction } from "../store/actionsCreators";
 
 const ServiceUpgradeModal = ({
   vfModalVisibility,

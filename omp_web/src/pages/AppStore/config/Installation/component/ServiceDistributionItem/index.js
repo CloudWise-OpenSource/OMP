@@ -1,5 +1,5 @@
-import { Cascader, Form, Tag, Button, Tooltip } from "antd";
-import { useEffect, useState, useRef } from "react";
+import { Cascader, Form, Tag, Tooltip } from "antd";
+import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import {
   getDataSourceChangeAction,
@@ -252,10 +252,12 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
           //console.log(i)
           return false;
         });
-        
-        setValue((v)=>{
-          let arr =Array.from(new Set([...dealValue, ...result].map(i=>JSON.stringify(i))))
-          return arr.map(m=>JSON.parse(m))
+
+        setValue((v) => {
+          let arr = Array.from(
+            new Set([...dealValue, ...result].map((i) => JSON.stringify(i)))
+          );
+          return arr.map((m) => JSON.parse(m));
           // Array.from(new Set([...dealValue, ...result]))
         });
         // form.setFieldsValue({
@@ -295,7 +297,7 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
         disableItem.push(i.value);
       }
     });
-    console.log(disableItem, value, "要禁用的项")
+    console.log(disableItem, value, "要禁用的项");
     return disableItem;
   };
 
@@ -311,9 +313,9 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
               if (disableItem.indexOf(v.childNodes[1].innerHTML) !== -1) {
                 // v.childNodes[0].removeEventListener("click")
                 // console.log(v.childNodes[0].getAttribute())
-                v.childNodes[0].onclick = (e)=>{
+                v.childNodes[0].onclick = (e) => {
                   e.stopPropagation();
-                }
+                };
                 v.childNodes[0].classList.add("ant-cascader-checkbox-disabled");
                 v.style.cssText =
                   "color: rgba(0,0,0,0.25);font-weight:400 !important;cursor:not-allowed";
@@ -326,25 +328,23 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
   };
 
   // remakeDom重置dom
-  const remakeDom = ()=>{
+  const remakeDom = () => {
     let arr = [...document.getElementsByClassName("ant-cascader-menus")];
     arr.forEach((a) => {
       let dom = a?.childNodes;
       if (dom && dom[0].childNodes) {
         [...dom[0].childNodes].map((v) => {
           if (v && v.childNodes[1]) {
-              // v.childNodes[0].removeEventListener("click")
-              // console.log(v.childNodes[0].getAttribute())
-              v.childNodes[0].onclick = null
-              v.childNodes[0].classList.remove("ant-cascader-checkbox-disabled");
-              v.style.cssText =
-                "color: rgba(0, 0, 0, 0.65);font-weight:400;";
-            
+            // v.childNodes[0].removeEventListener("click")
+            // console.log(v.childNodes[0].getAttribute())
+            v.childNodes[0].onclick = null;
+            v.childNodes[0].classList.remove("ant-cascader-checkbox-disabled");
+            v.style.cssText = "color: rgba(0, 0, 0, 0.65);font-weight:400;";
           }
         });
       }
     });
-  }
+  };
 
   useEffect(() => {
     let disabledItem = getDisableItem(options);
@@ -352,7 +352,11 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
     let isDelete = Object.keys(allDataPool).filter((k) => {
       // 当前组件实例已经选中了，那即使在数据池中该数据num已经为0,也不应影响组件对该数据的展示,在这里过滤掉
       // 并且没有with项
-      return allDataPool[k].num == 0 && !dealColumnsData(value).includes(k) && !allDataPool[k].with;
+      return (
+        allDataPool[k].num == 0 &&
+        !dealColumnsData(value).includes(k) &&
+        !allDataPool[k].with
+      );
       // && disabledItem.indexOf(k) !== -1;
     });
     let c = [...data];
@@ -368,7 +372,7 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
         //     return c.child
         //   })
         //   .flat();
-        return isDelete.indexOf(e) == -1 
+        return isDelete.indexOf(e) == -1;
         // || withI.indexOf(e) !== -1;
       });
       // }
@@ -398,7 +402,8 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
         });
 
         if (
-          (item.child.length > 0 && dealColumnsData(value))
+          item.child.length > 0 &&
+          dealColumnsData(value)
           // ||  disabledItem.indexOf(i.label) !== -1
         ) {
           // 当选中后，全部数据中有子项都是disable的
@@ -471,9 +476,7 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
                 tagRender={(e) => {
                   const { value, onClose, label } = e;
                   return (
-                    <Tag
-                      closable={false}
-                    >
+                    <Tag closable={false}>
                       {allDataPool[label] ? label : `${label}-集合`}
                     </Tag>
                   );
@@ -540,7 +543,7 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
                   // 3. 点击了文字
                   // console.log(e.target);
                   // 因为antd是复用展开框，所以在设置禁用前先重制，然后再根据情况去确定是否设置禁用
-                  remakeDom()
+                  remakeDom();
                   // 设置禁用项
                   let disabledItem = getDisableItem(options);
                   setDisableItem(disabledItem);
@@ -571,41 +574,42 @@ const ServiceDistributionItem = ({ form, data, info, installService }) => {
                       // 点的是一级
                       // 在这个条件中还有一个情况是半选中状态
                       //console.log("点击一级");
-                      if(disabledItem.indexOf(label)!==-1){
+                      if (disabledItem.indexOf(label) !== -1) {
                         setDisableItem(disabledItem);
-                        return 
-                      }else{
-                      // 在点击前
-                      let checkedArr = options
-                        .filter((i) => {
-                          return i.label == label;
-                        })[0]
-                        .children.map((i) => {
-                          return i.label;
+                        return;
+                      } else {
+                        // 在点击前
+                        let checkedArr = options
+                          .filter((i) => {
+                            return i.label == label;
+                          })[0]
+                          .children.map((i) => {
+                            return i.label;
+                          });
+                        // 对checkedArr再做一次过滤，过滤掉含有with的项
+                        checkedArr = checkedArr.filter((i) => {
+                          if (allDataPool[i] && allDataPool[i].with) {
+                            return false;
+                          }
+                          return true;
                         });
-                      // 对checkedArr再做一次过滤，过滤掉含有with的项
-                      checkedArr = checkedArr.filter((i) => {
-                        if (allDataPool[i] && allDataPool[i].with) {
-                          return false;
-                        }
-                        return true;
-                      });
-                      // 还要过滤掉已经选中状态的
-                      // value适配数据只要第二级数据
-                      const hasCheck = value.map((item) => {
-                        return item[1];
-                      });
+                        // 还要过滤掉已经选中状态的
+                        // value适配数据只要第二级数据
+                        const hasCheck = value.map((item) => {
+                          return item[1];
+                        });
 
-                      checkedArr = checkedArr.filter((i) => {
-                        if (hasCheck.includes(i)) {
-                          return false;
-                        }
-                        return true;
-                      });
+                        checkedArr = checkedArr.filter((i) => {
+                          if (hasCheck.includes(i)) {
+                            return false;
+                          }
+                          return true;
+                        });
 
-                      handleValueAndForm(label, true);
-                      let data = handleDataSourceData(checkedArr, -1);
-                      reduxDispatch(getDataSourceChangeAction(data));}
+                        handleValueAndForm(label, true);
+                        let data = handleDataSourceData(checkedArr, -1);
+                        reduxDispatch(getDataSourceChangeAction(data));
+                      }
                     }
                     // console.log(
                     //   "选中",

@@ -15,7 +15,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework.mixins import (
-    ListModelMixin, CreateModelMixin,DestroyModelMixin,UpdateModelMixin
+    ListModelMixin, CreateModelMixin, DestroyModelMixin, UpdateModelMixin
 )
 from rest_framework.response import Response
 from rest_framework.serializers import Serializer
@@ -25,7 +25,7 @@ from db_models.models import (
     Host, MonitorUrl,
     Alert, Maintain, ApplicationHub, Service, EmailSMTPSetting,
     AlertSendWaySetting, HostThreshold, ServiceThreshold,
-    ServiceCustomThreshold, Rule, AlertRule,Env
+    ServiceCustomThreshold, Rule, AlertRule, Env
 )
 from omp_server.settings import CUSTOM_THRESHOLD_SERVICES
 from promemonitor import grafana_url
@@ -223,8 +223,10 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
         service_info_list = []
         component_info_list = []
         third_info_list = []
+        host_ip_list = []
 
-        host_list = Host.objects.all()
+        host_list = Host.objects.values("ip", "instance_name")
+        host_ip_list = [host.get("ip") for host in host_list]
         ignore_status_list = [Service.SERVICE_STATUS_NORMAL,
                               Service.SERVICE_STATUS_STARTING,
                               Service.SERVICE_STATUS_STOPPING,
@@ -265,19 +267,29 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
         third_info_no_monitor_count = 0
 
         flag, alert_data = self.get_prometheus_alerts()
-        error_instance_list = []
-        error_host_list = []
+        error_database_list = list()
+        error_service_list = list()
+        error_component_list = list()
+        error_host_list = list()
         if flag:
             alerts = alert_data.get('data').get('alerts')
             for ele in alerts:
                 if not isinstance(ele, dict):
                     continue
                 if ele.get("status") == "resolved" or ele.get(
-                        "state") == "resolved":
+                        "state") == "resolved" or ele.get("labels").get("instance") not in host_ip_list:
+                    continue
+                _ip = ele.get("labels").get("instance", "")
+                service_instance_str = ele.get("labels").get("instance_name", "")
+                if len(service_instance_str) < 1:
+                    app_name_str = ele.get("labels").get("app") if ele.get("labels").get("app") else \
+                        ele.get("labels").get("job", "").split("Exporter")[0]
+                    service_instance_str = f"{app_name_str}-{_ip.split('.')[2]}-{_ip.split('.')[3]}"
+                if len(service_instance_str) < 1:
                     continue
                 ele_dict = {
-                    "ip": ele.get("labels").get("instance"),
-                    "instance_name": ele.get("labels").get("instance_name"),
+                    "ip": _ip,
+                    "instance_name": service_instance_str,
                     "alertname": ele.get("labels").get("alertname"),
                     "severity": ele.get("labels").get("severity"),
                     "date": utc_to_local(ele.get("activeAt")),
@@ -285,12 +297,12 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
                     "monitor_url": get_monitor_url([{
                         "ip": ele.get("labels").get("instance"),
                         "type": "service",
-                        "instance_name": ele.get("labels").get("service_name")
+                        "instance_name": ele.get("labels").get("instance_name", "")
                     }]),
                     "log_url": get_log_url([{
                         "ip": ele.get("labels").get("instance"),
                         "type": "service",
-                        "instance_name": ele.get("labels").get("service_name")
+                        "instance_name": ele.get("labels").get("instance_name", "")
                     }])
                 }
                 if ele.get("labels").get("job") == "nodeExporter":
@@ -304,38 +316,29 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
                         "type": "host",
                         "instance_name": "node"
                     }])
-                    # host_info_exc_count = host_info_exc_count + 1
                     host_info_list.append(ele_dict)
                     error_host_list.append(ele.get("labels").get("instance"))
-                service_name_str = ele.get("labels").get("app")
-                if not service_name_str:
-                    continue
                 if list(filter(
-                        lambda x: x.service.app_name == service_name_str,
+                        lambda x: x.service_instance_name == service_instance_str,
                         list(database_list))):
-                    database_info_exc_count = database_info_exc_count + 1
+                    error_database_list.append(service_instance_str)
                     database_info_list.append(ele_dict)
-                    error_instance_list.append(
-                        ele.get("labels").get("instance_name"))
-                elif list(
-                        filter(lambda x: x.service.app_name ==
-                                         service_name_str,
-                               list(service_list))):
-                    service_info_exc_count = service_info_exc_count + 1
-                    service_info_list.append(ele_dict)
-                    error_instance_list.append(
-                        ele.get("labels").get("instance_name"))
-                elif list(
-                        filter(lambda x: x.service.app_name ==
-                                         service_name_str,
-                               list(component_list))):
-                    component_info_exc_count = component_info_exc_count + 1
+                    error_component_list.append(service_instance_str)
                     component_info_list.append(ele_dict)
-                    error_instance_list.append(
-                        ele.get("labels").get("instance_name"))
+                elif list(filter(
+                        lambda x: x.service_instance_name == service_instance_str, list(
+                            service_list)
+                )):
+                    error_service_list.append(service_instance_str)
+                    service_info_list.append(ele_dict)
+                elif list(filter(
+                        lambda x: x.service_instance_name == service_instance_str, list(
+                            component_list)
+                )):
+                    error_component_list.append(service_instance_str)
+                    component_info_list.append(ele_dict)
                 else:
                     continue
-
         for index, hil in enumerate(host_info_list):
             if hil.get("severity") == "warning":
                 for i, h in enumerate(host_info_list):
@@ -355,23 +358,22 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
                         "severity") == "warning":
                         host_info_list.pop(i)
                         break
-
         _, host_targets = Prometheus().get_all_host_targets()
         for host in host_list:
-            if host.ip in error_host_list:
+            if host.get("ip") in error_host_list:
                 continue
             host_dict = {
-                "ip": host.ip, "instance_name": host.instance_name,
+                "ip": host.get("ip"), "instance_name": host.get("instance_name"),
                 "severity": "normal"}
-            if host.ip not in host_targets:
+            if host.get("ip") not in host_targets:
                 host_dict = {
-                    "ip": host.ip, "instance_name": host.instance_name,
+                    "ip": host.get("ip"), "instance_name": host.get("instance_name"),
                     "severity": "unmonitored"}
             host_info_list.append(host_dict)
 
         _, service_targets = Prometheus().get_all_service_targets()
         for database in database_list:
-            if database.service_instance_name in error_instance_list:
+            if database.service_instance_name in error_database_list:
                 continue
             database_dict = {"ip": database.ip,
                              "instance_name": database.service_instance_name,
@@ -387,7 +389,7 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
                                  "severity": "unmonitored"}
             database_info_list.append(database_dict)
         for service in service_list:
-            if service.service_instance_name in error_instance_list:
+            if service.service_instance_name in error_service_list:
                 continue
             service_dict = {"ip": service.ip,
                             "instance_name": service.service_instance_name,
@@ -402,7 +404,7 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
                                 "severity": "unmonitored"}
             service_info_list.append(service_dict)
         for component in component_list:
-            if component.service_instance_name in error_instance_list:
+            if component.service_instance_name in error_component_list:
                 continue
             component_dict = {"ip": component.ip,
                               "instance_name": component.service_instance_name,
@@ -419,6 +421,9 @@ class InstrumentPanelView(GenericViewSet, ListModelMixin):
             component_info_list.append(component_dict)
 
         host_info_exc_count = len(set(error_host_list))
+        database_info_exc_count = len(set(error_database_list))
+        service_info_exc_count = len(set(error_service_list))
+        component_info_exc_count = len(set(error_component_list))
 
         host_info_dict.update({
             "host_info_all_count": host_info_all_count,
@@ -863,7 +868,7 @@ class CustomThresholdView(GenericViewSet, ListModelMixin, CreateModelMixin):
                 data={"code": 1, "message": f"更新服务相关阈值过程中出错: {str(e)}!"})
 
 
-class QuotaView(ListModelMixin, GenericViewSet, CreateModelMixin,DestroyModelMixin):
+class QuotaView(ListModelMixin, GenericViewSet, CreateModelMixin, DestroyModelMixin):
     """
     读写自定义服务指标阈值
     """
@@ -961,20 +966,20 @@ class QuotaView(ListModelMixin, GenericViewSet, CreateModelMixin,DestroyModelMix
                     return Response(data={"code": 1,
                                           "message": f"更新指标规则过程中出错: "
                                                      f"同一指标规则级别重复添加"})
-                if not p.update_rule_file(add_data=request.data,update=True, rule_id=id):
+                if not p.update_rule_file(add_data=request.data, update=True, rule_id=id):
                     return Response(data={"code": 1,
                                           "message": f"更新指标规则错误"})
                 AlertRule.objects.filter(id=id).update(**request.data)
                 ok = p.reload_prometheus()
                 if not ok:
-                    return Response(data={"code":1,"message":"prometheus 重载规则失败，请手动重启prometheus进行重载"})
+                    return Response(data={"code": 1, "message": "prometheus 重载规则失败，请手动重启prometheus进行重载"})
                 return Response()
-            print(request.data["expr"],severity)
+            print(request.data["expr"], severity)
             if AlertRule.objects.filter(expr=request.data["expr"], severity=severity).exists():
                 return Response(data={"code": 1,
                                       "message": f"创建指标规则过程中出错: "
                                                  f"同一指标规则级别重复添加"})
-            if not p.update_rule_file(add_data=request.data,add=True):
+            if not p.update_rule_file(add_data=request.data, add=True):
                 return Response(data={"code": 1,
                                       "message": f"创建指标规则错误"})
             AlertRule(**request.data).save()
@@ -988,7 +993,7 @@ class QuotaView(ListModelMixin, GenericViewSet, CreateModelMixin,DestroyModelMix
             return Response(
                 data={"code": 1, "message": f"创建指标规则过程中出错: {str(e)}!"})
 
-    def delete(self,request, *args, **kwargs):
+    def delete(self, request, *args, **kwargs):
         """
         删除规则
         """
@@ -1007,6 +1012,7 @@ class QuotaView(ListModelMixin, GenericViewSet, CreateModelMixin,DestroyModelMix
                                              "重载规则失败，请手动重启prometheus进行重载"})
         return Response()
 
+
 class BuiltinsRuleView(GenericViewSet, ListModelMixin):
     post_description = "获取内置指标列表"
     serializer_class = RuleSerializer
@@ -1024,25 +1030,25 @@ class BuiltinsRuleView(GenericViewSet, ListModelMixin):
         return Response(data=r_data)
 
 
-class PromSqlTestView(GenericViewSet,CreateModelMixin):
+class PromSqlTestView(GenericViewSet, CreateModelMixin):
     post_description = "测试指标"
     serializer_class = Serializer
 
-    def create(self,request, *args, **kwargs):
+    def create(self, request, *args, **kwargs):
         expr = request.data.get("expr")
         ok, res = Prometheus().get_quota_res(quota=expr)
         if ok:
             return Response(data=res)
         return Response(data={"code": 1, "message": res})
 
-class BatchUpdateRuleView(GenericViewSet,CreateModelMixin):
+
+class BatchUpdateRuleView(GenericViewSet, CreateModelMixin):
     """
     批量修改
     """
     post_description = "批量修改启用停用状态"
     serializer_class = QuotaSerializer
     queryset = AlertRule.objects.all()
-
 
     def create(self, request, *args, **kwargs):
         """

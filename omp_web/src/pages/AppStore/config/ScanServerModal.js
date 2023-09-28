@@ -1,7 +1,6 @@
-import { Button, Modal, Upload, message, Steps, Tooltip, Table } from "antd";
+import { Button, Modal, Steps, Tooltip, Table } from "antd";
 import { useEffect, useRef, useState } from "react";
 import {
-  SendOutlined,
   LoadingOutlined,
   CheckCircleFilled,
   ScanOutlined,

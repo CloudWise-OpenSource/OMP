@@ -1,7 +1,5 @@
-import { nonEmptyProcessing, colorConfig } from "@/utils/utils";
-import { Tooltip, Badge, Menu, Dropdown } from "antd";
-import { FilterFilled } from "@ant-design/icons";
-import OmpTableFilter from "@/components/OmpTable/components/OmpTableFilter";
+import { colorConfig } from "@/utils/utils";
+import { Tooltip, Badge } from "antd";
 import moment from "moment";
 
 const getColumnsConfig = (
@@ -13,7 +11,7 @@ const getColumnsConfig = (
 ) => {
   return [
     {
-      title: "服务名称",
+      title: "实例名称",
       key: "instance_name",
       dataIndex: "instance_name",
       align: "center",
@@ -103,16 +101,16 @@ const getColumnsConfig = (
       // usefilter: true,
       // queryRequest: queryRequest,
       // initfilter: initfilter,
-      filterMenuList: [
-        {
-          value: "service",
-          text: "服务",
-        },
-        {
-          value: "host",
-          text: "主机",
-        },
-      ],
+      // filterMenuList: [
+      //   {
+      //     value: "service",
+      //     text: "服务",
+      //   },
+      //   {
+      //     value: "host",
+      //     text: "主机",
+      //   },
+      // ],
       align: "center",
       //ellipsis: true,
       width: 150,
@@ -121,6 +119,10 @@ const getColumnsConfig = (
           return "主机";
         } else if (text == "service") {
           return "服务";
+        } else if (text == "component") {
+          return "组件";
+        } else if (text == "database") {
+          return "数据库";
         }
       },
     },

@@ -1,8 +1,6 @@
-import { nonEmptyProcessing, renderDisc, handleResponse } from "@/utils/utils";
-import { Tooltip, message } from "antd";
+import { renderDisc } from "@/utils/utils";
+import { Tooltip } from "antd";
 import moment from "moment";
-import { apiRequest } from "src/config/requestApi";
-import { fetchGet } from "@/utils/request";
 
 const renderResult = (text) => {
   switch (text) {
@@ -15,95 +13,43 @@ const renderResult = (text) => {
   }
 };
 
-const renderPushResult = (text) => {
-  switch (text) {
-    case 0:
-      return <span>{renderDisc("critical", 7, -1)}失败</span>;
-    case 1:
-      return <span>{renderDisc("normal", 7, -1)}成功</span>;
-    case 2:
-      return <span>{renderDisc("warning", 7, -1)}推送中</span>;
-    case 3:
-      return <span>{renderDisc("warning", 7, -1)}未推送</span>;
-  }
-};
-
-const getColumnsConfig = (setRow, setDeleteOneModal, pushData) => {
+const getColumnsConfig = (setRow, setDeleteOneModal) => {
   // 推送邮件相关数据
-  const { pushForm, setPushLoading, setPushAnalysisModal, setPushInfo } =
-    pushData;
 
-  // 查询推送数据
-  const fetchPushDate = (record) => {
-    setPushLoading(true);
-    fetchGet(apiRequest.dataBackup.queryBackupSettingData)
-      .then((res) => {
-        handleResponse(res, (res) => {
-          if (res && res.data) {
-            let backup_setting = res.data.backup_setting;
-            const to_users = backup_setting.to_users;
-            pushForm.setFieldsValue({
-              email: to_users,
-            });
-            setPushInfo({
-              id: record.id,
-              to_users: to_users,
-            });
-          }
-        });
-      })
-      .catch((e) => console.log(e))
-      .finally(() => {
-        setPushLoading(false);
-      });
-  };
-
-  // 点击推送
-  const clickPush = (record) => {
-    setPushAnalysisModal(true);
-    fetchPushDate(record);
-  };
   return [
     {
       title: "任务名称",
-      key: "ip",
+      key: "backup_name",
       dataIndex: "backup_name",
       align: "center",
-      width: 140,
-      //ellipsis: true,
+      width: 240,
+      ellipsis: true,
       fixed: "left",
+      render: (text) => {
+        return (
+          <Tooltip title={text || "-"} placement="topLeft">
+            <span>{text || "-"}</span>
+          </Tooltip>
+        );
+      },
+    },
+    {
+      title: "状态",
+      key: "result",
+      dataIndex: "result",
+      align: "center",
+      width: 100,
+      render: (text) => {
+        return renderResult(text);
+      },
     },
     {
       title: "备份实例",
       key: "content",
       dataIndex: "content",
       align: "center",
-      width: 200,
+      width: 140,
       ellipsis: true,
-      render: (text) => {
-        return (
-          <Tooltip title={text.join(",")}>
-            <span>{text.join(",")}</span>
-          </Tooltip>
-        );
-      },
-    },
-    {
-      title: "备份结果",
-      key: "result",
-      dataIndex: "result",
-      align: "center",
-      width: 90,
-      render: (text) => {
-        return renderResult(text);
-      },
-    },
-    {
-      title: "备份方式",
-      key: "operation",
-      dataIndex: "operation",
-      width: 100,
-      align: "center",
     },
     {
       title: "备份文件",
@@ -112,44 +58,85 @@ const getColumnsConfig = (setRow, setDeleteOneModal, pushData) => {
       align: "center",
       width: 180,
       ellipsis: true,
-      render: (text) => {
+      render: (text, record) => {
+        if (record?.file_deleted) {
+          return "-";
+        }
         return (
-          <Tooltip title={text || "-"}>
+          <Tooltip title={text || "-"} placement="topLeft">
             <span>{text || "-"}</span>
           </Tooltip>
         );
       },
     },
     {
-      title: "备份大小",
+      title: "文件大小",
       key: "file_size",
       dataIndex: "file_size",
       align: "center",
       width: 80,
       ellipsis: true,
+      // render: (text) => {
+      //   return <span>{text ? `${text} M` : "-"}</span>;
+      // },
+    },
+    {
+      title: "备份路径",
+      key: "retain_path",
+      dataIndex: "retain_path",
+      width: 160,
+      align: "center",
+      ellipsis: true,
       render: (text) => {
-        return <span>{text ? `${text} M` : "-"}</span>;
+        return (
+          <Tooltip title={text || "-"} placement="topLeft">
+            <span>{text || "-"}</span>
+          </Tooltip>
+        );
+      },
+    },
+    {
+      title: "远程路径",
+      key: "remote_path",
+      dataIndex: "remote_path",
+      width: 160,
+      align: "center",
+      ellipsis: true,
+      render: (text) => {
+        return (
+          <Tooltip title={text || "-"} placement="topLeft">
+            <span>{text || "-"}</span>
+          </Tooltip>
+        );
       },
     },
     {
       title: "过期时间",
       key: "expire_time",
       dataIndex: "expire_time",
+      width: 180,
       align: "center",
-      width: 120,
       ellipsis: true,
       render: (text) => {
-        return text ? moment(text).format("YYYY-MM-DD HH:mm:ss") : "-";
+        if (text) {
+          return moment(text).format("YYYY-MM-DD HH:mm:ss");
+        }
+        return "-";
       },
     },
     {
-      title: "推送结果",
-      key: "send_email_result",
-      dataIndex: "send_email_result",
+      title: "信息",
+      key: "message",
+      dataIndex: "message",
       align: "center",
-      width: 90,
+      width: 180,
+      ellipsis: true,
       render: (text) => {
-        return renderPushResult(text);
+        return (
+          <Tooltip title={text || "-"} placement="topLeft">
+            <span>{text || "-"}</span>
+          </Tooltip>
+        );
       },
     },
     {
@@ -159,14 +146,7 @@ const getColumnsConfig = (setRow, setDeleteOneModal, pushData) => {
       dataIndex: "",
       align: "center",
       fixed: "right",
-      render: function renderFunc(text, record, index) {
-        if (record?.file_deleted) {
-          return (
-            <div style={{ display: "flex", justifyContent: "space-around" }}>
-              <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>已删除</span>
-            </div>
-          );
-        }
+      render: (text, record, index) => {
         return (
           <div
             onClick={() => {
@@ -175,14 +155,9 @@ const getColumnsConfig = (setRow, setDeleteOneModal, pushData) => {
             style={{ display: "flex", justifyContent: "space-around" }}
           >
             <div style={{ margin: "auto" }}>
-              {record.result === 0 || record.result === 2 ? (
+              {record.result === 2 ? (
                 <>
-                  <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>下载</span>
-                  <span
-                    style={{ color: "rgba(0, 0, 0, 0.25)", marginLeft: 10 }}
-                  >
-                    推送
-                  </span>
+                  {/* <span style={{ color: "rgba(0, 0, 0, 0.25)" }}>下载</span> */}
                   <span
                     style={{ color: "rgba(0, 0, 0, 0.25)", marginLeft: 10 }}
                   >
@@ -191,7 +166,7 @@ const getColumnsConfig = (setRow, setDeleteOneModal, pushData) => {
                 </>
               ) : (
                 <>
-                  <a
+                  {/* <a
                     onClick={() => {
                       if (record.file_name || record.result === 1) {
                         let a = document.createElement("a");
@@ -205,13 +180,7 @@ const getColumnsConfig = (setRow, setDeleteOneModal, pushData) => {
                     }}
                   >
                     下载
-                  </a>
-                  <a
-                    style={{ marginLeft: 10 }}
-                    onClick={() => clickPush(record)}
-                  >
-                    推送
-                  </a>
+                  </a> */}
                   <a
                     style={{ marginLeft: 10 }}
                     onClick={() => setDeleteOneModal(true)}

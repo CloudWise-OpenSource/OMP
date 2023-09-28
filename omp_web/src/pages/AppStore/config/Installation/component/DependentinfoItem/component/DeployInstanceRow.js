@@ -1,6 +1,5 @@
-import { Select, Form, Checkbox, InputNumber, Input } from "antd";
+import { Select, Form, Checkbox } from "antd";
 import { useEffect, useState } from "react";
-import { randomNumber } from "@/utils/utils";
 import RenderArr from "./RenderArr";
 import RenderNum from "./RenderNum";
 

@@ -1,6 +1,14 @@
 import InstallDetail from "./component/InstallDetail";
-import { useState } from "react";
-const InstallInfoItem = ({ id, data, title, openName, setOpenName, log,idx }) => {
+
+const InstallInfoItem = ({
+  id,
+  data,
+  title,
+  openName,
+  setOpenName,
+  log,
+  idx,
+}) => {
   return (
     <div
       id={id}
@@ -9,7 +17,7 @@ const InstallInfoItem = ({ id, data, title, openName, setOpenName, log,idx }) =>
         backgroundColor: "#fff",
         padding: 10,
         //marginBottom: 15,
-        marginTop:idx !== 0 && 15
+        marginTop: idx !== 0 && 15,
       }}
     >
       <div
@@ -19,7 +27,7 @@ const InstallInfoItem = ({ id, data, title, openName, setOpenName, log,idx }) =>
           width: "100%",
           position: "relative",
           height: 40,
-          paddingTop:10
+          paddingTop: 10,
         }}
       >
         <div

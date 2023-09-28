@@ -15,21 +15,9 @@ import {
 import { useHistory, useLocation } from "react-router-dom";
 import { fetchGet, fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-import {
-  OmpContentWrapper,
-  OmpTable,
-  OmpMessageModal,
-  OmpSelect,
-  OmpDatePicker,
-  OmpDrawer,
-} from "@/components";
+import { OmpContentWrapper, OmpTable } from "@/components";
 import styles from "./index.module.less";
-import {
-  handleResponse,
-  _idxInit,
-  refreshTime,
-  downloadFile,
-} from "@/utils/utils";
+import { handleResponse, _idxInit } from "@/utils/utils";
 import {
   QuestionCircleOutlined,
   CloseOutlined,
@@ -265,7 +253,11 @@ const ToolExecution = () => {
             key={item.key}
             rules={[{ required: item.required, message: `请输入${item.name}` }]}
           >
-            <Select placeholder={`请选择${item.name}`} style={{ width: 460 }} allowClear>
+            <Select
+              placeholder={`请选择${item.name}`}
+              style={{ width: 460 }}
+              allowClear
+            >
               {item.options.map((i) => (
                 <Select.Option value={i} key={i}>
                   {i}
@@ -378,9 +370,7 @@ const ToolExecution = () => {
             message.success("执行命令下发成功");
             setTimeout(() => {
               history.push(
-                `/utilitie/tool-management/tool-execution-results/${
-                  res.data.data.id
-                }`
+                `/utilitie/tool-management/tool-execution-results/${res.data.data.id}`
               );
             }, 300);
           }

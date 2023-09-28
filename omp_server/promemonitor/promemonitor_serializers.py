@@ -238,8 +238,8 @@ class ReceiveAlertSerializer(Serializer):
                 # env='default'  # TODO 此版本默认不赋值
             )
             alert.save()
-            service_name = alert_info.get('alert_service_name') if \
-                alert_info.get('alert_service_name') else alert_info.get('alert_host_ip')
+            # TODO service_name暂时为告警类型
+            service_name = alert_info.get('alert_type')
             WaitSelfHealing.objects.create(repair_ser=alert_info, service_name=service_name)
             if alert_info.get('alert_type') == 'host':
                 Host.objects.filter(ip=alert_info.get('alert_host_ip')).update(

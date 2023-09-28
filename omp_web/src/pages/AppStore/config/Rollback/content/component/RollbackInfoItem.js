@@ -1,6 +1,6 @@
 import RollbackDetail from "./RollbackDetail";
-import { useState } from "react";
-const RollbackInfoItem = ({ id, data, title, log,idx, instance_name }) => {
+
+const RollbackInfoItem = ({ id, data, title, log, idx, instance_name }) => {
   return (
     <div
       id={id}
@@ -9,7 +9,7 @@ const RollbackInfoItem = ({ id, data, title, log,idx, instance_name }) => {
         backgroundColor: "#fff",
         padding: 10,
         //marginBottom: 15,
-        marginTop:idx !== 0 && 15
+        marginTop: idx !== 0 && 15,
       }}
     >
       <div
@@ -19,7 +19,7 @@ const RollbackInfoItem = ({ id, data, title, log,idx, instance_name }) => {
           width: "100%",
           position: "relative",
           height: 40,
-          paddingTop:10
+          paddingTop: 10,
         }}
       >
         <div
@@ -45,7 +45,7 @@ const RollbackInfoItem = ({ id, data, title, log,idx, instance_name }) => {
         }}
       >
         {data?.map((item) => {
-          console.log(item)
+          console.log(item);
           return (
             <RollbackDetail
               title={title}
@@ -62,4 +62,4 @@ const RollbackInfoItem = ({ id, data, title, log,idx, instance_name }) => {
   );
 };
 
-export default RollbackInfoItem
+export default RollbackInfoItem;

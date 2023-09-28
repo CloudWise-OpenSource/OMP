@@ -4,7 +4,7 @@ import traceback
 
 import pytz
 from omp_server.settings import TIME_ZONE
-from db_models.models import Host, Service
+from db_models.models import Host, Service, ApplicationHub
 from promemonitor.grafana_url import explain_url
 
 logger = logging.getLogger('server')
@@ -125,8 +125,21 @@ class AlertAnalysis:
         alert_service_name = alert_service.replace("Exporter", "").strip()
         alert_service_type, alert_service_en_type = get_service_type(
             alert_host_ip, alert_service_name)
+        app_name_str = self._get(self.labels, "app") if self._get(self.labels, "app") else \
+            self._get(self.labels, "job").split("Exporter")[0]
+        if not app_name_str:
+            _alert_type = "service"
+        component_list = Service.objects.filter(
+            service__app_type=ApplicationHub.APP_TYPE_COMPONENT).filter(
+            service__is_base_env=False)
+        if list(filter(
+            lambda x: x.service.app_name == app_name_str, list(
+                component_list))):
+            _alert_type = "component"
+        else:
+            _alert_type = "service"
         return dict(
-            alert_type="service",
+            alert_type=_alert_type,
             alert_host_ip=self._get(self.labels, "instance"),
             alert_service_name=alert_service_name,
             alert_service_type=alert_service_type,
@@ -166,12 +179,12 @@ class AlertAnalysis:
         kwargs["alertname"] = self._get(self.labels, "alertname")
         kwargs["fingerprint"] = self.fingerprint
         kwargs.update(alert_time=self.get_alert_time())
-        if kwargs["alert_type"] == "service":
+        if kwargs["alert_type"] == "service" or kwargs["alert_type"] == "component":
             kwargs["monitor"] = get_monitor_url(
                 [{
                     "ip": kwargs.get("alert_host_ip"),
                     "type": "service",
-                    "instance_name": kwargs.get("alert_service_name")
+                    "instance_name": kwargs.get("alert_service_name", "")
                 }]
             )
             kwargs["monitor_log"] = get_log_url(

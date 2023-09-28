@@ -9,38 +9,23 @@ import {
   Input,
   Form,
   message,
-  Menu,
-  Dropdown,
-  Select,
-  Radio,
-  Cascader,
   Tooltip,
   InputNumber,
-  Switch,
   Modal,
   Upload,
   Table,
 } from "antd";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   handleResponse,
   _idxInit,
-  refreshTime,
-  MessageTip,
-  nonEmptyProcessing,
-  logout,
-  isPassword,
   renderDisc,
   downloadFile,
 } from "@/utils/utils";
-import { fetchGet, fetchPost, fetchDelete, fetchPut } from "@/utils/request";
+import { fetchGet, fetchDelete, fetchPut } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-import moment from "moment";
 import {
   SearchOutlined,
-  SettingFilled,
-  DownOutlined,
-  PlusSquareOutlined,
   QuestionCircleOutlined,
   ExclamationCircleOutlined,
   ImportOutlined,
@@ -49,7 +34,7 @@ import {
   CloseOutlined,
   DownloadOutlined,
 } from "@ant-design/icons";
-import { useHistory, useLocation } from "react-router-dom";
+import { useHistory } from "react-router-dom";
 import axios from "axios";
 import star from "./asterisk.svg";
 

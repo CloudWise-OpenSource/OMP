@@ -1,17 +1,21 @@
 # !/usr/bin/python3
 # -*-coding:utf-8-*-
-# Author: lingyang guo
-import datetime
 import logging
 import os
 import subprocess
 import tarfile
+import json
+import time
+import random
 
-from django.conf import settings
-
-from backups.backup_service import BackupDB
-from db_models.models import BackupHistory, EmailSMTPSetting, ModuleSendEmailSetting, BackupSetting
-from utils.plugin.send_email import ModelSettingEmailBackend, SendBackupHistoryEmailContent, many_send, ResultThread
+from db_models.models import Service, Host, BackupHistory, DetailInstallHistory
+from omp_server.settings import PROJECT_DIR
+from concurrent.futures import (
+    ThreadPoolExecutor, as_completed
+)
+from utils.plugin.salt_client import SaltClient
+from utils.parse_config import \
+    THREAD_POOL_MAX_WORKERS, LOCAL_IP, TENGINE_PORT
 
 logger = logging.getLogger("server")
 
@@ -53,43 +57,10 @@ def tar_files(source_path, target_path):
     return True
 
 
-def send_email(history_id, emails):
-    """
-    发送邮件
-    :param history_id: 备份历史记录
-    :param emails: 邮箱列表
-    :return:
-    """
-    history = BackupHistory.objects.filter(id=history_id).first()
-    if not history:
-        return
-
-    history.send_email_result = history.ING
-    history.save()
-    reason = ""
-    try:
-        connection = ModelSettingEmailBackend()
-        content = SendBackupHistoryEmailContent(history)
-        fail_user = many_send(connection, content, emails)
-    except Exception as e:
-        logger.error(f"发送邮件失败， 错误信息：{str(e)}")
-        reason = "系统异常，请重试!"
-        fail_user = emails
-    if fail_user:
-        history.send_email_result = history.FAIL
-        reason = "发件失败，请检查smtp邮箱服务器配置！"
-    else:
-        history.send_email_result = history.SUCCESS
-    history.email_fail_reason = reason
-    history.save()
-    return reason
-
-
-def transfer_week(request):
+def transfer_week(day_of_week):
     """
     适配前端day_of_week参数传递
     """
-    day_of_week = request.data.get('crontab_detail').get('day_of_week')
     if day_of_week == '6':
         day_of_week = '0'
     elif day_of_week == '*':
@@ -100,101 +71,158 @@ def transfer_week(request):
     return day_of_week
 
 
-def backup_service_data(history):
+def exec_scripts(exec_json, host_i_d, his_id):
+    # ToDo 考虑并发场景
+    tar_name = f"{exec_json['cw_o_app_name']}_bak.sh"
+    scripts_path = os.path.join(
+        PROJECT_DIR,
+        f"package_hub/_modules/{tar_name}"
+    )
+    try:
+        salt_client = SaltClient()
+        his_tmp = f"{scripts_path}{his_id}"
+        cmd(f"cp {scripts_path}.tmp {his_tmp}")
+        # 占位符替换
+        with open(his_tmp, 'r+') as f:
+            t = f.read()
+            for before, after in exec_json.items():
+                t = t.replace(("${%s}" % str(before)), str(after))
+            f.seek(0, 0)
+            f.write(t)
+            f.truncate()
+        # 发送脚本
+        tar_ip = exec_json['cw_o_ip']
+        tar_package = f"{host_i_d[tar_ip]}/omp_packages/{tar_name}"
+        is_success, message = salt_client.cp_file(
+            target=tar_ip,
+            source_path=f"_modules/{tar_name}{his_id}",
+            target_path=tar_package
+        )
+        if not is_success:
+            return False, message
+        # 执行脚本
+        cmd_str = f"nohup bash {tar_package} >" \
+                  f" {host_i_d[tar_ip]}/omp_packages/logs" \
+                  f"/{exec_json['cw_o_app_name']}{exec_json['tmp']}.log  2>&1 &"
+        return salt_client.cmd(tar_ip, cmd_str, timeout=30)
+    except Exception as e:
+        return False, f"执行异常{e}"
+
+
+def change_status(obj, result, message=""):
+    if result:
+        obj.result = BackupHistory.SUCCESS
+    else:
+        obj.result = BackupHistory.FAIL
+    obj.message = message
+    obj.save()
+
+
+def check_result(future_list, his_ls):
+    for index, future in enumerate(as_completed(future_list)):
+        is_success, message = future.result()
+        if not is_success:
+            change_status(his_ls[index], False, message)
+
+
+def get_backup_info(service_obj):
+    """
+    获取备份配置所需变量,内置变量命名 cw_o_xxx
+    """
+    try:
+        service_dict = {
+            "cw_o_app_name": service_obj.service.app_name,
+            "cw_o_ip": service_obj.ip,
+            "tmp": time.strftime("%Y%m%d%H%M%S", time.localtime()) + str(random.randint(1000, 9999)),
+        }
+        # 连接信息
+        service_connect_info = service_obj.service_connect_info
+        if service_connect_info:
+            service_dict.update(
+                {
+                    "cw_o_username": service_connect_info.service_username,
+                    "cw_o_password": service_connect_info.service_password,
+                }
+            )
+        # 端口
+        port_json = json.loads(service_obj.service_port)
+        for k_port in port_json:
+            service_dict.update({
+                f"cw_o_{k_port.get('key', '')}": k_port.get("default", "")
+            })
+
+        # 安装参数
+        obj = DetailInstallHistory.objects.filter(service_id=service_obj.id).first()
+        install_args = obj.install_detail_args.get("install_args", {})
+        for args in install_args:
+            service_dict.update({
+                f"cw_o_{args.get('key', '')}": args.get("default", "")
+            })
+        return service_dict
+    except Exception as e:
+        logger.error(f"获取信息失败请查看service或其账号密码端口是否存在{e}")
+
+
+def backup_service_data(his_ls):
     """
     备份服务
-    :param history: 本次备份的记录
+    :param his_ls: his表列表
     :return:
     """
+    master_url = f"{LOCAL_IP}:{TENGINE_PORT.get('access_port', '19001')}" \
+                 f"/api/backups/backupHistory"
 
-    backup_script_func = BackupDB().backup_service
-    _thread = ResultThread(
-        target=backup_script_func,
-        args=(history.id,))
-    _thread.start()
-    _thread.join()
-    thread_result = _thread.get_result()
+    host_i_d = dict(Host.objects.all().values_list("ip", "data_folder"))
 
-    err_message = ""
-
-    backup_flag = thread_result[0]
-    backup_message = thread_result[1]
-    logger.info(f"备份结果为：{backup_message}")
-
-    back_resp = {"backup_flag": backup_flag,
-                 "msg": backup_message, "file_name": history.file_name}
-
-    if not backup_flag:
-        history.result = history.FAIL
-        history.file_name = "-"
-        history.file_size = "-"
-        history.file_deleted = True
-        history.expire_time = None
-        err_message += backup_message if not backup_message else f"备份任务{history.backup_name}动作执行失败!"
-    else:
-        file_path = os.path.join(history.retain_path, history.file_name)
-        size = os.path.getsize(file_path) / 1024 / 1024
-        ln_path = os.path.join(
-            settings.PROJECT_DIR, "data/backup/", history.file_name)
-        if file_path == ln_path:
-            history.result = history.SUCCESS
-        else:
-            cmd_str = f"ln -s {file_path} {ln_path}"
-            _out, _err, _code = cmd(cmd_str)
-            if _code:
-                history.result = history.FAIL
-                err_message += "  创建软连接出错！"
-            else:
-                history.result = history.SUCCESS
-        history.file_size = "%.3f" % size
-    history.message = {"backup_resp": back_resp, "err_message": err_message}
-    history.save()
-    email_setting = EmailSMTPSetting.objects.first()
-    if not email_setting:
-        return
-    backup_setting = ModuleSendEmailSetting.get_email_settings(
-        history.env_id, BackupSetting.__name__
-    )
-    if not backup_setting:
-        return
-    if not backup_setting.send_email:
-        return
-    send_email(history.id, backup_setting.to_users.split(","))
+    with ThreadPoolExecutor(THREAD_POOL_MAX_WORKERS) as executor:
+        check_ls = []
+        for his in his_ls:
+            service_obj = Service.objects.filter(
+                service_instance_name=his.content).first()
+            if not service_obj:
+                logger.info(f"{his.content}服务已被卸载或不可用")
+                continue
+            backup_script_args = get_backup_info(service_obj)
+            backup_script_args.update(his.extend_field)
+            backup_script_args.update({
+                "cw_o_master_url": f"{master_url}/{his.id}/"
+            })
+            future_obj = executor.submit(
+                exec_scripts,
+                backup_script_args, host_i_d, his.id)
+            check_ls.append(future_obj)
+        check_result(check_ls, his_ls)
 
 
-def rm_backend_file(ids=None):
+def rm_backend_file(his_objs):
     """
     删除过期文件
-    :param ids: BackupHistory ids
+    :param his_objs: BackupHistory his_objs
     :return:
     """
-    if ids:
-        histories = BackupHistory.objects.filter(id__in=ids)
-    else:
-        histories = BackupHistory.objects.filter(
-            expire_time__lte=datetime.datetime.now(),
-            file_deleted=False
-        ).exclude(expire_time=None)
     fail_files = []
-    for history in histories:
+    for history in his_objs:
+        if history.file_deleted or history.result == BackupHistory.FAIL:
+            history.delete()
+            continue
         expire_file = os.path.join(history.retain_path, history.file_name)
         try:
             os.remove(expire_file)
-            history.file_deleted = True
-            history.save()
         except Exception as e:
             logger.error(f"删除备份文件{expire_file}失败: {str(e)}")
-            if os.path.exists(expire_file):
-                fail_files.append(history.file_name)
-            else:
-                history.file_deleted = True
-                history.save()
-        ln_path = os.path.join(
-            settings.PROJECT_DIR, "data/backup/", history.file_name)
-        if expire_file == ln_path:
-            continue
-        try:
-            os.remove(ln_path)
-        except Exception as e:
-            logger.error(f"删除备份文件软链{ln_path}失败: {str(e)}")
+            fail_files.append(history.file_name)
+        history.delete()
+
     return fail_files
+
+
+def check_ing(obj):
+    if not obj:
+        return True
+    back_instance = BackupHistory.objects.filter(
+        result=BackupHistory.ING).values_list("content", flat=True)
+    ing_instance = set(obj.backup_instances) & set(back_instance)
+    if ing_instance:
+        logger.info(f"当前实例正在备份：{','.join(ing_instance)}")
+        return True
+    return False

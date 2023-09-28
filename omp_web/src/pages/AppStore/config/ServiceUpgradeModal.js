@@ -16,11 +16,7 @@ import { CopyOutlined, SearchOutlined, ArrowUpOutlined } from "@ant-design/icons
 import { fetchPost, fetchGet } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import { handleResponse } from "@/utils/utils";
-import { OmpMessageModal, OmpTable } from "@/components";
-import { useHistory, useLocation } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
-import { getStep1ChangeAction } from "./Installation/store/actionsCreators";
-import { getUniqueKeyChangeAction } from "../store/actionsCreators";
+import { useHistory } from "react-router-dom";
 
 const ServiceUpgradeModal = ({
   sUModalVisibility,

@@ -37,9 +37,9 @@ from app_store.app_store_serializers import (
     PublishPackageHistorySerializer, DeploymentPlanValidateSerializer,
     DeploymentImportSerializer, DeploymentPlanListSerializer,
     ExecutionRecordSerializer, DeleteComponentSerializer,
-    DeleteProDuctSerializer
+    DeleteProDuctSerializer, ProductCompositionSerializer
 )
-from backups.backup_service import cmd
+from backups.backups_utils import cmd
 from omp_server.settings import PROJECT_DIR
 
 from app_store.app_store_serializers import (
@@ -992,6 +992,41 @@ class ExecutionRecordAPIView(GenericViewSet, ListModelMixin):
     serializer_class = ExecutionRecordSerializer
     # 操作信息描述
     get_description = "查询执行记录"
+
+
+class ProductCompositionView(GenericViewSet, ListModelMixin,
+                             CreateModelMixin):
+    serializer_class = ProductCompositionSerializer
+    # 关闭权限、认证设置
+    authentication_classes = ()
+    permission_classes = ()
+
+    get_description = "查询产品信息"
+    post_description = "修改产品包含服务信息"
+
+    def get_queryset(self):
+        return ProductHub.objects.filter(**self.request.query_params.dict())
+
+    def list(self, request, *args, **kwargs):
+        serializer = self.get_serializer(self.get_queryset(), many=True)
+        for data in serializer.data:
+            data["pro_services"] = json.loads(data.get("pro_services"))
+        return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        pro_services = json.dumps(request.data.get("pro_services", []), ensure_ascii=False)
+        request.data["pro_services"] = pro_services
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        params = request.data
+        pro_obj = ProductHub.objects.filter(
+            pro_name=params.get('pro_name'), pro_version=params.get('pro_version')
+        ).first()
+        pro_obj.pro_services = pro_services
+        pro_obj.save()
+
+        return Response("修改成功")
 
 
 class DeleteAppStorePackageView(GenericViewSet, ListModelMixin, CreateModelMixin):

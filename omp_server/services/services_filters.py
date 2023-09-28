@@ -14,7 +14,7 @@ class ServiceFilter(FilterSet):
     service_instance_name = django_filters.CharFilter(
         help_text="服务实例名称，模糊匹配", field_name="service_instance_name", lookup_expr="icontains")
     label_name = django_filters.CharFilter(
-        help_text="功能模块", field_name="service__app_labels__label_name", lookup_expr="exact")
+        help_text="功能模块", field_name="service__app_labels__label_name", lookup_expr="icontains")
     app_type = django_filters.CharFilter(
         help_text="服务类型: 0-组件 1-应用", field_name="service__app_type", lookup_expr="exact")
 

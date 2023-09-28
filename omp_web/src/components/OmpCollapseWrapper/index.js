@@ -1,8 +1,7 @@
-import { useState, useEffect, useLayoutEffect } from "react";
+import { useState, useEffect } from "react";
 import styles from "./index.module.less";
-import { Form, Input, Button, Select, Drawer, Tag } from "antd";
-import { DownOutlined, FunnelPlotFilled, PlusOutlined, CloseOutlined } from "@ant-design/icons";
-import { useSelector } from "react-redux";
+import { Form, Button, Select, Drawer, Tag } from "antd";
+import { FunnelPlotFilled, CloseOutlined } from "@ant-design/icons";
 
 const OmpCollapseWrapper = ({
   children,
@@ -12,25 +11,24 @@ const OmpCollapseWrapper = ({
   initialValues = {},
   operation,
 }) => {
-  
   const [defaultForm] = Form.useForm();
   const formInstance = form ? form : defaultForm;
   const [visible, setVisible] = useState(false);
 
-  const [searchTags, setSearchTags] = useState({})
+  const [searchTags, setSearchTags] = useState({});
 
   let childrenArr = Array.isArray(children) ? children : [children];
 
   // 提取form表单中的数据，将name和label关联起来,如果是select框因为value和text不一致，也要存进来
   // 为了获取检索项的渲染数据
-  let dictionary = childrenArr.map(item=>{
+  let dictionary = childrenArr.map((item) => {
     return {
       label: item.props.label,
       name: item.props.name,
       //有children代表是select
-      children: item.props.children?.map(i=>i.props)
-    }
-  })
+      children: item.props.children?.map((i) => i.props),
+    };
+  });
 
   const renderButtonGroup = () => {
     return (
@@ -42,10 +40,10 @@ const OmpCollapseWrapper = ({
           <Button
             style={{ marginRight: 10 }}
             onClick={() => {
-              setSearchTags({})
+              setSearchTags({});
               formInstance.resetFields();
               onReset && onReset();
-              setVisible(false)
+              setVisible(false);
             }}
           >
             重置
@@ -55,19 +53,19 @@ const OmpCollapseWrapper = ({
     );
   };
 
-  useEffect(()=>{
-    console.log(searchTags)
-  },[searchTags])
+  useEffect(() => {
+    console.log(searchTags);
+  }, [searchTags]);
 
   return (
-    <div
-      className={styles.OmpCollapseWrapper}
-    >
-      <div style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-      }}>
+    <div className={styles.OmpCollapseWrapper}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
         <div>{operation}</div>
 
         <Form
@@ -76,10 +74,10 @@ const OmpCollapseWrapper = ({
           className={styles.OmpCollapseFormWrapper}
           layout="inline"
           initialValues={initialValues}
-          onFinish={()=>{
+          onFinish={() => {
             let formData = formInstance.getFieldValue();
-            console.log(formData)
-            onFinish()
+            console.log(formData);
+            onFinish();
           }}
         >
           <Form.Item
@@ -94,45 +92,63 @@ const OmpCollapseWrapper = ({
               <Select.Option value="10.0.9.63">10.0.9.63</Select.Option>
               <Select.Option value="all">全部</Select.Option>
             </Select>
-            
           </Form.Item>
           <Button
-              onClick={() => {
-                setVisible(true);
-              }}
-              style={{ margin: 10, marginLeft:0,marginRight:15,paddingLeft: 10, paddingRight: 10}}
-            >
-              <FunnelPlotFilled style={{ position: "relative", top: 1 }} />
-            </Button>
-         
+            onClick={() => {
+              setVisible(true);
+            }}
+            style={{
+              margin: 10,
+              marginLeft: 0,
+              marginRight: 15,
+              paddingLeft: 10,
+              paddingRight: 10,
+            }}
+          >
+            <FunnelPlotFilled style={{ position: "relative", top: 1 }} />
+          </Button>
         </Form>
       </div>
-      {Object.keys(searchTags).length>0 && (
-        <div style={{position:"relative",top:-5,paddingLeft:5,fontSize:"12px",
-        height:25,display:"flex",alignItems:"center"}}>
-        <FunnelPlotFilled  /> <span style={{paddingRight:5,paddingLeft:2}}>检索项 : </span>
-            {Object.keys(searchTags).map(key=>{
-              return (<Tag
-              color="#eeeff3"
-              style={{height:20,color:"#63656E"}}
-              key={key}
-              closable
-              closeIcon={<CloseOutlined style={{color:"#63656E"}}/>}
-              onClose={e => {
-                e.preventDefault();
-                let willDeleteItem = dictionary.filter(item=>item.label == key)
-                formInstance.resetFields([willDeleteItem[0].name])
-                setSearchTags((tags)=>{
-                  let newTags = {...tags}
-                  delete newTags[key]
-                  return newTags
-                })
-              }}
-            >
-              {`${key}=${searchTags[key]}`}
-            </Tag>)
-            })}
-      </div>
+      {Object.keys(searchTags).length > 0 && (
+        <div
+          style={{
+            position: "relative",
+            top: -5,
+            paddingLeft: 5,
+            fontSize: "12px",
+            height: 25,
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          <FunnelPlotFilled />{" "}
+          <span style={{ paddingRight: 5, paddingLeft: 2 }}>检索项 : </span>
+          {Object.keys(searchTags).map((key) => {
+            return (
+              <Tag
+                color="#eeeff3"
+                style={{ height: 20, color: "#63656E" }}
+                key={key}
+                closable
+                closeIcon={<CloseOutlined style={{ color: "#63656E" }} />}
+                onClose={(e) => {
+                  e.preventDefault();
+                  let willDeleteItem = dictionary.filter(
+                    (item) => item.label == key
+                  );
+                  formInstance.resetFields([willDeleteItem[0].name]);
+                  setSearchTags((tags) => {
+                    let newTags = { ...tags };
+                    delete newTags[key];
+                    return newTags;
+                  });
+                }}
+              >
+                {`${key}=${searchTags[key]}`}
+              </Tag>
+            );
+          })}
+        </div>
       )}
       <Drawer
         title="高级筛选"
@@ -152,32 +168,32 @@ const OmpCollapseWrapper = ({
           layout="inline"
           initialValues={initialValues}
           //onFinish={onFinish}
-          onFinish={(e)=>{
+          onFinish={(e) => {
             let formData = formInstance.getFieldValue();
             //console.log(formData,e,childrenArr)
-            Object.keys(formData).map(i=>{
-              let [info] = dictionary.filter(item=>item.name == i)
+            Object.keys(formData).map((i) => {
+              let [info] = dictionary.filter((item) => item.name == i);
               // console.log(info,formData[i])
-              if(formData[i]){
-                let value = formData[i]
+              if (formData[i]) {
+                let value = formData[i];
                 //如果是select，要展示text，根据value检索text
-                if(info.children){
-                  info.children.map(c=>{
-                    if(c.value == value){
-                      value = c.children
+                if (info.children) {
+                  info.children.map((c) => {
+                    if (c.value == value) {
+                      value = c.children;
                     }
-                  })
+                  });
                 }
-                setSearchTags(tags=>{
+                setSearchTags((tags) => {
                   return {
                     ...tags,
-                    [info.label] : value
-                  }
-                })
+                    [info.label]: value,
+                  };
+                });
               }
-            })
-            setVisible(false)
-            onFinish()
+            });
+            setVisible(false);
+            onFinish();
           }}
         >
           {childrenArr.map((item) => {

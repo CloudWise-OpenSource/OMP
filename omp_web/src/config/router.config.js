@@ -234,14 +234,14 @@ export default [
     menuKey: "/data-backup",
     children: [
       {
-        title: "备份记录",
-        path: "/data-backup/backup-record",
-        component: BackupRecords,
-      },
-      {
         title: "备份策略",
         path: "/data-backup/backup-strategy",
         component: BackupStrategy,
+      },
+      {
+        title: "备份记录",
+        path: "/data-backup/backup-record",
+        component: BackupRecords,
       },
     ],
   },

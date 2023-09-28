@@ -31,6 +31,7 @@ with open(config_file_path, "r") as fp:
 
 GLOBAL_RUNUSER = CONFIG_DIC.get("global_runuser")
 LOCAL_IP = CONFIG_DIC.get("local_ip")
+TENGINE_PORT = CONFIG_DIC.get("tengine")
 SSH_CMD_TIMEOUT = CONFIG_DIC.get("ssh_cmd_timeout", 60)
 SSH_CHECK_TIMEOUT = CONFIG_DIC.get("ssh_check_timeout", 10)
 THREAD_POOL_MAX_WORKERS = CONFIG_DIC.get("thread_pool_max_workers", 20)
@@ -78,3 +79,4 @@ BASIC_ORDER = CONFIG_DIC.get("basic_order", {})
 AFFINITY_FIELD = CONFIG_DIC.get("affinity", {})
 HADOOP_ROLE = CONFIG_DIC.get("hadoop_role", {})
 HOSTNAME_PREFIX = CONFIG_DIC.get("hostname_prefix", {})
+BACKUP_SERVICE = CONFIG_DIC.get("backup_service", [])

@@ -1,0 +1,111 @@
+#!/bin/bash
+
+# omp自带变量
+# 注意备份路径需要单独创建 不可和其他文件共用一个路径
+PgSqlPort=${cw_o_service_port}
+PgSqlUser="${cw_o_username}"
+PgSqlPasswd="${cw_o_password}"
+ip="${cw_o_ip}"
+PgSqlBaseDir="${cw_o_base_dir}"
+pgSqlDataDir="${cw_o_data_dir}"
+backupDir="./backup/pgsql"
+pgSqlScripts="${PgSqlBaseDir}/scripts/postgreSql"
+PgSqlDump="${PgSqlBaseDir}/bin/pg_dump"
+PgSqlDumpAll="${PgSqlBaseDir}/bin/pg_dumpall"
+
+
+# 自定义变量
+db_name=${db_name}
+need_push=${need_push}
+need_app=${need_app}
+
+
+
+# 公共变量
+service_name="postgreSql"
+BasePath=$(cd `dirname $0`; pwd)
+nowTime=$(date +%Y%m%d%H%M)
+count=0
+# 请求重试机制
+max_count=6
+
+
+function request_omp() {
+  if [[ -z "$rq_body" ]]; then
+    if [[ -z "$1" ]]; then
+      echo "need request result"
+      exit 1
+    fi
+    # $1 结果(必填)  $2 消息  $3 omp抓取路径 要确定是一个单独的文件
+    rq_body="{\"result\":\"$1\",\"message\":\"$2\",\"remote_path\":\"$3\",\"ip\":\"$ip\",\"need_push\":\"$need_push\"}"
+  fi
+  RES=$(curl --location --request POST 'http://${cw_o_master_url}p/' --header 'Content-Type: application/json' --data "$rq_body"|grep "\"code\":0")
+  code=$?
+  # 存在返回证明有异常 或者状态码非0
+  if [[ -z "$RES" ]] || [[ $code != 0 ]];then
+    echo $RES
+    if [[ "$count" -lt "$max_count" ]];then
+      sleep 5
+      let count+=1
+      request_omp $1 $2 $3
+    fi
+    exit 1
+  else
+    exit 0
+  fi
+}
+
+
+# 状态码 备份路径
+function touch_zip() {
+  if [[ -z "$2" ]]; then
+    request_omp 1 "need backup path but not provided"
+  fi
+
+  back_length=$(echo $2 |sed 's#/# #g'|awk '{print NF}')
+  # 保护机制
+  if [[ "$back_length" -lt 2 ]];then
+    request_omp 1 "backup path is not available"
+  fi
+
+  tar_name=${service_name}-backup-${nowTime}.tar.gz
+  cd $BasePath && tar -zcf $tar_name -C $2 . --remove-files
+
+  tar_path=${BasePath}/${tar_name}
+  request_omp $1 "success" $tar_path
+}
+
+function backup_pgsql() {
+  # 创建备份路径
+  if [[ ! -d $backupDir ]]; then
+    mkdir -p $backupDir
+  fi
+
+  #全库备份还是单库备份
+  if [ -n "$db_name" ]; then
+    databases=$(echo $db_name |sed 's#,# #g')
+    for dataName in $databases; do
+      $PgSqlDump  -U $PgSqlUserr -h$PgSqlPort -p18126 $dataName > $backupDir/$dataName.sql
+    done
+  else
+    $PgSqlDumpAll  -U $PgSqlUser -h127.0.0.1 -p$PgSqlPort > $backupDir/pg_all_$ip.sql
+  fi
+  dump_code=$?
+  cp_code=0
+  #是否升级备份
+  if [ -n "$need_app" ]; then
+    bash $pgSqlScripts stop
+    cp -af $PgSqlBaseDir $backupDir
+    cp -af $pgSqlDataDir  $backupDir
+    cp_code=$?
+    bash $pgSqlScripts start
+  fi
+  if [[ $cp_code != 0 ]] || [[ $dump_code != 0 ]];then
+    touch_zip 1 $backupDir
+  else
+    touch_zip 0 $backupDir
+  fi
+}
+
+
+backup_pgsql

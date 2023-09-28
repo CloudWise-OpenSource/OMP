@@ -106,13 +106,16 @@ class MonitorAgentManager(object):
         # step3: 解压源码包并启动服务
         metrics_auth = json.dumps(
             {"username": "mokey", "password": "w7SiYs$oE"})  # TODO  后续从配置文件读取
+        services_info = json.dumps({"node": {"quotes": [], "exporter_port": 19017, "exporter_metric": "metrics",
+                                             "auth_user": "mokey",
+                                             "auth_password_encryption": "$2y$12$GThv30aK.STxvx6A32CXVubbveBkEq3vatYTPpuIVTT6uRE24L91O"}})
         cmd_flag, cmd_res = salt_obj.cmd(
             target=obj.ip,
             command=f"cd {obj.agent_dir} && "
                     f"tar -xmf {self.monitor_agent_package_name} && "
                     f"/bin/rm -rf {self.monitor_agent_package_name} && "
                     f"cd {self.name} && "
-                    f"./install --agent_ip={obj.ip} --metrics_auth='{metrics_auth}' && "
+                    f"./install --agent_ip={obj.ip} --metrics_auth='{metrics_auth}' --services_info='{services_info}' && "
                     f"bash monitor_agent.sh init &&"
                     f"bash monitor_agent.sh start",
             timeout=120)
@@ -177,7 +180,7 @@ class MonitorAgentManager(object):
             hosts_data.append({
                 "ip": _ip,
                 "env": _env,
-                "data_path": data_path,
+                "data_path": data_path or _data_folder,
                 "instance_name": item.instance_name
             })
         return hosts_data

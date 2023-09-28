@@ -17,7 +17,8 @@ from app_store.views import (
     ApplicationTemplateView, DeploymentPlanValidateView,
     DeploymentPlanImportView, DeploymentPlanListView,
     DeploymentOperableView, DeploymentTemplateView,
-    ExecutionRecordAPIView, DeleteAppStorePackageView)
+    ExecutionRecordAPIView, DeleteAppStorePackageView,
+    ProductCompositionView)
 from app_store.views_for_install import (
     ComponentEntranceView,
     ProductEntranceView,
@@ -184,4 +185,11 @@ router.register(
     "executionRecord",
     ExecutionRecordAPIView,
     basename="ExecutionRecord"
+)
+
+# 产品类型接口查看及修改
+router.register(
+    "productComposition",
+    ProductCompositionView,
+    basename="productComposition"
 )

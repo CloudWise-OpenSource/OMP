@@ -1,13 +1,12 @@
 import { OmpContentWrapper } from "@/components";
-import { Button, Input, Form, message, Tabs, Spin, Switch } from "antd";
-import { useState, useEffect, useRef } from "react";
-import { handleResponse, isLowercaseChar } from "@/utils/utils";
+import { Button, Input, Form, message, Spin, Switch } from "antd";
+import { useState, useEffect } from "react";
+import { handleResponse } from "@/utils/utils";
 import { fetchGet, fetchPost, fetchPatch } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import { SettingOutlined, MailOutlined } from "@ant-design/icons";
 //import updata from "@/store_global/globalStore";
 import styles from "./index.module.less";
-import { use } from "echarts";
 
 const MonitoringSettings = () => {
   const [loading, setLoading] = useState(false);

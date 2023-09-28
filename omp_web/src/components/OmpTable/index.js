@@ -1,11 +1,9 @@
-import { Table, Pagination, Tree } from "antd";
+import { Table, Tree } from "antd";
 import styles from "./index.module.less";
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import OmpTableFilter from "./components/OmpTableFilter";
 import { SettingOutlined } from "@ant-design/icons";
-import { columnsConfig } from "src/utils/utils";
-// import * as R from "ramda"
 
 const OmpTable = ({
   checkedState,
@@ -131,8 +129,8 @@ const OmpTable = ({
       var stylee = document.createElement("style");
       stylee.type = "text/css";
       var sHtml = `
-      .ant-table-thead > tr > th, .ant-table-tbody 
-      > tr > td, .ant-table tfoot > 
+      .ant-table-thead > tr > th, .ant-table-tbody
+      > tr > td, .ant-table tfoot >
       tr > th, .ant-table tfoot > tr > td {
             padding: ${cellPadding}rem;
         }`;

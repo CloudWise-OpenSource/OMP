@@ -1,21 +1,12 @@
-import {
-  Button,
-  Modal,
-  Upload,
-  message,
-  Steps,
-  Tooltip,
-  Select,
-  Switch,
-} from "antd";
+import { Button, Modal, Select, Switch } from "antd";
 import { useEffect, useRef, useState } from "react";
 import { CopyOutlined } from "@ant-design/icons";
 //import BMF from "browser-md5-file";
-import { fetchPost, fetchGet } from "@/utils/request";
+import { fetchPost } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import { handleResponse } from "@/utils/utils";
-import { OmpMessageModal, OmpTable } from "@/components";
-import { useHistory, useLocation } from "react-router-dom";
+import { OmpTable } from "@/components";
+import { useHistory } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { getStep1ChangeAction } from "./Installation/store/actionsCreators";
 import { getUniqueKeyChangeAction } from "../store/actionsCreators";
@@ -25,7 +16,7 @@ const BatchInstallationModal = ({
   setBIModalVisibility,
   dataSource,
   installTitle,
-  initLoading
+  initLoading,
 }) => {
   const uniqueKey = useSelector((state) => state.appStore.uniqueKey);
 
@@ -138,8 +129,7 @@ const BatchInstallationModal = ({
 
   useEffect(() => {
     // 选中全部
-    setCheckedList(dataSource.filter(item=>item.is_continue),
-  );
+    setCheckedList(dataSource.filter((item) => item.is_continue));
   }, [dataSource]);
   // console.log(checkedList)
   return (
@@ -160,7 +150,7 @@ const BatchInstallationModal = ({
       }
       afterClose={() => {
         setCheckedList([]);
-        setHighAvailabilityCheck(false)
+        setHighAvailabilityCheck(false);
       }}
       onCancel={() => {
         setBIModalVisibility(false);
@@ -218,11 +208,7 @@ const BatchInstallationModal = ({
           </div>
           <div style={{ display: "flex" }}>
             <div style={{ marginRight: 15 }}>
-              已选择{" "}
-              {
-                checkedList.length
-              }{" "}
-              个
+              已选择 {checkedList.length} 个
             </div>
             <div>共 {dataSource.length} 个</div>
           </div>
@@ -242,9 +228,7 @@ const BatchInstallationModal = ({
               type="primary"
               style={{ marginLeft: 16 }}
               loading={loading || initLoading}
-              disabled={
-                checkedList.length == 0
-              }
+              disabled={checkedList.length == 0}
               onClick={() => {
                 if (installTitle == "组件") {
                   let install_product = checkedList.map((item) => {

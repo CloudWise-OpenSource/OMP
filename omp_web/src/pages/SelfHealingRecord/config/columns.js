@@ -1,7 +1,5 @@
-import { nonEmptyProcessing, colorConfig, renderDisc } from "@/utils/utils";
-import { Tooltip, Badge, Menu, Dropdown } from "antd";
-import { FilterFilled } from "@ant-design/icons";
-import OmpTableFilter from "@/components/OmpTable/components/OmpTableFilter";
+import { renderDisc } from "@/utils/utils";
+import { Tooltip, Badge } from "antd";
 import moment from "moment";
 
 const renderStatus = (state) => {

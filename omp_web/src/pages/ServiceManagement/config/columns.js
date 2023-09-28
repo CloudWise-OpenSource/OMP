@@ -4,7 +4,7 @@ import {
   RenderStatusForResult,
 } from "@/utils/utils";
 import { OmpToolTip } from "@/components";
-import { DownOutlined, DesktopOutlined } from "@ant-design/icons";
+import { DesktopOutlined } from "@ant-design/icons";
 import { Dropdown, Menu, Drawer, Tooltip, Spin, Timeline } from "antd";
 import moment from "moment";
 import styles from "../index.module.less";

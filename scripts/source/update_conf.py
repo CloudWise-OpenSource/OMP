@@ -563,7 +563,8 @@ def update_loki():
 
     cly_placeholder_script = [
         {'CW_LOKI_PORT': CW_LOKI_PORT},
-        {'OMP_LOKI_DATA_PATH': omp_loki_data_path}
+        {'OMP_LOKI_DATA_PATH': omp_loki_data_path},
+        {'LOKI_RETENTION_PERIOD': loki_retention_period}
     ]
     if not os.path.exists(omp_loki_data_path):
         os.makedirs(omp_loki_data_path)

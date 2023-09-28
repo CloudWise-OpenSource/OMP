@@ -17,32 +17,20 @@ import {
   Tooltip,
   InputNumber,
   Switch,
-  Modal,
   Table,
 } from "antd";
 import { useState, useEffect, useRef } from "react";
-import {
-  handleResponse,
-  _idxInit,
-  refreshTime,
-  MessageTip,
-  nonEmptyProcessing,
-  logout,
-  isPassword,
-  renderDisc,
-} from "@/utils/utils";
+import { handleResponse, _idxInit } from "@/utils/utils";
 import { fetchGet, fetchPost, fetchDelete } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-import moment from "moment";
 import {
   SearchOutlined,
-  SettingFilled,
   DownOutlined,
   PlusSquareOutlined,
   QuestionCircleOutlined,
   ExclamationCircleOutlined,
 } from "@ant-design/icons";
-import { useHistory, useLocation } from "react-router-dom";
+import { useHistory } from "react-router-dom";
 
 const RuleIndicator = () => {
   const [loading, setLoading] = useState(false);
@@ -463,8 +451,8 @@ const RuleIndicator = () => {
         (f) => f.name == builtins_quota[1]
       )[0];
 
-      if(row.name == "数据分区使用率"){
-        result.expr = row.expr
+      if (row.name == "数据分区使用率") {
+        result.expr = row.expr;
       }
 
       queryData = {

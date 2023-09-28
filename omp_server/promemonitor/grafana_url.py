@@ -1,4 +1,4 @@
-from db_models.models import GrafanaMainPage, MonitorUrl, Host, ApplicationHub
+from db_models.models import GrafanaMainPage, MonitorUrl, Host, ApplicationHub, Service
 import requests
 import json
 import logging
@@ -55,11 +55,60 @@ def utc_local(utc_time_str, utc_format='%Y-%m-%dT%H:%M:%SZ'):
         return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
+def get_item_type(item, database_list, service_list, component_list):
+    """
+    获取item类型
+    """
+    app_name_str = ""
+    if item.get("labels").get("job") == "nodeExporter":
+        return "host"
+    app_name_str = item.get("labels").get("app") if item.get("labels").get("app") else \
+        item.get("labels").get("job", "").split("Exporter")[0]
+    if not app_name_str:
+        return "service"
+    if list(filter(
+            lambda x: x.service.app_name == app_name_str,
+            list(database_list))):
+        return "database"
+    elif list(filter(
+            lambda x: x.service.app_name == app_name_str, list(
+                service_list)
+    )):
+        return "service"
+    elif list(filter(
+            lambda x: x.service.app_name == app_name_str, list(
+                component_list)
+    )):
+        return "component"
+    else:
+        return "service"
+
+
 def explain_prometheus(params):
     """
       生成前端异常清单所需要的json列表
     """
-    host_list = dict(Host.objects.values_list('ip', 'instance_name'))
+    ignore_status_list = [Service.SERVICE_STATUS_NORMAL,
+                          Service.SERVICE_STATUS_STARTING,
+                          Service.SERVICE_STATUS_STOPPING,
+                          Service.SERVICE_STATUS_RESTARTING,
+                          Service.SERVICE_STATUS_STOP]
+    host_list = Host.objects.values('ip', 'instance_name')
+    host_ip_list = [host.get("ip") for host in host_list]
+    database_list = Service.objects.filter(
+        service__app_type=ApplicationHub.APP_TYPE_COMPONENT).filter(
+        service__app_labels__label_name__contains="数据库").filter(
+        service_status__in=ignore_status_list).filter(
+        service__is_base_env=False)
+    service_list = Service.objects.filter(
+        service__app_type=ApplicationHub.APP_TYPE_SERVICE).filter(
+        service_status__in=ignore_status_list).filter(
+        service__is_base_env=False).filter(
+        service_controllers__start__isnull=False)
+    component_list = Service.objects.filter(
+        service__app_type=ApplicationHub.APP_TYPE_COMPONENT).filter(
+        service_status__in=ignore_status_list).filter(
+        service__is_base_env=False)
     r = CurlPrometheus.curl_prometheus()
     if r.get('status') == 'success':
         prometheus_info = []
@@ -70,20 +119,23 @@ def explain_prometheus(params):
         for lab in prometheus_alerts:
             if lab.get('status') == 'resolved':
                 continue
-            tmp_dict = {}
             label = lab.get('labels')
+            if label.get("instance", "") not in host_ip_list:
+                continue
+            tmp_dict = {}
             tmp_list = [label.get('alertname'), label.get(
                 'instance_name'), label.get('job')]
             if tmp_list in compare_list:
                 continue
             compare_list.append(tmp_list)
-            tmp_dict['type'] = "host" if label.get(
-                'job') == 'nodeExporter' else "service"
-            tmp_dict['ip'] = label.get('instance').split(":")[0] if label.get('instance') else ''
-            tmp_dict['instance_name'] = label.get('app') if label.get(
-                'app') else host_list.get(tmp_dict.get('ip'))
-            if not tmp_dict['instance_name']:
-                tmp_dict['instance_name'] = label.get("job", "").split("Exporter")[0]
+            _type = get_item_type(item=lab, database_list=database_list, service_list=service_list,
+                                  component_list=component_list)
+            tmp_dict['type'] = _type
+            _ip = label.get('instance').split(":")[0] if label.get('instance') else ''
+            tmp_dict['ip'] = _ip
+            s_app = label.get('app') if label.get(
+                'app') else label.get("job", "").split("Exporter")[0]
+            tmp_dict['instance_name'] = f"{s_app}-{_ip.split('.')[2]}-{_ip.split('.')[3]}" if _type != "host" else s_app
             tmp_dict['severity'] = label.get('severity')
             annotation = lab.get('annotations')
             tmp_dict['description'] = annotation.get('description')
@@ -112,10 +164,13 @@ def explain_filter(prometheus_json, params):
         value = j.get(fil_filed[0])
         if value and fil_filed[1].lower() in value.lower():
             fil_info.append(j)
+        # TODO 组件集合包含数据库
+        if fil_filed[1].lower() == "component" and value.lower() == "database":
+            fil_info.append(j)
     return explain_filter(fil_info, params)
 
 
-def explain_url(explain_info, is_service=None):
+def explain_url(explain_info, is_service=None, is_host=None):
     """
     封装dict添加grafana的url
     """
@@ -133,30 +188,43 @@ def explain_url(explain_info, is_service=None):
         if is_service:
             service_name = instance_info.get('app_name')
         else:
-            service_name = instance_info.get('instance_name')
+            service_name = instance_info.get('instance_name', '').split("-")[0]
         if instance_info.get('is_web'):
             instance_info['monitor_url'] = None
             instance_info['log_url'] = None
             continue
         service_ip = instance_info.get('ip')
-        if instance_info.get('type') == 'service' \
+        if instance_info.get('type') != 'host' and not is_host \
                 or is_service:
+            service_instance_name = instance_info.get('service_instance_name')
+
             monitor_url = url_dict.get(service_name.lower() if isinstance(service_name, str) else service_name)
+            instance_info['cluster_url'] = ""
             if monitor_url:
                 instance_info['monitor_url'] = grafana_url + \
-                    monitor_url + f"?var-instance={service_ip}&kiosk=tv"
+                                               monitor_url + f"?var-instance={service_ip}&kiosk=tv"
+                if Service.objects.filter(
+                        service_instance_name=service_instance_name).first() and Service.objects.filter(
+                    service_instance_name=service_instance_name).first().cluster:
+                    cluster_name = Service.objects.filter(
+                        service_instance_name=service_instance_name).first().cluster.cluster_name
+                    cluster_monitor_url = url_dict.get(f"{service_name}cluster", "")
+                    instance_info[
+                        'cluster_url'] = cluster_monitor_url + f"?var-cluster={cluster_name}&kiosk=tv" if cluster_monitor_url else ""
             else:
                 try:
                     if service_name and ApplicationHub.objects.filter(
                             app_name=service_name
                     ).first() and ApplicationHub.objects.filter(
-                            app_name=service_name
+                        app_name=service_name
+                    ).first().app_monitor and ApplicationHub.objects.filter(
+                        app_name=service_name
                     ).first().app_monitor.get("type") == "JavaSpringBoot":
                         instance_info['monitor_url'] = grafana_url + url_dict.get(
                             'javaspringboot',
                             'nojavaspringboot') + \
-                            f"?var-env=default&var-ip={service_ip}" \
-                            f"&var-app={service_name}&var-job={service_name}Exporter&kiosk=tv"
+                                                       f"?var-env=default&var-ip={service_ip}" \
+                                                       f"&var-app={service_name}&var-job={service_name}Exporter&kiosk=tv"
                     else:
                         instance_info['monitor_url'] = grafana_url + url_dict.get(
                             'service', 'noservice') + f"?var-ip={service_ip}&var-app={service_name}&kiosk=tv"
@@ -165,12 +233,12 @@ def explain_url(explain_info, is_service=None):
                     instance_info['monitor_url'] = grafana_url + url_dict.get(
                         'service', 'noservice') + f"?var-ip={service_ip}&var-app={service_name}&kiosk=tv"
             instance_info['log_url'] = grafana_url + \
-                url_dict.get(
-                    'log', 'nolog') + f"?var-app={service_name}" + f"&var-instance={service_ip}"
+                                       url_dict.get(
+                                           'log',
+                                           'nolog') + f"?var-env=default&var-app={service_name}" + f"&var-instance={service_instance_name}"
         else:
             instance_info['monitor_url'] = grafana_url + \
-                url_dict.get('node', 'nohosts') + \
-                f"?var-node={service_ip}&kiosk=tv"
+                                           url_dict.get('node', 'nohosts') + \
+                                           f"?var-node={service_ip}&kiosk=tv"
             instance_info['log_url'] = None
-        instance_info['monitor_url'] = instance_info['monitor_url'] + "&kiosk"
     return explain_info

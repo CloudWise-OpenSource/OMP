@@ -1,4 +1,4 @@
-import { Steps, Form, Input, Button, Select, Checkbox } from "antd";
+import { Form, Input, Select, Checkbox } from "antd";
 import { useEffect, useState } from "react";
 // 组件安装的依赖信息
 
@@ -59,7 +59,7 @@ const RenderComDependence = ({ data, form }) => {
 
 // 分类渲染
 const RenderHasData = ({ data, form }) => {
-  if ((data.cluster_info?.length == 0) && (data.instance_info?.length) == 0) {
+  if (data.cluster_info?.length == 0 && data.instance_info?.length == 0) {
     return <RenderClusterDom data={data} form={form} />;
   } else {
     let dataSource = data.cluster_info.concat(data.instance_info);
@@ -134,7 +134,10 @@ const RenderClusterDom = ({ data, form }) => {
 
 // 单实例没有实例名称。其他有(单独封装为了复用)
 const ClusterComponent = ({ data, form }) => {
-  let deploy = (data.deploy_mode && data.deploy_mode[0])? JSON.stringify(data.deploy_mode[0]):""
+  let deploy =
+    data.deploy_mode && data.deploy_mode[0]
+      ? JSON.stringify(data.deploy_mode[0])
+      : "";
   const [deploy_mode, setDeploy_mode] = useState(deploy);
   useEffect(() => {
     form.setFieldsValue({
@@ -168,8 +171,7 @@ const ClusterComponent = ({ data, form }) => {
           </Select>
         </Form.Item>
       </div>
-      {deploy_mode !== "{\"key\":\"single\",\"name\":\"单实例\"}"
- ? (
+      {deploy_mode !== '{"key":"single","name":"单实例"}' ? (
         <div
           style={{
             flex: 6,

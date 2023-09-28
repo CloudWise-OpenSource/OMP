@@ -1,26 +1,24 @@
 import {
   OmpContentWrapper,
   OmpTable,
-  OmpMessageModal,
   OmpSelect,
-  OmpDatePicker,
   OmpDrawer,
 } from "@/components";
-import { Button, Select, message, Menu, Dropdown, Modal, Input } from "antd";
-import { useState, useEffect, useRef } from "react";
-import { handleResponse, _idxInit, refreshTime } from "@/utils/utils";
-import { fetchGet, fetchPost, fetchPatch } from "@/utils/request";
+import { Button, Select, Input } from "antd";
+import { useState, useEffect } from "react";
+import { handleResponse, _idxInit } from "@/utils/utils";
+import { fetchGet } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import getColumnsConfig from "./config/columns";
 import { SearchOutlined } from "@ant-design/icons";
-import moment from "moment";
 import { useHistory, useLocation } from "react-router-dom";
 
 const ExceptionList = () => {
   const history = useHistory();
   const location = useLocation();
 
-  const initIp = location.state?.ip
+  const initIp = location.state?.ip;
+  const initInstanceName = location.state?.instance_name;
 
   const [loading, setLoading] = useState(false);
 
@@ -32,12 +30,15 @@ const ExceptionList = () => {
 
   const [selectValue, setSelectValue] = useState(initIp);
 
-  const [instanceSelectValue, setInstanceSelectValue] = useState();
+  const [instanceSelectValue, setInstanceSelectValue] =
+    useState(initInstanceName);
 
   const [searchParams, setSearchParams] = useState({});
 
   // 筛选label
-  const [labelControl, setLabelControl] = useState(initIp ? "ip" : "instance_name");
+  const [labelControl, setLabelControl] = useState(
+    initIp ? "ip" : "instance_name"
+  );
 
   const [showIframe, setShowIframe] = useState({});
 
@@ -82,7 +83,11 @@ const ExceptionList = () => {
   };
 
   useEffect(() => {
-    fetchData({ ip: location.state?.ip, type: location.state?.type });
+    fetchData({
+      ip: location.state?.ip,
+      type: location.state?.type,
+      instance_name: location.state?.instance_name,
+    });
   }, []);
 
   return (

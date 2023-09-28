@@ -1,12 +1,10 @@
 import { OmpContentWrapper, OmpTable, OmpMessageModal } from "@/components";
 import { Form, Button, message } from "antd";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { handleResponse } from "@/utils/utils";
 import { fetchGet, fetchDelete, fetchPost, fetchPut } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
-import styles from "./index.module.less";
 import { ExclamationCircleOutlined } from "@ant-design/icons";
-import moment from "moment";
 import getColumnsConfig from "./config/columns";
 import { AddStrategyModal } from "./StrategyModal";
 import { useHistory, useLocation } from "react-router-dom";
@@ -44,7 +42,7 @@ const BackupStrategy = () => {
     fresh_rate: 30,
     max_healing_count: 5,
     instance_tp: 0,
-    used: false
+    used: false,
   };
 
   // 策略列表查询
@@ -116,9 +114,12 @@ const BackupStrategy = () => {
   // 编辑自愈策略
   const updateStrategy = (data) => {
     setStrategyLoading(true);
-    fetchPut(`${apiRequest.faultSelfHealing.selfHealingStrategy}${strategyRow.id}/`, {
-      body: data,
-    })
+    fetchPut(
+      `${apiRequest.faultSelfHealing.selfHealingStrategy}${strategyRow.id}/`,
+      {
+        body: data,
+      }
+    )
       .then((res) => {
         handleResponse(res, (res) => {
           if (res.code == 0) {
@@ -141,7 +142,9 @@ const BackupStrategy = () => {
   // 删除自愈策略
   const deleteStrategy = () => {
     setLoading(true);
-    fetchDelete(`${apiRequest.faultSelfHealing.selfHealingStrategy}${strategyRow.id}/`)
+    fetchDelete(
+      `${apiRequest.faultSelfHealing.selfHealingStrategy}${strategyRow.id}/`
+    )
       .then((res) => {
         handleResponse(res, (res) => {
           if (res.code == 0) {

@@ -47,6 +47,7 @@ EXPORTERS = [
     "redis",
     "tengine",
     "zookeeper",
+    "rocketmq",
 ]
 
 METRICS = {
@@ -440,6 +441,7 @@ class PrometheusUtils(object):
             for sd in services_data:
                 service_temp_data = dict()
                 service_temp_data['service_port'] = sd.get('listen_port')
+                service_temp_data['run_port'] = sd.get('run_port')
                 if sd.get('service_name') in EXPORTERS:
                     service_temp_data['exporter_port'] = self.get_service_port(
                         '{}Exporter'.format(sd.get('service_name')))
@@ -746,7 +748,7 @@ class PrometheusUtils(object):
                    'env="ENV",mountpoint="DATA_PATH"}+(node_filesystem_size_bytes{' \
                    'env="ENV",mountpoint="DATA_PATH"}-node_filesystem_free_bytes{' \
                    'env="ENV",mountpoint="DATA_PATH"}))) by (instance,env)'.replace(
-                       "ENV", env).replace("DATA_PATH", data_path)
+                "ENV", env).replace("DATA_PATH", data_path)
             data = {
                 "alert": f"主机数据分区{data_path}磁盘使用率",
                 "description": '主机 {{ $labels.instance }} 数据分区使用率为 {{ $value | humanize }}%, 大于阈值 $threshold$%'.replace(

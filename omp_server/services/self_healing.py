@@ -21,6 +21,7 @@ from utils.plugin.crontab_utils import maintain
 
 logger = logging.getLogger('server')
 
+
 class SelfHealing:
     def __init__(self, instance_tp, max_healing_count):
         # 需要起停信息ip等操作
@@ -37,11 +38,11 @@ class SelfHealing:
         data_dict = {}
         host_ls = []
         for d in alert_info:
-            if d.get("alert_instance_name") and \
+            if d.get("alert_service_name") and d.get("alert_instance_name") and \
                     d['alert_instance_name'] not in self.service_info:
                 data_dict.setdefault(d['alert_service_name'], []).append(d)
                 self.service_info.add(d['alert_instance_name'])
-            if not d.get("alert_instance_name") and \
+            if not d.get("alert_service_name") and \
                     d['alert_host_ip'] not in self.host_info:
                 self.host_info.add(d['alert_host_ip'])
                 host_ls.append(d)
@@ -65,9 +66,9 @@ class SelfHealing:
             temp = []
             for item in sort_dict[key]:
                 temp.extend(data_dict.pop(item, []))
-                if temp:
-                    sort_ser.append(temp)
-            other_ser = data_dict.values()
+            if temp:
+                sort_ser.append(temp)
+        other_ser = data_dict.values()
         if other_ser:
             other_ser = [service for app in other_ser for service in app]
             sort_ser.append(other_ser)
@@ -111,8 +112,6 @@ class SelfHealing:
             return False
         if monitor_agent_res[0].get("status") == 1:
             his_obj.healing_log = healing_log + "monitor_agent_res 服务状态查看正常更新服务状态"
-            his_obj.state = SelfHealingHistory.HEALING_SUCCESS,
-            his_obj.end_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
             his_obj.save()
             return True
         return False
@@ -153,7 +152,7 @@ class SelfHealing:
             "alert_service_name": "service_name",
             "alert_time": "alert_time",
             # "fingerprint": "fingerprint",
-            "monitor_log": "monitor_log",
+            # "monitor_log": "monitor_log",
             "alert_describe": "alert_content",
             "alert_instance_name": "instance_name",
         }
@@ -267,7 +266,8 @@ def self_healing(task_id):
                 future_list = []
                 for service in service_ls:
                     future_obj = executor.submit(
-                        getattr(health_obj, service['alert_type']), service)
+                        getattr(health_obj,
+                                "service" if service['alert_type'] == "component" else service['alert_type']), service)
                     future_list.append(future_obj)
                 for future in as_completed(future_list):
                     future.result()
@@ -315,7 +315,6 @@ def self_healing_ssh_verification(host_self_healing_list, sudo_check_cmd):
             """ ssh 连接超时"""
             return False, 1
     return True, 2
-    transport.close()
 
 
 def get_service_status_direct(service_obj_list):

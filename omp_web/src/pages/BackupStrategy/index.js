@@ -1,45 +1,66 @@
-import { OmpContentWrapper } from "@/components";
-import {
-  Switch,
-  Spin,
-  Form,
-  Input,
-  Button,
-  Select,
-  Tooltip,
-  TimePicker,
-  message,
-  Checkbox,
-  Row,
-} from "antd";
-import { useState, useEffect, useRef } from "react";
+import { OmpContentWrapper, OmpTable, OmpMessageModal } from "@/components";
+import { Form, Button, message } from "antd";
+import { useState, useEffect } from "react";
 import { handleResponse } from "@/utils/utils";
 import { fetchGet, fetchDelete, fetchPost, fetchPut } from "@/utils/request";
 import { apiRequest } from "@/config/requestApi";
 import styles from "./index.module.less";
-import {
-  SettingOutlined,
-  InfoCircleOutlined,
-  SaveOutlined,
-  WarningFilled
-} from "@ant-design/icons";
+import { ExclamationCircleOutlined } from "@ant-design/icons";
 import moment from "moment";
-import star from "@/pages/BackupRecords/config/asterisk.svg";
+import getColumnsConfig from "./config/columns";
+import { AddCustomModal, CustomModal } from "./CustomModal.js";
+import { AddStrategyModal } from "./StrategyModal";
+import { useHistory, useLocation } from "react-router-dom";
 
 const BackupStrategy = () => {
+  const location = useLocation();
+
+  const history = useHistory();
+
   const [loading, setLoading] = useState(false);
 
-  const [form] = Form.useForm();
+  const [dataSource, setDataSource] = useState([]);
 
-  const [isOpen, setIsOpen] = useState(false);
-  const [pushIsOpen, setPushIsOpen] = useState(false);
-  const [frequency, setFrequency] = useState("day");
+  // 自定义参数
+  const [customModalVisibility, setCustomModalVisibility] = useState(false);
+  const [customLoading, setCustomLoading] = useState(false);
+  const [customData, setCustomData] = useState(false);
+  const [initData, setinitData] = useState([]);
+
+  // 增/改自定义参数共用
+  const [customModalType, setCustomModalType] = useState("add");
+  const [addModalVisibility, setAddModalVisibility] = useState(false);
+  const [addLoading, setAddLoading] = useState(false);
+
+  // 自定义参数表单数据
+  const [row, setRow] = useState({});
+  const [customModalForm] = Form.useForm();
+  const [strategyRow, setStrategyRow] = useState({});
+  const [updateCustomVisibility, setUpdateCustomVisibility] = useState(false);
+  const [updateCustomData, setUpdateCustomData] = useState({});
+  const [updateRepeatName, setUpdateRepeatName] = useState("");
+  const [deleteCustomVisibility, setDeleteCustomVisibility] = useState(false);
+  const [deleteRepeatName, setDeleteRepeatName] = useState("");
+
+  // 增/改备份策略共用
+  const [strategyModalType, setStrategyModalType] = useState("add");
+  const [strategyModalVisibility, setStrategyModalVisibility] = useState(false);
+  const [strategyLoading, setStrategyLoading] = useState(false);
+  const [keyArr, setKeyArr] = useState([]);
+
+  // 备份策略表单
+  const [strategyForm] = Form.useForm();
 
   // 备份组件全量数据
   const [canBackupIns, setCanBackupIns] = useState([]);
-  // 选中数据
-  const [backupIns, setBackupIns] = useState([]);
 
+  // 删除策略
+  const [deleteStrategyModal, setDeleteStrategyModal] = useState(false);
+  // 执行策略
+  const [executeVisible, setExecuteVisible] = useState(false);
+  const [frequency, setFrequency] = useState("day");
+
+  // 星期汉字映射
   let weekData = [
     "星期一",
     "星期二",
@@ -50,79 +71,35 @@ const BackupStrategy = () => {
     "星期日",
   ];
 
-  const queryBackupSettingData = () => {
+  // 策略表单初始值
+  const strategyFormInit = {
+    retain_path: "/data/omp/data/backup/",
+    retain_day: 7,
+    is_on: false,
+    strategy: {
+      frequency: "day",
+      time: moment("00:00", "HH:mm"),
+      week: "0",
+      month: "1",
+    },
+    backup_instances: [],
+    backup_custom: [],
+  };
+
+  // 数据备份策略列表查询
+  const fetchData = () => {
     setLoading(true);
-    fetchGet(apiRequest.dataBackup.queryBackupSettingData, {
-      params: {
-        env_id: 1,
-      },
-    })
+    fetchGet(apiRequest.dataBackup.strategySetting)
       .then((res) => {
-        handleResponse(res, () => {
-          let backup_setting = res.data.data.backup_setting;
-          let crontab_detail = backup_setting.crontab_detail;
-
-          form.setFieldsValue({
-            retain_path: backup_setting.retain_path,
-            pushIsOpen: backup_setting.send_email,
-            isOpen: backup_setting.is_on,
-            email: backup_setting.to_users,
-          });
-
-          if (backup_setting?.retain_day) {
-            form.setFieldsValue({
-              retain_day: backup_setting.retain_day,
-            });
-          }
-          if (crontab_detail && crontab_detail?.day_of_week) {
-            if (crontab_detail?.day_of_week !== "*") {
-              setFrequency("week");
-              form.setFieldsValue({
-                strategy: {
-                  frequency: "week",
-                  time: moment(
-                    `${crontab_detail.hour}:${crontab_detail.minute}`,
-                    "HH:mm"
-                  ),
-                  week: crontab_detail.day_of_week,
-                },
-              });
-            }
-
-            if (crontab_detail?.day !== "*") {
-              setFrequency("month");
-              form.setFieldsValue({
-                strategy: {
-                  frequency: "month",
-                  time: moment(
-                    `${crontab_detail.hour}:${crontab_detail.minute}`,
-                    "HH:mm"
-                  ),
-                  month: crontab_detail.day,
-                },
-              });
-            }
-
-            if (
-              crontab_detail?.day == "*" &&
-              crontab_detail?.day_of_week == "*"
-            ) {
-              setFrequency("day");
-              form.setFieldsValue({
-                strategy: {
-                  frequency: "day",
-                  time: moment(
-                    `${crontab_detail.hour}:${crontab_detail.minute}`,
-                    "HH:mm"
-                  ),
-                },
-              });
-            }
-          }
-
-          setBackupIns(backup_setting.backup_instances);
-          setIsOpen(backup_setting.is_on);
-          setPushIsOpen(backup_setting.send_email);
+        handleResponse(res, (res) => {
+          setDataSource(
+            res.data.map((item, idx) => {
+              return {
+                ...item,
+                _idx: idx + 1,
+              };
+            })
+          );
         });
       })
       .catch((e) => console.log(e))
@@ -131,18 +108,257 @@ const BackupStrategy = () => {
       });
   };
 
-  // 查询可选备份项目
-  const queryCanBackup = () => {
-    setLoading(true);
-    fetchGet(apiRequest.dataBackup.queryCanBackup, {
+  // 自定义参数查询
+  const queryCustom = () => {
+    setCustomLoading(true);
+    fetchGet(apiRequest.dataBackup.backupCustom)
+      .then((res) => {
+        handleResponse(res, (res) => {
+          const resData = res.data.map((item, idx) => {
+            return {
+              ...item,
+              _idx: idx + 1,
+            };
+          });
+          setCustomData(resData);
+          setinitData(resData);
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setCustomLoading(false);
+      });
+  };
+
+  // 添加自定义参数
+  const addCustom = (data) => {
+    setAddLoading(true);
+    fetchPost(apiRequest.dataBackup.backupCustom, {
+      body: data,
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          if (res.code == 0) {
+            message.success("添加自定义参数成功");
+            customModalForm.setFieldsValue({
+              field_k: "",
+              field_v: "",
+              notes: "",
+            });
+            queryCustom();
+            setAddModalVisibility(false);
+          } else {
+            message.warning(res.message);
+          }
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setAddLoading(false);
+      });
+  };
+
+  // 修改自定义参数 - 提示存在实例使用
+  const updateCustomInfo = (data) => {
+    setAddLoading(true);
+    fetchGet(apiRequest.dataBackup.backupRepeatCustom, {
       params: {
-        env_id: 1,
+        id: row.id,
       },
     })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          const repeatName = res.data[0].name;
+          if (repeatName) {
+            setUpdateRepeatName(repeatName);
+            setUpdateCustomData(data);
+            setUpdateCustomVisibility(true);
+          } else {
+            updateCustom(data);
+          }
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setAddLoading(false);
+      });
+  };
+
+  // 修改自定义参数
+  const updateCustom = (data) => {
+    setAddLoading(true);
+    fetchPut(`${apiRequest.dataBackup.backupCustom}${row.id}/`, {
+      body: data,
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          if (res.code == 0) {
+            message.success("修改自定义参数成功");
+            customModalForm.setFieldsValue({
+              field_k: "",
+              field_v: "",
+              notes: "",
+            });
+            queryCustom();
+            fetchData();
+            setUpdateCustomVisibility(false);
+            setAddModalVisibility(false);
+          } else {
+            message.warning(res.message);
+          }
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setAddLoading(false);
+      });
+  };
+
+  // 删除自定义参数
+  const deleteCustomInfo = (id) => {
+    setAddLoading(true);
+    fetchGet(apiRequest.dataBackup.backupRepeatCustom, {
+      params: {
+        id: id,
+      },
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          const repeatName = res.data[0].name;
+          setDeleteRepeatName(repeatName);
+          setDeleteCustomVisibility(true);
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setAddLoading(false);
+      });
+  };
+
+  // 删除自定义参数
+  const deleteCustom = () => {
+    setAddLoading(true);
+    fetchDelete(`${apiRequest.dataBackup.backupCustom}${row.id}/`)
+      .then((res) => {
+        handleResponse(res, (res) => {
+          if (res.code == 0) {
+            message.success("删除成功");
+            queryCustom();
+            fetchData();
+            setDeleteCustomVisibility(false);
+          } else {
+            message.warning(res.message);
+          }
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setAddLoading(false);
+      });
+  };
+
+  // 查询可备份实例
+  const queryCanBackup = () => {
+    setStrategyLoading(true);
+    fetchGet(apiRequest.dataBackup.queryCanBackup)
       .then((res) => {
         handleResponse(res, () => {
           setCanBackupIns(res.data.data);
-          // setCanBackupIns(["mysql1", "arangodb1", "a1", "a2"]);
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setStrategyLoading(false);
+      });
+  };
+
+  // 构建添加/修改备份策略的请求体
+  const makeRequestBody = (data) => {
+    const timeInfo = data.strategy.time.format("HH:mm");
+    return {
+      backup_instances: data.backup_instances,
+      retain_path: data.retain_path,
+      retain_day: data.retain_day,
+      is_on: data.is_on,
+      backup_custom:
+        data.backup_custom?.map((e) => {
+          return {
+            id: e.key,
+            field_k: e.label[0].props.children[1],
+            field_v: e.label[1],
+          };
+        }) || [],
+      crontab_detail: {
+        month_of_year: "*",
+        day_of_month: data.strategy.month || "*",
+        day_of_week: data.strategy.week || "*",
+        hour: timeInfo.split(":")[0] || "*",
+        minute: timeInfo.split(":")[1] || "*",
+      },
+    };
+  };
+
+  // 添加备份策略
+  const addStrategy = (data) => {
+    setStrategyLoading(true);
+    fetchPost(apiRequest.dataBackup.strategySetting, {
+      body: makeRequestBody(data),
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          if (res.code == 0) {
+            message.success("添加备份策略成功");
+            strategyForm.setFieldsValue(strategyFormInit);
+            fetchData();
+            setStrategyModalVisibility(false);
+          } else {
+            message.warning(res.message);
+          }
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setStrategyLoading(false);
+      });
+  };
+
+  // 编辑备份策略
+  const updateStrategy = (data) => {
+    setStrategyLoading(true);
+    fetchPut(`${apiRequest.dataBackup.strategySetting}${strategyRow.id}/`, {
+      body: makeRequestBody(data),
+    })
+      .then((res) => {
+        handleResponse(res, (res) => {
+          if (res.code == 0) {
+            message.success("修改备份策略成功");
+            strategyForm.setFieldsValue(strategyFormInit);
+            fetchData();
+            setStrategyModalVisibility(false);
+          } else {
+            message.warning(res.message);
+          }
+        });
+      })
+      .catch((e) => console.log(e))
+      .finally(() => {
+        setStrategyLoading(false);
+      });
+  };
+
+  // 删除备份策略
+  const deleteStrategy = () => {
+    setLoading(true);
+    fetchDelete(`${apiRequest.dataBackup.strategySetting}${strategyRow.id}/`)
+      .then((res) => {
+        handleResponse(res, (res) => {
+          if (res.code == 0) {
+            message.success("删除成功");
+            fetchData();
+            setDeleteStrategyModal(false);
+          } else {
+            message.warning(res.message);
+          }
         });
       })
       .catch((e) => console.log(e))
@@ -151,43 +367,23 @@ const BackupStrategy = () => {
       });
   };
 
-  // 保存备份
-  const saveBackup = () => {
-    if (form.getFieldValue("isOpen") && backupIns.length === 0) {
-      message.warning("请选择您定时备份的实例后，再进行保存");
-      return;
-    }
+  // 执行备份策略
+  const executeStrategy = () => {
     setLoading(true);
-    let queryData = form.getFieldsValue();
-    let timeInfo = form.getFieldValue("strategy");
-    if (queryData.strategy) timeInfo = queryData.strategy;
-    fetchPost(apiRequest.dataBackup.updateBackupSetting, {
+    fetchPost(apiRequest.dataBackup.strategySetting, {
       body: {
-        backup_instances: backupIns,
-        env_id: 1,
-        is_on: queryData.isOpen,
-        crontab_detail: {
-          hour: timeInfo.time.format("HH:mm").split(":")[0] || "*",
-          minute: timeInfo.time.format("HH:mm").split(":")[1] || "*",
-          month: "*",
-          day_of_week: timeInfo.week || "*",
-          day: timeInfo.month || "*",
-        },
-        retain_path: queryData.retain_path,
-        send_email: queryData.pushIsOpen,
-        to_users: form.getFieldValue("email"),
-        retain_day: form.getFieldValue("retain_day"),
+        id: strategyRow.id,
       },
     })
       .then((res) => {
-        if (res && res.data) {
-          if (res.data.code == 1) {
-            message.warning(res.data.message);
+        handleResponse(res, (res) => {
+          if (res.code == 0) {
+            message.success("任务下发成功");
+            setExecuteVisible(false);
+          } else {
+            message.warning(res.message);
           }
-          if (res.data.code == 0) {
-            message.success("修改备份策略成功");
-          }
-        }
+        });
       })
       .catch((e) => console.log(e))
       .finally(() => {
@@ -196,330 +392,235 @@ const BackupStrategy = () => {
   };
 
   useEffect(() => {
+    fetchData();
     queryCanBackup();
-    queryBackupSettingData();
   }, []);
 
   return (
     <OmpContentWrapper>
-      <div className={styles.header}>
-        <SaveOutlined style={{ paddingRight: 5 }} />
-        备份实例
-      </div>
-      <Spin spinning={loading}>
-        <div
-          style={{
-            marginLeft: 50,
-            marginTop: 30,
-            marginBottom: 30,
+      <div style={{ display: "flex" }}>
+        <Button
+          style={{ marginRight: 10 }}
+          type="primary"
+          onClick={() => {
+            queryCustom();
+            setStrategyModalType("add");
+            setStrategyModalVisibility(true);
           }}
         >
-          <p>请选择要备份的实例(存储基础元数据信息):</p>
+          添加策略
+        </Button>
+        <Button
+          style={{ marginRight: 10 }}
+          type="primary"
+          onClick={() => {
+            setCustomModalVisibility(true);
+            queryCustom();
+          }}
+        >
+          自定义参数
+        </Button>
 
-          {canBackupIns.length === 0 ? (
-            <span style={{ marginLeft: 30, color: "#a7abb7" }}>
-              暂无可选实例
-            </span>
-          ) : (
-            <Checkbox.Group
-              value={backupIns}
-              onChange={(checkedValues) => {
-                setBackupIns(checkedValues);
-                if (checkedValues.length === 0) {
-                  form.setFieldsValue({
-                    isOpen: false,
-                  });
-                  setIsOpen(false);
-                } else {
-                  form.setFieldsValue({
-                    isOpen: true,
-                  });
-                  setIsOpen(true);
-                }
-              }}
-              style={{
-                marginLeft: 30,
-              }}
-            >
-              {canBackupIns.map((e) => {
-                return (
-                  <Row>
-                    <Checkbox key={e} value={e} style={{ lineHeight: "32px" }}>
-                      {e}
-                    </Checkbox>
-                  </Row>
-                );
-              })}
-            </Checkbox.Group>
+        <div style={{ display: "flex", marginLeft: "auto" }}>
+          <Button style={{ marginLeft: 10 }} onClick={() => fetchData()}>
+            刷新
+          </Button>
+        </div>
+      </div>
+      <div
+        style={{
+          border: "1px solid #ebeef2",
+          backgroundColor: "white",
+          marginTop: 10,
+        }}
+      >
+        <OmpTable
+          loading={loading}
+          columns={getColumnsConfig(
+            setStrategyRow,
+            setDeleteStrategyModal,
+            setStrategyModalType,
+            setStrategyModalVisibility,
+            setExecuteVisible,
+            strategyForm,
+            queryCustom,
+            setKeyArr,
+            weekData,
+            setFrequency
           )}
-        </div>
-      </Spin>
-
-      <div className={styles.header}>
-        <SettingOutlined style={{ paddingRight: 5 }} />
-        备份策略
-      </div>
-      <Spin spinning={loading}>
-        <div style={{ color: "red", position: "relative", left: 30, top: 15 }}>
-        <WarningFilled style={{marginRight:15, fontSize:18}} />OMP会对数据库进行全库备份，备份数据库可能会造成数据库暂时锁库，导致数据不可写的情况，请确保了解后再开启定时备份
-        </div>
-        <Form
-          name="pushSetting"
-          labelCol={{ span: 3 }}
-          wrapperCol={{ span: 8 }}
-          style={{ paddingTop: 30 }}
-          onFinish={saveBackup}
-          form={form}
-          initialValues={{
-            retain_path: "/data/omp/data/backup/",
-            retain_day: -1,
-            pushIsOpen: false,
-            isOpen: false,
-            strategy: {
-              frequency: "day",
-              time: moment("00:00", "HH:mm"),
-              week: "0",
-              month: "1",
-            },
-            email: "",
+          dataSource={dataSource}
+          pagination={{
+            pageSize: 10,
           }}
-        >
-          <Form.Item
-            label={
-              <span>
-                <img
-                  src={star}
-                  style={{ position: "relative", top: -2, left: -3 }}
-                />
-                备份路径
-              </span>
-            }
-          >
-            <Input.Group compact>
-              <Form.Item
-                name="retain_path"
-                noStyle
-                rules={[
-                  { required: true, message: "请输入备份路径" },
-                  {
-                    validator: (rule, value, callback) => {
-                      if (value) {
-                        if (value.match(/^[ ]*$/)) {
-                          return Promise.reject("请输入备份路径");
-                        }
-                        return Promise.resolve("success");
-                      } else {
-                        return Promise.resolve("success");
-                      }
-                    },
-                  },
-                ]}
-              >
-                <Input
-                  placeholder="请输入备份路径"
-                  style={{
-                    width: 360,
-                  }}
-                />
-              </Form.Item>
-              <Form.Item noStyle>
-                <Tooltip
-                  placement="top"
-                  title={"开启定时备份后，会自动备份已勾选的实例"}
-                >
-                  <InfoCircleOutlined
-                    style={{
-                      color: "rgba(0,0,0,.45)",
-                      position: "relative",
-                      top: 8,
-                      left: 15,
-                      fontSize: 15,
-                    }}
-                  />
-                </Tooltip>
-              </Form.Item>
-            </Input.Group>
-          </Form.Item>
+          rowKey={(record) => record.id}
+          noScroll={true}
+        />
+      </div>
 
-          <Form.Item label="定时备份">
-            <Input.Group compact>
-              <Form.Item name="isOpen" noStyle valuePropName="checked">
-                <Switch
-                  onChange={(e) => setIsOpen(e)}
-                  style={{ borderRadius: "10px" }}
-                />
-              </Form.Item>
-              <Form.Item noStyle>
-                <Tooltip
-                  placement="top"
-                  title={"开启定时巡检后，将在设定的时间，自动执行巡检任务"}
-                >
-                  <InfoCircleOutlined
-                    name="icon"
-                    style={{
-                      color: "rgba(0,0,0,.45)",
-                      position: "relative",
-                      top: 4,
-                      left: 15,
-                      fontSize: 15,
-                    }}
-                  />
-                </Tooltip>
-              </Form.Item>
-            </Input.Group>
-          </Form.Item>
-          {isOpen && (
+      <CustomModal
+        modalVisibility={customModalVisibility}
+        setModalVisibility={setCustomModalVisibility}
+        modalLoading={customLoading}
+        customData={customData}
+        setCustomData={setCustomData}
+        initData={initData}
+        setCustomModalType={setCustomModalType}
+        setAddModalVisibility={setAddModalVisibility}
+        deleteCustomInfo={deleteCustomInfo}
+        modalForm={customModalForm}
+        setRow={setRow}
+      />
+      <AddCustomModal
+        customModalType={customModalType}
+        addCustom={addCustom}
+        loading={addLoading}
+        modalForm={customModalForm}
+        addModalVisibility={addModalVisibility}
+        setAddModalVisibility={setAddModalVisibility}
+        updateCustomInfo={updateCustomInfo}
+        setUpdateCustomData={setUpdateCustomData}
+      />
+      <AddStrategyModal
+        strategyModalType={strategyModalType}
+        addStrategy={addStrategy}
+        updateStrategy={updateStrategy}
+        loading={strategyLoading}
+        modalForm={strategyForm}
+        addModalVisibility={strategyModalVisibility}
+        setAddModalVisibility={setStrategyModalVisibility}
+        canBackupIns={canBackupIns}
+        initData={initData}
+        strategyFormInit={strategyFormInit}
+        keyArr={keyArr}
+        setKeyArr={setKeyArr}
+        weekData={weekData}
+        frequency={frequency}
+        setFrequency={setFrequency}
+      />
+
+      <OmpMessageModal
+        visibleHandle={[updateCustomVisibility, setUpdateCustomVisibility]}
+        title={
+          <span>
+            <ExclamationCircleOutlined
+              style={{
+                fontSize: 20,
+                color: "#f0a441",
+                paddingRight: "10px",
+                position: "relative",
+                top: 2,
+              }}
+            />
+            提示
+          </span>
+        }
+        loading={addLoading}
+        onFinish={() => {
+          updateCustom(updateCustomData);
+        }}
+        zIndex={1004}
+      >
+        <div style={{ padding: "20px" }}>
+          该参数{" "}
+          <span style={{ fontWeight: 500, color: "red" }}>
+            {updateRepeatName}
+          </span>{" "}
+          实例正在使用
+          <br />
+          确认<span style={{ fontWeight: 500 }}>修改</span>该参数吗？
+        </div>
+      </OmpMessageModal>
+
+      <OmpMessageModal
+        visibleHandle={[deleteCustomVisibility, setDeleteCustomVisibility]}
+        title={
+          <span>
+            <ExclamationCircleOutlined
+              style={{
+                fontSize: 20,
+                color: "#f0a441",
+                paddingRight: "10px",
+                position: "relative",
+                top: 2,
+              }}
+            />
+            提示
+          </span>
+        }
+        loading={addLoading}
+        onFinish={() => deleteCustom()}
+        zIndex={1004}
+      >
+        <div style={{ padding: "20px" }}>
+          {deleteRepeatName && (
             <>
-              <Form.Item
-                label="定时策略"
-                style={{
-                  height: 32,
-                }}
-              >
-                <Input.Group compact>
-                  <Form.Item name={["strategy", "frequency"]} noStyle>
-                    <Select
-                      style={{
-                        width: 100,
-                      }}
-                      onChange={(e) => {
-                        setFrequency(e);
-                      }}
-                    >
-                      <Select.Option value="day" key="day">
-                        每天
-                      </Select.Option>
-                      <Select.Option value="week" key="week">
-                        每周
-                      </Select.Option>
-                      <Select.Option value="month" key="month">
-                        每月
-                      </Select.Option>
-                    </Select>
-                  </Form.Item>
-
-                  {frequency == "week" && (
-                    <Form.Item
-                      name={["strategy", "week"]}
-                      style={{ display: "inline-block", marginLeft: "10px" }}
-                    >
-                      <Select
-                        style={{
-                          width: 120,
-                        }}
-                      >
-                        {weekData.map((item, idx) => {
-                          return (
-                            <Select.Option value={`${idx}`} key={item}>
-                              {item}
-                            </Select.Option>
-                          );
-                        })}
-                      </Select>
-                    </Form.Item>
-                  )}
-
-                  {frequency == "month" && (
-                    <Form.Item
-                      name={["strategy", "month"]}
-                      style={{ display: "inline-block", marginLeft: "10px" }}
-                    >
-                      <Select
-                        style={{
-                          width: 120,
-                        }}
-                      >
-                        {new Array(28).fill(0).map((item, idx) => {
-                          return (
-                            <Select.Option
-                              key={`${idx + 1}`}
-                              value={`${idx + 1}`}
-                            >
-                              {idx + 1}日
-                            </Select.Option>
-                          );
-                        })}
-                      </Select>
-                    </Form.Item>
-                  )}
-
-                  <Form.Item
-                    name={["strategy", "time"]}
-                    style={{ display: "inline-block", marginLeft: "10px" }}
-                  >
-                    <TimePicker
-                      //defaultValue={moment("00:00", "HH:mm")}
-                      format={"HH:mm"}
-                      allowClear={false}
-                    />
-                  </Form.Item>
-                </Input.Group>
-              </Form.Item>
-
-              <Form.Item label="备份保留" name="retain_day">
-                <Select
-                  style={{
-                    width: 100,
-                  }}
-                >
-                  <Select.Option key={-1} value={-1}>
-                    永久保留
-                  </Select.Option>
-                  <Select.Option key={1} value={1}>
-                    1天
-                  </Select.Option>
-                  <Select.Option key={7} value={7}>
-                    7天
-                  </Select.Option>
-                  <Select.Option key={30} value={30}>
-                    30天
-                  </Select.Option>
-                </Select>
-              </Form.Item>
+              该参数{" "}
+              <span style={{ fontWeight: 500, color: "red" }}>
+                {deleteRepeatName}
+              </span>{" "}
+              实例正在使用
+              <br />
             </>
           )}
+          确认<span style={{ fontWeight: 500 }}>删除</span>该参数吗？
+        </div>
+      </OmpMessageModal>
 
-          <Form.Item label="邮件推送" name="pushIsOpen" valuePropName="checked">
-            <Switch
-              onChange={(e) => setPushIsOpen(e)}
-              style={{ borderRadius: "10px" }}
+      <OmpMessageModal
+        visibleHandle={[deleteStrategyModal, setDeleteStrategyModal]}
+        title={
+          <span>
+            <ExclamationCircleOutlined
+              style={{
+                fontSize: 20,
+                color: "#f0a441",
+                paddingRight: "10px",
+                position: "relative",
+                top: 2,
+              }}
             />
-          </Form.Item>
-          {pushIsOpen && (
-            <Form.Item
-              label="接收人"
-              name="email"
-              rules={[
-                {
-                  type: "email",
-                  message: "请输入正确格式的邮箱",
-                },
-                {
-                  required: true,
-                  message: "请输入接收人邮箱",
-                },
-              ]}
-            >
-              <Input
-                placeholder="例如: emailname@163.com"
-                style={{
-                  width: 360,
-                }}
-              />
-            </Form.Item>
-          )}
+            提示
+          </span>
+        }
+        loading={loading}
+        onFinish={() => {
+          deleteStrategy();
+        }}
+      >
+        <div style={{ padding: "20px" }}>
+          确定 <span style={{ fontWeight: 500 }}>删除</span> 该策略吗？
+        </div>
+      </OmpMessageModal>
 
-          <Form.Item className={styles.saveButtonWrapper}>
-            <Button
-              type="primary"
-              htmlType="submit"
-              className={styles.saveButton}
-            >
-              保存
-            </Button>
-          </Form.Item>
-        </Form>
-      </Spin>
+      <OmpMessageModal
+        visibleHandle={[executeVisible, setExecuteVisible]}
+        title={
+          <span>
+            <ExclamationCircleOutlined
+              style={{
+                fontSize: 20,
+                color: "#f0a441",
+                paddingRight: "10px",
+                position: "relative",
+                top: 2,
+              }}
+            />
+            提示
+          </span>
+        }
+        loading={loading}
+        onFinish={() => {
+          executeStrategy();
+        }}
+      >
+        <div style={{ padding: "20px" }}>
+          确认对实例{" "}
+          <span style={{ fontWeight: 500, color: "red" }}>
+            {strategyRow.backup_instances?.join(",")}
+          </span>{" "}
+          执行备份策略吗？
+        </div>
+      </OmpMessageModal>
     </OmpContentWrapper>
   );
 };

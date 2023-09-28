@@ -686,7 +686,17 @@ class DeploymentPlanValidateSerializer(Serializer):
         pro_id_list = app_now.values_list("product_id", flat=True).distinct()
         # 验证 product 的依赖项均已包含
         pro_queryset = ProductHub.objects.filter(id__in=pro_id_list)
+        app_target_all = ApplicationHub.objects.filter(
+            product_id__in=pro_id_list)
+        # 考虑到同产品下会有同名服务情况，做去重处理，按照时间版本号取最新
+        app_target = []
         for pro in pro_queryset:
+            for ser in json.loads(pro.pro_services):
+                app_target.append(
+                    app_target_all.filter(
+                        app_name=ser["name"], app_version=ser["version"]
+                    ).last()
+                )
             # 无依赖项则跳过
             if not pro.pro_dependence:
                 continue
@@ -710,26 +720,6 @@ class DeploymentPlanValidateSerializer(Serializer):
         # 验证所有 product 下的 application 都已经包含
         app_target_all = ApplicationHub.objects.filter(
             product_id__in=pro_id_list)
-
-        # 考虑到同产品下会有同名服务情况，做去重处理，按照时间版本号取最新
-        app_target_id_ls = []
-        for pro_id in pro_id_list:
-            # 同产品的 app_name 集合
-            app_name_set = set()
-            app_ls = app_target_all.filter(product_id=pro_id)
-            for app in app_ls:
-                if app.app_name not in app_name_set:
-                    new_version = app_ls.filter(
-                        app_name=app.app_name
-                    ).order_by("-created").first().app_version
-                    if new_version == app.app_version:
-                        app_name_set.add(app.app_name)
-                        app_target_id_ls.append(app.id)
-
-        # 获取目标 app
-        app_target = app_target_all.filter(
-            id__in=app_target_id_ls, is_release=True
-        )
 
         # 所有 affinity 为 tengine 字段 (Web 服务)，不参与比较
         now_set = set(filter(
@@ -897,6 +887,81 @@ class ExecutionRecordSerializer(ModelSerializer):
         fields = ("id", "operator", "count", "state", "state_display",
                   "can_rollback", "duration", "created", "end_time",
                   "module", "module_id")
+
+
+class ProductCompositionSerializer(ModelSerializer):
+    pro_ser_others = serializers.SerializerMethodField()
+    pro_services = serializers.CharField(
+        # child=serializers.DictField(),
+        help_text="产品包含服务列表",
+        required=True,
+        error_messages={"required": "必须包含[pro_services]字段"}
+    )
+    pro_name = serializers.CharField(help_text="产品名称", required=True,
+                                     error_messages={"required": "请填写产品名称"})
+    pro_version = serializers.CharField(help_text="产品版本", required=True,
+                                        error_messages={"required": "请填写产品版本"})
+
+    def get_pro_ser_others(self, obj, **kwargs):
+        res_list = []
+        all_apps_set, all_true_apps_set = set(), set()
+        if obj.applicationhub_set.exists():
+            all_apps = obj.applicationhub_set.values_list("app_name", "app_version")
+            for app in all_apps:
+                all_apps_set.add(",".join(app))
+        pro_ser = kwargs.get('pro_ser')
+        pro_services = pro_ser if pro_ser else json.loads(obj.pro_services)
+        for t_app in pro_services:
+            all_true_apps_set.add(f"{t_app['name']},{t_app['version']}")
+        # 一部分用作校验用
+        if pro_ser:
+            return all_true_apps_set - all_apps_set
+
+        for r_app in all_apps_set - all_true_apps_set:
+            r_app_ls = r_app.split(",")
+            res_list.append(
+                {
+                    "name": r_app_ls[0],
+                    "version": r_app_ls[1],
+                }
+            )
+        return res_list
+
+    def validate_pro_services(self, pro_services):
+        pro_services = json.loads(pro_services)
+        if not isinstance(pro_services, list):
+            raise ValidationError({
+                "pro_services": "pro_services必须是list"
+            })
+        pro_ser_len = len(pro_services)
+        ser_name = {}
+        for app in pro_services:
+            ser_name[app.get('name', "")] = app.get('version', '')
+        if len(ser_name) != pro_ser_len:
+            raise ValidationError({
+                "pro_services": "产品内服务名称需保证唯一或字段传递异常"
+            })
+        return pro_services
+
+    def validate(self, attrs):
+        pro_name = attrs.get("pro_name")
+        pro_version = attrs.get("pro_version")
+        pro_obj = ProductHub.objects.filter(pro_name=pro_name, pro_version=pro_version).first()
+        if not pro_obj:
+            raise ValidationError({
+                "pro_services": "请填写正确的产品名称和版本"
+            })
+
+        diff_ser = self.get_pro_ser_others(pro_obj, pro_ser=attrs.get("pro_services"))
+        if diff_ser:
+            raise ValidationError({
+                "pro_services": f"存在不归属于当前产品的服务{diff_ser}"
+            })
+        return attrs
+
+    class Meta:
+        model = ProductHub
+        fields = ("pro_name", "pro_version", "pro_services", "pro_ser_others")
 
 
 class DeleteComponentSerializer(ModelSerializer):

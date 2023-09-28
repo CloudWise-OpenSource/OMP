@@ -1,4 +1,3 @@
-import { Checkbox } from "antd";
 import DeployNumRow from "./DeployNumRow";
 import DeployInstanceRow from "./DeployInstanceRow";
 
